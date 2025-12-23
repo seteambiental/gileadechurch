@@ -1,24 +1,7 @@
-import {
-  Users,
-  Baby,
-  Music,
-  Heart,
-  Calendar,
-  PartyPopper,
-  Sparkles,
-  Flame,
-  Home,
-  DollarSign,
-  HandHeart,
-  Drama,
-  Camera,
-  BookOpen,
-  Disc3,
-  BarChart3,
-} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogIn } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import MinistryCard from "@/components/MinistryCard";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import TestimonyCard from "@/components/TestimonyCard";
 import PrayerRequestForm from "@/components/PrayerRequestForm";
@@ -26,25 +9,6 @@ import CellGroupCard from "@/components/CellGroupCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-church.jpg";
-
-const ministries = [
-  { icon: Users, title: "Cadastros", description: "Gestão de membros" },
-  { icon: Baby, title: "Kids", description: "Ministério infantil" },
-  { icon: Music, title: "Louvor", description: "Adoração e música" },
-  { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social" },
-  { icon: Calendar, title: "Programação", description: "Agenda da igreja" },
-  { icon: PartyPopper, title: "Eventos", description: "Celebrações especiais" },
-  { icon: Sparkles, title: "GT", description: "Adolescentes" },
-  { icon: Flame, title: "Flow", description: "Jovens" },
-  { icon: Home, title: "Casas Refúgio", description: "Células" },
-  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira" },
-  { icon: HandHeart, title: "Intercessão", description: "Oração" },
-  { icon: Drama, title: "Teatro", description: "Artes cênicas" },
-  { icon: Camera, title: "Mídia", description: "Comunicação visual" },
-  { icon: BookOpen, title: "Ensino", description: "Discipulado" },
-  { icon: Disc3, title: "Dança", description: "Expressão corporal" },
-  { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios" },
-];
 
 const announcements = [
   {
@@ -127,6 +91,7 @@ const scheduleItems = [
 ];
 
 const Index = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -175,8 +140,10 @@ const Index = () => {
                 size="lg"
                 variant="hero"
                 className="font-heading font-semibold text-lg px-8 py-6"
+                onClick={() => navigate("/auth")}
               >
-                Conhecer Ministérios
+                <LogIn className="w-5 h-5 mr-2" />
+                Acessar App
               </Button>
             </div>
           </div>
@@ -190,25 +157,25 @@ const Index = () => {
         </div>
       </section>
 
-      {/* App Access Section */}
+      {/* App Access CTA Section */}
       <section id="app" className="py-20 bg-background">
         <div className="container mx-auto px-4">
-          <SectionTitle
-            title="Acesso ao App"
-            subtitle="Escolha o ministério que deseja acessar"
-            centered
-          />
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {ministries.map((ministry, index) => (
-              <MinistryCard
-                key={ministry.title}
-                icon={ministry.icon}
-                title={ministry.title}
-                description={ministry.description}
-                delay={index * 50}
-              />
-            ))}
+          <div className="max-w-2xl mx-auto text-center">
+            <SectionTitle
+              title="Acesso ao App"
+              subtitle="Área restrita para membros e líderes da Igreja Gilead"
+              centered
+            />
+            
+            <Button
+              size="lg"
+              variant="secondary"
+              className="font-heading font-semibold text-lg px-8 py-6 shadow-gold animate-pulse-gold"
+              onClick={() => navigate("/auth")}
+            >
+              <LogIn className="w-5 h-5 mr-2" />
+              Entrar no App
+            </Button>
           </div>
         </div>
       </section>
