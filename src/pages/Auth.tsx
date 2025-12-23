@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Church } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 
 const authSchema = z.object({
@@ -111,18 +112,18 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-navy flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-secondary animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-navy flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center">
-            <Church className="w-8 h-8 text-secondary" />
+          <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
+            <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
           </div>
           <div>
             <CardTitle className="font-heading text-2xl text-foreground">
@@ -130,7 +131,7 @@ const Auth = () => {
             </CardTitle>
             <CardDescription className="text-muted-foreground mt-2">
               {isLogin
-                ? "Acesse os ministérios da Igreja Gilead"
+                ? "Acesse os ministérios da Gileade Church"
                 : "Crie sua conta para acessar o app"}
             </CardDescription>
           </div>

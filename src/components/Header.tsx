@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Menu, X, Church } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,17 +36,19 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <a href="#inicio" className="flex items-center gap-3 group">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-gold shadow-gold">
-              <Church className="w-6 h-6 text-secondary-foreground" />
-            </div>
+            <img 
+              src={logoGileade} 
+              alt="Gileade Church" 
+              className="w-12 h-12 rounded-full object-cover shadow-red"
+            />
             <div className="flex flex-col">
               <span className={`font-heading font-bold text-xl tracking-tight transition-colors ${
                 isScrolled ? "text-foreground" : "text-primary-foreground"
               }`}>
-                Gilead
+                Gileade
               </span>
               <span className={`text-xs font-medium -mt-1 transition-colors ${
-                isScrolled ? "text-secondary" : "text-secondary"
+                isScrolled ? "text-secondary" : "text-orange"
               }`}>
                 Church
               </span>
@@ -73,7 +76,7 @@ const Header = () => {
           <div className="hidden lg:block">
             <Button
               variant="secondary"
-              className="font-heading font-semibold shadow-gold"
+              className="font-heading font-semibold shadow-red"
             >
               Visite-nos
             </Button>
@@ -106,7 +109,7 @@ const Header = () => {
               ))}
               <Button
                 variant="secondary"
-                className="mt-2 font-heading font-semibold shadow-gold"
+                className="mt-2 font-heading font-semibold shadow-red"
               >
                 Visite-nos
               </Button>

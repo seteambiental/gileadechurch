@@ -24,6 +24,7 @@ import {
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
+import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const ministries = [
   { icon: Users, title: "Cadastros", description: "Gestão de membros" },
@@ -77,12 +78,14 @@ const AppDashboard = () => {
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
-              <span className="font-heading font-bold text-secondary text-lg">G</span>
-            </div>
+            <img 
+              src={logoGileade} 
+              alt="Gileade Church" 
+              className="w-10 h-10 rounded-full object-cover shadow-red"
+            />
             <div>
               <h1 className="font-heading font-bold text-lg text-foreground">
-                Igreja Gilead
+                Gileade Church
               </h1>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
