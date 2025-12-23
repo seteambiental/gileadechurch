@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { formatPhone } from "@/lib/masks";
 import MemberFormDialog from "./MemberFormDialog";
 import {
   AlertDialog,
@@ -69,6 +70,7 @@ interface Member {
   photo_url: string | null;
   city: string | null;
   state: string | null;
+  created_at: string;
   member_functions?: MemberFunction[];
 }
 
@@ -424,6 +426,7 @@ const MembrosTab = () => {
                   <TableHead className="text-muted-foreground">Membro</TableHead>
                   <TableHead className="text-muted-foreground">WhatsApp</TableHead>
                   <TableHead className="text-muted-foreground">Cidade/UF</TableHead>
+                  <TableHead className="text-muted-foreground">Membro Desde</TableHead>
                   <TableHead className="text-muted-foreground">Funções</TableHead>
                   <TableHead className="text-muted-foreground w-[100px]">Ações</TableHead>
                 </TableRow>
@@ -433,8 +436,11 @@ const MembrosTab = () => {
                   <TableRow key={member.id} className="border-border hover:bg-muted/50">
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border border-border">
-                          <AvatarImage src={member.photo_url || undefined} />
+                        <Avatar className="w-10 h-10 border border-border shrink-0">
+                          <AvatarImage 
+                            src={member.photo_url || undefined} 
+                            className="object-cover"
+                          />
                           <AvatarFallback className="bg-secondary/20 text-secondary text-sm font-semibold">
                             {getInitials(member.full_name)}
                           </AvatarFallback>
@@ -448,12 +454,15 @@ const MembrosTab = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-foreground">
-                      {member.whatsapp || "-"}
+                      {member.whatsapp ? formatPhone(member.whatsapp) : "-"}
                     </TableCell>
                     <TableCell className="text-foreground">
                       {member.city && member.state 
                         ? `${member.city}/${member.state}` 
                         : "-"}
+                    </TableCell>
+                    <TableCell className="text-foreground text-sm">
+                      {new Date(member.created_at).toLocaleDateString("pt-BR")}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

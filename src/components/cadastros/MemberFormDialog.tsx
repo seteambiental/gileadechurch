@@ -31,6 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatPhone, formatCep, unformatPhone, unformatCep } from "@/lib/masks";
 
 const FUNCTION_TYPES = [
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
@@ -122,14 +123,14 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           form.reset({
             full_name: memberData.full_name,
             birth_date: memberData.birth_date || "",
-            cep: memberData.cep || "",
+            cep: memberData.cep ? formatCep(memberData.cep) : "",
             address: memberData.address || "",
             number: memberData.number || "",
             complement: memberData.complement || "",
             neighborhood: memberData.neighborhood || "",
             city: memberData.city || "",
             state: memberData.state || "",
-            whatsapp: memberData.whatsapp || "",
+            whatsapp: memberData.whatsapp ? formatPhone(memberData.whatsapp) : "",
             email: memberData.email || "",
           });
           setPhotoPreview(memberData.photo_url);
@@ -210,14 +211,14 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       const memberData = {
         full_name: data.full_name,
         birth_date: data.birth_date || null,
-        cep: data.cep || null,
+        cep: data.cep ? unformatCep(data.cep) : null,
         address: data.address || null,
         number: data.number || null,
         complement: data.complement || null,
         neighborhood: data.neighborhood || null,
         city: data.city || null,
         state: data.state || null,
-        whatsapp: data.whatsapp || null,
+        whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,
       };
@@ -275,8 +276,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   });
 
   const handleCepBlur = async () => {
-    const cep = form.getValues("cep")?.replace(/\D/g, "");
-    if (cep?.length !== 8) return;
+    const cepValue = form.getValues("cep");
+    const cep = cepValue ? unformatCep(cepValue) : "";
+    if (cep.length !== 8) return;
 
     setIsLoadingCep(true);
     try {
@@ -364,8 +366,11 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
               {/* Photo */}
               <div className="flex items-center gap-4">
-                <Avatar className="w-20 h-20 border-2 border-secondary/30">
-                  <AvatarImage src={photoPreview || undefined} />
+                <Avatar className="w-20 h-20 border-2 border-secondary/30 shrink-0">
+                  <AvatarImage 
+                    src={photoPreview || undefined} 
+                    className="object-cover"
+                  />
                   <AvatarFallback className="bg-secondary/20 text-secondary text-xl">
                     {form.watch("full_name") ? getInitials(form.watch("full_name")) : "?"}
                   </AvatarFallback>
@@ -426,7 +431,12 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     <FormItem>
                       <FormLabel>WhatsApp</FormLabel>
                       <FormControl>
-                        <Input placeholder="(00) 00000-0000" {...field} />
+                        <Input 
+                          placeholder="(00) 00000-0000" 
+                          {...field}
+                          onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                          maxLength={16}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -463,7 +473,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                             <Input
                               {...field}
                               placeholder="00000-000"
+                              onChange={(e) => field.onChange(formatCep(e.target.value))}
                               onBlur={handleCepBlur}
+                              maxLength={9}
                             />
                             {isLoadingCep && (
                               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
