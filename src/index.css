@@ -168,6 +168,14 @@
     background-image: var(--gradient-dark);
   }
   
+  .bg-gradient-navy {
+    background-image: var(--gradient-dark);
+  }
+  
+  .bg-gradient-gold {
+    background-image: var(--gradient-red);
+  }
+  
   .shadow-elegant {
     box-shadow: var(--shadow-md);
   }
