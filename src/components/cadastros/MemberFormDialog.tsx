@@ -56,6 +56,7 @@ interface MemberFunction {
 const formSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
   birth_date: z.string().optional(),
+  member_since: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
   number: z.string().optional(),
@@ -97,6 +98,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     defaultValues: {
       full_name: "",
       birth_date: "",
+      member_since: "",
       cep: "",
       address: "",
       number: "",
@@ -123,6 +125,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           form.reset({
             full_name: memberData.full_name,
             birth_date: memberData.birth_date || "",
+            member_since: memberData.member_since || "",
             cep: memberData.cep ? formatCep(memberData.cep) : "",
             address: memberData.address || "",
             number: memberData.number || "",
@@ -211,6 +214,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       const memberData = {
         full_name: data.full_name,
         birth_date: data.birth_date || null,
+        member_since: data.member_since || null,
         cep: data.cep ? unformatCep(data.cep) : null,
         address: data.address || null,
         number: data.number || null,
@@ -416,6 +420,20 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Data de Nascimento</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="member_since"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Membro Desde</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
