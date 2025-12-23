@@ -24,6 +24,7 @@ import {
   UserCheck,
   Crown,
   Shield,
+  Zap,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -39,6 +40,7 @@ const ministries = [
   { icon: BookOpen, title: "Ensino", description: "Discipulado", path: "/ministerio/ensino" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
+  { icon: Zap, title: "Impacto", description: "Evangelismo", path: "/ministerio/impacto" },
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
