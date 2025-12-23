@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatPhone } from "./masks";
+import { formatPhone, formatDateBR } from "./masks";
 
 interface MemberFunction {
   id: string;
@@ -67,7 +67,7 @@ export const exportToExcel = (members: Member[], filename: string = "membros") =
     Email: member.email || "-",
     Cidade: member.city || "-",
     Estado: member.state || "-",
-    "Membro Desde": member.member_since ? new Date(member.member_since).toLocaleDateString("pt-BR") : "-",
+    "Membro Desde": formatDateBR(member.member_since),
     Funções: formatMemberFunctions(member),
   }));
 
@@ -108,7 +108,7 @@ export const exportToPDF = (members: Member[], filename: string = "membros") => 
     member.full_name,
     member.whatsapp ? formatPhone(member.whatsapp) : "-",
     member.city && member.state ? `${member.city}/${member.state}` : "-",
-    member.member_since ? new Date(member.member_since).toLocaleDateString("pt-BR") : "-",
+    formatDateBR(member.member_since),
     formatMemberFunctions(member),
   ]);
 
