@@ -65,15 +65,20 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-          dark: "hsl(var(--gold-dark))",
+        red: {
+          DEFAULT: "hsl(var(--red))",
+          light: "hsl(var(--red-light))",
+          dark: "hsl(var(--red-dark))",
         },
-        navy: {
-          DEFAULT: "hsl(var(--navy))",
-          light: "hsl(var(--navy-light))",
-          dark: "hsl(var(--navy-dark))",
+        orange: {
+          DEFAULT: "hsl(var(--orange))",
+          light: "hsl(var(--orange-light))",
+          dark: "hsl(var(--orange-dark))",
+        },
+        black: {
+          DEFAULT: "hsl(var(--black))",
+          light: "hsl(var(--black-light))",
+          dark: "hsl(var(--black-dark))",
         },
         cream: "hsl(var(--cream))",
       },
@@ -87,7 +92,8 @@ export default {
       boxShadow: {
         elegant: "var(--shadow-md)",
         "elegant-lg": "var(--shadow-lg)",
-        gold: "var(--shadow-gold)",
+        red: "var(--shadow-red)",
+        orange: "var(--shadow-orange)",
       },
       keyframes: {
         "accordion-down": {

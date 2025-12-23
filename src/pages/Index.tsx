@@ -35,7 +35,7 @@ const announcements = [
 
 const testimonies = [
   {
-    content: "Encontrei paz e propósito na Igreja Gilead. A comunhão e o amor que recebi aqui mudaram minha vida completamente.",
+    content: "Encontrei paz e propósito na Gileade Church. A comunhão e o amor que recebi aqui mudaram minha vida completamente.",
     author: "Maria Silva",
     role: "Membro há 3 anos",
   },
@@ -105,17 +105,17 @@ const Index = () => {
         <div className="absolute inset-0">
           <img
             src={heroImage}
-            alt="Igreja Gilead - Um lugar de refúgio"
+            alt="Gileade Church - Um lugar de refúgio"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-navy/60" />
+          <div className="absolute inset-0 bg-primary/70" />
         </div>
 
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 opacity-0 animate-fade-in">
-              Bem-vindo à Igreja Gilead
+              Bem-vindo à Gileade Church
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight opacity-0 animate-fade-in stagger-1">
@@ -132,7 +132,7 @@ const Index = () => {
               <Button
                 size="lg"
                 variant="secondary"
-                className="font-heading font-semibold text-lg px-8 py-6 shadow-gold animate-pulse-gold"
+                className="font-heading font-semibold text-lg px-8 py-6 shadow-red animate-pulse-glow"
               >
                 Visite-nos
               </Button>
@@ -217,7 +217,7 @@ const Index = () => {
                     className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-secondary transition-all opacity-0 animate-fade-in"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-navy flex flex-col items-center justify-center text-primary-foreground">
+                    <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-dark flex flex-col items-center justify-center text-primary-foreground">
                       <span className="text-xs font-medium opacity-80">{item.day}</span>
                       <span className="font-heading font-bold text-xl">{item.time}</span>
                     </div>
@@ -246,7 +246,7 @@ const Index = () => {
       </section>
 
       {/* Testimonies Section */}
-      <section className="py-20 bg-gradient-navy">
+      <section className="py-20 bg-gradient-dark">
         <div className="container mx-auto px-4">
           <SectionTitle
             title="Testemunhos"
