@@ -67,33 +67,33 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-card border border-border">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-card border border-border h-12">
             <TabsTrigger 
               value="membros" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Membros</span>
             </TabsTrigger>
             <TabsTrigger 
               value="ministerios" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
-              <Church className="w-4 h-4" />
+              <Church className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Ministérios</span>
             </TabsTrigger>
             <TabsTrigger 
               value="casas" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
-              <Home className="w-4 h-4" />
+              <Home className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Casas Refúgio</span>
             </TabsTrigger>
             <TabsTrigger 
               value="condominios" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
-              <Building2 className="w-4 h-4" />
+              <Building2 className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Condomínios</span>
             </TabsTrigger>
           </TabsList>
