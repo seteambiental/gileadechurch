@@ -1,0 +1,122 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import logoGileade from "@/assets/logo-gileade.jpeg";
+import MembrosTab from "@/components/cadastros/MembrosTab";
+import MinisteriosTab from "@/components/cadastros/MinisteriosTab";
+import CasasRefugioTab from "@/components/cadastros/CasasRefugioTab";
+import CondominiosTab from "@/components/cadastros/CondominiosTab";
+
+const Cadastros = () => {
+  const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("membros");
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-secondary animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src={logoGileade} 
+              alt="Gileade Church" 
+              className="w-10 h-10 rounded-full object-cover shadow-red"
+            />
+            <div>
+              <h1 className="font-heading font-bold text-lg text-foreground">
+                Cadastros
+              </h1>
+              <p className="text-xs text-muted-foreground">Gestão de dados</p>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/app")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6 bg-card border border-border">
+            <TabsTrigger 
+              value="membros" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+            >
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Membros</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="ministerios" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+            >
+              <Church className="w-4 h-4" />
+              <span className="hidden sm:inline">Ministérios</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="casas" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+            >
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Casas Refúgio</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="condominios" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground flex items-center gap-2"
+            >
+              <Building2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Condomínios</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="membros">
+            <MembrosTab />
+          </TabsContent>
+
+          <TabsContent value="ministerios">
+            <MinisteriosTab />
+          </TabsContent>
+
+          <TabsContent value="casas">
+            <CasasRefugioTab />
+          </TabsContent>
+
+          <TabsContent value="condominios">
+            <CondominiosTab />
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
+  );
+};
+
+export default Cadastros;
