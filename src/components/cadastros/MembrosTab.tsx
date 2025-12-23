@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,18 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface MemberFunction {
   id: string;
@@ -70,10 +82,19 @@ const functionTypeLabels: Record<string, string> = {
   integrante_ministerio: "Integrante de Ministério",
 };
 
+const functionTypeOptions = Object.entries(functionTypeLabels).map(([value, label]) => ({
+  value,
+  label,
+}));
+
 const ITEMS_PER_PAGE = 20;
 
 const MembrosTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterFunction, setFilterFunction] = useState<string>("");
+  const [filterMinistry, setFilterMinistry] = useState<string>("");
+  const [filterCasaRefugio, setFilterCasaRefugio] = useState<string>("");
+  const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -105,6 +126,30 @@ const MembrosTab = () => {
     },
   });
 
+  const { data: ministries = [] } = useQuery({
+    queryKey: ["ministries"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministries")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas_refugio"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       await supabase.from("member_functions").delete().eq("member_id", id);
@@ -121,18 +166,46 @@ const MembrosTab = () => {
     },
   });
 
-  const filteredMembers = members.filter((member) =>
-    member.full_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMembers = members.filter((member) => {
+    // Filter by name search
+    const matchesSearch = member.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter by function type
+    const matchesFunction = !filterFunction || 
+      member.member_functions?.some(fn => fn.function_type === filterFunction);
+    
+    // Filter by ministry
+    const matchesMinistry = !filterMinistry || 
+      member.member_functions?.some(fn => fn.ministry_id === filterMinistry);
+    
+    // Filter by casa refúgio
+    const matchesCasaRefugio = !filterCasaRefugio || 
+      member.member_functions?.some(fn => fn.casa_refugio_id === filterCasaRefugio);
+
+    return matchesSearch && matchesFunction && matchesMinistry && matchesCasaRefugio;
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedMembers = filteredMembers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Reset to page 1 when search changes
+  const hasActiveFilters = filterFunction || filterMinistry || filterCasaRefugio;
+
+  // Reset to page 1 when filters change
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  const clearFilters = () => {
+    setFilterFunction("");
+    setFilterMinistry("");
+    setFilterCasaRefugio("");
     setCurrentPage(1);
   };
 
@@ -222,20 +295,113 @@ const MembrosTab = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar membros..."
-            value={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex gap-2 flex-1 max-w-md">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar membros..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant={showFilters ? "secondary" : "outline"}
+              size="icon"
+              onClick={() => setShowFilters(!showFilters)}
+              className="shrink-0"
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Membro
+          </Button>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Membro
-        </Button>
+
+        {/* Filters */}
+        <Collapsible open={showFilters}>
+          <CollapsibleContent>
+            <Card className="bg-muted/50 border-border p-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-sm font-medium text-muted-foreground">Função</label>
+                  <Select 
+                    value={filterFunction} 
+                    onValueChange={(value) => {
+                      setFilterFunction(value);
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as funções" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {functionTypeOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-sm font-medium text-muted-foreground">Ministério</label>
+                  <Select 
+                    value={filterMinistry} 
+                    onValueChange={(value) => {
+                      setFilterMinistry(value);
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os ministérios" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ministries.map((ministry) => (
+                        <SelectItem key={ministry.id} value={ministry.id}>
+                          {ministry.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <label className="text-sm font-medium text-muted-foreground">Casa Refúgio</label>
+                  <Select 
+                    value={filterCasaRefugio} 
+                    onValueChange={(value) => {
+                      setFilterCasaRefugio(value);
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as casas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {casasRefugio.map((casa) => (
+                        <SelectItem key={casa.id} value={casa.id}>
+                          {casa.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {hasActiveFilters && (
+                  <div className="flex items-end">
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                      <X className="w-4 h-4 mr-1" />
+                      Limpar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
 
       {/* Members List */}
