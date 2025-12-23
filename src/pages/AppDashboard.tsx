@@ -22,6 +22,8 @@ import {
   Loader2,
   HeartHandshake,
   UserCheck,
+  Crown,
+  Shield,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -41,8 +43,10 @@ const ministries = [
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
+  { icon: Crown, title: "Mulheres", description: "Ministério feminino", path: "/ministerio/mulheres" },
   { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social", path: "/ministerio/servico" },
   { icon: Drama, title: "Teatro", description: "Artes cênicas", path: "/ministerio/teatro" },
+  { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
 ];
 
 // Outros módulos (ícones pretos)
