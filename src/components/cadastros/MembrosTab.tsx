@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -100,6 +101,7 @@ const functionTypeOptions = Object.entries(functionTypeLabels).map(([value, labe
 const ITEMS_PER_PAGE = 20;
 
 const MembrosTab = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterFunction, setFilterFunction] = useState<string>("");
   const [filterMinistry, setFilterMinistry] = useState<string>("");
@@ -521,10 +523,20 @@ const MembrosTab = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
+                          onClick={() => navigate(`/membro/${member.id}`)}
+                          title="Ver detalhes"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
                           onClick={() => {
                             setEditingMember(member);
                             setIsFormOpen(true);
                           }}
+                          title="Editar"
                         >
                           <Edit2 className="w-4 h-4" />
                         </Button>
@@ -533,6 +545,7 @@ const MembrosTab = () => {
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => setDeletingMemberId(member.id)}
+                          title="Excluir"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
