@@ -28,17 +28,14 @@ import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
+// Ministérios (ícones vermelhos)
 const ministries = [
-  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros" },
   { icon: Baby, title: "Kids", description: "Ministério infantil" },
   { icon: Music, title: "Louvor", description: "Adoração e música" },
   { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social" },
-  { icon: Calendar, title: "Programação", description: "Agenda da igreja" },
-  { icon: PartyPopper, title: "Eventos", description: "Celebrações especiais" },
   { icon: Sparkles, title: "GT", description: "Adolescentes" },
   { icon: Flame, title: "Flow", description: "Jovens" },
   { icon: Home, title: "Casas Refúgio", description: "Células" },
-  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira" },
   { icon: HandHeart, title: "Intercessão", description: "Oração" },
   { icon: Drama, title: "Teatro", description: "Artes cênicas" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual" },
@@ -46,6 +43,14 @@ const ministries = [
   { icon: Disc3, title: "Dança", description: "Expressão corporal" },
   { icon: HeartHandshake, title: "Casais", description: "Ministério de casais" },
   { icon: UserCheck, title: "Consolidação", description: "Novos convertidos" },
+];
+
+// Outros módulos (ícones pretos)
+const otherModules = [
+  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros" },
+  { icon: Calendar, title: "Programação", description: "Agenda da igreja" },
+  { icon: PartyPopper, title: "Eventos", description: "Celebrações especiais" },
+  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios" },
 ];
 
@@ -109,6 +114,31 @@ const AppDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Outros Módulos */}
+        <SectionTitle
+          title="Gestão"
+          subtitle="Módulos administrativos da igreja"
+          centered
+        />
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {otherModules.map((module, index) => (
+            <MinistryCard
+              key={module.title}
+              icon={module.icon}
+              title={module.title}
+              description={module.description}
+              delay={index * 50}
+              variant="default"
+              onClick={module.path ? () => navigate(module.path) : undefined}
+            />
+          ))}
+        </div>
+
+        {/* Separador */}
+        <div className="my-8 border-t border-border" />
+
+        {/* Ministérios */}
         <SectionTitle
           title="Ministérios"
           subtitle="Escolha o ministério que deseja acessar"
@@ -123,7 +153,7 @@ const AppDashboard = () => {
               title={ministry.title}
               description={ministry.description}
               delay={index * 50}
-              onClick={ministry.path ? () => navigate(ministry.path) : undefined}
+              variant="ministry"
             />
           ))}
         </div>
