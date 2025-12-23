@@ -14,7 +14,206 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      casas_refugio: {
+        Row: {
+          address: string | null
+          cep: string | null
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          neighborhood: string | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          neighborhood?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          neighborhood?: string | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      condominios: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      member_functions: {
+        Row: {
+          casa_refugio_id: string | null
+          condominio_id: string | null
+          created_at: string
+          function_type: Database["public"]["Enums"]["church_function_type"]
+          id: string
+          member_id: string
+          ministry_id: string | null
+        }
+        Insert: {
+          casa_refugio_id?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          function_type: Database["public"]["Enums"]["church_function_type"]
+          id?: string
+          member_id: string
+          ministry_id?: string | null
+        }
+        Update: {
+          casa_refugio_id?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          function_type?: Database["public"]["Enums"]["church_function_type"]
+          id?: string
+          member_id?: string
+          ministry_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_functions_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_functions_condominio_id_fkey"
+            columns: ["condominio_id"]
+            isOneToOne: false
+            referencedRelation: "condominios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_functions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_functions_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          address: string | null
+          birth_date: string | null
+          cep: string | null
+          city: string | null
+          complement: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          neighborhood: string | null
+          number: string | null
+          photo_url: string | null
+          state: string | null
+          updated_at: string
+          user_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      ministries: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +222,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      church_function_type:
+        | "lider_casa_refugio"
+        | "lider_ministerio"
+        | "pastor_geral"
+        | "pastor_auxiliar"
+        | "supervisor_condominio"
+        | "sindico_condominio"
+        | "integrante_ministerio"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +356,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      church_function_type: [
+        "lider_casa_refugio",
+        "lider_ministerio",
+        "pastor_geral",
+        "pastor_auxiliar",
+        "supervisor_condominio",
+        "sindico_condominio",
+        "integrante_ministerio",
+      ],
+    },
   },
 } as const
