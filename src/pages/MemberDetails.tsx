@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatPhone, formatCep, formatDateBR } from "@/lib/masks";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import MemberFormDialog from "@/components/cadastros/MemberFormDialog";
 
 const functionTypeLabels: Record<string, string> = {
   lider_casa_refugio: "Líder de Casa Refúgio",
@@ -67,6 +68,7 @@ const MemberDetails = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -231,9 +233,9 @@ const MemberDetails = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Profile Header Card */}
         <Card className="bg-card border-border overflow-hidden">
-          <div className="bg-gradient-dark h-24" />
+          <div className="bg-gradient-dark h-28" />
           <CardContent className="relative pt-0 pb-6">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end -mt-12">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end -mt-10">
               <Avatar className="w-24 h-24 border-4 border-card shadow-lg shrink-0">
                 <AvatarImage 
                   src={member.photo_url || undefined} 
@@ -243,7 +245,7 @@ const MemberDetails = () => {
                   {getInitials(member.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 pt-2 sm:pt-0">
+              <div className="flex-1 pt-4 sm:pt-2">
                 <h2 className="text-2xl font-heading font-bold text-foreground">
                   {member.full_name}
                 </h2>
@@ -253,6 +255,15 @@ const MemberDetails = () => {
                   </p>
                 )}
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFormOpen(true)}
+                className="shrink-0"
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Editar
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -395,6 +406,13 @@ const MemberDetails = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Edit Form Dialog */}
+      <MemberFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        member={member}
+      />
     </div>
   );
 };
