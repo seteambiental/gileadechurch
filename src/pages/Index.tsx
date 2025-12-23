@@ -105,7 +105,7 @@ const Index = () => {
         <div className="absolute inset-0">
           <img
             src={heroImage}
-            alt="Gileade Church - Um lugar de refúgio"
+            alt="Gileade Church - Um lugar de cura e restauração"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-primary/70" />
@@ -120,7 +120,7 @@ const Index = () => {
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight opacity-0 animate-fade-in stagger-1">
               Um Lugar de{" "}
-              <span className="text-secondary">Refúgio</span>
+              <span className="text-secondary">Cura e Restauração</span>
             </h1>
             
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in stagger-2">

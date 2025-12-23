@@ -20,6 +20,8 @@ import {
   BarChart3,
   LogOut,
   Loader2,
+  HeartHandshake,
+  UserCheck,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -27,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const ministries = [
-  { icon: Users, title: "Cadastros", description: "Gestão de membros" },
+  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros" },
   { icon: Baby, title: "Kids", description: "Ministério infantil" },
   { icon: Music, title: "Louvor", description: "Adoração e música" },
   { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social" },
@@ -42,6 +44,8 @@ const ministries = [
   { icon: Camera, title: "Mídia", description: "Comunicação visual" },
   { icon: BookOpen, title: "Ensino", description: "Discipulado" },
   { icon: Disc3, title: "Dança", description: "Expressão corporal" },
+  { icon: HeartHandshake, title: "Casais", description: "Ministério de casais" },
+  { icon: UserCheck, title: "Consolidação", description: "Novos convertidos" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios" },
 ];
 
@@ -119,6 +123,7 @@ const AppDashboard = () => {
               title={ministry.title}
               description={ministry.description}
               delay={index * 50}
+              onClick={ministry.path ? () => navigate(ministry.path) : undefined}
             />
           ))}
         </div>
