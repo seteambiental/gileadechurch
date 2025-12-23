@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { formatPhone } from "@/lib/masks";
+import { formatPhone, formatDateBR } from "@/lib/masks";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import {
   DropdownMenu,
@@ -490,9 +490,7 @@ const MembrosTab = () => {
                         : "-"}
                     </TableCell>
                     <TableCell className="text-foreground text-sm">
-                      {member.member_since 
-                        ? new Date(member.member_since).toLocaleDateString("pt-BR")
-                        : "-"}
+                      {formatDateBR(member.member_since)}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
