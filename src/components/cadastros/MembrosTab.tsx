@@ -78,6 +78,7 @@ interface Member {
   city: string | null;
   state: string | null;
   created_at: string;
+  member_since: string | null;
   member_functions?: MemberFunction[];
 }
 
@@ -489,7 +490,9 @@ const MembrosTab = () => {
                         : "-"}
                     </TableCell>
                     <TableCell className="text-foreground text-sm">
-                      {new Date(member.created_at).toLocaleDateString("pt-BR")}
+                      {member.member_since 
+                        ? new Date(member.member_since).toLocaleDateString("pt-BR")
+                        : "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">

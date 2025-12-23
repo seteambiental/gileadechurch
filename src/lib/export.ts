@@ -24,6 +24,7 @@ interface Member {
   city: string | null;
   state: string | null;
   created_at: string;
+  member_since: string | null;
   member_functions?: MemberFunction[];
 }
 
@@ -66,7 +67,7 @@ export const exportToExcel = (members: Member[], filename: string = "membros") =
     Email: member.email || "-",
     Cidade: member.city || "-",
     Estado: member.state || "-",
-    "Membro Desde": new Date(member.created_at).toLocaleDateString("pt-BR"),
+    "Membro Desde": member.member_since ? new Date(member.member_since).toLocaleDateString("pt-BR") : "-",
     Funções: formatMemberFunctions(member),
   }));
 
@@ -107,7 +108,7 @@ export const exportToPDF = (members: Member[], filename: string = "membros") => 
     member.full_name,
     member.whatsapp ? formatPhone(member.whatsapp) : "-",
     member.city && member.state ? `${member.city}/${member.state}` : "-",
-    new Date(member.created_at).toLocaleDateString("pt-BR"),
+    member.member_since ? new Date(member.member_since).toLocaleDateString("pt-BR") : "-",
     formatMemberFunctions(member),
   ]);
 

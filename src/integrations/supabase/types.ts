@@ -144,6 +144,7 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          member_since: string | null
           neighborhood: string | null
           number: string | null
           photo_url: string | null
@@ -162,6 +163,7 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          member_since?: string | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
@@ -180,6 +182,7 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          member_since?: string | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
