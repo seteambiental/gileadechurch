@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import MemberFormDialog from "./MemberFormDialog";
 import {
@@ -18,6 +19,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface MemberFunction {
+  id: string;
+  function_type: string;
+  ministry_id: string | null;
+  casa_refugio_id: string | null;
+  condominio_id: string | null;
+  ministries?: { name: string } | null;
+  casas_refugio?: { name: string } | null;
+  condominios?: { name: string } | null;
+}
 
 interface Member {
   id: string;
@@ -28,7 +48,18 @@ interface Member {
   photo_url: string | null;
   city: string | null;
   state: string | null;
+  member_functions?: MemberFunction[];
 }
+
+const functionTypeLabels: Record<string, string> = {
+  lider_casa_refugio: "Líder de Casa Refúgio",
+  lider_ministerio: "Líder de Ministério",
+  pastor_geral: "Pastor Geral",
+  pastor_auxiliar: "Pastor Auxiliar",
+  supervisor_condominio: "Supervisor de Condomínio",
+  sindico_condominio: "Síndico de Condomínio",
+  integrante_ministerio: "Integrante de Ministério",
+};
 
 const MembrosTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +74,19 @@ const MembrosTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("*")
+        .select(`
+          *,
+          member_functions (
+            id,
+            function_type,
+            ministry_id,
+            casa_refugio_id,
+            condominio_id,
+            ministries (name),
+            casas_refugio (name),
+            condominios (name)
+          )
+        `)
         .order("full_name");
       if (error) throw error;
       return data as Member[];
@@ -52,6 +95,9 @@ const MembrosTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First delete member functions
+      await supabase.from("member_functions").delete().eq("member_id", id);
+      // Then delete member
       const { error } = await supabase.from("members").delete().eq("id", id);
       if (error) throw error;
     },
@@ -76,6 +122,21 @@ const MembrosTab = () => {
       .slice(0, 2)
       .join("")
       .toUpperCase();
+  };
+
+  const getFunctionDisplay = (fn: MemberFunction) => {
+    const label = functionTypeLabels[fn.function_type] || fn.function_type;
+    let subdivision = "";
+    
+    if (fn.ministries?.name) {
+      subdivision = fn.ministries.name;
+    } else if (fn.casas_refugio?.name) {
+      subdivision = fn.casas_refugio.name;
+    } else if (fn.condominios?.name) {
+      subdivision = fn.condominios.name;
+    }
+
+    return { label, subdivision };
   };
 
   return (
@@ -109,57 +170,102 @@ const MembrosTab = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredMembers.map((member) => (
-            <Card key={member.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <Avatar className="w-14 h-14 border-2 border-secondary/30">
-                    <AvatarImage src={member.photo_url || undefined} />
-                    <AvatarFallback className="bg-secondary/20 text-secondary font-semibold">
-                      {getInitials(member.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">
-                      {member.full_name}
-                    </h3>
-                    {member.city && member.state && (
-                      <p className="text-sm text-muted-foreground">
-                        {member.city}, {member.state}
-                      </p>
-                    )}
-                    {member.whatsapp && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {member.whatsapp}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4 justify-end">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setEditingMember(member);
-                      setIsFormOpen(true);
-                    }}
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => setDeletingMemberId(member.id)}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card className="bg-card border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableHead className="text-muted-foreground">Membro</TableHead>
+                  <TableHead className="text-muted-foreground">WhatsApp</TableHead>
+                  <TableHead className="text-muted-foreground">Cidade/UF</TableHead>
+                  <TableHead className="text-muted-foreground">Funções</TableHead>
+                  <TableHead className="text-muted-foreground w-[100px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMembers.map((member) => (
+                  <TableRow key={member.id} className="border-border hover:bg-muted/50">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 border border-border">
+                          <AvatarImage src={member.photo_url || undefined} />
+                          <AvatarFallback className="bg-secondary/20 text-secondary text-sm font-semibold">
+                            {getInitials(member.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-foreground">{member.full_name}</p>
+                          {member.email && (
+                            <p className="text-xs text-muted-foreground">{member.email}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-foreground">
+                      {member.whatsapp || "-"}
+                    </TableCell>
+                    <TableCell className="text-foreground">
+                      {member.city && member.state 
+                        ? `${member.city}/${member.state}` 
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {member.member_functions && member.member_functions.length > 0 ? (
+                          member.member_functions.map((fn) => {
+                            const { label, subdivision } = getFunctionDisplay(fn);
+                            return (
+                              <Badge 
+                                key={fn.id} 
+                                variant="secondary"
+                                className="text-xs whitespace-nowrap"
+                              >
+                                {label}
+                                {subdivision && (
+                                  <span className="ml-1 opacity-75">({subdivision})</span>
+                                )}
+                              </Badge>
+                            );
+                          })
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setEditingMember(member);
+                            setIsFormOpen(true);
+                          }}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => setDeletingMemberId(member.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="p-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Total: {filteredMembers.length} membro{filteredMembers.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+        </Card>
       )}
 
       {/* Form Dialog */}
