@@ -86,7 +86,7 @@ const InscricaoEvento = () => {
     enabled: !!eventoId,
   });
 
-  // Fetch inscriptions count for this event
+  // Fetch inscriptions count for this event (excluding waiting list)
   const { data: inscricoesCount = 0 } = useQuery({
     queryKey: ["inscricoes-count", eventoId],
     queryFn: async () => {
@@ -94,6 +94,7 @@ const InscricaoEvento = () => {
         .from("inscricoes_eventos")
         .select("*", { count: "exact", head: true })
         .eq("evento_id", eventoId)
+        .eq("lista_espera", false)
         .neq("status_pagamento", "cancelado");
       if (error) throw error;
       return count || 0;
@@ -157,6 +158,9 @@ const InscricaoEvento = () => {
   // Mutation to create inscription
   const inscricaoMutation = useMutation({
     mutationFn: async () => {
+      // Verificar novamente se há vagas (para evitar race condition)
+      const isListaEspera = esgotado;
+      
       const payload = {
         evento_id: eventoId,
         member_id: selectedPerson?.type === "member" ? selectedPerson.id : null,
@@ -174,6 +178,7 @@ const InscricaoEvento = () => {
         toma_medicamento: tomaMedicamento,
         descricao_medicamento: tomaMedicamento ? descricaoMedicamento : null,
         forma_pagamento: formaPagamento,
+        lista_espera: isListaEspera,
       };
 
       const { data: inscricaoData, error } = await supabase
@@ -355,17 +360,28 @@ const InscricaoEvento = () => {
 
         {esgotado ? (
           <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">
-                Infelizmente as vagas para este evento estão esgotadas.
-              </p>
+            <CardHeader>
+              <CardTitle>Vagas esgotadas - Lista de Espera</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 bg-orange-500/10 rounded-lg">
+                <p className="text-orange-600 font-medium">
+                  ⏳ As vagas para este evento estão esgotadas.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Você pode se inscrever na lista de espera. Caso algum participante desista, você será notificado automaticamente por WhatsApp.
+                </p>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Formulário de Inscrição</CardTitle>
-            </CardHeader>
+        ) : null}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {esgotado ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Search for existing person */}
@@ -615,7 +631,6 @@ const InscricaoEvento = () => {
             </form>
           </CardContent>
         </Card>
-        )}
       </main>
 
       {/* Footer */}

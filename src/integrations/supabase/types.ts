@@ -257,6 +257,7 @@ export type Database = {
           genero: string | null
           id: string
           is_menor: boolean | null
+          lista_espera: boolean | null
           member_id: string | null
           nome_participante: string
           nome_responsavel: string | null
@@ -280,6 +281,7 @@ export type Database = {
           genero?: string | null
           id?: string
           is_menor?: boolean | null
+          lista_espera?: boolean | null
           member_id?: string | null
           nome_participante: string
           nome_responsavel?: string | null
@@ -303,6 +305,7 @@ export type Database = {
           genero?: string | null
           id?: string
           is_menor?: boolean | null
+          lista_espera?: boolean | null
           member_id?: string | null
           nome_participante?: string
           nome_responsavel?: string | null
