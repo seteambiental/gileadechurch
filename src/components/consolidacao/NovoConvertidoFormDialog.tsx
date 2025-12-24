@@ -56,8 +56,8 @@ export const NovoConvertidoFormDialog = ({
     data_decisao: convertido?.data_decisao || "",
     batizado: convertido?.batizado || false,
     data_batismo: convertido?.data_batismo || "",
-    participou_impacto: convertido?.participou_impacto || false,
-    datas_impacto: convertido?.datas_impacto?.join(", ") || "",
+    impacto_data_1: convertido?.datas_impacto?.[0] || "",
+    impacto_data_2: convertido?.datas_impacto?.[1] || "",
     participou_manaim: convertido?.participou_manaim || false,
     data_manaim: convertido?.data_manaim || "",
     participou_culto_membresia: convertido?.participou_culto_membresia || false,
@@ -150,10 +150,7 @@ export const NovoConvertidoFormDialog = ({
         data_decisao: formData.data_decisao || null,
         batizado: formData.batizado,
         data_batismo: formData.batizado ? formData.data_batismo || null : null,
-        participou_impacto: formData.participou_impacto,
-        datas_impacto: formData.participou_impacto && formData.datas_impacto
-          ? formData.datas_impacto.split(",").map((d) => d.trim()).filter(Boolean)
-          : null,
+        datas_impacto: [formData.impacto_data_1, formData.impacto_data_2].filter(Boolean),
         participou_manaim: formData.participou_manaim,
         data_manaim: formData.participou_manaim ? formData.data_manaim || null : null,
         participou_culto_membresia: formData.participou_culto_membresia,
@@ -430,22 +427,27 @@ export const NovoConvertidoFormDialog = ({
                 </div>
               </div>
 
-              {/* Impacto */}
-              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
-                <Checkbox
-                  id="participou_impacto"
-                  checked={formData.participou_impacto}
-                  onCheckedChange={(c) => setFormData({ ...formData, participou_impacto: !!c })}
-                />
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="participou_impacto" className="cursor-pointer">Participou do Impacto</Label>
-                  {formData.participou_impacto && (
+              {/* Impacto - 2 datas obrigatórias */}
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <Label className="font-medium">Impactos (2 participações)</Label>
+                <p className="text-xs text-muted-foreground">Preencha as 2 datas para completar este checkpoint</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">1º Impacto</Label>
                     <Input
-                      value={formData.datas_impacto}
-                      onChange={(e) => setFormData({ ...formData, datas_impacto: e.target.value })}
-                      placeholder="Ex: 01/2024, 06/2024"
+                      type="date"
+                      value={formData.impacto_data_1}
+                      onChange={(e) => setFormData({ ...formData, impacto_data_1: e.target.value })}
                     />
-                  )}
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">2º Impacto</Label>
+                    <Input
+                      type="date"
+                      value={formData.impacto_data_2}
+                      onChange={(e) => setFormData({ ...formData, impacto_data_2: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
 

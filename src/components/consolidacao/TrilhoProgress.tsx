@@ -1,10 +1,10 @@
-import { Check, Circle } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 interface TrilhoProgressProps {
   convertido: {
     tipo_conversao?: string | null;
     batizado?: boolean;
-    participou_impacto?: boolean;
+    datas_impacto?: string[] | null;
     participou_manaim?: boolean;
     participou_culto_membresia?: boolean;
     frequenta_casa_refugio?: boolean;
@@ -15,7 +15,7 @@ interface TrilhoProgressProps {
 const steps = [
   { key: "tipo_conversao", label: "Decisão" },
   { key: "batizado", label: "Batismo" },
-  { key: "participou_impacto", label: "Impacto" },
+  { key: "impacto_completo", label: "2 Impactos" },
   { key: "participou_manaim", label: "Manaim" },
   { key: "frequenta_casa_refugio", label: "Casa Refúgio" },
   { key: "participou_culto_membresia", label: "Membresia" },
@@ -25,6 +25,11 @@ export const TrilhoProgress = ({ convertido }: TrilhoProgressProps) => {
   const getStepCompleted = (key: string) => {
     if (key === "tipo_conversao") {
       return !!convertido.tipo_conversao;
+    }
+    if (key === "impacto_completo") {
+      // Impacto só é completo se tiver 2 datas preenchidas
+      const datas = convertido.datas_impacto || [];
+      return datas.length >= 2 && datas[0] && datas[1];
     }
     return !!(convertido as any)[key];
   };
@@ -41,7 +46,7 @@ export const TrilhoProgress = ({ convertido }: TrilhoProgressProps) => {
       
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-destructive to-secondary transition-all duration-500"
+          className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -54,17 +59,17 @@ export const TrilhoProgress = ({ convertido }: TrilhoProgressProps) => {
               <div
                 className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
                   completed
-                    ? "bg-destructive text-destructive-foreground"
-                    : "bg-muted text-muted-foreground"
+                    ? "bg-green-500 text-white"
+                    : "bg-destructive/20 text-destructive"
                 }`}
               >
                 {completed ? (
                   <Check className="w-3 h-3" />
                 ) : (
-                  <Circle className="w-3 h-3" />
+                  <X className="w-3 h-3" />
                 )}
               </div>
-              <span className={`text-[10px] text-center ${completed ? "text-foreground" : "text-muted-foreground"}`}>
+              <span className={`text-[10px] text-center ${completed ? "text-green-600 font-medium" : "text-muted-foreground"}`}>
                 {step.label}
               </span>
             </div>
