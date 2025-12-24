@@ -17,6 +17,8 @@ export type Database = {
       agenda_igreja: {
         Row: {
           ativo: boolean | null
+          comentarios_custo: string | null
+          comentarios_refeicao: string | null
           cor: string | null
           created_at: string
           data_evento: string
@@ -27,6 +29,7 @@ export type Database = {
           genero_alvo: string | null
           hora_fim: string | null
           hora_inicio: string | null
+          horarios_por_dia: Json | null
           id: string
           idade_maxima: number | null
           idade_minima: number | null
@@ -34,13 +37,18 @@ export type Database = {
           observacoes: string | null
           recorrente: boolean | null
           semana_mes: number | null
+          tem_custo: boolean | null
+          tem_refeicao: boolean | null
           tipo_evento: string
           tipo_recorrencia: string | null
           titulo: string
           updated_at: string
+          valor_custo: number | null
         }
         Insert: {
           ativo?: boolean | null
+          comentarios_custo?: string | null
+          comentarios_refeicao?: string | null
           cor?: string | null
           created_at?: string
           data_evento: string
@@ -51,6 +59,7 @@ export type Database = {
           genero_alvo?: string | null
           hora_fim?: string | null
           hora_inicio?: string | null
+          horarios_por_dia?: Json | null
           id?: string
           idade_maxima?: number | null
           idade_minima?: number | null
@@ -58,13 +67,18 @@ export type Database = {
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
+          tem_custo?: boolean | null
+          tem_refeicao?: boolean | null
           tipo_evento: string
           tipo_recorrencia?: string | null
           titulo: string
           updated_at?: string
+          valor_custo?: number | null
         }
         Update: {
           ativo?: boolean | null
+          comentarios_custo?: string | null
+          comentarios_refeicao?: string | null
           cor?: string | null
           created_at?: string
           data_evento?: string
@@ -75,6 +89,7 @@ export type Database = {
           genero_alvo?: string | null
           hora_fim?: string | null
           hora_inicio?: string | null
+          horarios_por_dia?: Json | null
           id?: string
           idade_maxima?: number | null
           idade_minima?: number | null
@@ -82,10 +97,13 @@ export type Database = {
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
+          tem_custo?: boolean | null
+          tem_refeicao?: boolean | null
           tipo_evento?: string
           tipo_recorrencia?: string | null
           titulo?: string
           updated_at?: string
+          valor_custo?: number | null
         }
         Relationships: []
       }
