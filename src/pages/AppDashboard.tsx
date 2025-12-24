@@ -25,6 +25,7 @@ import {
   Crown,
   Shield,
   Zap,
+  Megaphone,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -38,6 +39,7 @@ const ministries = [
   { icon: UserCheck, title: "Consolidação", description: "Novos convertidos", path: "/ministerio/consolidacao" },
   { icon: Disc3, title: "Dança", description: "Expressão corporal", path: "/ministerio/danca" },
   { icon: BookOpen, title: "Ensino", description: "Discipulado", path: "/ministerio/ensino" },
+  { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
   { icon: Zap, title: "Impacto", description: "Evangelismo", path: "/ministerio/impacto" },
