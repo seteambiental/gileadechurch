@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,34 @@ interface NovoConvertidoFormDialogProps {
   convertido?: any;
 }
 
+const getInitialFormData = (convertido?: any) => ({
+  full_name: convertido?.full_name || "",
+  whatsapp: convertido?.whatsapp || "",
+  email: convertido?.email || "",
+  cep: convertido?.cep || "",
+  address: convertido?.address || "",
+  numero: convertido?.numero || "",
+  complement: convertido?.complement || "",
+  neighborhood: convertido?.neighborhood || "",
+  city: convertido?.city || "",
+  state: convertido?.state || "",
+  membro_vinculado_id: convertido?.membro_vinculado_id || "",
+  casa_refugio_id: convertido?.casa_refugio_id || "",
+  tipo_conversao: convertido?.tipo_conversao || "",
+  como_chegou: convertido?.como_chegou || "",
+  data_decisao: convertido?.data_decisao || "",
+  batizado: convertido?.batizado || false,
+  data_batismo: convertido?.data_batismo || "",
+  impacto_data_1: convertido?.datas_impacto?.[0] || "",
+  impacto_data_2: convertido?.datas_impacto?.[1] || "",
+  participou_manaim: convertido?.participou_manaim || false,
+  data_manaim: convertido?.data_manaim || "",
+  participou_culto_membresia: convertido?.participou_culto_membresia || false,
+  data_culto_membresia: convertido?.data_culto_membresia || "",
+  frequenta_casa_refugio: convertido?.frequenta_casa_refugio || false,
+  casa_refugio_frequenta_id: convertido?.casa_refugio_frequenta_id || "",
+});
+
 export const NovoConvertidoFormDialog = ({
   open,
   onOpenChange,
@@ -38,33 +66,14 @@ export const NovoConvertidoFormDialog = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
-  const [formData, setFormData] = useState({
-    full_name: convertido?.full_name || "",
-    whatsapp: convertido?.whatsapp || "",
-    email: convertido?.email || "",
-    cep: convertido?.cep || "",
-    address: convertido?.address || "",
-    numero: convertido?.numero || "",
-    complement: convertido?.complement || "",
-    neighborhood: convertido?.neighborhood || "",
-    city: convertido?.city || "",
-    state: convertido?.state || "",
-    membro_vinculado_id: convertido?.membro_vinculado_id || "",
-    casa_refugio_id: convertido?.casa_refugio_id || "",
-    tipo_conversao: convertido?.tipo_conversao || "",
-    como_chegou: convertido?.como_chegou || "",
-    data_decisao: convertido?.data_decisao || "",
-    batizado: convertido?.batizado || false,
-    data_batismo: convertido?.data_batismo || "",
-    impacto_data_1: convertido?.datas_impacto?.[0] || "",
-    impacto_data_2: convertido?.datas_impacto?.[1] || "",
-    participou_manaim: convertido?.participou_manaim || false,
-    data_manaim: convertido?.data_manaim || "",
-    participou_culto_membresia: convertido?.participou_culto_membresia || false,
-    data_culto_membresia: convertido?.data_culto_membresia || "",
-    frequenta_casa_refugio: convertido?.frequenta_casa_refugio || false,
-    casa_refugio_frequenta_id: convertido?.casa_refugio_frequenta_id || "",
-  });
+  const [formData, setFormData] = useState(getInitialFormData(convertido));
+
+  // Reset form when dialog opens or convertido changes
+  useEffect(() => {
+    if (open) {
+      setFormData(getInitialFormData(convertido));
+    }
+  }, [open, convertido]);
 
   const { data: membros = [] } = useQuery({
     queryKey: ["membros-lista"],
