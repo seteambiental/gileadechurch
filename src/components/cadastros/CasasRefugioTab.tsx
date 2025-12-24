@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CasaRefugioFormDialog from "./CasaRefugioFormDialog";
 import {
   AlertDialog,
@@ -38,6 +45,8 @@ interface CasaRefugio {
 
 const CasasRefugioTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [condominioFilter, setCondominioFilter] = useState<string>("all");
+  const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CasaRefugio | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -56,6 +65,22 @@ const CasasRefugioTab = () => {
     },
   });
 
+  // Extract unique condominios and supervisores for filters
+  const { condominios, supervisores } = useMemo(() => {
+    const condSet = new Set<string>();
+    const supSet = new Set<string>();
+
+    items.forEach((item) => {
+      if (item.condominio) condSet.add(item.condominio);
+      if (item.supervisores) supSet.add(item.supervisores);
+    });
+
+    return {
+      condominios: Array.from(condSet).sort(),
+      supervisores: Array.from(supSet).sort(),
+    };
+  }, [items]);
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("casas_refugio").delete().eq("id", id);
@@ -71,36 +96,105 @@ const CasasRefugioTab = () => {
     },
   });
 
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.condominio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.lideres?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      // Text search
+      const matchesSearch =
+        searchTerm === "" ||
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.condominio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.lideres?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Condomínio filter
+      const matchesCondominio =
+        condominioFilter === "all" || item.condominio === condominioFilter;
+
+      // Supervisor filter
+      const matchesSupervisor =
+        supervisorFilter === "all" || item.supervisores === supervisorFilter;
+
+      return matchesSearch && matchesCondominio && matchesSupervisor;
+    });
+  }, [items, searchTerm, condominioFilter, supervisorFilter]);
+
+  const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all";
+
+  const clearFilters = () => {
+    setCondominioFilter("all");
+    setSupervisorFilter("all");
+    setSearchTerm("");
+  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, condomínio ou líder..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, condomínio ou líder..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Casa Refúgio
+          </Button>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Casa Refúgio
-        </Button>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            <span>Filtros:</span>
+          </div>
+
+          <Select value={condominioFilter} onValueChange={setCondominioFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Condomínio" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os condomínios</SelectItem>
+              {condominios.map((cond) => (
+                <SelectItem key={cond} value={cond}>
+                  {cond}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={supervisorFilter} onValueChange={setSupervisorFilter}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue placeholder="Supervisor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os supervisores</SelectItem>
+              {supervisores.map((sup) => (
+                <SelectItem key={sup} value={sup}>
+                  {sup}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+              <X className="w-4 h-4 mr-1" />
+              Limpar filtros
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
       <div className="flex gap-4 text-sm text-muted-foreground">
         <span>Total: {items.length} casas refúgio</span>
-        {searchTerm && <span>• Encontradas: {filteredItems.length}</span>}
+        {(searchTerm || hasActiveFilters) && (
+          <span>• Exibindo: {filteredItems.length}</span>
+        )}
       </div>
 
       {/* List */}
@@ -111,7 +205,9 @@ const CasasRefugioTab = () => {
       ) : filteredItems.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-muted-foreground">
-            {searchTerm ? "Nenhuma casa refúgio encontrada" : "Nenhuma casa refúgio cadastrada"}
+            {searchTerm || hasActiveFilters
+              ? "Nenhuma casa refúgio encontrada com os filtros selecionados"
+              : "Nenhuma casa refúgio cadastrada"}
           </CardContent>
         </Card>
       ) : (
