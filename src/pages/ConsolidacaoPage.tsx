@@ -20,6 +20,7 @@ import {
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
 import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
+import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -209,6 +210,7 @@ const ConsolidacaoPage = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      <EnviarMensagemButton convertido={convertido} />
                       <Button
                         size="icon"
                         variant="ghost"

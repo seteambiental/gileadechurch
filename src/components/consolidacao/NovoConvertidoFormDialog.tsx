@@ -32,6 +32,8 @@ const getInitialFormData = (convertido?: any) => ({
   full_name: convertido?.full_name || "",
   whatsapp: convertido?.whatsapp || "",
   email: convertido?.email || "",
+  genero: convertido?.genero || "",
+  data_nascimento: convertido?.data_nascimento || "",
   cep: convertido?.cep || "",
   address: convertido?.address || "",
   numero: convertido?.numero || "",
@@ -145,6 +147,8 @@ export const NovoConvertidoFormDialog = ({
         full_name: formData.full_name.trim(),
         whatsapp: formData.whatsapp || null,
         email: formData.email || null,
+        genero: formData.genero || null,
+        data_nascimento: formData.data_nascimento || null,
         cep: formData.cep || null,
         address: formData.address || null,
         numero: formData.numero || null,
@@ -234,6 +238,32 @@ export const NovoConvertidoFormDialog = ({
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label>Gênero</Label>
+                <Select
+                  value={formData.genero}
+                  onValueChange={(v) => setFormData({ ...formData, genero: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="data_nascimento">Data de Nascimento</Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  value={formData.data_nascimento}
+                  onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
                 />
               </div>
             </div>
