@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
+import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface Evento {
   id: string;
@@ -89,8 +90,11 @@ export const EventoFormDialog = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingFlyer, setIsGeneratingFlyer] = useState(false);
+  const [isUploadingFlyer, setIsUploadingFlyer] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [flyerUrl, setFlyerUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -134,6 +138,7 @@ export const EventoFormDialog = ({
           idade_minima: "",
           idade_maxima: "",
         });
+        setFlyerUrl(evento.flyer_url || null);
       } else {
         setFormData({
           titulo: "",
@@ -154,9 +159,69 @@ export const EventoFormDialog = ({
           idade_minima: "",
           idade_maxima: "",
         });
+        setFlyerUrl(null);
       }
     }
   }, [open, evento, selectedDate]);
+
+  const handleFlyerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingFlyer(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `flyer-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('encontros-fotos')
+        .upload(`flyers/${fileName}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('encontros-fotos')
+        .getPublicUrl(`flyers/${fileName}`);
+
+      setFlyerUrl(urlData.publicUrl);
+      toast({ title: "Flyer carregado!" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro no upload", description: error.message });
+    } finally {
+      setIsUploadingFlyer(false);
+    }
+  };
+
+  const handleGenerateFlyer = async () => {
+    if (!formData.titulo) {
+      toast({ variant: "destructive", title: "Preencha o título primeiro" });
+      return;
+    }
+
+    setIsGeneratingFlyer(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-flyer', {
+        body: {
+          titulo: formData.titulo,
+          descricao: formData.descricao,
+          tipoEvento: formData.tipo_evento,
+          dataEvento: formData.data_evento,
+          horaInicio: formData.hora_inicio,
+          local: formData.local,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      setFlyerUrl(data.flyerUrl);
+      toast({ title: "Flyer gerado com IA!" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao gerar flyer", description: error.message });
+    } finally {
+      setIsGeneratingFlyer(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +254,7 @@ export const EventoFormDialog = ({
         dia_semana: formData.recorrente && formData.dia_semana ? parseInt(formData.dia_semana) : null,
         semana_mes: formData.recorrente && formData.semana_mes ? parseInt(formData.semana_mes) : null,
         observacoes: formData.observacoes || null,
+        flyer_url: flyerUrl,
         idade_minima: formData.idade_minima ? parseInt(formData.idade_minima) : null,
         idade_maxima: formData.idade_maxima ? parseInt(formData.idade_maxima) : null,
       };
@@ -352,6 +418,7 @@ export const EventoFormDialog = ({
                 />
               </div>
             </div>
+
             <div>
               <Label htmlFor="local">Local</Label>
               <Input
@@ -389,6 +456,72 @@ export const EventoFormDialog = ({
                 rows={2}
                 placeholder="Adicione notas sobre este evento..."
               />
+            </div>
+
+            {/* Flyer Section */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <Label className="font-medium">Flyer do Evento</Label>
+              
+              {flyerUrl ? (
+                <div className="relative">
+                  <img 
+                    src={flyerUrl} 
+                    alt="Flyer do evento" 
+                    className="w-full max-h-48 object-contain rounded-lg border"
+                  />
+                  <div className="absolute bottom-2 left-2">
+                    <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                  </div>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    className="absolute top-2 right-2 w-6 h-6"
+                    onClick={() => setFlyerUrl(null)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFlyerUpload}
+                      className="hidden"
+                      id="flyer-upload"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => document.getElementById("flyer-upload")?.click()}
+                      disabled={isUploadingFlyer}
+                    >
+                      {isUploadingFlyer ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="w-4 h-4 mr-2" />
+                      )}
+                      Upload
+                    </Button>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleGenerateFlyer}
+                    disabled={isGeneratingFlyer || !formData.titulo}
+                  >
+                    {isGeneratingFlyer ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-4 h-4 mr-2" />
+                    )}
+                    Gerar com IA
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Recorrência */}
