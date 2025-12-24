@@ -23,11 +23,13 @@ import {
   Link,
   Check,
   Users,
+  BarChart3,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
+import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -290,7 +292,7 @@ const AgendaPage = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
             <TabsTrigger value="calendario" className="flex items-center gap-2">
               <CalendarIcon className="w-4 h-4" />
               Calendário
@@ -298,6 +300,10 @@ const AgendaPage = () => {
             <TabsTrigger value="eventos" className="flex items-center gap-2">
               <PartyPopper className="w-4 h-4" />
               Eventos
+            </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
             </TabsTrigger>
           </TabsList>
 
@@ -540,6 +546,10 @@ const AgendaPage = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="dashboard" className="mt-6">
+            <InscricoesDashboard />
           </TabsContent>
         </Tabs>
       </main>

@@ -71,6 +71,7 @@ interface Evento {
   valor_custo?: number | null;
   comentarios_custo?: string | null;
   horarios_por_dia?: HorarioDia[];
+  limite_vagas?: number | null;
 }
 
 interface EventoFormDialogProps {
@@ -153,6 +154,7 @@ export const EventoFormDialog = ({
     tem_custo: false,
     valor_custo: "",
     comentarios_custo: "",
+    limite_vagas: "",
   });
 
   const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
@@ -183,6 +185,7 @@ export const EventoFormDialog = ({
           tem_custo: evento.tem_custo || false,
           valor_custo: evento.valor_custo?.toString() || "",
           comentarios_custo: evento.comentarios_custo || "",
+          limite_vagas: evento.limite_vagas?.toString() || "",
         });
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
@@ -211,6 +214,7 @@ export const EventoFormDialog = ({
           tem_custo: false,
           valor_custo: "",
           comentarios_custo: "",
+          limite_vagas: "",
         });
         setHorariosPorDia([]);
         setFlyerUrl(null);
@@ -396,6 +400,7 @@ export const EventoFormDialog = ({
         valor_custo: formData.valor_custo ? parseFloat(formData.valor_custo) : null,
         comentarios_custo: formData.comentarios_custo || null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
+        limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
       };
 
       if (evento) {
@@ -792,6 +797,21 @@ export const EventoFormDialog = ({
                   />
                 </div>
               )}
+            </div>
+
+            <div>
+              <Label htmlFor="limite_vagas">Limite de Vagas</Label>
+              <Input
+                id="limite_vagas"
+                type="number"
+                min="1"
+                placeholder="Sem limite"
+                value={formData.limite_vagas}
+                onChange={(e) => setFormData({ ...formData, limite_vagas: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Deixe vazio para sem limite de vagas
+              </p>
             </div>
 
             <div>

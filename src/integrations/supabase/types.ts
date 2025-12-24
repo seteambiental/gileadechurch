@@ -33,6 +33,7 @@ export type Database = {
           id: string
           idade_maxima: number | null
           idade_minima: number | null
+          limite_vagas: number | null
           local: string | null
           observacoes: string | null
           recorrente: boolean | null
@@ -63,6 +64,7 @@ export type Database = {
           id?: string
           idade_maxima?: number | null
           idade_minima?: number | null
+          limite_vagas?: number | null
           local?: string | null
           observacoes?: string | null
           recorrente?: boolean | null
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           idade_maxima?: number | null
           idade_minima?: number | null
+          limite_vagas?: number | null
           local?: string | null
           observacoes?: string | null
           recorrente?: boolean | null

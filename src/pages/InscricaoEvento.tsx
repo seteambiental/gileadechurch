@@ -31,6 +31,7 @@ interface Evento {
   flyer_url: string | null;
   tem_custo: boolean | null;
   valor_custo: number | null;
+  limite_vagas: number | null;
 }
 
 interface Member {
@@ -84,6 +85,26 @@ const InscricaoEvento = () => {
     },
     enabled: !!eventoId,
   });
+
+  // Fetch inscriptions count for this event
+  const { data: inscricoesCount = 0 } = useQuery({
+    queryKey: ["inscricoes-count", eventoId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("inscricoes_eventos")
+        .select("*", { count: "exact", head: true })
+        .eq("evento_id", eventoId)
+        .neq("status_pagamento", "cancelado");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!eventoId,
+  });
+
+  const vagasDisponiveis = evento?.limite_vagas 
+    ? Math.max(0, evento.limite_vagas - inscricoesCount) 
+    : null;
+  const esgotado = vagasDisponiveis !== null && vagasDisponiveis <= 0;
 
   // Fetch members
   const { data: members = [] } = useQuery({
@@ -316,14 +337,35 @@ const InscricaoEvento = () => {
                 Investimento: R$ {evento.valor_custo.toFixed(2).replace(".", ",")}
               </p>
             )}
+            {evento.limite_vagas && (
+              <div className={`mt-3 p-3 rounded-lg ${esgotado ? 'bg-destructive/10' : 'bg-green-500/10'}`}>
+                <p className={`text-sm font-medium ${esgotado ? 'text-destructive' : 'text-green-600'}`}>
+                  {esgotado 
+                    ? "⚠️ Vagas esgotadas!" 
+                    : `✅ ${vagasDisponiveis} vaga${vagasDisponiveis !== 1 ? 's' : ''} disponíve${vagasDisponiveis !== 1 ? 'is' : 'l'}`
+                  }
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {inscricoesCount} de {evento.limite_vagas} inscritos
+                </p>
+              </div>
+            )}
           </CardHeader>
         </Card>
 
-        {/* Inscription Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Formulário de Inscrição</CardTitle>
-          </CardHeader>
+        {esgotado ? (
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <p className="text-muted-foreground">
+                Infelizmente as vagas para este evento estão esgotadas.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Formulário de Inscrição</CardTitle>
+            </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Search for existing person */}
@@ -573,6 +615,7 @@ const InscricaoEvento = () => {
             </form>
           </CardContent>
         </Card>
+        )}
       </main>
 
       {/* Footer */}
