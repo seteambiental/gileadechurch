@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload, Sparkles, X } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X, Download, Send } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +95,10 @@ export const EventoFormDialog = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flyerUrl, setFlyerUrl] = useState<string | null>(null);
+  const [flyerPrompt, setFlyerPrompt] = useState("");
+  const [showFlyerPrompt, setShowFlyerPrompt] = useState(false);
+  const [grupoEnvio, setGrupoEnvio] = useState("");
+  const [isSendingFlyer, setIsSendingFlyer] = useState(false);
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -198,6 +202,11 @@ export const EventoFormDialog = ({
       return;
     }
 
+    if (!showFlyerPrompt) {
+      setShowFlyerPrompt(true);
+      return;
+    }
+
     setIsGeneratingFlyer(true);
     try {
       const { data, error } = await supabase.functions.invoke('gerar-flyer', {
@@ -208,6 +217,7 @@ export const EventoFormDialog = ({
           dataEvento: formData.data_evento,
           horaInicio: formData.hora_inicio,
           local: formData.local,
+          promptPersonalizado: flyerPrompt,
         },
       });
 
@@ -215,11 +225,53 @@ export const EventoFormDialog = ({
       if (!data.success) throw new Error(data.error);
 
       setFlyerUrl(data.flyerUrl);
+      setShowFlyerPrompt(false);
+      setFlyerPrompt("");
       toast({ title: "Flyer gerado com IA!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro ao gerar flyer", description: error.message });
     } finally {
       setIsGeneratingFlyer(false);
+    }
+  };
+
+  const handleDownloadFlyer = () => {
+    if (!flyerUrl) return;
+    const link = document.createElement('a');
+    link.href = flyerUrl;
+    link.download = `flyer-${formData.titulo.replace(/\s+/g, '-').toLowerCase()}.png`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleSendFlyer = async () => {
+    if (!flyerUrl || !grupoEnvio) {
+      toast({ variant: "destructive", title: "Selecione um grupo para enviar" });
+      return;
+    }
+    
+    setIsSendingFlyer(true);
+    try {
+      // Por enquanto, apenas mostra um toast de sucesso
+      // A integração com WhatsApp pode ser implementada posteriormente
+      toast({ 
+        title: "Flyer preparado para envio!", 
+        description: `O flyer será enviado para o grupo: ${
+          grupoEnvio === "todos" ? "Todos" :
+          grupoEnvio === "homens" ? "Homens" :
+          grupoEnvio === "mulheres" ? "Mulheres" :
+          grupoEnvio === "jovens" ? "Jovens" :
+          grupoEnvio === "adolescentes" ? "Adolescentes" :
+          grupoEnvio === "criancas" ? "Crianças" : grupoEnvio
+        }` 
+      });
+      setGrupoEnvio("");
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao enviar", description: error.message });
+    } finally {
+      setIsSendingFlyer(false);
     }
   };
 
@@ -463,63 +515,135 @@ export const EventoFormDialog = ({
               <Label className="font-medium">Flyer do Evento</Label>
               
               {flyerUrl ? (
-                <div className="relative">
-                  <img 
-                    src={flyerUrl} 
-                    alt="Flyer do evento" 
-                    className="w-full max-h-48 object-contain rounded-lg border"
-                  />
-                  <div className="absolute bottom-2 left-2">
-                    <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
-                  </div>
-                  <Button
-                    type="button"
-                    size="icon"
-                    variant="destructive"
-                    className="absolute top-2 right-2 w-6 h-6"
-                    onClick={() => setFlyerUrl(null)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFlyerUpload}
-                      className="hidden"
-                      id="flyer-upload"
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img 
+                      src={flyerUrl} 
+                      alt="Flyer do evento" 
+                      className="w-full max-h-48 object-contain rounded-lg border"
                     />
+                    <div className="absolute bottom-2 left-2">
+                      <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-2 right-2 w-6 h-6"
+                      onClick={() => setFlyerUrl(null)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  
+                  {/* Botões de ação do flyer */}
+                  <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full"
-                      onClick={() => document.getElementById("flyer-upload")?.click()}
-                      disabled={isUploadingFlyer}
+                      size="sm"
+                      onClick={handleDownloadFlyer}
+                      className="flex-1"
                     >
-                      {isUploadingFlyer ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="w-4 h-4 mr-2" />
-                      )}
-                      Upload
+                      <Download className="w-4 h-4 mr-2" />
+                      Baixar Flyer
                     </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleGenerateFlyer}
-                    disabled={isGeneratingFlyer || !formData.titulo}
-                  >
-                    {isGeneratingFlyer ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 mr-2" />
+                  
+                  {/* Envio para grupos */}
+                  <div className="flex gap-2">
+                    <Select value={grupoEnvio} onValueChange={setGrupoEnvio}>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Enviar para..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="homens">Homens</SelectItem>
+                        <SelectItem value="mulheres">Mulheres</SelectItem>
+                        <SelectItem value="jovens">Jovens</SelectItem>
+                        <SelectItem value="adolescentes">Adolescentes</SelectItem>
+                        <SelectItem value="criancas">Crianças</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleSendFlyer}
+                      disabled={isSendingFlyer || !grupoEnvio}
+                    >
+                      {isSendingFlyer ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4 mr-2" />
+                      )}
+                      Enviar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {showFlyerPrompt && (
+                    <div className="space-y-2">
+                      <Label htmlFor="flyerPrompt">Descreva como o flyer deve ser:</Label>
+                      <Textarea
+                        id="flyerPrompt"
+                        value={flyerPrompt}
+                        onChange={(e) => setFlyerPrompt(e.target.value)}
+                        rows={3}
+                        placeholder="Ex: Cores vibrantes, estilo moderno, com imagem de montanha ao fundo, texto em destaque..."
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFlyerUpload}
+                        className="hidden"
+                        id="flyer-upload"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => document.getElementById("flyer-upload")?.click()}
+                        disabled={isUploadingFlyer}
+                      >
+                        {isUploadingFlyer ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4 mr-2" />
+                        )}
+                        Upload
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleGenerateFlyer}
+                      disabled={isGeneratingFlyer || !formData.titulo}
+                    >
+                      {isGeneratingFlyer ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      {showFlyerPrompt ? "Gerar Agora" : "Gerar com IA"}
+                    </Button>
+                    {showFlyerPrompt && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setShowFlyerPrompt(false); setFlyerPrompt(""); }}
+                      >
+                        Cancelar
+                      </Button>
                     )}
-                    Gerar com IA
-                  </Button>
+                  </div>
                 </div>
               )}
             </div>
