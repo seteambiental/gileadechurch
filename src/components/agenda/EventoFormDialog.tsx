@@ -96,6 +96,7 @@ export const EventoFormDialog = ({
     titulo: "",
     descricao: "",
     data_evento: "",
+    data_fim: "",
     hora_inicio: "",
     hora_fim: "",
     local: "Igreja Gileade",
@@ -118,6 +119,7 @@ export const EventoFormDialog = ({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
           data_evento: evento.data_evento || "",
+          data_fim: (evento as any).data_fim || "",
           hora_inicio: evento.hora_inicio?.substring(0, 5) || "",
           hora_fim: evento.hora_fim?.substring(0, 5) || "",
           local: evento.local || "Igreja Gileade",
@@ -137,6 +139,7 @@ export const EventoFormDialog = ({
           titulo: "",
           descricao: "",
           data_evento: selectedDate ? format(selectedDate, "yyyy-MM-dd") : "",
+          data_fim: "",
           hora_inicio: "",
           hora_fim: "",
           local: "Igreja Gileade",
@@ -174,6 +177,7 @@ export const EventoFormDialog = ({
         titulo: formData.titulo.trim(),
         descricao: formData.descricao || null,
         data_evento: formData.data_evento || new Date().toISOString().split("T")[0],
+        data_fim: formData.data_fim || null,
         hora_inicio: formData.hora_inicio || null,
         hora_fim: formData.hora_fim || null,
         local: formData.local || null,
@@ -306,9 +310,9 @@ export const EventoFormDialog = ({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="data_evento">Data</Label>
+                <Label htmlFor="data_evento">Data Início</Label>
                 <Input
                   id="data_evento"
                   type="date"
@@ -317,7 +321,20 @@ export const EventoFormDialog = ({
                 />
               </div>
               <div>
-                <Label htmlFor="hora_inicio">Início</Label>
+                <Label htmlFor="data_fim">Data Término</Label>
+                <Input
+                  id="data_fim"
+                  type="date"
+                  value={formData.data_fim}
+                  onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
+                  min={formData.data_evento}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="hora_inicio">Horário Início</Label>
                 <Input
                   id="hora_inicio"
                   type="time"
@@ -326,7 +343,7 @@ export const EventoFormDialog = ({
                 />
               </div>
               <div>
-                <Label htmlFor="hora_fim">Término</Label>
+                <Label htmlFor="hora_fim">Horário Término</Label>
                 <Input
                   id="hora_fim"
                   type="time"
@@ -335,7 +352,6 @@ export const EventoFormDialog = ({
                 />
               </div>
             </div>
-
             <div>
               <Label htmlFor="local">Local</Label>
               <Input

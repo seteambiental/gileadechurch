@@ -20,6 +20,7 @@ export type Database = {
           cor: string | null
           created_at: string
           data_evento: string
+          data_fim: string | null
           descricao: string | null
           dia_semana: number | null
           flyer_url: string | null
@@ -43,6 +44,7 @@ export type Database = {
           cor?: string | null
           created_at?: string
           data_evento: string
+          data_fim?: string | null
           descricao?: string | null
           dia_semana?: number | null
           flyer_url?: string | null
@@ -66,6 +68,7 @@ export type Database = {
           cor?: string | null
           created_at?: string
           data_evento?: string
+          data_fim?: string | null
           descricao?: string | null
           dia_semana?: number | null
           flyer_url?: string | null
