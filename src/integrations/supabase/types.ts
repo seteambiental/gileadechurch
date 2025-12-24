@@ -244,6 +244,100 @@ export type Database = {
           },
         ]
       }
+      inscricoes_eventos: {
+        Row: {
+          created_at: string
+          descricao_alergia: string | null
+          descricao_medicamento: string | null
+          evento_id: string
+          forma_pagamento: string | null
+          genero: string | null
+          id: string
+          is_menor: boolean | null
+          member_id: string | null
+          nome_participante: string
+          nome_responsavel: string | null
+          novo_convertido_id: string | null
+          observacoes: string | null
+          preferencia_beliche: string | null
+          status_pagamento: string | null
+          telefone_contato: string
+          telefone_emergencia: string | null
+          telefone_responsavel: string | null
+          tem_alergia_alimentar: boolean | null
+          toma_medicamento: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao_alergia?: string | null
+          descricao_medicamento?: string | null
+          evento_id: string
+          forma_pagamento?: string | null
+          genero?: string | null
+          id?: string
+          is_menor?: boolean | null
+          member_id?: string | null
+          nome_participante: string
+          nome_responsavel?: string | null
+          novo_convertido_id?: string | null
+          observacoes?: string | null
+          preferencia_beliche?: string | null
+          status_pagamento?: string | null
+          telefone_contato: string
+          telefone_emergencia?: string | null
+          telefone_responsavel?: string | null
+          tem_alergia_alimentar?: boolean | null
+          toma_medicamento?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao_alergia?: string | null
+          descricao_medicamento?: string | null
+          evento_id?: string
+          forma_pagamento?: string | null
+          genero?: string | null
+          id?: string
+          is_menor?: boolean | null
+          member_id?: string | null
+          nome_participante?: string
+          nome_responsavel?: string | null
+          novo_convertido_id?: string | null
+          observacoes?: string | null
+          preferencia_beliche?: string | null
+          status_pagamento?: string | null
+          telefone_contato?: string
+          telefone_emergencia?: string | null
+          telefone_responsavel?: string | null
+          tem_alergia_alimentar?: boolean | null
+          toma_medicamento?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inscricoes_eventos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inscricoes_eventos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inscricoes_eventos_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_functions: {
         Row: {
           casa_refugio_id: string | null

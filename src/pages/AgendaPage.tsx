@@ -20,6 +20,9 @@ import {
   Church,
   Image,
   Download,
+  Link,
+  Copy,
+  Check,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -71,6 +74,7 @@ const AgendaPage = () => {
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [activeTab, setActiveTab] = useState("calendario");
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -238,6 +242,20 @@ const AgendaPage = () => {
 
   // Eventos únicos (não recorrentes) para a aba de eventos
   const eventosUnicos = eventos.filter(e => !e.recorrente);
+
+  // Função para copiar link de inscrição
+  const handleCopyLink = (eventoId: string) => {
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/inscricao/${eventoId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedLink(eventoId);
+      toast({
+        title: "Link copiado!",
+        description: "O link de inscrição foi copiado para a área de transferência.",
+      });
+      setTimeout(() => setCopiedLink(null), 2000);
+    });
+  };
 
   if (authLoading) {
     return (
@@ -458,26 +476,49 @@ const AgendaPage = () => {
                         )}
                       </div>
                       
-                      {evento.flyer_url && (
+                      <div className="flex gap-2 mt-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          className="w-full mt-2"
+                          className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const link = document.createElement('a');
-                            link.href = evento.flyer_url!;
-                            link.download = `flyer-${evento.titulo.replace(/\s+/g, '-').toLowerCase()}.png`;
-                            link.target = '_blank';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            handleCopyLink(evento.id);
                           }}
                         >
-                          <Download className="w-4 h-4 mr-2" />
-                          Baixar Flyer
+                          {copiedLink === evento.id ? (
+                            <>
+                              <Check className="w-4 h-4 mr-2" />
+                              Copiado!
+                            </>
+                          ) : (
+                            <>
+                              <Link className="w-4 h-4 mr-2" />
+                              Link Inscrição
+                            </>
+                          )}
                         </Button>
-                      )}
+                        {evento.flyer_url && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const link = document.createElement('a');
+                              link.href = evento.flyer_url!;
+                              link.download = `flyer-${evento.titulo.replace(/\s+/g, '-').toLowerCase()}.png`;
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Flyer
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
