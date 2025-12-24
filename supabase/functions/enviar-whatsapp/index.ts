@@ -143,7 +143,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, convertidoId, eventoId } = await req.json();
+    const body = await req.json();
+    const { action, convertidoId, eventoId, flyerUrl, grupo, evento } = body;
     console.log(`Action: ${action}, ConvertidoId: ${convertidoId}`);
 
     if (action === 'boas_vindas') {
@@ -296,8 +297,6 @@ serve(async (req) => {
     }
 
     if (action === 'enviar_flyer') {
-      const { flyerUrl, grupo, evento } = await req.json();
-      
       if (!flyerUrl) {
         throw new Error('URL do flyer é obrigatória');
       }
