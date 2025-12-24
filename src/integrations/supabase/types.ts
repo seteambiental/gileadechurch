@@ -272,6 +272,7 @@ export type Database = {
           created_at: string
           email: string | null
           full_name: string
+          genero: string | null
           id: string
           member_since: string | null
           neighborhood: string | null
@@ -292,6 +293,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name: string
+          genero?: string | null
           id?: string
           member_since?: string | null
           neighborhood?: string | null
@@ -312,6 +314,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           full_name?: string
+          genero?: string | null
           id?: string
           member_since?: string | null
           neighborhood?: string | null
