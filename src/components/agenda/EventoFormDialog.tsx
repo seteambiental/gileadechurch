@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload, Sparkles, X, Download, Send } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +95,7 @@ export const EventoFormDialog = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [flyerUrl, setFlyerUrl] = useState<string | null>(null);
+  const [flyerPendente, setFlyerPendente] = useState<string | null>(null);
   const [flyerPrompt, setFlyerPrompt] = useState("");
   const [showFlyerPrompt, setShowFlyerPrompt] = useState(false);
   const [grupoEnvio, setGrupoEnvio] = useState("");
@@ -143,7 +144,7 @@ export const EventoFormDialog = ({
           idade_maxima: "",
         });
         setFlyerUrl(evento.flyer_url || null);
-      } else {
+        setFlyerPendente(null);
         setFormData({
           titulo: "",
           descricao: "",
@@ -164,6 +165,7 @@ export const EventoFormDialog = ({
           idade_maxima: "",
         });
         setFlyerUrl(null);
+        setFlyerPendente(null);
       }
     }
   }, [open, evento, selectedDate]);
@@ -224,10 +226,9 @@ export const EventoFormDialog = ({
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      setFlyerUrl(data.flyerUrl);
+      setFlyerPendente(data.flyerUrl);
       setShowFlyerPrompt(false);
-      setFlyerPrompt("");
-      toast({ title: "Flyer gerado com IA!" });
+      toast({ title: "Flyer gerado! Aceite ou descarte." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro ao gerar flyer", description: error.message });
     } finally {
@@ -523,7 +524,71 @@ export const EventoFormDialog = ({
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
               <Label className="font-medium">Flyer do Evento</Label>
               
-              {flyerUrl ? (
+              {/* Flyer pendente de aprovação */}
+              {flyerPendente && (
+                <div className="space-y-3">
+                  <div className="relative">
+                    <img 
+                      src={flyerPendente} 
+                      alt="Flyer gerado" 
+                      className="w-full max-h-48 object-contain rounded-lg border border-amber-400"
+                    />
+                    <div className="absolute bottom-2 left-2">
+                      <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                    </div>
+                    <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                      Pendente
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="default"
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        setFlyerUrl(flyerPendente);
+                        setFlyerPendente(null);
+                        setFlyerPrompt("");
+                        toast({ title: "Flyer aceito!" });
+                      }}
+                    >
+                      <Check className="w-4 h-4 mr-2" />
+                      Aceitar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => {
+                        setFlyerPendente(null);
+                        toast({ title: "Flyer descartado" });
+                      }}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Descartar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateFlyer}
+                      disabled={isGeneratingFlyer}
+                    >
+                      {isGeneratingFlyer ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Flyer aceito */}
+              {flyerUrl && !flyerPendente ? (
                 <div className="space-y-3">
                   <div className="relative">
                     <img 
@@ -590,7 +655,7 @@ export const EventoFormDialog = ({
                     </Button>
                   </div>
                 </div>
-              ) : (
+              ) : !flyerPendente && (
                 <div className="space-y-3">
                   {showFlyerPrompt && (
                     <div className="space-y-2">
