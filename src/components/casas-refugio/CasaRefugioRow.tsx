@@ -1,0 +1,93 @@
+import { Home, MapPin, Calendar, Users, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface CasaRefugio {
+  id: string;
+  name: string;
+  anfitrioes: string | null;
+  condominio: string | null;
+  lideres: string | null;
+  supervisores: string | null;
+  dias: string | null;
+  frequencia: string | null;
+  cep: string | null;
+  address: string | null;
+  numero: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+interface CasaRefugioRowProps {
+  casa: CasaRefugio;
+  onOpenEncontro: () => void;
+}
+
+export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) => {
+  return (
+    <div className="bg-card border border-border rounded-lg p-4 hover:border-destructive/50 transition-colors">
+      <div className="flex items-center justify-between gap-4">
+        {/* Icon and Name */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+            <Home className="w-5 h-5 text-destructive" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-foreground truncate">{casa.name}</h3>
+            <p className="text-xs text-muted-foreground truncate">
+              {casa.lideres || "Sem líder definido"}
+            </p>
+          </div>
+        </div>
+
+        {/* Condomínio Badge */}
+        <div className="hidden sm:flex items-center gap-2">
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+            {casa.condominio || "—"}
+          </span>
+        </div>
+
+        {/* Dias */}
+        <div className="hidden md:flex items-center gap-1 text-sm text-muted-foreground">
+          <Calendar className="w-4 h-4" />
+          <span className="truncate max-w-[100px]">{casa.dias || "—"}</span>
+        </div>
+
+        {/* Frequência */}
+        <div className="hidden lg:block">
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+            casa.frequencia === "SEMANAL" 
+              ? "bg-green-500/10 text-green-600" 
+              : "bg-amber-500/10 text-amber-600"
+          }`}>
+            {casa.frequencia || "—"}
+          </span>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenEncontro}
+            className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            <Users className="w-4 h-4 mr-1" />
+            <span className="hidden sm:inline">Encontro</span>
+          </Button>
+          <ChevronRight className="w-5 h-5 text-muted-foreground" />
+        </div>
+      </div>
+
+      {/* Mobile extra info */}
+      <div className="mt-3 pt-3 border-t border-border sm:hidden">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+            {casa.condominio || "—"}
+          </span>
+          <span>{casa.dias} • {casa.frequencia}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
