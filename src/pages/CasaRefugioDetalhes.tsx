@@ -1,21 +1,31 @@
-import { useEffect } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { format } from "date-fns";
+import { format, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
+import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 
 const CasaRefugioDetalhes = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const bypass = isAuthBypassed();
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -51,16 +61,47 @@ const CasaRefugioDetalhes = () => {
     enabled: !!id,
   });
 
-  // Calculate indicators
-  const totalEncontros = encontros.length;
-  const totalLideres = encontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
-  const totalMembros = encontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
-  const totalCriancas = encontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
-  const totalVisitantes = encontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
+  // Filter encontros by date range
+  const filteredEncontros = useMemo(() => {
+    if (!startDate && !endDate) return encontros;
+    
+    return encontros.filter((encontro) => {
+      const encontroDate = parseISO(encontro.data_encontro);
+      
+      if (startDate && endDate) {
+        return isWithinInterval(encontroDate, {
+          start: parseISO(startDate),
+          end: parseISO(endDate),
+        });
+      }
+      
+      if (startDate) {
+        return encontroDate >= parseISO(startDate);
+      }
+      
+      if (endDate) {
+        return encontroDate <= parseISO(endDate);
+      }
+      
+      return true;
+    });
+  }, [encontros, startDate, endDate]);
+
+  // Calculate indicators from filtered data
+  const totalEncontros = filteredEncontros.length;
+  const totalLideres = filteredEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
+  const totalMembros = filteredEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
+  const totalCriancas = filteredEncontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
+  const totalVisitantes = filteredEncontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
   const totalPessoas = totalLideres + totalMembros + totalCriancas + totalVisitantes;
-  const totalKilos = encontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
-  const totalOfertas = encontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
+  const totalKilos = filteredEncontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
+  const totalOfertas = filteredEncontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
   const mediaPessoas = totalEncontros > 0 ? Math.round(totalPessoas / totalEncontros) : 0;
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+  };
 
   if (authLoading || loadingCasa) {
     return (
@@ -129,6 +170,15 @@ const CasaRefugioDetalhes = () => {
           </CardContent>
         </Card>
 
+        {/* Date Filter */}
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onClear={clearFilters}
+        />
+
         {/* Indicators */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="bg-card border-border">
@@ -177,23 +227,26 @@ const CasaRefugioDetalhes = () => {
           </div>
         </div>
 
+        {/* Charts */}
+        <EncontrosCharts encontros={filteredEncontros} />
+
         {/* Encontros List */}
         <div>
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
-            Histórico de Encontros
+            Histórico de Encontros ({filteredEncontros.length})
           </h3>
           {loadingEncontros ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 text-destructive animate-spin" />
             </div>
-          ) : encontros.length === 0 ? (
+          ) : filteredEncontros.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum encontro registrado
             </div>
           ) : (
             <div className="space-y-2">
-              {encontros.map((encontro) => {
+              {filteredEncontros.map((encontro) => {
                 const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
                 return (
                   <div key={encontro.id} className="bg-card border border-border rounded-lg p-4">
@@ -201,7 +254,17 @@ const CasaRefugioDetalhes = () => {
                       <span className="font-medium text-foreground">
                         {format(new Date(encontro.data_encontro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                       </span>
-                      <span className="text-sm text-muted-foreground">{total} pessoas</span>
+                      <div className="flex items-center gap-2">
+                        {encontro.photo_url && (
+                          <button
+                            onClick={() => setSelectedPhoto(encontro.photo_url)}
+                            className="p-1 rounded hover:bg-muted"
+                          >
+                            <Image className="w-4 h-4 text-muted-foreground" />
+                          </button>
+                        )}
+                        <span className="text-sm text-muted-foreground">{total} pessoas</span>
+                      </div>
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-xs text-center">
                       <div><span className="text-blue-600 font-medium">{encontro.qtd_lideres}</span> líd.</div>
@@ -213,6 +276,16 @@ const CasaRefugioDetalhes = () => {
                       <span className="flex items-center gap-1"><Package className="w-3 h-3" />{encontro.kilos_arrecadados || 0} kg</span>
                       <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</span>
                     </div>
+                    {encontro.photo_url && (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <img
+                          src={encontro.photo_url}
+                          alt="Foto do encontro"
+                          className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setSelectedPhoto(encontro.photo_url)}
+                        />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -220,6 +293,19 @@ const CasaRefugioDetalhes = () => {
           )}
         </div>
       </main>
+
+      {/* Photo Modal */}
+      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+        <DialogContent className="max-w-3xl p-2">
+          {selectedPhoto && (
+            <img
+              src={selectedPhoto}
+              alt="Foto do encontro"
+              className="w-full h-auto rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
