@@ -12,6 +12,8 @@ import { format, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
+import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVinculadosList";
+import { VincularMembroDialog } from "@/components/casas-refugio/VincularMembroDialog";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ const CasaRefugioDetalhes = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [showVincularDialog, setShowVincularDialog] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -228,6 +231,14 @@ const CasaRefugioDetalhes = () => {
           </div>
         </div>
 
+        {/* Membros Vinculados */}
+        {id && casa && (
+          <MembrosVinculadosList
+            casaRefugioId={id}
+            onVincularClick={() => setShowVincularDialog(true)}
+          />
+        )}
+
         {/* Charts */}
         <EncontrosCharts encontros={filteredEncontros} />
 
@@ -307,6 +318,16 @@ const CasaRefugioDetalhes = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Vincular Membro Dialog */}
+      {id && casa && (
+        <VincularMembroDialog
+          open={showVincularDialog}
+          onOpenChange={setShowVincularDialog}
+          casaRefugioId={id}
+          casaRefugioName={casa.name}
+        />
+      )}
     </div>
   );
 };

@@ -214,6 +214,7 @@ export type Database = {
         Row: {
           address: string | null
           birth_date: string | null
+          casa_refugio_id: string | null
           cep: string | null
           city: string | null
           complement: string | null
@@ -233,6 +234,7 @@ export type Database = {
         Insert: {
           address?: string | null
           birth_date?: string | null
+          casa_refugio_id?: string | null
           cep?: string | null
           city?: string | null
           complement?: string | null
@@ -252,6 +254,7 @@ export type Database = {
         Update: {
           address?: string | null
           birth_date?: string | null
+          casa_refugio_id?: string | null
           cep?: string | null
           city?: string | null
           complement?: string | null
@@ -268,7 +271,15 @@ export type Database = {
           user_id?: string | null
           whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ministries: {
         Row: {
