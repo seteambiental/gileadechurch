@@ -123,7 +123,7 @@ const SupervisorDetalhes = () => {
               <p className="text-xs text-muted-foreground">Supervisor(a)</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/ministerio/casas-refugio")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
