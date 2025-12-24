@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
 import {
   Users,
   Baby,
@@ -65,14 +66,19 @@ const otherModules = [
 const AppDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [isBypassed, setIsBypassed] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    const bypassed = isAuthBypassed();
+    setIsBypassed(bypassed);
+    
+    if (!loading && !user && !bypassed) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
 
   const handleSignOut = async () => {
+    setAuthBypassed(false);
     await signOut();
     navigate("/");
   };
@@ -85,7 +91,7 @@ const AppDashboard = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isBypassed) {
     return null;
   }
 
