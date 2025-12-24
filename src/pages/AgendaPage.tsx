@@ -21,7 +21,6 @@ import {
   Image,
   Download,
   Link,
-  Check,
   Users,
   BarChart3,
 } from "lucide-react";
@@ -30,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
+import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -78,8 +78,16 @@ const AgendaPage = () => {
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [activeTab, setActiveTab] = useState("calendario");
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
+  const [compartilharEvento, setCompartilharEvento] = useState<{ 
+    id: string; 
+    titulo: string; 
+    data_evento: string;
+    hora_inicio?: string | null;
+    local?: string | null;
+    flyer_url?: string | null;
+    cor?: string | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -248,19 +256,6 @@ const AgendaPage = () => {
   // Eventos únicos (não recorrentes) para a aba de eventos
   const eventosUnicos = eventos.filter(e => !e.recorrente);
 
-  // Função para copiar link de inscrição
-  const handleCopyLink = (eventoId: string) => {
-    const baseUrl = window.location.origin;
-    const link = `${baseUrl}/inscricao/${eventoId}`;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopiedLink(eventoId);
-      toast({
-        title: "Link copiado!",
-        description: "O link de inscrição foi copiado para a área de transferência.",
-      });
-      setTimeout(() => setCopiedLink(null), 2000);
-    });
-  };
 
   if (authLoading) {
     return (
@@ -492,20 +487,19 @@ const AgendaPage = () => {
                           className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopyLink(evento.id);
+                            setCompartilharEvento({
+                              id: evento.id,
+                              titulo: evento.titulo,
+                              data_evento: evento.data_evento,
+                              hora_inicio: evento.hora_inicio,
+                              local: evento.local,
+                              flyer_url: evento.flyer_url,
+                              cor: evento.cor,
+                            });
                           }}
                         >
-                          {copiedLink === evento.id ? (
-                            <>
-                              <Check className="w-4 h-4 mr-2" />
-                              Copiado!
-                            </>
-                          ) : (
-                            <>
-                              <Link className="w-4 h-4 mr-2" />
-                              Link Inscrição
-                            </>
-                          )}
+                          <Link className="w-4 h-4 mr-2" />
+                          Compartilhar
                         </Button>
                         <Button
                           variant="outline"
@@ -577,6 +571,14 @@ const AgendaPage = () => {
           eventoLocal={inscricoesEvento.local}
           eventoData={inscricoesEvento.data_evento}
           limiteVagas={inscricoesEvento.limite_vagas}
+        />
+      )}
+
+      {compartilharEvento && (
+        <CompartilharInscricaoDialog
+          open={!!compartilharEvento}
+          onOpenChange={(open) => !open && setCompartilharEvento(null)}
+          evento={compartilharEvento}
         />
       )}
     </div>

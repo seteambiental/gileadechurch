@@ -292,65 +292,65 @@ const InscricaoEvento = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header */}
+      {/* Header - Otimizado para tablet/totem */}
       <header className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-4 md:py-6">
           <div className="flex items-center gap-3 justify-center">
-            <img src={logoGileade} alt="Gileade" className="w-10 h-10 rounded-full object-cover" />
-            <span className="font-heading font-bold text-lg">Igreja Gileade</span>
+            <img src={logoGileade} alt="Gileade" className="w-10 h-10 md:w-14 md:h-14 rounded-full object-cover" />
+            <span className="font-heading font-bold text-lg md:text-2xl">Igreja Gileade</span>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 max-w-2xl">
-        {/* Event Info Card */}
-        <Card className="mb-6 overflow-hidden">
+      <main className="container mx-auto px-4 py-6 md:py-10 max-w-3xl">
+        {/* Event Info Card - Layout otimizado para tablet */}
+        <Card className="mb-6 md:mb-8 overflow-hidden">
           {evento.flyer_url && (
-            <div className="h-48">
+            <div className="h-48 md:h-64">
               <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
             </div>
           )}
-          <div className="h-1" style={{ backgroundColor: evento.cor || "#dc2626" }} />
-          <CardHeader>
-            <CardTitle className="text-xl">{evento.titulo}</CardTitle>
-            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
+          <div className="h-1 md:h-2" style={{ backgroundColor: evento.cor || "#dc2626" }} />
+          <CardHeader className="md:p-8">
+            <CardTitle className="text-xl md:text-3xl">{evento.titulo}</CardTitle>
+            <div className="flex flex-wrap gap-3 md:gap-6 text-sm md:text-lg text-muted-foreground mt-2 md:mt-4">
+              <span className="flex items-center gap-1 md:gap-2">
+                <Calendar className="w-4 h-4 md:w-6 md:h-6" />
                 {format(parseISO(evento.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 {evento.data_fim && evento.data_fim !== evento.data_evento && (
                   <> a {format(parseISO(evento.data_fim), "dd 'de' MMMM", { locale: ptBR })}</>
                 )}
               </span>
               {evento.hora_inicio && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
+                <span className="flex items-center gap-1 md:gap-2">
+                  <Clock className="w-4 h-4 md:w-6 md:h-6" />
                   {evento.hora_inicio.substring(0, 5)}
                 </span>
               )}
               {evento.local && (
-                <span className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4" />
+                <span className="flex items-center gap-1 md:gap-2">
+                  <MapPin className="w-4 h-4 md:w-6 md:h-6" />
                   {evento.local}
                 </span>
               )}
             </div>
             {evento.descricao && (
-              <p className="text-sm text-muted-foreground mt-2">{evento.descricao}</p>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-4">{evento.descricao}</p>
             )}
             {evento.tem_custo && evento.valor_custo && (
-              <p className="text-sm font-medium mt-2">
+              <p className="text-sm md:text-lg font-medium mt-2 md:mt-4">
                 Investimento: R$ {evento.valor_custo.toFixed(2).replace(".", ",")}
               </p>
             )}
             {evento.limite_vagas && (
-              <div className={`mt-3 p-3 rounded-lg ${esgotado ? 'bg-destructive/10' : 'bg-green-500/10'}`}>
-                <p className={`text-sm font-medium ${esgotado ? 'text-destructive' : 'text-green-600'}`}>
+              <div className={`mt-3 md:mt-4 p-3 md:p-4 rounded-lg ${esgotado ? 'bg-destructive/10' : 'bg-green-500/10'}`}>
+                <p className={`text-sm md:text-base font-medium ${esgotado ? 'text-destructive' : 'text-green-600'}`}>
                   {esgotado 
                     ? "⚠️ Vagas esgotadas!" 
                     : `✅ ${vagasDisponiveis} vaga${vagasDisponiveis !== 1 ? 's' : ''} disponíve${vagasDisponiveis !== 1 ? 'is' : 'l'}`
                   }
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   {inscricoesCount} de {evento.limite_vagas} inscritos
                 </p>
               </div>
@@ -359,16 +359,16 @@ const InscricaoEvento = () => {
         </Card>
 
         {esgotado ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Vagas esgotadas - Lista de Espera</CardTitle>
+          <Card className="mb-4 md:mb-6">
+            <CardHeader className="md:p-8">
+              <CardTitle className="text-lg md:text-xl">Vagas esgotadas - Lista de Espera</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-orange-500/10 rounded-lg">
-                <p className="text-orange-600 font-medium">
+            <CardContent className="space-y-4 md:p-8 md:pt-0">
+              <div className="p-4 md:p-6 bg-orange-500/10 rounded-lg">
+                <p className="text-orange-600 font-medium text-base md:text-lg">
                   ⏳ As vagas para este evento estão esgotadas.
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
                   Você pode se inscrever na lista de espera. Caso algum participante desista, você será notificado automaticamente por WhatsApp.
                 </p>
               </div>
@@ -377,38 +377,38 @@ const InscricaoEvento = () => {
         ) : null}
 
         <Card>
-          <CardHeader>
-            <CardTitle>
+          <CardHeader className="md:p-8">
+            <CardTitle className="text-lg md:text-2xl">
               {esgotado ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="md:p-8 md:pt-0">
+            <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
               {/* Search for existing person */}
               {showSearch && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Buscar cadastro existente</Label>
+                <div className="space-y-4 md:space-y-6">
+                  <div className="space-y-2 md:space-y-3">
+                    <Label className="text-base md:text-lg">Buscar cadastro existente</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
                       <Input
                         placeholder="Digite seu nome para buscar..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 md:pl-12 h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
                     {searchResults.length > 0 && (
-                      <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                      <div className="border rounded-lg divide-y max-h-48 md:max-h-64 overflow-y-auto">
                         {searchResults.map((person) => (
                           <button
                             key={`${person.type}-${person.id}`}
                             type="button"
-                            className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center justify-between"
+                            className="w-full px-3 md:px-4 py-2 md:py-4 text-left hover:bg-muted/50 flex items-center justify-between text-base md:text-lg"
                             onClick={() => handleSelectPerson(person)}
                           >
                             <span>{person.full_name}</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs md:text-sm text-muted-foreground">
                               {person.type === "member" ? "Membro" : "Consolidação"}
                             </span>
                           </button>
@@ -416,17 +416,17 @@ const InscricaoEvento = () => {
                       </div>
                     )}
                     {searchTerm.length >= 2 && searchResults.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm md:text-base text-muted-foreground">
                         Nenhum cadastro encontrado.
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 border-t" />
-                    <span className="text-sm text-muted-foreground">ou</span>
+                    <span className="text-sm md:text-base text-muted-foreground">ou</span>
                     <div className="flex-1 border-t" />
                   </div>
-                  <Button type="button" variant="outline" className="w-full" onClick={handleNewPerson}>
+                  <Button type="button" variant="outline" className="w-full h-12 md:h-16 text-base md:text-lg" onClick={handleNewPerson}>
                     Sou novo participante
                   </Button>
                 </div>
@@ -450,163 +450,173 @@ const InscricaoEvento = () => {
                     ← Voltar para busca
                   </Button>
 
-                  <div className="grid gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="nome">Nome Completo *</Label>
+                  <div className="grid gap-4 md:gap-6">
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="nome" className="text-base md:text-lg">Nome Completo *</Label>
                       <Input
                         id="nome"
                         value={nomeParticipante}
                         onChange={(e) => setNomeParticipante(e.target.value)}
                         placeholder="Seu nome completo"
                         required
+                        className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Gênero</Label>
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Gênero</Label>
                       <Select value={genero} onValueChange={setGenero}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="feminino">Feminino</SelectItem>
+                          <SelectItem value="masculino" className="text-base md:text-lg py-2 md:py-3">Masculino</SelectItem>
+                          <SelectItem value="feminino" className="text-base md:text-lg py-2 md:py-3">Feminino</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="telefone">Telefone para Contato *</Label>
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
                       <Input
                         id="telefone"
                         value={telefoneContato}
                         onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
                         placeholder="(00) 00000-0000"
                         required
+                        className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="emergencia">Telefone de Emergência</Label>
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
                       <Input
                         id="emergencia"
                         value={telefoneEmergencia}
                         onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
                         placeholder="(00) 00000-0000"
+                        className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
 
                     {/* Menor de idade */}
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <Label htmlFor="menor">É menor de idade?</Label>
+                    <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
+                      <Label htmlFor="menor" className="text-base md:text-lg">É menor de idade?</Label>
                       <Switch
                         id="menor"
                         checked={isMenor}
                         onCheckedChange={setIsMenor}
+                        className="scale-100 md:scale-125"
                       />
                     </div>
 
                     {isMenor && (
-                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                        <div className="space-y-2">
-                          <Label htmlFor="responsavel">Nome do Pai/Responsável *</Label>
+                      <div className="space-y-4 md:space-y-6 p-4 md:p-6 bg-muted/30 rounded-lg">
+                        <div className="space-y-2 md:space-y-3">
+                          <Label htmlFor="responsavel" className="text-base md:text-lg">Nome do Pai/Responsável *</Label>
                           <Input
                             id="responsavel"
                             value={nomeResponsavel}
                             onChange={(e) => setNomeResponsavel(e.target.value)}
                             placeholder="Nome do responsável"
+                            className="h-10 md:h-14 text-base md:text-lg"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="telResponsavel">Telefone do Responsável *</Label>
+                        <div className="space-y-2 md:space-y-3">
+                          <Label htmlFor="telResponsavel" className="text-base md:text-lg">Telefone do Responsável *</Label>
                           <Input
                             id="telResponsavel"
                             value={telefoneResponsavel}
                             onChange={(e) => setTelefoneResponsavel(formatPhone(e.target.value))}
                             placeholder="(00) 00000-0000"
+                            className="h-10 md:h-14 text-base md:text-lg"
                           />
                         </div>
                       </div>
                     )}
 
                     {/* Preferência beliche */}
-                    <div className="space-y-2">
-                      <Label>Preferência de Beliche</Label>
-                      <RadioGroup value={preferenciaBeliche} onValueChange={setPreferenciaBeliche}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cima" id="cima" />
-                          <Label htmlFor="cima" className="font-normal">Cima</Label>
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Preferência de Beliche</Label>
+                      <RadioGroup value={preferenciaBeliche} onValueChange={setPreferenciaBeliche} className="space-y-2 md:space-y-3">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="cima" id="cima" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="cima" className="font-normal text-base md:text-lg">Cima</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="baixo" id="baixo" />
-                          <Label htmlFor="baixo" className="font-normal">Baixo</Label>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="baixo" id="baixo" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="baixo" className="font-normal text-base md:text-lg">Baixo</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="indiferente" id="indiferente" />
-                          <Label htmlFor="indiferente" className="font-normal">Indiferente</Label>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="indiferente" id="indiferente" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="indiferente" className="font-normal text-base md:text-lg">Indiferente</Label>
                         </div>
                       </RadioGroup>
                     </div>
 
                     {/* Alergia alimentar */}
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <Label htmlFor="alergia">Possui alergia alimentar?</Label>
+                    <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
+                      <Label htmlFor="alergia" className="text-base md:text-lg">Possui alergia alimentar?</Label>
                       <Switch
                         id="alergia"
                         checked={temAlergia}
                         onCheckedChange={setTemAlergia}
+                        className="scale-100 md:scale-125"
                       />
                     </div>
 
                     {temAlergia && (
-                      <div className="space-y-2">
-                        <Label htmlFor="descAlergia">Descreva a alergia</Label>
+                      <div className="space-y-2 md:space-y-3">
+                        <Label htmlFor="descAlergia" className="text-base md:text-lg">Descreva a alergia</Label>
                         <Textarea
                           id="descAlergia"
                           value={descricaoAlergia}
                           onChange={(e) => setDescricaoAlergia(e.target.value)}
                           placeholder="Descreva sua alergia alimentar..."
+                          className="min-h-[80px] md:min-h-[100px] text-base md:text-lg"
                         />
                       </div>
                     )}
 
                     {/* Medicamento */}
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <Label htmlFor="medicamento">Toma algum medicamento?</Label>
+                    <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
+                      <Label htmlFor="medicamento" className="text-base md:text-lg">Toma algum medicamento?</Label>
                       <Switch
                         id="medicamento"
                         checked={tomaMedicamento}
                         onCheckedChange={setTomaMedicamento}
+                        className="scale-100 md:scale-125"
                       />
                     </div>
 
                     {tomaMedicamento && (
-                      <div className="space-y-2">
-                        <Label htmlFor="descMedicamento">Descreva o medicamento</Label>
+                      <div className="space-y-2 md:space-y-3">
+                        <Label htmlFor="descMedicamento" className="text-base md:text-lg">Descreva o medicamento</Label>
                         <Textarea
                           id="descMedicamento"
                           value={descricaoMedicamento}
                           onChange={(e) => setDescricaoMedicamento(e.target.value)}
                           placeholder="Descreva o medicamento que toma..."
+                          className="min-h-[80px] md:min-h-[100px] text-base md:text-lg"
                         />
                       </div>
                     )}
 
                     {/* Forma de pagamento */}
-                    <div className="space-y-2">
-                      <Label>Forma de Pagamento *</Label>
-                      <RadioGroup value={formaPagamento} onValueChange={setFormaPagamento}>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="pix" id="pix" />
-                          <Label htmlFor="pix" className="font-normal">PIX</Label>
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Forma de Pagamento *</Label>
+                      <RadioGroup value={formaPagamento} onValueChange={setFormaPagamento} className="space-y-2 md:space-y-3">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="pix" id="pix" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="pix" className="font-normal text-base md:text-lg">PIX</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cartao_credito" id="credito" />
-                          <Label htmlFor="credito" className="font-normal">Cartão de Crédito</Label>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="cartao_credito" id="credito" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="credito" className="font-normal text-base md:text-lg">Cartão de Crédito</Label>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cartao_debito" id="debito" />
-                          <Label htmlFor="debito" className="font-normal">Cartão de Débito</Label>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="cartao_debito" id="debito" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="debito" className="font-normal text-base md:text-lg">Cartão de Débito</Label>
                         </div>
                       </RadioGroup>
                     </div>
@@ -614,16 +624,16 @@ const InscricaoEvento = () => {
 
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full h-12 md:h-16 text-base md:text-xl"
                     disabled={inscricaoMutation.isPending}
                   >
                     {inscricaoMutation.isPending ? (
                       <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        <Loader2 className="w-4 h-4 md:w-6 md:h-6 mr-2 animate-spin" />
                         Enviando...
                       </>
                     ) : (
-                      "Confirmar Inscrição"
+                      esgotado ? "Entrar na Lista de Espera" : "Confirmar Inscrição"
                     )}
                   </Button>
                 </>

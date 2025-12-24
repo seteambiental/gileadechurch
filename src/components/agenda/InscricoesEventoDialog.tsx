@@ -50,8 +50,11 @@ import {
   Search,
   Filter,
   Clock,
-  UserPlus
+  UserPlus,
+  MessageSquare,
+  Edit2
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -171,6 +174,26 @@ export const InscricoesEventoDialog = ({
       toast({ variant: "destructive", title: "Erro", description: error.message });
     },
   });
+
+  const updateObservacoesMutation = useMutation({
+    mutationFn: async ({ id, observacoes }: { id: string; observacoes: string }) => {
+      const { error } = await supabase
+        .from("inscricoes_eventos")
+        .update({ observacoes })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      toast({ title: "Observações salvas!" });
+      setEditingObservacoes(null);
+    },
+    onError: (error: Error) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
+  const [editingObservacoes, setEditingObservacoes] = useState<{ id: string; value: string } | null>(null);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -418,6 +441,7 @@ export const InscricoesEventoDialog = ({
                     <TableHead>Info</TableHead>
                     <TableHead>Pagamento</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Observações</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -519,6 +543,53 @@ export const InscricoesEventoDialog = ({
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        {editingObservacoes?.id === inscricao.id ? (
+                          <div className="space-y-2 min-w-[200px]">
+                            <Textarea
+                              value={editingObservacoes.value}
+                              onChange={(e) => setEditingObservacoes({ ...editingObservacoes, value: e.target.value })}
+                              className="text-xs h-16"
+                              placeholder="Adicionar observação..."
+                            />
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                className="h-6 text-xs"
+                                onClick={() => updateObservacoesMutation.mutate({ 
+                                  id: inscricao.id, 
+                                  observacoes: editingObservacoes.value 
+                                })}
+                                disabled={updateObservacoesMutation.isPending}
+                              >
+                                {updateObservacoesMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Salvar"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 text-xs"
+                                onClick={() => setEditingObservacoes(null)}
+                              >
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div 
+                            className="flex items-start gap-1 cursor-pointer hover:bg-muted/50 p-1 rounded min-w-[150px]"
+                            onClick={() => setEditingObservacoes({ id: inscricao.id, value: inscricao.observacoes || "" })}
+                          >
+                            {inscricao.observacoes ? (
+                              <p className="text-xs text-muted-foreground line-clamp-2">{inscricao.observacoes}</p>
+                            ) : (
+                              <span className="text-xs text-muted-foreground/50 flex items-center gap-1">
+                                <Edit2 className="w-3 h-3" />
+                                Adicionar nota
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Button
