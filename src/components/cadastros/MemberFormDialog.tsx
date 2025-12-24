@@ -55,6 +55,7 @@ interface MemberFunction {
 
 const formSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
+  genero: z.string().optional(),
   birth_date: z.string().optional(),
   member_since: z.string().optional(),
   cep: z.string().optional(),
@@ -97,6 +98,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     resolver: zodResolver(formSchema),
     defaultValues: {
       full_name: "",
+      genero: "",
       birth_date: "",
       member_since: "",
       cep: "",
@@ -124,6 +126,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         if (memberData) {
           form.reset({
             full_name: memberData.full_name,
+            genero: memberData.genero || "",
             birth_date: memberData.birth_date || "",
             member_since: memberData.member_since || "",
             cep: memberData.cep ? formatCep(memberData.cep) : "",
@@ -213,6 +216,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
       const memberData = {
         full_name: data.full_name,
+        genero: data.genero || null,
         birth_date: data.birth_date || null,
         member_since: data.member_since || null,
         cep: data.cep ? unformatCep(data.cep) : null,
@@ -413,6 +417,22 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     </FormItem>
                   )}
                 />
+
+                <div>
+                  <FormLabel>Gênero</FormLabel>
+                  <Select
+                    value={form.watch("genero") || ""}
+                    onValueChange={(v) => form.setValue("genero", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
                 <FormField
                   control={form.control}
