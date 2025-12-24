@@ -14,13 +14,16 @@ serve(async (req) => {
   }
 
   try {
-    const { titulo, descricao, tipoEvento, dataEvento, horaInicio, local } = await req.json();
+    const { titulo, descricao, tipoEvento, dataEvento, horaInicio, local, promptPersonalizado } = await req.json();
 
     if (!titulo) {
       throw new Error('Título do evento é obrigatório');
     }
 
     console.log(`Gerando flyer para: ${titulo}`);
+    if (promptPersonalizado) {
+      console.log(`Prompt personalizado: ${promptPersonalizado}`);
+    }
 
     // Criar prompt detalhado para o flyer
     const prompt = `Create a beautiful church event flyer with the following details:
@@ -31,6 +34,8 @@ ${descricao ? `DESCRIPTION: ${descricao}` : ''}
 ${dataEvento ? `DATE: ${dataEvento}` : ''}
 ${horaInicio ? `TIME: ${horaInicio}` : ''}
 ${local ? `LOCATION: ${local}` : ''}
+
+${promptPersonalizado ? `CUSTOM DESIGN INSTRUCTIONS FROM USER: ${promptPersonalizado}` : ''}
 
 Design requirements:
 - Modern, elegant church event flyer design
@@ -44,6 +49,7 @@ Design requirements:
 - Make it visually striking and suitable for social media sharing
 - Use a color scheme that includes gold, burgundy, or deep blue tones
 - Inspirational and welcoming mood
+${promptPersonalizado ? '- PRIORITIZE the custom design instructions provided by the user above' : ''}
 
 Generate a high-quality event flyer image.`;
 
