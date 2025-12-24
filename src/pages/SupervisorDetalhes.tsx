@@ -144,6 +144,7 @@ const SupervisorDetalhes = () => {
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
+          onApply={() => {}}
           onClear={clearFilters}
         />
 

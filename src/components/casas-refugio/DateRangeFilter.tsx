@@ -7,6 +7,7 @@ interface DateRangeFilterProps {
   endDate: string;
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
+  onApply: () => void;
   onClear: () => void;
 }
 
@@ -15,6 +16,7 @@ export const DateRangeFilter = ({
   endDate,
   onStartDateChange,
   onEndDateChange,
+  onApply,
   onClear,
 }: DateRangeFilterProps) => {
   const hasFilter = startDate || endDate;
@@ -44,6 +46,9 @@ export const DateRangeFilter = ({
             className="w-[140px] h-9"
           />
         </div>
+        <Button variant="secondary" size="sm" onClick={onApply}>
+          Aplicar
+        </Button>
         {hasFilter && (
           <Button variant="ghost" size="sm" onClick={onClear} className="text-destructive">
             Limpar
