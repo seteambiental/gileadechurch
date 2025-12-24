@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { isAuthBypassed } from "@/lib/auth-bypass";
 import { Users, Church, Home, Building2, ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,12 +12,12 @@ import CasasRefugioTab from "@/components/cadastros/CasasRefugioTab";
 import CondominiosTab from "@/components/cadastros/CondominiosTab";
 
 const Cadastros = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("membros");
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !isAuthBypassed()) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
@@ -29,9 +30,6 @@ const Cadastros = () => {
     );
   }
 
-  if (!user) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,15 +37,13 @@ const Cadastros = () => {
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src={logoGileade} 
-              alt="Gileade Church" 
+            <img
+              src={logoGileade}
+              alt="Gileade Church"
               className="w-10 h-10 rounded-full object-cover shadow-red"
             />
             <div>
-              <h1 className="font-heading font-bold text-lg text-foreground">
-                Cadastros
-              </h1>
+              <h1 className="font-heading font-bold text-lg text-foreground">Cadastros</h1>
               <p className="text-xs text-muted-foreground">Gestão de dados</p>
             </div>
           </div>
@@ -63,6 +59,7 @@ const Cadastros = () => {
           </Button>
         </div>
       </header>
+
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">

@@ -3,16 +3,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  ArrowLeft, 
-  Loader2, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
+import { isAuthBypassed } from "@/lib/auth-bypass";
+import {
+  ArrowLeft,
+  Loader2,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
   Building2,
   Edit2,
-  Church
+  Church,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,11 +71,13 @@ const MemberDetails = () => {
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
 
+  const bypass = isAuthBypassed();
+
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !bypass) {
       navigate("/auth");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, bypass]);
 
   const { data: member, isLoading, error } = useQuery({
     queryKey: ["member", id],
@@ -96,12 +99,13 @@ const MemberDetails = () => {
         `)
         .eq("id", id)
         .maybeSingle();
-      
+
       if (error) throw error;
       return data as Member | null;
     },
-    enabled: !!id && !!user,
+    enabled: !!id && (bypass || !!user),
   });
+
 
   const getInitials = (name: string) => {
     return name
@@ -157,9 +161,10 @@ const MemberDetails = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !bypass) {
     return null;
   }
+
 
   if (error || !member) {
     return (

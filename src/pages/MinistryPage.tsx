@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { ArrowLeft, Loader2, LucideIcon } from "lucide-react";
+import { isAuthBypassed } from "@/lib/auth-bypass";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -33,79 +34,99 @@ const ministriesData: Record<string, MinistryInfo> = {
     title: "Casais",
     description: "Ministério de casais",
     icon: HeartHandshake,
-    fullDescription: "Ministério dedicado ao fortalecimento dos casamentos e famílias, promovendo encontros, retiros e aconselhamento matrimonial.",
+    fullDescription:
+      "Ministério dedicado ao fortalecimento dos casamentos e famílias, promovendo encontros, retiros e aconselhamento matrimonial.",
   },
   "casas-refugio": {
     title: "Casas Refúgio",
     description: "Células",
     icon: Home,
-    fullDescription: "Grupos de comunhão que se reúnem semanalmente em lares para estudo bíblico, oração e edificação mútua.",
+    fullDescription:
+      "Grupos de comunhão que se reúnem semanalmente em lares para estudo bíblico, oração e edificação mútua.",
   },
   consolidacao: {
     title: "Consolidação",
     description: "Novos convertidos",
     icon: UserCheck,
-    fullDescription: "Ministério responsável por acompanhar e discipular os novos convertidos em seus primeiros passos na fé.",
+    fullDescription:
+      "Ministério responsável por acompanhar e discipular os novos convertidos em seus primeiros passos na fé.",
   },
   danca: {
     title: "Dança",
     description: "Expressão corporal",
     icon: Disc3,
-    fullDescription: "Ministério de adoração através da dança, expressando louvor ao Senhor através de coreografias.",
+    fullDescription:
+      "Ministério de adoração através da dança, expressando louvor ao Senhor através de coreografias.",
   },
   ensino: {
     title: "Ensino",
     description: "Discipulado",
     icon: BookOpen,
-    fullDescription: "Ministério focado na formação bíblica e teológica dos membros através de cursos e estudos sistemáticos.",
+    fullDescription:
+      "Ministério focado na formação bíblica e teológica dos membros através de cursos e estudos sistemáticos.",
+  },
+  evangelizacao: {
+    title: "Evangelização",
+    description: "Alcançar vidas",
+    icon: Megaphone,
+    fullDescription:
+      "Ministério dedicado ao evangelismo e alcance de vidas, com ações, discipulado e iniciativas de impacto na comunidade.",
   },
   flow: {
     title: "Flow",
     description: "Jovens",
     icon: Flame,
-    fullDescription: "Ministério voltado para jovens, com encontros dinâmicos, retiros e atividades que fortalecem a fé.",
+    fullDescription:
+      "Ministério voltado para jovens, com encontros dinâmicos, retiros e atividades que fortalecem a fé.",
   },
   gt: {
     title: "GT",
     description: "Adolescentes",
     icon: Sparkles,
-    fullDescription: "Ministério dedicado aos adolescentes, com programação especial para essa faixa etária.",
+    fullDescription:
+      "Ministério dedicado aos adolescentes, com programação especial para essa faixa etária.",
   },
   intercessao: {
     title: "Intercessão",
     description: "Oração",
     icon: HandHeart,
-    fullDescription: "Ministério de oração intercessora, levantando súplicas pela igreja, cidade e nações.",
+    fullDescription:
+      "Ministério de oração intercessora, levantando súplicas pela igreja, cidade e nações.",
   },
   kids: {
     title: "Kids",
     description: "Ministério infantil",
     icon: Baby,
-    fullDescription: "Ministério dedicado às crianças, com ensino bíblico lúdico e atividades apropriadas para cada idade.",
+    fullDescription:
+      "Ministério dedicado às crianças, com ensino bíblico lúdico e atividades apropriadas para cada idade.",
   },
   louvor: {
     title: "Louvor",
     description: "Adoração e música",
     icon: Music,
-    fullDescription: "Ministério responsável pela condução do louvor e adoração nos cultos e eventos da igreja.",
+    fullDescription:
+      "Ministério responsável pela condução do louvor e adoração nos cultos e eventos da igreja.",
   },
   midia: {
     title: "Mídia",
     description: "Comunicação visual",
     icon: Camera,
-    fullDescription: "Ministério de comunicação responsável por fotos, vídeos, transmissões e mídias sociais da igreja.",
+    fullDescription:
+      "Ministério de comunicação responsável por fotos, vídeos, transmissões e mídias sociais da igreja.",
   },
   servico: {
     title: "Serviço (Dorcas)",
     description: "Ação social",
     icon: Heart,
-    fullDescription: "Ministério de ação social que atende famílias carentes com doações, visitas e apoio prático.",
+    fullDescription:
+      "Ministério de ação social que atende famílias carentes com doações, visitas e apoio prático.",
   },
   teatro: {
     title: "Teatro",
     description: "Artes cênicas",
     icon: Drama,
-    fullDescription: "Ministério de artes cênicas que apresenta peças teatrais e esquetes com mensagens edificantes.",
+    fullDescription:
+      "Ministério de artes cênicas que apresenta peças teatrais e esquetes com mensagens edificantes.",
   },
 };
 
@@ -114,11 +135,13 @@ const MinistryPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
+  const bypass = isAuthBypassed();
+
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && !bypass) {
       navigate("/auth");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, bypass]);
 
   if (authLoading) {
     return (
@@ -128,9 +151,10 @@ const MinistryPage = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !bypass) {
     return null;
   }
+
 
   const ministry = slug ? ministriesData[slug] : null;
 

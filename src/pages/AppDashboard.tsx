@@ -104,21 +104,35 @@ const AppDashboard = () => {
               <h1 className="font-heading font-bold text-lg text-foreground">
                 Gileade Church
               </h1>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-xs text-muted-foreground">
+                {user?.email ?? "Acesso temporário (sem login)"}
+              </p>
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSignOut}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
+          {user ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/auth")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Entrar
+            </Button>
+          )}
         </div>
       </header>
+
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
