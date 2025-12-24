@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,11 +34,19 @@ import {
 import { format } from "date-fns";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
+interface HorarioDia {
+  data: string;
+  periodo: string;
+  hora_inicio: string;
+  hora_fim: string;
+}
+
 interface Evento {
   id: string;
   titulo: string;
   descricao: string | null;
   data_evento: string;
+  data_fim?: string | null;
   hora_inicio: string | null;
   hora_fim: string | null;
   local: string | null;
@@ -51,6 +59,14 @@ interface Evento {
   semana_mes: number | null;
   flyer_url: string | null;
   observacoes: string | null;
+  idade_minima?: number | null;
+  idade_maxima?: number | null;
+  tem_refeicao?: boolean;
+  comentarios_refeicao?: string | null;
+  tem_custo?: boolean;
+  valor_custo?: number | null;
+  comentarios_custo?: string | null;
+  horarios_por_dia?: HorarioDia[];
 }
 
 interface EventoFormDialogProps {
@@ -119,7 +135,14 @@ export const EventoFormDialog = ({
     observacoes: "",
     idade_minima: "",
     idade_maxima: "",
+    tem_refeicao: false,
+    comentarios_refeicao: "",
+    tem_custo: false,
+    valor_custo: "",
+    comentarios_custo: "",
   });
+
+  const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -128,7 +151,7 @@ export const EventoFormDialog = ({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
           data_evento: evento.data_evento || "",
-          data_fim: (evento as any).data_fim || "",
+          data_fim: evento.data_fim || "",
           hora_inicio: evento.hora_inicio?.substring(0, 5) || "",
           hora_fim: evento.hora_fim?.substring(0, 5) || "",
           local: evento.local || "Igreja Gileade",
@@ -140,11 +163,18 @@ export const EventoFormDialog = ({
           dia_semana: evento.dia_semana?.toString() || "",
           semana_mes: evento.semana_mes?.toString() || "",
           observacoes: evento.observacoes || "",
-          idade_minima: "",
-          idade_maxima: "",
+          idade_minima: evento.idade_minima?.toString() || "",
+          idade_maxima: evento.idade_maxima?.toString() || "",
+          tem_refeicao: evento.tem_refeicao || false,
+          comentarios_refeicao: evento.comentarios_refeicao || "",
+          tem_custo: evento.tem_custo || false,
+          valor_custo: evento.valor_custo?.toString() || "",
+          comentarios_custo: evento.comentarios_custo || "",
         });
+        setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
         setFlyerPendente(null);
+      } else {
         setFormData({
           titulo: "",
           descricao: "",
@@ -163,7 +193,13 @@ export const EventoFormDialog = ({
           observacoes: "",
           idade_minima: "",
           idade_maxima: "",
+          tem_refeicao: false,
+          comentarios_refeicao: "",
+          tem_custo: false,
+          valor_custo: "",
+          comentarios_custo: "",
         });
+        setHorariosPorDia([]);
         setFlyerUrl(null);
         setFlyerPendente(null);
       }
@@ -319,6 +355,12 @@ export const EventoFormDialog = ({
         flyer_url: flyerUrl,
         idade_minima: formData.idade_minima ? parseInt(formData.idade_minima) : null,
         idade_maxima: formData.idade_maxima ? parseInt(formData.idade_maxima) : null,
+        tem_refeicao: formData.tem_refeicao,
+        comentarios_refeicao: formData.comentarios_refeicao || null,
+        tem_custo: formData.tem_custo,
+        valor_custo: formData.valor_custo ? parseFloat(formData.valor_custo) : null,
+        comentarios_custo: formData.comentarios_custo || null,
+        horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
       };
 
       if (evento) {
@@ -488,6 +530,171 @@ export const EventoFormDialog = ({
                 value={formData.local}
                 onChange={(e) => setFormData({ ...formData, local: e.target.value })}
               />
+            </div>
+
+            {/* Horários por dia para eventos multidatas */}
+            {formData.data_evento && formData.data_fim && formData.data_evento !== formData.data_fim && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="font-medium">Horários por Dia/Período</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setHorariosPorDia([
+                        ...horariosPorDia,
+                        { data: formData.data_evento, periodo: "noite", hora_inicio: "19:00", hora_fim: "21:00" }
+                      ]);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 mr-1" />
+                    Adicionar Horário
+                  </Button>
+                </div>
+                
+                {horariosPorDia.length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Clique em "Adicionar Horário" para definir horários específicos para cada dia e período.
+                  </p>
+                )}
+                
+                {horariosPorDia.map((horario, index) => (
+                  <div key={index} className="grid grid-cols-5 gap-2 items-end p-2 bg-background rounded border">
+                    <div>
+                      <Label className="text-xs">Data</Label>
+                      <Input
+                        type="date"
+                        value={horario.data}
+                        min={formData.data_evento}
+                        max={formData.data_fim}
+                        onChange={(e) => {
+                          const updated = [...horariosPorDia];
+                          updated[index].data = e.target.value;
+                          setHorariosPorDia(updated);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Período</Label>
+                      <Select
+                        value={horario.periodo}
+                        onValueChange={(v) => {
+                          const updated = [...horariosPorDia];
+                          updated[index].periodo = v;
+                          setHorariosPorDia(updated);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manha">Manhã</SelectItem>
+                          <SelectItem value="tarde">Tarde</SelectItem>
+                          <SelectItem value="noite">Noite</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Início</Label>
+                      <Input
+                        type="time"
+                        value={horario.hora_inicio}
+                        onChange={(e) => {
+                          const updated = [...horariosPorDia];
+                          updated[index].hora_inicio = e.target.value;
+                          setHorariosPorDia(updated);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Término</Label>
+                      <Input
+                        type="time"
+                        value={horario.hora_fim}
+                        onChange={(e) => {
+                          const updated = [...horariosPorDia];
+                          updated[index].hora_fim = e.target.value;
+                          setHorariosPorDia(updated);
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive"
+                      onClick={() => {
+                        setHorariosPorDia(horariosPorDia.filter((_, i) => i !== index));
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Refeição */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="tem_refeicao"
+                  checked={formData.tem_refeicao}
+                  onCheckedChange={(c) => setFormData({ ...formData, tem_refeicao: !!c })}
+                />
+                <Label htmlFor="tem_refeicao" className="cursor-pointer flex items-center gap-2">
+                  <Utensils className="w-4 h-4" />
+                  Haverá refeição no local
+                </Label>
+              </div>
+              
+              {formData.tem_refeicao && (
+                <Textarea
+                  placeholder="Detalhes sobre a refeição (tipo, horário, contribuição...)"
+                  value={formData.comentarios_refeicao}
+                  onChange={(e) => setFormData({ ...formData, comentarios_refeicao: e.target.value })}
+                  rows={2}
+                />
+              )}
+            </div>
+
+            {/* Custo */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="tem_custo"
+                  checked={formData.tem_custo}
+                  onCheckedChange={(c) => setFormData({ ...formData, tem_custo: !!c })}
+                />
+                <Label htmlFor="tem_custo" className="cursor-pointer flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  Evento tem custo/inscrição
+                </Label>
+              </div>
+              
+              {formData.tem_custo && (
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="valor_custo">Valor (R$)</Label>
+                    <Input
+                      id="valor_custo"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0,00"
+                      value={formData.valor_custo}
+                      onChange={(e) => setFormData({ ...formData, valor_custo: e.target.value })}
+                    />
+                  </div>
+                  <Textarea
+                    placeholder="Detalhes sobre o custo (formas de pagamento, o que inclui...)"
+                    value={formData.comentarios_custo}
+                    onChange={(e) => setFormData({ ...formData, comentarios_custo: e.target.value })}
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
