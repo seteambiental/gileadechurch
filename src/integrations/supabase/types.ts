@@ -104,6 +104,7 @@ export type Database = {
           kilos_arrecadados: number | null
           observacoes: string | null
           ofertas: number | null
+          photo_url: string | null
           qtd_criancas: number
           qtd_lideres: number
           qtd_membros: number
@@ -118,6 +119,7 @@ export type Database = {
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
+          photo_url?: string | null
           qtd_criancas?: number
           qtd_lideres?: number
           qtd_membros?: number
@@ -132,6 +134,7 @@ export type Database = {
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
+          photo_url?: string | null
           qtd_criancas?: number
           qtd_lideres?: number
           qtd_membros?: number

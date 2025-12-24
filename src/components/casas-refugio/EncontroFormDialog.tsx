@@ -66,7 +66,8 @@ export const EncontroFormDialog = ({
   casa,
 }: EncontroFormDialogProps) => {
   const queryClient = useQueryClient();
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormData>({
@@ -96,12 +97,33 @@ export const EncontroFormDialog = ({
         observacoes: "",
       });
       setPhoto(null);
+      setPhotoPreview(null);
     }
   }, [open, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!casa) throw new Error("Casa não selecionada");
+
+      let photoUrl: string | null = null;
+
+      // Upload photo if exists
+      if (photo) {
+        const fileExt = photo.name.split(".").pop();
+        const fileName = `${casa.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError, data: uploadData } = await supabase.storage
+          .from("encontros-fotos")
+          .upload(fileName, photo);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("encontros-fotos")
+          .getPublicUrl(fileName);
+
+        photoUrl = urlData.publicUrl;
+      }
 
       // Parse ofertas from formatted string to number
       const ofertasValue = data.ofertas 
@@ -118,12 +140,16 @@ export const EncontroFormDialog = ({
         kilos_arrecadados: data.kilos_arrecadados,
         ofertas: ofertasValue,
         observacoes: data.observacoes || null,
+        photo_url: photoUrl,
       });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["encontros"] });
+      queryClient.invalidateQueries({ queryKey: ["encontros-casa"] });
+      queryClient.invalidateQueries({ queryKey: ["encontros-supervisor"] });
+      queryClient.invalidateQueries({ queryKey: ["encontros-condominio"] });
       toast({
         title: "Encontro registrado!",
         description: "O relatório foi salvo com sucesso.",
@@ -158,16 +184,12 @@ export const EncontroFormDialog = ({
       return;
     }
 
-    // Pad with zeros if needed
     while (value.length < 3) {
       value = "0" + value;
     }
 
-    // Insert comma for decimals
     const intPart = value.slice(0, -2).replace(/^0+/, "") || "0";
     const decPart = value.slice(-2);
-    
-    // Format with thousand separators
     const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     
     onChange(`${formattedInt},${decPart}`);
@@ -180,9 +202,10 @@ export const EncontroFormDialog = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setPhoto(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhoto(reader.result as string);
+        setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -190,6 +213,7 @@ export const EncontroFormDialog = ({
 
   const removePhoto = () => {
     setPhoto(null);
+    setPhotoPreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -399,10 +423,10 @@ export const EncontroFormDialog = ({
                 className="hidden"
               />
 
-              {photo ? (
+              {photoPreview ? (
                 <div className="relative">
                   <img
-                    src={photo}
+                    src={photoPreview}
                     alt="Foto do encontro"
                     className="w-full h-40 object-cover rounded-lg border border-border"
                   />

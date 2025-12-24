@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
@@ -8,6 +8,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import { parseISO, isWithinInterval } from "date-fns";
+import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
+import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 
 const CondominioDetalhes = () => {
   const { nome } = useParams<{ nome: string }>();
@@ -15,6 +18,9 @@ const CondominioDetalhes = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const bypass = isAuthBypassed();
+
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -54,18 +60,49 @@ const CondominioDetalhes = () => {
     enabled: casaIds.length > 0,
   });
 
+  // Filter encontros by date range
+  const filteredEncontros = useMemo(() => {
+    if (!startDate && !endDate) return encontros;
+    
+    return encontros.filter((encontro) => {
+      const encontroDate = parseISO(encontro.data_encontro);
+      
+      if (startDate && endDate) {
+        return isWithinInterval(encontroDate, {
+          start: parseISO(startDate),
+          end: parseISO(endDate),
+        });
+      }
+      
+      if (startDate) {
+        return encontroDate >= parseISO(startDate);
+      }
+      
+      if (endDate) {
+        return encontroDate <= parseISO(endDate);
+      }
+      
+      return true;
+    });
+  }, [encontros, startDate, endDate]);
+
   // Calculate indicators
   const totalCasas = casas.length;
   const totalSupervisores = supervisores.length;
-  const totalEncontros = encontros.length;
-  const totalLideres = encontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
-  const totalMembros = encontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
-  const totalCriancas = encontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
-  const totalVisitantes = encontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
+  const totalEncontros = filteredEncontros.length;
+  const totalLideres = filteredEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
+  const totalMembros = filteredEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
+  const totalCriancas = filteredEncontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
+  const totalVisitantes = filteredEncontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
   const totalPessoas = totalLideres + totalMembros + totalCriancas + totalVisitantes;
-  const totalKilos = encontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
-  const totalOfertas = encontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
+  const totalKilos = filteredEncontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
+  const totalOfertas = filteredEncontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
   const mediaPessoas = totalEncontros > 0 ? Math.round(totalPessoas / totalEncontros) : 0;
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+  };
 
   if (authLoading) {
     return (
@@ -102,6 +139,15 @@ const CondominioDetalhes = () => {
             <Building className="w-10 h-10 text-primary" />
           </div>
         </div>
+
+        {/* Date Filter */}
+        <DateRangeFilter
+          startDate={startDate}
+          endDate={endDate}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onClear={clearFilters}
+        />
 
         {/* Indicators */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -169,6 +215,9 @@ const CondominioDetalhes = () => {
           </Card>
         </div>
 
+        {/* Charts */}
+        <EncontrosCharts encontros={filteredEncontros} />
+
         {/* Supervisores */}
         <div>
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -178,20 +227,24 @@ const CondominioDetalhes = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {supervisores.map((sup) => {
               const supCasas = casas.filter(c => c.supervisores === sup);
+              const supEncontros = filteredEncontros.filter(e => supCasas.some(c => c.id === e.casa_refugio_id));
               return (
                 <div
                   key={sup}
                   className="bg-card border border-border rounded-lg p-3 hover:border-destructive/50 cursor-pointer transition-colors"
                   onClick={() => navigate(`/supervisor/${encodeURIComponent(sup!)}`)}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
-                      <UserCheck className="w-4 h-4 text-destructive" />
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-destructive/10 flex items-center justify-center">
+                        <UserCheck className="w-4 h-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground text-sm">{sup}</p>
+                        <p className="text-xs text-muted-foreground">{supCasas.length} casas</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground text-sm">{sup}</p>
-                      <p className="text-xs text-muted-foreground">{supCasas.length} casas</p>
-                    </div>
+                    <span className="text-xs text-muted-foreground">{supEncontros.length} enc.</span>
                   </div>
                 </div>
               );
@@ -216,7 +269,7 @@ const CondominioDetalhes = () => {
           ) : (
             <div className="space-y-2">
               {casas.map((casa) => {
-                const casaEncontros = encontros.filter(e => e.casa_refugio_id === casa.id);
+                const casaEncontros = filteredEncontros.filter(e => e.casa_refugio_id === casa.id);
                 const casaTotal = casaEncontros.reduce((acc, e) => 
                   acc + (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0), 0);
                 return (
