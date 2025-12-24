@@ -10,6 +10,7 @@ import AppDashboard from "./pages/AppDashboard";
 import Cadastros from "./pages/Cadastros";
 import MemberDetails from "./pages/MemberDetails";
 import MinistryPage from "./pages/MinistryPage";
+import CasasRefugioPage from "./pages/CasasRefugioPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/app" element={<AppDashboard />} />
             <Route path="/cadastros" element={<Cadastros />} />
             <Route path="/membro/:id" element={<MemberDetails />} />
+            <Route path="/ministerio/casas-refugio" element={<CasasRefugioPage />} />
             <Route path="/ministerio/:slug" element={<MinistryPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

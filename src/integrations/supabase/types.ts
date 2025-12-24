@@ -95,6 +95,59 @@ export type Database = {
         }
         Relationships: []
       }
+      encontros_casa_refugio: {
+        Row: {
+          casa_refugio_id: string
+          created_at: string
+          data_encontro: string
+          id: string
+          kilos_arrecadados: number | null
+          observacoes: string | null
+          ofertas: number | null
+          qtd_criancas: number
+          qtd_lideres: number
+          qtd_membros: number
+          qtd_visitantes: number
+          updated_at: string
+        }
+        Insert: {
+          casa_refugio_id: string
+          created_at?: string
+          data_encontro: string
+          id?: string
+          kilos_arrecadados?: number | null
+          observacoes?: string | null
+          ofertas?: number | null
+          qtd_criancas?: number
+          qtd_lideres?: number
+          qtd_membros?: number
+          qtd_visitantes?: number
+          updated_at?: string
+        }
+        Update: {
+          casa_refugio_id?: string
+          created_at?: string
+          data_encontro?: string
+          id?: string
+          kilos_arrecadados?: number | null
+          observacoes?: string | null
+          ofertas?: number | null
+          qtd_criancas?: number
+          qtd_lideres?: number
+          qtd_membros?: number
+          qtd_visitantes?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encontros_casa_refugio_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_functions: {
         Row: {
           casa_refugio_id: string | null
