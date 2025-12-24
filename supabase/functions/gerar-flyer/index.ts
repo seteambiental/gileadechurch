@@ -175,51 +175,64 @@ serve(async (req) => {
     const backgroundColorName = getColorName(corFundo || "#1e3a5f");
     const backgroundColorHex = corFundo || "#1e3a5f";
 
-    // Criar prompt detalhado para o flyer informativo
-    const prompt = `GENERATE AN IMAGE: Create an informational church event flyer.
+    // Criar prompt detalhado para o flyer informativo - TODO EM PORTUGUÊS
+    const prompt = `GERE UMA IMAGEM: Crie um flyer informativo de evento de igreja.
 
-FLYER CONTENT (must be visible and readable on the image):
+IDIOMA: TODO O TEXTO DEVE ESTAR EM PORTUGUÊS DO BRASIL. NÃO USE INGLÊS.
 
-HEADER:
-- Include the Gileade church logo in the top-left or top-right corner
-- Main title in large, prominent BOLD text: "${titulo}"
+CONTEÚDO DO FLYER (deve estar visível e legível na imagem):
 
-DATE SECTION (below title):
+TÍTULO (topo, centralizado, maior destaque):
+"${titulo}"
+
+DATA E HORÁRIO (abaixo do título):
 ${dataHorarioInfo}
 ${cronogramaMultidatas}
 
-EVENT INFO:
-- Event type: ${tipoEvento || 'Evento'}
-${descricao ? `- Description: ${descricao}` : ''}
-- Target audience: ${publicoAlvo || 'Todos'}
+INFORMAÇÕES DO EVENTO (organizadas em seções claras):
+${descricao ? `Descrição: ${descricao}` : ''}
+Público Alvo: ${publicoAlvo || 'Todos'}
 ${refeicaoInfo}
 ${custoInfo}
 ${localInfo}
 
-DESIGN SPECIFICATIONS - VERY IMPORTANT:
-- Portrait flyer (9:16 aspect ratio)
-- SOLID COLOR BACKGROUND: Use exactly this color: ${backgroundColorName} (hex: ${backgroundColorHex})
-- NO IMAGES, NO FIGURES, NO PATTERNS, NO GRADIENTS - ONLY SOLID ${backgroundColorName.toUpperCase()} BACKGROUND
-- TYPOGRAPHY: Use Open Sans or Montserrat font style
-  - Title: BOLD weight, largest size
-  - All other text: Regular/Normal weight
-- Clean, minimalist, professional design
-- High contrast between ${backgroundColorName} background and white/light text
-- All text must be in Portuguese (Brazil)
-- Use simple white line icons for sections (calendar, clock, utensils, dollar sign, map pin)
-- Well-organized layout with clear visual hierarchy
-- Space in corner for church logo
+LOGO DA IGREJA GILEADE:
+- Posicionar a logo "GILEADE" no CANTO INFERIOR DIREITO do flyer
+- A logo deve ser pequena mas visível
+- Texto "Igreja Gileade" ou apenas "GILEADE" em branco
 
-CRITICAL RULES:
-- Background MUST be solid ${backgroundColorName} color (${backgroundColorHex})
-- NO background images whatsoever
-- NO decorative figures or illustrations
-- NO patterns or textures
-- ONLY solid color background
-- White or very light colored text for maximum readability
-- Professional and elegant appearance
+ESPECIFICAÇÕES DE DESIGN - MUITO IMPORTANTE:
+- Formato: Retrato/Vertical (proporção 9:16, como tela de celular)
+- FUNDO: Cor sólida ${backgroundColorName} (código hex: ${backgroundColorHex})
+- SEM IMAGENS de fundo, SEM FIGURAS, SEM PADRÕES, SEM GRADIENTES
+- APENAS fundo de cor sólida
+- TIPOGRAFIA: Estilo Open Sans ou Montserrat
+  - Título: NEGRITO, tamanho maior
+  - Demais textos: peso normal/regular
+- Design limpo, minimalista e profissional
+- Alto contraste entre fundo ${backgroundColorName} e texto branco/claro
+- Ícones brancos simples para cada seção (calendário, relógio, garfo/faca, cifrão, pin de localização)
 
-OUTPUT: Generate the flyer as an image.`;
+LAYOUT DO FLYER (de cima para baixo):
+1. TÍTULO do evento (grande, negrito, centralizado) - TOPO
+2. DATA principal e HORÁRIO
+3. CRONOGRAMA detalhado (se houver múltiplas datas)
+4. PÚBLICO ALVO
+5. REFEIÇÕES (se houver)
+6. INVESTIMENTO/CUSTO
+7. LOCAL com ícone de mapa
+8. LOGO GILEADE - CANTO INFERIOR DIREITO
+
+REGRAS CRÍTICAS:
+- Fundo DEVE ser cor sólida ${backgroundColorName} (${backgroundColorHex})
+- NENHUMA imagem de fundo
+- NENHUMA figura decorativa ou ilustração
+- NENHUM padrão ou textura
+- Texto branco ou muito claro para máxima legibilidade
+- Aparência profissional e elegante
+- Logo GILEADE no canto inferior direito
+
+SAÍDA: Gere o flyer como uma imagem.`;
 
     console.log("Prompt gerado:", prompt.substring(0, 500) + "...");
 
