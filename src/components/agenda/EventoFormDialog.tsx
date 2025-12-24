@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign, CalendarIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +34,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface HorarioDia {
@@ -482,23 +486,63 @@ export const EventoFormDialog = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="data_evento">Data Início</Label>
-                <Input
-                  id="data_evento"
-                  type="date"
-                  value={formData.data_evento}
-                  onChange={(e) => setFormData({ ...formData, data_evento: e.target.value })}
-                />
+                <Label>Data Início</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.data_evento && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.data_evento 
+                        ? format(parseISO(formData.data_evento), "dd/MM/yyyy", { locale: ptBR }) 
+                        : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.data_evento ? parseISO(formData.data_evento) : undefined}
+                      onSelect={(date) => setFormData({ ...formData, data_evento: date ? format(date, "yyyy-MM-dd") : "" })}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div>
-                <Label htmlFor="data_fim">Data Término</Label>
-                <Input
-                  id="data_fim"
-                  type="date"
-                  value={formData.data_fim}
-                  onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
-                  min={formData.data_evento}
-                />
+                <Label>Data Término</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !formData.data_fim && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.data_fim 
+                        ? format(parseISO(formData.data_fim), "dd/MM/yyyy", { locale: ptBR }) 
+                        : "Selecione a data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={formData.data_fim ? parseISO(formData.data_fim) : undefined}
+                      onSelect={(date) => setFormData({ ...formData, data_fim: date ? format(date, "yyyy-MM-dd") : "" })}
+                      disabled={(date) => formData.data_evento ? date < parseISO(formData.data_evento) : false}
+                      initialFocus
+                      className="p-3 pointer-events-auto"
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -521,15 +565,6 @@ export const EventoFormDialog = ({
                   onChange={(e) => setFormData({ ...formData, hora_fim: e.target.value })}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="local">Local</Label>
-              <Input
-                id="local"
-                value={formData.local}
-                onChange={(e) => setFormData({ ...formData, local: e.target.value })}
-              />
             </div>
 
             {/* Horários por dia para eventos multidatas */}
@@ -563,17 +598,44 @@ export const EventoFormDialog = ({
                   <div key={index} className="grid grid-cols-5 gap-2 items-end p-2 bg-background rounded border">
                     <div>
                       <Label className="text-xs">Data</Label>
-                      <Input
-                        type="date"
-                        value={horario.data}
-                        min={formData.data_evento}
-                        max={formData.data_fim}
-                        onChange={(e) => {
-                          const updated = [...horariosPorDia];
-                          updated[index].data = e.target.value;
-                          setHorariosPorDia(updated);
-                        }}
-                      />
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={cn(
+                              "w-full justify-start text-left font-normal text-xs",
+                              !horario.data && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-1 h-3 w-3" />
+                            {horario.data 
+                              ? format(parseISO(horario.data), "dd/MM", { locale: ptBR }) 
+                              : "Data"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={horario.data ? parseISO(horario.data) : undefined}
+                            onSelect={(date) => {
+                              const updated = [...horariosPorDia];
+                              updated[index].data = date ? format(date, "yyyy-MM-dd") : "";
+                              setHorariosPorDia(updated);
+                            }}
+                            disabled={(date) => {
+                              const inicio = formData.data_evento ? parseISO(formData.data_evento) : null;
+                              const fim = formData.data_fim ? parseISO(formData.data_fim) : null;
+                              if (inicio && date < inicio) return true;
+                              if (fim && date > fim) return true;
+                              return false;
+                            }}
+                            initialFocus
+                            className="p-3 pointer-events-auto"
+                            locale={ptBR}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div>
                       <Label className="text-xs">Período</Label>
@@ -585,7 +647,7 @@ export const EventoFormDialog = ({
                           setHorariosPorDia(updated);
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -599,6 +661,7 @@ export const EventoFormDialog = ({
                       <Label className="text-xs">Início</Label>
                       <Input
                         type="time"
+                        className="h-8 text-xs"
                         value={horario.hora_inicio}
                         onChange={(e) => {
                           const updated = [...horariosPorDia];
@@ -611,6 +674,7 @@ export const EventoFormDialog = ({
                       <Label className="text-xs">Término</Label>
                       <Input
                         type="time"
+                        className="h-8 text-xs"
                         value={horario.hora_fim}
                         onChange={(e) => {
                           const updated = [...horariosPorDia];
@@ -623,7 +687,7 @@ export const EventoFormDialog = ({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="text-destructive"
+                      className="h-8 w-8 text-destructive"
                       onClick={() => {
                         setHorariosPorDia(horariosPorDia.filter((_, i) => i !== index));
                       }}
@@ -634,6 +698,15 @@ export const EventoFormDialog = ({
                 ))}
               </div>
             )}
+
+            <div>
+              <Label htmlFor="local">Local</Label>
+              <Input
+                id="local"
+                value={formData.local}
+                onChange={(e) => setFormData({ ...formData, local: e.target.value })}
+              />
+            </div>
 
             {/* Refeição */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
