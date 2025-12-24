@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -45,7 +46,9 @@ import {
   Check,
   X,
   Trash2,
-  FileDown
+  FileDown,
+  Search,
+  Filter
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -104,6 +107,12 @@ export const InscricoesEventoDialog = ({
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Filters state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterGenero, setFilterGenero] = useState<string>("todos");
+  const [filterMenor, setFilterMenor] = useState<string>("todos");
+
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["inscricoes-evento", eventoId],
     queryFn: async () => {
@@ -116,6 +125,17 @@ export const InscricoesEventoDialog = ({
       return data as Inscricao[];
     },
     enabled: open && !!eventoId,
+  });
+
+  // Filtered inscriptions
+  const inscricoesFiltradas = inscricoes.filter((i) => {
+    const matchSearch = i.nome_participante.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
+    const matchGenero = filterGenero === "todos" || i.genero === filterGenero;
+    const matchMenor = filterMenor === "todos" || 
+      (filterMenor === "sim" && i.is_menor) || 
+      (filterMenor === "nao" && !i.is_menor);
+    return matchSearch && matchStatus && matchGenero && matchMenor;
   });
 
   const updateStatusMutation = useMutation({
@@ -155,12 +175,12 @@ export const InscricoesEventoDialog = ({
   };
 
   const handleExportExcel = () => {
-    if (inscricoes.length === 0) {
+    if (inscricoesFiltradas.length === 0) {
       toast({ variant: "destructive", title: "Nenhuma inscrição para exportar" });
       return;
     }
 
-    const dataExport = inscricoes.map((i, idx) => ({
+    const dataExport = inscricoesFiltradas.map((i, idx) => ({
       "#": idx + 1,
       "Nome": i.nome_participante,
       "Gênero": i.genero === "masculino" ? "M" : i.genero === "feminino" ? "F" : "-",
@@ -184,6 +204,15 @@ export const InscricoesEventoDialog = ({
     toast({ title: "Relatório exportado!" });
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setFilterStatus("todos");
+    setFilterGenero("todos");
+    setFilterMenor("todos");
+  };
+
+  const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterGenero !== "todos" || filterMenor !== "todos";
+
   const totalInscritos = inscricoes.length;
   const confirmados = inscricoes.filter(i => i.status_pagamento === "confirmado").length;
   const pendentes = inscricoes.filter(i => i.status_pagamento === "pendente").length;
@@ -191,7 +220,7 @@ export const InscricoesEventoDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
@@ -215,9 +244,69 @@ export const InscricoesEventoDialog = ({
             </div>
           </div>
 
+          {/* Filters */}
+          <div className="space-y-3 border-b pb-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros</span>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-6 text-xs">
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos status</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="confirmado">Confirmado</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterGenero} onValueChange={setFilterGenero}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Gênero" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos gêneros</SelectItem>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="feminino">Feminino</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterMenor} onValueChange={setFilterMenor}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Menores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="sim">Menores de idade</SelectItem>
+                  <SelectItem value="nao">Maiores de idade</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {hasActiveFilters && (
+              <p className="text-xs text-muted-foreground">
+                Mostrando {inscricoesFiltradas.length} de {inscricoes.length} inscrições
+              </p>
+            )}
+          </div>
+
           {/* Export Button */}
           <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={inscricoes.length === 0}>
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={inscricoesFiltradas.length === 0}>
               <FileDown className="w-4 h-4 mr-2" />
               Exportar Excel
             </Button>
@@ -229,10 +318,10 @@ export const InscricoesEventoDialog = ({
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : inscricoes.length === 0 ? (
+            ) : inscricoesFiltradas.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Nenhuma inscrição recebida</p>
+                <p>{hasActiveFilters ? "Nenhuma inscrição encontrada com os filtros aplicados" : "Nenhuma inscrição recebida"}</p>
               </div>
             ) : (
               <Table>
@@ -247,7 +336,7 @@ export const InscricoesEventoDialog = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inscricoes.map((inscricao) => (
+                  {inscricoesFiltradas.map((inscricao) => (
                     <TableRow key={inscricao.id}>
                       <TableCell>
                         <div>
