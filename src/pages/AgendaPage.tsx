@@ -21,12 +21,13 @@ import {
   Image,
   Download,
   Link,
-  Copy,
   Check,
+  Users,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
+import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -75,6 +76,7 @@ const AgendaPage = () => {
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [activeTab, setActiveTab] = useState("calendario");
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -498,6 +500,20 @@ const AgendaPage = () => {
                             </>
                           )}
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInscricoesEvento({ id: evento.id, titulo: evento.titulo });
+                          }}
+                        >
+                          <Users className="w-4 h-4 mr-2" />
+                          Inscrições
+                        </Button>
+                      </div>
+                      <div className="flex gap-2 mt-2">
                         {evento.flyer_url && (
                           <Button
                             variant="outline"
@@ -534,6 +550,15 @@ const AgendaPage = () => {
         evento={editingEvento}
         selectedDate={selectedDate}
       />
+
+      {inscricoesEvento && (
+        <InscricoesEventoDialog
+          open={!!inscricoesEvento}
+          onOpenChange={(open) => !open && setInscricoesEvento(null)}
+          eventoId={inscricoesEvento.id}
+          eventoTitulo={inscricoesEvento.titulo}
+        />
+      )}
     </div>
   );
 };
