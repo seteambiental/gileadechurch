@@ -1,4 +1,5 @@
-import { Home, MapPin, Calendar, Users, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Home, Calendar, Users, ChevronRight, UserCheck, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface CasaRefugio {
@@ -24,8 +25,36 @@ interface CasaRefugioRowProps {
 }
 
 export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) => {
+  const navigate = useNavigate();
+
+  const handleCasaClick = () => {
+    navigate(`/casa-refugio/${casa.id}`);
+  };
+
+  const handleSupervisorClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (casa.supervisores) {
+      navigate(`/supervisor/${encodeURIComponent(casa.supervisores)}`);
+    }
+  };
+
+  const handleCondominioClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (casa.condominio) {
+      navigate(`/condominio/${encodeURIComponent(casa.condominio)}`);
+    }
+  };
+
+  const handleEncontroClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenEncontro();
+  };
+
   return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:border-destructive/50 transition-colors">
+    <div 
+      className="bg-card border border-border rounded-lg p-4 hover:border-destructive/50 transition-colors cursor-pointer"
+      onClick={handleCasaClick}
+    >
       <div className="flex items-center justify-between gap-4">
         {/* Icon and Name */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -40,11 +69,26 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
           </div>
         </div>
 
-        {/* Condomínio Badge */}
+        {/* Supervisor - clickable */}
+        <div className="hidden lg:flex items-center gap-1">
+          <button
+            onClick={handleSupervisorClick}
+            className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <UserCheck className="w-3 h-3" />
+            <span className="truncate max-w-[120px]">{casa.supervisores || "—"}</span>
+          </button>
+        </div>
+
+        {/* Condomínio Badge - clickable */}
         <div className="hidden sm:flex items-center gap-2">
-          <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+          <button
+            onClick={handleCondominioClick}
+            className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Building className="w-3 h-3" />
             {casa.condominio || "—"}
-          </span>
+          </button>
         </div>
 
         {/* Dias */}
@@ -54,7 +98,7 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
         </div>
 
         {/* Frequência */}
-        <div className="hidden lg:block">
+        <div className="hidden xl:block">
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
             casa.frequencia === "SEMANAL" 
               ? "bg-green-500/10 text-green-600" 
@@ -69,7 +113,7 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
           <Button
             variant="outline"
             size="sm"
-            onClick={onOpenEncontro}
+            onClick={handleEncontroClick}
             className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
           >
             <Users className="w-4 h-4 mr-1" />
@@ -81,11 +125,22 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
 
       {/* Mobile extra info */}
       <div className="mt-3 pt-3 border-t border-border sm:hidden">
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+        <div className="flex items-center justify-between text-xs">
+          <button
+            onClick={handleCondominioClick}
+            className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
+          >
             {casa.condominio || "—"}
-          </span>
-          <span>{casa.dias} • {casa.frequencia}</span>
+          </button>
+          <button
+            onClick={handleSupervisorClick}
+            className="px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium truncate max-w-[120px]"
+          >
+            {casa.supervisores || "—"}
+          </button>
+        </div>
+        <div className="text-xs text-muted-foreground text-center mt-2">
+          {casa.dias} • {casa.frequencia}
         </div>
       </div>
     </div>
