@@ -146,6 +146,7 @@ const CondominioDetalhes = () => {
           endDate={endDate}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
+          onApply={() => {}}
           onClear={clearFilters}
         />
 
