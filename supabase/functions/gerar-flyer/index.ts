@@ -25,67 +25,88 @@ serve(async (req) => {
       console.log(`Prompt personalizado: ${promptPersonalizado}`);
     }
 
-    // Criar prompt detalhado para o flyer
-    const prompt = `Create a beautiful church event flyer with the following details:
+    // Criar prompt detalhado para o flyer - sendo MUITO explícito sobre gerar imagem
+    const prompt = `GENERATE AN IMAGE: Create a beautiful church event flyer image.
 
-EVENT: ${titulo}
-TYPE: ${tipoEvento || 'Evento da Igreja'}
-${descricao ? `DESCRIPTION: ${descricao}` : ''}
-${dataEvento ? `DATE: ${dataEvento}` : ''}
-${horaInicio ? `TIME: ${horaInicio}` : ''}
-${local ? `LOCATION: ${local}` : ''}
+Event Details:
+- Title: ${titulo}
+- Type: ${tipoEvento || 'Church Event'}
+${descricao ? `- Description: ${descricao}` : ''}
+${dataEvento ? `- Date: ${dataEvento}` : ''}
+${horaInicio ? `- Time: ${horaInicio}` : ''}
+${local ? `- Location: ${local}` : ''}
 
-${promptPersonalizado ? `CUSTOM DESIGN INSTRUCTIONS FROM USER: ${promptPersonalizado}` : ''}
+${promptPersonalizado ? `User's custom design instructions (PRIORITIZE THESE): ${promptPersonalizado}` : ''}
 
-Design requirements:
-- Modern, elegant church event flyer design
-- Portrait orientation (9:16 aspect ratio)
-- Use warm, inviting colors with spiritual themes
-- Include decorative elements like subtle crosses, doves, or light rays
-- Professional typography with clear hierarchy
-- The event title should be prominent and eye-catching
-- Add date and time in a clear, readable format
-- Include a small empty space in the bottom left corner for a logo to be added later
-- Make it visually striking and suitable for social media sharing
-- Use a color scheme that includes gold, burgundy, or deep blue tones
-- Inspirational and welcoming mood
-${promptPersonalizado ? '- PRIORITIZE the custom design instructions provided by the user above' : ''}
+Design specifications:
+- Create a portrait flyer image (9:16 ratio)
+- Modern and elegant church event design
+- Professional typography with the event title prominent
+- Warm, spiritual color palette (gold, burgundy, deep blue)
+- Leave empty space in bottom-left corner for logo
+- Suitable for social media sharing
 
-Generate a high-quality event flyer image.`;
+OUTPUT: Generate the flyer as an image.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash-image-preview',
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        modalities: ['image', 'text'],
-      }),
-    });
+    // Tentar gerar a imagem com retry
+    let imageData: string | null = null;
+    let attempts = 0;
+    const maxAttempts = 2;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Erro na API:', errorText);
-      throw new Error(`Erro ao gerar imagem: ${response.status}`);
+    while (!imageData && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Tentativa ${attempts} de gerar imagem...`);
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash-image-preview',
+          messages: [
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          modalities: ['image', 'text'],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na API:', response.status, errorText);
+        throw new Error(`Erro ao gerar imagem: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Resposta da API recebida, tentativa', attempts);
+
+      // Tentar extrair a imagem de diferentes formatos possíveis
+      imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+      if (!imageData) {
+        console.log('Formato alternativo tentado...');
+        // Tentar formato alternativo
+        const images = data.choices?.[0]?.message?.images;
+        if (images && images.length > 0) {
+          imageData = images[0]?.url || images[0]?.image_url?.url;
+        }
+      }
+
+      if (!imageData) {
+        console.log('Resposta sem imagem na tentativa', attempts, ':', JSON.stringify(data).substring(0, 500));
+        if (attempts < maxAttempts) {
+          console.log('Tentando novamente...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
     }
 
-    const data = await response.json();
-    console.log('Resposta da API recebida');
-
-    // Extrair a imagem base64
-    const imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
     if (!imageData) {
-      console.error('Resposta sem imagem:', JSON.stringify(data));
-      throw new Error('Nenhuma imagem foi gerada');
+      throw new Error('Não foi possível gerar a imagem do flyer. Tente novamente com uma descrição diferente.');
     }
 
     // Upload para o storage do Supabase
