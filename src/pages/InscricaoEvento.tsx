@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Search } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Search, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -50,7 +50,11 @@ interface NovoConvertido {
 
 const InscricaoEvento = () => {
   const { eventoId } = useParams<{ eventoId: string }>();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  // Fullscreen mode for totem
+  const [isFullscreen, setIsFullscreen] = useState(searchParams.get("fullscreen") === "true");
 
   // Form state
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,6 +74,26 @@ const InscricaoEvento = () => {
   const [formaPagamento, setFormaPagamento] = useState("");
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
+
+  // Toggle browser fullscreen
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   // Fetch evento
   const { data: evento, isLoading: eventoLoading } = useQuery({
@@ -291,18 +315,44 @@ const InscricaoEvento = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-      {/* Header - Otimizado para tablet/totem */}
-      <header className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4 md:py-6">
-          <div className="flex items-center gap-3 justify-center">
-            <img src={logoGileade} alt="Gileade" className="w-10 h-10 md:w-14 md:h-14 rounded-full object-cover" />
-            <span className="font-heading font-bold text-lg md:text-2xl">Igreja Gileade</span>
+    <div className={`min-h-screen bg-gradient-to-b from-background to-muted/30 ${isFullscreen ? 'p-4' : ''}`}>
+      {/* Header - Otimizado para tablet/totem - Escondido em fullscreen */}
+      {!isFullscreen && (
+        <header className="bg-card border-b border-border">
+          <div className="container mx-auto px-4 py-4 md:py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img src={logoGileade} alt="Gileade" className="w-10 h-10 md:w-14 md:h-14 rounded-full object-cover" />
+                <span className="font-heading font-bold text-lg md:text-2xl">Igreja Gileade</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="hidden md:flex"
+                title="Modo Tela Cheia"
+              >
+                <Maximize2 className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
-      <main className="container mx-auto px-4 py-6 md:py-10 max-w-3xl">
+      {/* Fullscreen exit button */}
+      {isFullscreen && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleFullscreen}
+          className="fixed top-4 right-4 z-50"
+        >
+          <Minimize2 className="w-4 h-4 mr-2" />
+          Sair Tela Cheia
+        </Button>
+      )}
+
+      <main className={`container mx-auto px-4 py-6 md:py-10 max-w-3xl ${isFullscreen ? 'pt-16' : ''}`}>
         {/* Event Info Card - Layout otimizado para tablet */}
         <Card className="mb-6 md:mb-8 overflow-hidden">
           {evento.flyer_url && (

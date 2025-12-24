@@ -498,6 +498,45 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'lembrete_pagamento') {
+      const { inscricaoId, evento } = body;
+      
+      // Buscar dados da inscrição
+      const { data: inscricao, error: inscError } = await supabase
+        .from('inscricoes_eventos')
+        .select('*')
+        .eq('id', inscricaoId)
+        .single();
+
+      if (inscError || !inscricao) {
+        throw new Error('Inscrição não encontrada');
+      }
+
+      if (!inscricao.telefone_contato) {
+        throw new Error('Telefone não cadastrado');
+      }
+
+      const primeiroNome = inscricao.nome_participante.split(' ')[0];
+      const dataFormatada = evento?.data_evento 
+        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long' 
+          })
+        : '';
+
+      const mensagem = `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
+      
+      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Lembrete de pagamento enviado!' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {

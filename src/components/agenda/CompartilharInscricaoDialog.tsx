@@ -36,6 +36,7 @@ export const CompartilharInscricaoDialog = ({
 
   const baseUrl = window.location.origin;
   const linkInscricao = `${baseUrl}/inscricao/${evento.id}`;
+  const linkTotem = `${baseUrl}/inscricao/${evento.id}?fullscreen=true`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(linkInscricao).then(() => {
@@ -49,7 +50,11 @@ export const CompartilharInscricaoDialog = ({
   };
 
   const handleOpenTotem = () => {
-    window.open(linkInscricao, '_blank');
+    // Open in new window with fullscreen parameter
+    const popup = window.open(linkTotem, '_blank', 'fullscreen=yes');
+    if (popup) {
+      popup.focus();
+    }
   };
 
   return (
