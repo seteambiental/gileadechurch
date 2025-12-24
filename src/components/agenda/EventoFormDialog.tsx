@@ -254,18 +254,27 @@ export const EventoFormDialog = ({
     
     setIsSendingFlyer(true);
     try {
-      // Por enquanto, apenas mostra um toast de sucesso
-      // A integração com WhatsApp pode ser implementada posteriormente
+      const { data, error } = await supabase.functions.invoke('enviar-whatsapp', {
+        body: {
+          action: 'enviar_flyer',
+          flyerUrl,
+          grupo: grupoEnvio,
+          evento: {
+            titulo: formData.titulo,
+            descricao: formData.descricao,
+            data_evento: formData.data_evento,
+            hora_inicio: formData.hora_inicio,
+            local: formData.local,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
       toast({ 
-        title: "Flyer preparado para envio!", 
-        description: `O flyer será enviado para o grupo: ${
-          grupoEnvio === "todos" ? "Todos" :
-          grupoEnvio === "homens" ? "Homens" :
-          grupoEnvio === "mulheres" ? "Mulheres" :
-          grupoEnvio === "jovens" ? "Jovens" :
-          grupoEnvio === "adolescentes" ? "Adolescentes" :
-          grupoEnvio === "criancas" ? "Crianças" : grupoEnvio
-        }` 
+        title: "Flyer enviado!", 
+        description: data.message 
       });
       setGrupoEnvio("");
     } catch (error: any) {
