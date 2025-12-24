@@ -56,6 +56,37 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   return result;
 }
 
+async function enviarImagemZAPI(telefone: string, imageUrl: string, caption?: string) {
+  const phoneClean = telefone.replace(/\D/g, "");
+  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
+  
+  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-image`;
+  
+  console.log(`Enviando imagem para: ${phoneFormatted}`);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+    },
+    body: JSON.stringify({
+      phone: phoneFormatted,
+      image: imageUrl,
+      caption: caption || '',
+    }),
+  });
+  
+  const result = await response.json();
+  console.log('Resposta Z-API imagem:', result);
+  
+  if (!response.ok) {
+    throw new Error(result.message || 'Erro ao enviar imagem');
+  }
+  
+  return result;
+}
+
 function gerarMensagemBoasVindas(nome: string, tipoConversao: string) {
   const primeiroNome = nome.split(' ')[0];
   const versiculos = tipoConversao === 'reconciliacao' ? versiculosReconciliacao : versiculosBoasVindas;
@@ -260,6 +291,108 @@ serve(async (req) => {
       }) || [];
 
       return new Response(JSON.stringify({ eventos: eventosFiltrados }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'enviar_flyer') {
+      const { flyerUrl, grupo, evento } = await req.json();
+      
+      if (!flyerUrl) {
+        throw new Error('URL do flyer é obrigatória');
+      }
+
+      console.log(`Enviando flyer para grupo: ${grupo}`);
+      
+      // Determinar filtro de gênero baseado no grupo
+      let generoFiltro: string | null = null;
+      let idadeMinima: number | null = null;
+      let idadeMaxima: number | null = null;
+      
+      switch (grupo) {
+        case 'homens':
+          generoFiltro = 'masculino';
+          idadeMinima = 18;
+          break;
+        case 'mulheres':
+          generoFiltro = 'feminino';
+          idadeMinima = 18;
+          break;
+        case 'jovens':
+          idadeMinima = 18;
+          idadeMaxima = 35;
+          break;
+        case 'adolescentes':
+          idadeMinima = 12;
+          idadeMaxima = 17;
+          break;
+        case 'criancas':
+          idadeMaxima = 11;
+          break;
+        // 'todos' não precisa de filtro
+      }
+
+      // Buscar membros com base nos filtros
+      let query = supabase
+        .from('members')
+        .select('id, full_name, whatsapp, genero, birth_date')
+        .not('whatsapp', 'is', null);
+
+      if (generoFiltro) {
+        query = query.eq('genero', generoFiltro);
+      }
+
+      const { data: membros, error: membrosError } = await query;
+
+      if (membrosError) {
+        throw new Error('Erro ao buscar membros');
+      }
+
+      // Filtrar por idade se necessário
+      const membrosFiltrados = membros?.filter(membro => {
+        if (!idadeMinima && !idadeMaxima) return true;
+        if (!membro.birth_date) return grupo === 'todos'; // Sem data de nascimento, só inclui se for "todos"
+        
+        const idade = calcularIdade(membro.birth_date);
+        if (idadeMinima && idade < idadeMinima) return false;
+        if (idadeMaxima && idade > idadeMaxima) return false;
+        return true;
+      }) || [];
+
+      console.log(`Encontrados ${membrosFiltrados.length} membros para envio`);
+
+      // Gerar legenda do flyer
+      const caption = evento?.titulo 
+        ? `📢 *${evento.titulo}*\n\n${evento.descricao || 'Não perca esse evento especial!'}\n\n📅 ${evento.data_evento ? new Date(evento.data_evento).toLocaleDateString('pt-BR') : ''} ${evento.hora_inicio ? `às ${evento.hora_inicio}` : ''}\n📍 ${evento.local || 'Igreja Gileade'}\n\n_Igreja Gileade_ 💙`
+        : '📢 Confira esse evento especial!\n\n_Igreja Gileade_ 💙';
+
+      // Enviar para cada membro (com delay para não sobrecarregar a API)
+      let enviados = 0;
+      let erros = 0;
+      
+      for (const membro of membrosFiltrados) {
+        if (!membro.whatsapp) continue;
+        
+        try {
+          await enviarImagemZAPI(membro.whatsapp, flyerUrl, caption);
+          enviados++;
+          console.log(`Flyer enviado para ${membro.full_name}`);
+          
+          // Delay de 2 segundos entre envios para evitar rate limiting
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (err) {
+          console.error(`Erro ao enviar para ${membro.full_name}:`, err);
+          erros++;
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Flyer enviado para ${enviados} pessoas. ${erros > 0 ? `${erros} falhas.` : ''}`,
+        enviados,
+        erros,
+        total: membrosFiltrados.length
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
