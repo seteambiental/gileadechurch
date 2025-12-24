@@ -152,8 +152,8 @@ serve(async (req) => {
 FLYER CONTENT (must be visible and readable on the image):
 
 HEADER:
-- Include the Gileade church logo in the top corner
-- Main title in large, prominent text: "${titulo}"
+- Include the Gileade church logo in the top-left or top-right corner
+- Main title in large, prominent BOLD text: "${titulo}"
 
 DATE SECTION (below title):
 ${dataHorarioInfo}
@@ -167,23 +167,27 @@ ${refeicaoInfo}
 ${custoInfo}
 ${localInfo}
 
-DESIGN SPECIFICATIONS:
-- Create a portrait flyer (9:16 aspect ratio, like a phone screen)
-- Modern, elegant church event design
-- Professional typography with clear hierarchy
-- The title "${titulo}" must be the largest and most prominent text
-- Use warm, spiritual color palette (gold, burgundy, deep blue, or purple tones)
+DESIGN SPECIFICATIONS - VERY IMPORTANT:
+- Portrait flyer (9:16 aspect ratio)
+- SOLID COLOR BACKGROUND ONLY - NO IMAGES, NO FIGURES, NO PATTERNS, NO GRADIENTS
+- Background must be a single strong, solid color (choose from: deep navy blue, burgundy red, forest green, royal purple, or charcoal gray)
+- TYPOGRAPHY: Use Open Sans or Montserrat font style
+  - Title: BOLD weight, largest size
+  - All other text: Regular/Normal weight
+- Clean, minimalist, professional design
+- High contrast between background color and white/light text
 - All text must be in Portuguese (Brazil)
-- Include a small map/location icon near the address
-- Leave space in top-left or top-right corner for the church logo
-- Make sure all information is readable and well organized
-- Use icons for each section (calendar for date, clock for time, utensils for food, dollar for cost, pin for location)
+- Use simple line icons for sections (calendar, clock, utensils, dollar sign, map pin)
+- Well-organized layout with clear visual hierarchy
+- Space in corner for church logo
 
-IMPORTANT:
-- This is an INFORMATIONAL flyer, all details must be clearly visible
-- Text hierarchy: Title > Date > Schedule > Other info
-- Ensure high contrast for readability
-- Professional and inviting design suitable for social media sharing
+CRITICAL RULES:
+- NO background images
+- NO decorative figures or illustrations
+- NO patterns or textures
+- ONLY solid color background
+- Text must be crisp and readable
+- Professional and elegant appearance
 
 OUTPUT: Generate the flyer as an image.`;
 
