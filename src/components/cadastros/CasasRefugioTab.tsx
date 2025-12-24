@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, MapPin } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import CasaRefugioFormDialog from "./CasaRefugioFormDialog";
 import {
@@ -21,11 +22,18 @@ import {
 interface CasaRefugio {
   id: string;
   name: string;
+  anfitrioes: string | null;
+  condominio: string | null;
+  lideres: string | null;
+  supervisores: string | null;
+  dias: string | null;
+  frequencia: string | null;
+  cep: string | null;
   address: string | null;
+  numero: string | null;
   neighborhood: string | null;
   city: string | null;
   state: string | null;
-  cep: string | null;
 }
 
 const CasasRefugioTab = () => {
@@ -63,8 +71,11 @@ const CasasRefugioTab = () => {
     },
   });
 
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredItems = items.filter(
+    (item) =>
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.condominio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.lideres?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -74,7 +85,7 @@ const CasasRefugioTab = () => {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar casas refúgio..."
+            placeholder="Buscar por nome, condomínio ou líder..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -84,6 +95,12 @@ const CasasRefugioTab = () => {
           <Plus className="w-4 h-4 mr-2" />
           Nova Casa Refúgio
         </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="flex gap-4 text-sm text-muted-foreground">
+        <span>Total: {items.length} casas refúgio</span>
+        {searchTerm && <span>• Encontradas: {filteredItems.length}</span>}
       </div>
 
       {/* List */}
@@ -102,15 +119,13 @@ const CasasRefugioTab = () => {
           {filteredItems.map((item) => (
             <Card key={item.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
               <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground">{item.name}</h3>
-                    {item.city && item.state && (
-                      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                        <MapPin className="w-3 h-3" />
-                        {item.neighborhood && `${item.neighborhood}, `}
-                        {item.city} - {item.state}
-                      </p>
+                    <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                    {item.condominio && (
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {item.condominio}
+                      </Badge>
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">
@@ -133,6 +148,30 @@ const CasasRefugioTab = () => {
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
+
+                <div className="space-y-1.5 text-sm text-muted-foreground">
+                  {item.lideres && (
+                    <p className="flex items-center gap-1.5 truncate">
+                      <Users className="w-3 h-3 shrink-0" />
+                      <span className="truncate">Líderes: {item.lideres}</span>
+                    </p>
+                  )}
+                  {item.dias && item.frequencia && (
+                    <p className="flex items-center gap-1.5">
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span>{item.dias} - {item.frequencia}</span>
+                    </p>
+                  )}
+                  {(item.neighborhood || item.city) && (
+                    <p className="flex items-center gap-1.5 truncate">
+                      <MapPin className="w-3 h-3 shrink-0" />
+                      <span className="truncate">
+                        {item.neighborhood && `${item.neighborhood}, `}
+                        {item.city} {item.state && `- ${item.state}`}
+                      </span>
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
