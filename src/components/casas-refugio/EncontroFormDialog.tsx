@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,7 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Loader2, Users, Package, DollarSign, Calendar } from "lucide-react";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, X } from "lucide-react";
 
 const formSchema = z.object({
   data_encontro: z.string().min(1, "Data é obrigatória"),
@@ -31,7 +31,7 @@ const formSchema = z.object({
   qtd_criancas: z.coerce.number().min(0, "Valor inválido"),
   qtd_visitantes: z.coerce.number().min(0, "Valor inválido"),
   kilos_arrecadados: z.coerce.number().min(0, "Valor inválido"),
-  ofertas: z.coerce.number().min(0, "Valor inválido"),
+  ofertas: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -66,6 +66,8 @@ export const EncontroFormDialog = ({
   casa,
 }: EncontroFormDialogProps) => {
   const queryClient = useQueryClient();
+  const [photo, setPhoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -76,7 +78,7 @@ export const EncontroFormDialog = ({
       qtd_criancas: 0,
       qtd_visitantes: 0,
       kilos_arrecadados: 0,
-      ofertas: 0,
+      ofertas: "",
       observacoes: "",
     },
   });
@@ -90,15 +92,21 @@ export const EncontroFormDialog = ({
         qtd_criancas: 0,
         qtd_visitantes: 0,
         kilos_arrecadados: 0,
-        ofertas: 0,
+        ofertas: "",
         observacoes: "",
       });
+      setPhoto(null);
     }
   }, [open, form]);
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       if (!casa) throw new Error("Casa não selecionada");
+
+      // Parse ofertas from formatted string to number
+      const ofertasValue = data.ofertas 
+        ? parseFloat(data.ofertas.replace(/\./g, "").replace(",", ".")) 
+        : 0;
 
       const { error } = await supabase.from("encontros_casa_refugio").insert({
         casa_refugio_id: casa.id,
@@ -108,7 +116,7 @@ export const EncontroFormDialog = ({
         qtd_criancas: data.qtd_criancas,
         qtd_visitantes: data.qtd_visitantes,
         kilos_arrecadados: data.kilos_arrecadados,
-        ofertas: data.ofertas,
+        ofertas: ofertasValue,
         observacoes: data.observacoes || null,
       });
 
@@ -131,15 +139,65 @@ export const EncontroFormDialog = ({
     },
   });
 
-  const totalPessoas =
-    (form.watch("qtd_lideres") || 0) +
-    (form.watch("qtd_membros") || 0) +
-    (form.watch("qtd_criancas") || 0) +
-    (form.watch("qtd_visitantes") || 0);
+  const handleNumericInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: number) => void
+  ) => {
+    const value = e.target.value.replace(/^0+/, "") || "";
+    onChange(value === "" ? 0 : parseInt(value, 10));
+  };
+
+  const handleOfertasInput = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    onChange: (value: string) => void
+  ) => {
+    let value = e.target.value.replace(/[^\d]/g, "");
+    
+    if (value === "") {
+      onChange("");
+      return;
+    }
+
+    // Pad with zeros if needed
+    while (value.length < 3) {
+      value = "0" + value;
+    }
+
+    // Insert comma for decimals
+    const intPart = value.slice(0, -2).replace(/^0+/, "") || "0";
+    const decPart = value.slice(-2);
+    
+    // Format with thousand separators
+    const formattedInt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    
+    onChange(`${formattedInt},${decPart}`);
+  };
+
+  const handleTakePhoto = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removePhoto = () => {
+    setPhoto(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-destructive" />
@@ -177,15 +235,10 @@ export const EncontroFormDialog = ({
 
             {/* Participantes */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Participantes
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  Total: <strong className="text-foreground">{totalPessoas}</strong>
-                </span>
-              </div>
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Participantes
+              </span>
 
               <div className="grid grid-cols-2 gap-3">
                 <FormField
@@ -196,10 +249,13 @@ export const EncontroFormDialog = ({
                       <FormLabel className="text-xs">Líderes</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder=""
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) => handleNumericInput(e, field.onChange)}
+                          className="[appearance:textfield]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -215,10 +271,13 @@ export const EncontroFormDialog = ({
                       <FormLabel className="text-xs">Membros</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder=""
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) => handleNumericInput(e, field.onChange)}
+                          className="[appearance:textfield]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -234,10 +293,13 @@ export const EncontroFormDialog = ({
                       <FormLabel className="text-xs">Crianças</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder=""
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) => handleNumericInput(e, field.onChange)}
+                          className="[appearance:textfield]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -253,10 +315,13 @@ export const EncontroFormDialog = ({
                       <FormLabel className="text-xs">Visitantes</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          min="0"
-                          placeholder="0"
-                          {...field}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          placeholder=""
+                          value={field.value === 0 ? "" : field.value}
+                          onChange={(e) => handleNumericInput(e, field.onChange)}
+                          className="[appearance:textfield]"
                         />
                       </FormControl>
                       <FormMessage />
@@ -279,11 +344,13 @@ export const EncontroFormDialog = ({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        placeholder="0"
-                        {...field}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder=""
+                        value={field.value === 0 ? "" : field.value}
+                        onChange={(e) => handleNumericInput(e, field.onChange)}
+                        className="[appearance:textfield]"
                       />
                     </FormControl>
                     <FormMessage />
@@ -302,17 +369,66 @@ export const EncontroFormDialog = ({
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="0,00"
-                        {...field}
+                        value={field.value}
+                        onChange={(e) => handleOfertasInput(e, field.onChange)}
+                        className="[appearance:textfield]"
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
+
+            {/* Foto */}
+            <div className="space-y-2">
+              <span className="text-xs font-medium flex items-center gap-1">
+                <Camera className="w-3 h-3" />
+                Foto do Encontro
+              </span>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {photo ? (
+                <div className="relative">
+                  <img
+                    src={photo}
+                    alt="Foto do encontro"
+                    className="w-full h-40 object-cover rounded-lg border border-border"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8"
+                    onClick={removePhoto}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-24 border-dashed"
+                  onClick={handleTakePhoto}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <Camera className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Tirar Foto</span>
+                  </div>
+                </Button>
+              )}
             </div>
 
             {/* Observações */}
