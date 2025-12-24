@@ -17,9 +17,12 @@ export type Database = {
       agenda_igreja: {
         Row: {
           ativo: boolean | null
+          cor: string | null
           created_at: string
           data_evento: string
           descricao: string | null
+          dia_semana: number | null
+          flyer_url: string | null
           genero_alvo: string | null
           hora_fim: string | null
           hora_inicio: string | null
@@ -27,15 +30,22 @@ export type Database = {
           idade_maxima: number | null
           idade_minima: number | null
           local: string | null
+          observacoes: string | null
+          recorrente: boolean | null
+          semana_mes: number | null
           tipo_evento: string
+          tipo_recorrencia: string | null
           titulo: string
           updated_at: string
         }
         Insert: {
           ativo?: boolean | null
+          cor?: string | null
           created_at?: string
           data_evento: string
           descricao?: string | null
+          dia_semana?: number | null
+          flyer_url?: string | null
           genero_alvo?: string | null
           hora_fim?: string | null
           hora_inicio?: string | null
@@ -43,15 +53,22 @@ export type Database = {
           idade_maxima?: number | null
           idade_minima?: number | null
           local?: string | null
+          observacoes?: string | null
+          recorrente?: boolean | null
+          semana_mes?: number | null
           tipo_evento: string
+          tipo_recorrencia?: string | null
           titulo: string
           updated_at?: string
         }
         Update: {
           ativo?: boolean | null
+          cor?: string | null
           created_at?: string
           data_evento?: string
           descricao?: string | null
+          dia_semana?: number | null
+          flyer_url?: string | null
           genero_alvo?: string | null
           hora_fim?: string | null
           hora_inicio?: string | null
@@ -59,7 +76,11 @@ export type Database = {
           idade_maxima?: number | null
           idade_minima?: number | null
           local?: string | null
+          observacoes?: string | null
+          recorrente?: boolean | null
+          semana_mes?: number | null
           tipo_evento?: string
+          tipo_recorrencia?: string | null
           titulo?: string
           updated_at?: string
         }
