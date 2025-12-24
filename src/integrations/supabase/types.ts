@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_igreja: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          data_evento: string
+          descricao: string | null
+          genero_alvo: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          idade_maxima: number | null
+          idade_minima: number | null
+          local: string | null
+          tipo_evento: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          data_evento: string
+          descricao?: string | null
+          genero_alvo?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          idade_maxima?: number | null
+          idade_minima?: number | null
+          local?: string | null
+          tipo_evento: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          data_evento?: string
+          descricao?: string | null
+          genero_alvo?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          idade_maxima?: number | null
+          idade_minima?: number | null
+          local?: string | null
+          tipo_evento?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       casas_refugio: {
         Row: {
           address: string | null
@@ -281,6 +332,51 @@ export type Database = {
           },
         ]
       }
+      mensagens_whatsapp: {
+        Row: {
+          conteudo: string
+          enviada_em: string
+          evento_id: string | null
+          id: string
+          novo_convertido_id: string
+          status: string | null
+          tipo_mensagem: string
+        }
+        Insert: {
+          conteudo: string
+          enviada_em?: string
+          evento_id?: string | null
+          id?: string
+          novo_convertido_id: string
+          status?: string | null
+          tipo_mensagem: string
+        }
+        Update: {
+          conteudo?: string
+          enviada_em?: string
+          evento_id?: string | null
+          id?: string
+          novo_convertido_id?: string
+          status?: string | null
+          tipo_mensagem?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensagens_whatsapp_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mensagens_whatsapp_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           created_at: string
@@ -321,13 +417,17 @@ export type Database = {
           data_decisao: string | null
           data_manaim: string | null
           data_membresia: string | null
+          data_nascimento: string | null
           datas_impacto: string[] | null
           email: string | null
           frequenta_casa_refugio: boolean | null
           full_name: string
+          genero: string | null
           id: string
           member_id: string | null
           membro_vinculado_id: string | null
+          mensagem_boas_vindas_enviada: boolean | null
+          mensagens_enviadas: number | null
           neighborhood: string | null
           numero: string | null
           participou_culto_membresia: boolean | null
@@ -336,6 +436,7 @@ export type Database = {
           state: string | null
           tipo_conversao: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro: boolean | null
+          ultima_mensagem_enviada: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -354,13 +455,17 @@ export type Database = {
           data_decisao?: string | null
           data_manaim?: string | null
           data_membresia?: string | null
+          data_nascimento?: string | null
           datas_impacto?: string[] | null
           email?: string | null
           frequenta_casa_refugio?: boolean | null
           full_name: string
+          genero?: string | null
           id?: string
           member_id?: string | null
           membro_vinculado_id?: string | null
+          mensagem_boas_vindas_enviada?: boolean | null
+          mensagens_enviadas?: number | null
           neighborhood?: string | null
           numero?: string | null
           participou_culto_membresia?: boolean | null
@@ -369,6 +474,7 @@ export type Database = {
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro?: boolean | null
+          ultima_mensagem_enviada?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -387,13 +493,17 @@ export type Database = {
           data_decisao?: string | null
           data_manaim?: string | null
           data_membresia?: string | null
+          data_nascimento?: string | null
           datas_impacto?: string[] | null
           email?: string | null
           frequenta_casa_refugio?: boolean | null
           full_name?: string
+          genero?: string | null
           id?: string
           member_id?: string | null
           membro_vinculado_id?: string | null
+          mensagem_boas_vindas_enviada?: boolean | null
+          mensagens_enviadas?: number | null
           neighborhood?: string | null
           numero?: string | null
           participou_culto_membresia?: boolean | null
@@ -402,6 +512,7 @@ export type Database = {
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro?: boolean | null
+          ultima_mensagem_enviada?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
