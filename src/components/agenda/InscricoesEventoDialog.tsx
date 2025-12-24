@@ -48,7 +48,9 @@ import {
   Trash2,
   FileDown,
   Search,
-  Filter
+  Filter,
+  Clock,
+  UserPlus
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,6 +77,7 @@ interface Inscricao {
   status_pagamento: string;
   observacoes: string | null;
   created_at: string;
+  lista_espera: boolean;
 }
 
 interface InscricoesEventoDialogProps {
@@ -82,6 +85,9 @@ interface InscricoesEventoDialogProps {
   onOpenChange: (open: boolean) => void;
   eventoId: string;
   eventoTitulo: string;
+  eventoLocal?: string | null;
+  eventoData?: string;
+  limiteVagas?: number | null;
 }
 
 const formaPagamentoLabels: Record<string, string> = {
@@ -101,6 +107,9 @@ export const InscricoesEventoDialog = ({
   onOpenChange,
   eventoId,
   eventoTitulo,
+  eventoLocal,
+  eventoData,
+  limiteVagas,
 }: InscricoesEventoDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -112,6 +121,7 @@ export const InscricoesEventoDialog = ({
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [filterGenero, setFilterGenero] = useState<string>("todos");
   const [filterMenor, setFilterMenor] = useState<string>("todos");
+  const [filterListaEspera, setFilterListaEspera] = useState<string>("todos");
 
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["inscricoes-evento", eventoId],
@@ -135,8 +145,15 @@ export const InscricoesEventoDialog = ({
     const matchMenor = filterMenor === "todos" || 
       (filterMenor === "sim" && i.is_menor) || 
       (filterMenor === "nao" && !i.is_menor);
-    return matchSearch && matchStatus && matchGenero && matchMenor;
+    const matchListaEspera = filterListaEspera === "todos" || 
+      (filterListaEspera === "sim" && i.lista_espera) || 
+      (filterListaEspera === "nao" && !i.lista_espera);
+    return matchSearch && matchStatus && matchGenero && matchMenor && matchListaEspera;
   });
+
+  // Contagens
+  const inscricoesConfirmadas = inscricoes.filter(i => !i.lista_espera && i.status_pagamento !== "cancelado");
+  const inscricoesListaEspera = inscricoes.filter(i => i.lista_espera);
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -164,8 +181,49 @@ export const InscricoesEventoDialog = ({
         .delete()
         .eq("id", deleteId);
       if (error) throw error;
+
+      // Verificar se há alguém na lista de espera para notificar
+      if (limiteVagas) {
+        const inscricoesAtivas = inscricoes.filter(i => i.id !== deleteId && !i.lista_espera && i.status_pagamento !== "cancelado");
+        const listaEspera = inscricoes.filter(i => i.lista_espera).sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        
+        if (inscricoesAtivas.length < limiteVagas && listaEspera.length > 0) {
+          const proximoDaLista = listaEspera[0];
+          
+          // Mover da lista de espera para inscrição confirmada
+          await supabase
+            .from("inscricoes_eventos")
+            .update({ lista_espera: false })
+            .eq("id", proximoDaLista.id);
+          
+          // Enviar notificação por WhatsApp
+          try {
+            await supabase.functions.invoke('enviar-whatsapp', {
+              body: {
+                action: 'notificar_vaga_liberada',
+                inscricaoId: proximoDaLista.id,
+                evento: {
+                  titulo: eventoTitulo,
+                  data_evento: eventoData,
+                  local: eventoLocal,
+                },
+              },
+            });
+            toast({ title: "Inscrição removida e próximo da lista notificado!" });
+          } catch (whatsappError) {
+            console.error('Erro ao enviar WhatsApp:', whatsappError);
+            toast({ title: "Inscrição removida! Próximo da lista foi promovido." });
+          }
+        } else {
+          toast({ title: "Inscrição removida!" });
+        }
+      } else {
+        toast({ title: "Inscrição removida!" });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
-      toast({ title: "Inscrição removida!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } finally {
@@ -209,9 +267,10 @@ export const InscricoesEventoDialog = ({
     setFilterStatus("todos");
     setFilterGenero("todos");
     setFilterMenor("todos");
+    setFilterListaEspera("todos");
   };
 
-  const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterGenero !== "todos" || filterMenor !== "todos";
+  const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterGenero !== "todos" || filterMenor !== "todos" || filterListaEspera !== "todos";
 
   const totalInscritos = inscricoes.length;
   const confirmados = inscricoes.filter(i => i.status_pagamento === "confirmado").length;
@@ -229,20 +288,29 @@ export const InscricoesEventoDialog = ({
           </DialogHeader>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 py-2">
+          <div className="grid grid-cols-4 gap-3 py-2">
             <div className="p-3 bg-muted rounded-lg text-center">
-              <p className="text-2xl font-bold">{totalInscritos}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="text-2xl font-bold">{inscricoesConfirmadas.length}</p>
+              <p className="text-xs text-muted-foreground">Inscritos</p>
             </div>
             <div className="p-3 bg-green-500/10 rounded-lg text-center">
               <p className="text-2xl font-bold text-green-600">{confirmados}</p>
-              <p className="text-xs text-muted-foreground">Confirmados</p>
+              <p className="text-xs text-muted-foreground">Pagos</p>
             </div>
             <div className="p-3 bg-yellow-500/10 rounded-lg text-center">
               <p className="text-2xl font-bold text-yellow-600">{pendentes}</p>
               <p className="text-xs text-muted-foreground">Pendentes</p>
             </div>
+            <div className="p-3 bg-orange-500/10 rounded-lg text-center">
+              <p className="text-2xl font-bold text-orange-600">{inscricoesListaEspera.length}</p>
+              <p className="text-xs text-muted-foreground">Lista Espera</p>
+            </div>
           </div>
+          {limiteVagas && (
+            <div className="text-xs text-muted-foreground text-center pb-2">
+              {inscricoesConfirmadas.length} de {limiteVagas} vagas preenchidas
+            </div>
+          )}
 
           {/* Filters */}
           <div className="space-y-3 border-b pb-4">
@@ -255,7 +323,7 @@ export const InscricoesEventoDialog = ({
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -296,6 +364,16 @@ export const InscricoesEventoDialog = ({
                   <SelectItem value="nao">Maiores de idade</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={filterListaEspera} onValueChange={setFilterListaEspera}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Lista Espera" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="sim">Lista de espera</SelectItem>
+                  <SelectItem value="nao">Inscritos</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {hasActiveFilters && (
               <p className="text-xs text-muted-foreground">
@@ -304,8 +382,16 @@ export const InscricoesEventoDialog = ({
             )}
           </div>
 
-          {/* Export Button */}
-          <div className="flex justify-end">
+          {/* Action Buttons */}
+          <div className="flex justify-between gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={() => window.open(`/inscricao/${eventoId}`, '_blank')}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Nova Inscrição
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={inscricoesFiltradas.length === 0}>
               <FileDown className="w-4 h-4 mr-2" />
               Exportar Excel
@@ -340,7 +426,15 @@ export const InscricoesEventoDialog = ({
                     <TableRow key={inscricao.id}>
                       <TableCell>
                         <div>
-                          <p className="font-medium">{inscricao.nome_participante}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{inscricao.nome_participante}</p>
+                            {inscricao.lista_espera && (
+                              <Badge variant="outline" className="text-xs text-orange-500 border-orange-300">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Espera
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             {inscricao.genero === "masculino" ? "Masculino" : inscricao.genero === "feminino" ? "Feminino" : "-"}
                             {inscricao.is_menor && (

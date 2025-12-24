@@ -52,6 +52,7 @@ interface Evento {
   flyer_url: string | null;
   observacoes: string | null;
   ativo: boolean;
+  limite_vagas: number | null;
 }
 
 const tipoEventoLabels: Record<string, string> = {
@@ -78,7 +79,7 @@ const AgendaPage = () => {
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [activeTab, setActiveTab] = useState("calendario");
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
-  const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string } | null>(null);
+  const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -512,7 +513,13 @@ const AgendaPage = () => {
                           className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setInscricoesEvento({ id: evento.id, titulo: evento.titulo });
+                            setInscricoesEvento({ 
+                              id: evento.id, 
+                              titulo: evento.titulo,
+                              local: evento.local,
+                              data_evento: evento.data_evento,
+                              limite_vagas: evento.limite_vagas
+                            });
                           }}
                         >
                           <Users className="w-4 h-4 mr-2" />
@@ -567,6 +574,9 @@ const AgendaPage = () => {
           onOpenChange={(open) => !open && setInscricoesEvento(null)}
           eventoId={inscricoesEvento.id}
           eventoTitulo={inscricoesEvento.titulo}
+          eventoLocal={inscricoesEvento.local}
+          eventoData={inscricoesEvento.data_evento}
+          limiteVagas={inscricoesEvento.limite_vagas}
         />
       )}
     </div>

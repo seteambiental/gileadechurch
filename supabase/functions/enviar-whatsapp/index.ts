@@ -459,6 +459,45 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'notificar_vaga_liberada') {
+      const { inscricaoId, evento } = body;
+      
+      // Buscar dados da inscrição na lista de espera
+      const { data: inscricao, error: inscError } = await supabase
+        .from('inscricoes_eventos')
+        .select('*')
+        .eq('id', inscricaoId)
+        .single();
+
+      if (inscError || !inscricao) {
+        throw new Error('Inscrição não encontrada');
+      }
+
+      if (!inscricao.telefone_contato) {
+        throw new Error('Telefone não cadastrado');
+      }
+
+      const primeiroNome = inscricao.nome_participante.split(' ')[0];
+      const dataFormatada = evento?.data_evento 
+        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long' 
+          })
+        : '';
+
+      const mensagem = `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+      
+      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Notificação de vaga liberada enviada!' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
