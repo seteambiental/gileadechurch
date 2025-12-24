@@ -629,44 +629,37 @@ export const EventoFormDialog = ({
                   <div key={index} className="grid grid-cols-5 gap-2 items-end p-2 bg-background rounded border">
                     <div>
                       <Label className="text-xs">Data</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                              "w-full justify-start text-left font-normal text-xs",
-                              !horario.data && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-1 h-3 w-3" />
-                            {horario.data 
-                              ? format(parseISO(horario.data), "dd/MM", { locale: ptBR }) 
-                              : "Data"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={horario.data ? parseISO(horario.data) : undefined}
-                            onSelect={(date) => {
-                              const updated = [...horariosPorDia];
-                              updated[index].data = date ? format(date, "yyyy-MM-dd") : "";
-                              setHorariosPorDia(updated);
-                            }}
-                            disabled={(date) => {
-                              const inicio = formData.data_evento ? parseISO(formData.data_evento) : null;
-                              const fim = formData.data_fim ? parseISO(formData.data_fim) : null;
-                              if (inicio && date < inicio) return true;
-                              if (fim && date > fim) return true;
-                              return false;
-                            }}
-                            initialFocus
-                            className="p-3 pointer-events-auto"
-                            locale={ptBR}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <Select
+                        value={horario.data}
+                        onValueChange={(v) => {
+                          const updated = [...horariosPorDia];
+                          updated[index].data = v;
+                          setHorariosPorDia(updated);
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Data" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(() => {
+                            const dates: string[] = [];
+                            if (formData.data_evento && formData.data_fim) {
+                              const start = parseISO(formData.data_evento);
+                              const end = parseISO(formData.data_fim);
+                              let current = new Date(start);
+                              while (current <= end) {
+                                dates.push(format(current, "yyyy-MM-dd"));
+                                current.setDate(current.getDate() + 1);
+                              }
+                            }
+                            return dates.map(d => (
+                              <SelectItem key={d} value={d}>
+                                {format(parseISO(d), "EEE, dd/MM", { locale: ptBR })}
+                              </SelectItem>
+                            ));
+                          })()}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="text-xs">Período</Label>
