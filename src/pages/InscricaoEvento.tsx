@@ -1,0 +1,561 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Calendar, Clock, MapPin, Check, Search } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import logoGileade from "@/assets/logo-gileade.jpeg";
+import { formatPhone } from "@/lib/masks";
+
+interface Evento {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  data_evento: string;
+  data_fim: string | null;
+  hora_inicio: string | null;
+  hora_fim: string | null;
+  local: string | null;
+  tipo_evento: string;
+  cor: string | null;
+  flyer_url: string | null;
+  tem_custo: boolean | null;
+  valor_custo: number | null;
+}
+
+interface Member {
+  id: string;
+  full_name: string;
+  whatsapp: string | null;
+  genero: string | null;
+}
+
+interface NovoConvertido {
+  id: string;
+  full_name: string;
+  whatsapp: string | null;
+  genero: string | null;
+}
+
+const InscricaoEvento = () => {
+  const { eventoId } = useParams<{ eventoId: string }>();
+  const { toast } = useToast();
+
+  // Form state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedPerson, setSelectedPerson] = useState<{ type: "member" | "convertido" | "novo"; id?: string } | null>(null);
+  const [nomeParticipante, setNomeParticipante] = useState("");
+  const [genero, setGenero] = useState("");
+  const [telefoneContato, setTelefoneContato] = useState("");
+  const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
+  const [isMenor, setIsMenor] = useState(false);
+  const [nomeResponsavel, setNomeResponsavel] = useState("");
+  const [telefoneResponsavel, setTelefoneResponsavel] = useState("");
+  const [preferenciaBeliche, setPreferenciaBeliche] = useState("indiferente");
+  const [temAlergia, setTemAlergia] = useState(false);
+  const [descricaoAlergia, setDescricaoAlergia] = useState("");
+  const [tomaMedicamento, setTomaMedicamento] = useState(false);
+  const [descricaoMedicamento, setDescricaoMedicamento] = useState("");
+  const [formaPagamento, setFormaPagamento] = useState("");
+  const [showSearch, setShowSearch] = useState(true);
+  const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
+
+  // Fetch evento
+  const { data: evento, isLoading: eventoLoading } = useQuery({
+    queryKey: ["evento-inscricao", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("*")
+        .eq("id", eventoId)
+        .single();
+      if (error) throw error;
+      return data as Evento;
+    },
+    enabled: !!eventoId,
+  });
+
+  // Fetch members
+  const { data: members = [] } = useQuery({
+    queryKey: ["members-inscricao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp, genero")
+        .order("full_name");
+      if (error) throw error;
+      return data as Member[];
+    },
+  });
+
+  // Fetch novos convertidos
+  const { data: convertidos = [] } = useQuery({
+    queryKey: ["convertidos-inscricao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("novos_convertidos")
+        .select("id, full_name, whatsapp, genero")
+        .order("full_name");
+      if (error) throw error;
+      return data as NovoConvertido[];
+    },
+  });
+
+  // Filter search results
+  const searchResults = searchTerm.length >= 2 ? [
+    ...members.filter(m => m.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map(m => ({ ...m, type: "member" as const })),
+    ...convertidos.filter(c => c.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map(c => ({ ...c, type: "convertido" as const })),
+  ] : [];
+
+  // Handle person selection
+  const handleSelectPerson = (person: { id: string; full_name: string; whatsapp: string | null; genero: string | null; type: "member" | "convertido" }) => {
+    setSelectedPerson({ type: person.type, id: person.id });
+    setNomeParticipante(person.full_name);
+    setTelefoneContato(person.whatsapp || "");
+    setGenero(person.genero || "");
+    setShowSearch(false);
+    setSearchTerm("");
+  };
+
+  // Handle new person
+  const handleNewPerson = () => {
+    setSelectedPerson({ type: "novo" });
+    setShowSearch(false);
+  };
+
+  // Mutation to create inscription
+  const inscricaoMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        evento_id: eventoId,
+        member_id: selectedPerson?.type === "member" ? selectedPerson.id : null,
+        novo_convertido_id: selectedPerson?.type === "convertido" ? selectedPerson.id : null,
+        nome_participante: nomeParticipante,
+        genero,
+        telefone_contato: telefoneContato,
+        telefone_emergencia: telefoneEmergencia || null,
+        is_menor: isMenor,
+        nome_responsavel: isMenor ? nomeResponsavel : null,
+        telefone_responsavel: isMenor ? telefoneResponsavel : null,
+        preferencia_beliche: preferenciaBeliche,
+        tem_alergia_alimentar: temAlergia,
+        descricao_alergia: temAlergia ? descricaoAlergia : null,
+        toma_medicamento: tomaMedicamento,
+        descricao_medicamento: tomaMedicamento ? descricaoMedicamento : null,
+        forma_pagamento: formaPagamento,
+      };
+
+      const { error } = await supabase.from("inscricoes_eventos").insert(payload);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setInscricaoRealizada(true);
+      toast({
+        title: "Inscrição realizada!",
+        description: "Sua inscrição foi registrada com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro na inscrição",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!nomeParticipante || !telefoneContato || !formaPagamento) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha nome, telefone e forma de pagamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isMenor && (!nomeResponsavel || !telefoneResponsavel)) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Para menores, informe o nome e telefone do responsável.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    inscricaoMutation.mutate();
+  };
+
+  if (eventoLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!evento) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-4">
+          <CardContent className="pt-6 text-center">
+            <p className="text-muted-foreground">Evento não encontrado.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (inscricaoRealizada) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold">Inscrição Confirmada!</h2>
+            <p className="text-muted-foreground">
+              Sua inscrição para <strong>{evento.titulo}</strong> foi realizada com sucesso.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Em breve você receberá mais informações pelo WhatsApp.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
+      {/* Header */}
+      <header className="bg-card border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center gap-3 justify-center">
+            <img src={logoGileade} alt="Gileade" className="w-10 h-10 rounded-full object-cover" />
+            <span className="font-heading font-bold text-lg">Igreja Gileade</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Event Info Card */}
+        <Card className="mb-6 overflow-hidden">
+          {evento.flyer_url && (
+            <div className="h-48">
+              <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="h-1" style={{ backgroundColor: evento.cor || "#dc2626" }} />
+          <CardHeader>
+            <CardTitle className="text-xl">{evento.titulo}</CardTitle>
+            <div className="flex flex-wrap gap-3 text-sm text-muted-foreground mt-2">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {format(parseISO(evento.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {evento.data_fim && evento.data_fim !== evento.data_evento && (
+                  <> a {format(parseISO(evento.data_fim), "dd 'de' MMMM", { locale: ptBR })}</>
+                )}
+              </span>
+              {evento.hora_inicio && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  {evento.hora_inicio.substring(0, 5)}
+                </span>
+              )}
+              {evento.local && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4" />
+                  {evento.local}
+                </span>
+              )}
+            </div>
+            {evento.descricao && (
+              <p className="text-sm text-muted-foreground mt-2">{evento.descricao}</p>
+            )}
+            {evento.tem_custo && evento.valor_custo && (
+              <p className="text-sm font-medium mt-2">
+                Investimento: R$ {evento.valor_custo.toFixed(2).replace(".", ",")}
+              </p>
+            )}
+          </CardHeader>
+        </Card>
+
+        {/* Inscription Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Formulário de Inscrição</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Search for existing person */}
+              {showSearch && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Buscar cadastro existente</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Digite seu nome para buscar..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    {searchResults.length > 0 && (
+                      <div className="border rounded-lg divide-y max-h-48 overflow-y-auto">
+                        {searchResults.map((person) => (
+                          <button
+                            key={`${person.type}-${person.id}`}
+                            type="button"
+                            className="w-full px-3 py-2 text-left hover:bg-muted/50 flex items-center justify-between"
+                            onClick={() => handleSelectPerson(person)}
+                          >
+                            <span>{person.full_name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {person.type === "member" ? "Membro" : "Consolidação"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {searchTerm.length >= 2 && searchResults.length === 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        Nenhum cadastro encontrado.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 border-t" />
+                    <span className="text-sm text-muted-foreground">ou</span>
+                    <div className="flex-1 border-t" />
+                  </div>
+                  <Button type="button" variant="outline" className="w-full" onClick={handleNewPerson}>
+                    Sou novo participante
+                  </Button>
+                </div>
+              )}
+
+              {/* Form fields */}
+              {!showSearch && (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowSearch(true);
+                      setSelectedPerson(null);
+                      setNomeParticipante("");
+                      setGenero("");
+                      setTelefoneContato("");
+                    }}
+                  >
+                    ← Voltar para busca
+                  </Button>
+
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="nome">Nome Completo *</Label>
+                      <Input
+                        id="nome"
+                        value={nomeParticipante}
+                        onChange={(e) => setNomeParticipante(e.target.value)}
+                        placeholder="Seu nome completo"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Gênero</Label>
+                      <Select value={genero} onValueChange={setGenero}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="feminino">Feminino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="telefone">Telefone para Contato *</Label>
+                      <Input
+                        id="telefone"
+                        value={telefoneContato}
+                        onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
+                        placeholder="(00) 00000-0000"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="emergencia">Telefone de Emergência</Label>
+                      <Input
+                        id="emergencia"
+                        value={telefoneEmergencia}
+                        onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+
+                    {/* Menor de idade */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <Label htmlFor="menor">É menor de idade?</Label>
+                      <Switch
+                        id="menor"
+                        checked={isMenor}
+                        onCheckedChange={setIsMenor}
+                      />
+                    </div>
+
+                    {isMenor && (
+                      <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                        <div className="space-y-2">
+                          <Label htmlFor="responsavel">Nome do Pai/Responsável *</Label>
+                          <Input
+                            id="responsavel"
+                            value={nomeResponsavel}
+                            onChange={(e) => setNomeResponsavel(e.target.value)}
+                            placeholder="Nome do responsável"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="telResponsavel">Telefone do Responsável *</Label>
+                          <Input
+                            id="telResponsavel"
+                            value={telefoneResponsavel}
+                            onChange={(e) => setTelefoneResponsavel(formatPhone(e.target.value))}
+                            placeholder="(00) 00000-0000"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Preferência beliche */}
+                    <div className="space-y-2">
+                      <Label>Preferência de Beliche</Label>
+                      <RadioGroup value={preferenciaBeliche} onValueChange={setPreferenciaBeliche}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cima" id="cima" />
+                          <Label htmlFor="cima" className="font-normal">Cima</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="baixo" id="baixo" />
+                          <Label htmlFor="baixo" className="font-normal">Baixo</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="indiferente" id="indiferente" />
+                          <Label htmlFor="indiferente" className="font-normal">Indiferente</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {/* Alergia alimentar */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <Label htmlFor="alergia">Possui alergia alimentar?</Label>
+                      <Switch
+                        id="alergia"
+                        checked={temAlergia}
+                        onCheckedChange={setTemAlergia}
+                      />
+                    </div>
+
+                    {temAlergia && (
+                      <div className="space-y-2">
+                        <Label htmlFor="descAlergia">Descreva a alergia</Label>
+                        <Textarea
+                          id="descAlergia"
+                          value={descricaoAlergia}
+                          onChange={(e) => setDescricaoAlergia(e.target.value)}
+                          placeholder="Descreva sua alergia alimentar..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Medicamento */}
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <Label htmlFor="medicamento">Toma algum medicamento?</Label>
+                      <Switch
+                        id="medicamento"
+                        checked={tomaMedicamento}
+                        onCheckedChange={setTomaMedicamento}
+                      />
+                    </div>
+
+                    {tomaMedicamento && (
+                      <div className="space-y-2">
+                        <Label htmlFor="descMedicamento">Descreva o medicamento</Label>
+                        <Textarea
+                          id="descMedicamento"
+                          value={descricaoMedicamento}
+                          onChange={(e) => setDescricaoMedicamento(e.target.value)}
+                          placeholder="Descreva o medicamento que toma..."
+                        />
+                      </div>
+                    )}
+
+                    {/* Forma de pagamento */}
+                    <div className="space-y-2">
+                      <Label>Forma de Pagamento *</Label>
+                      <RadioGroup value={formaPagamento} onValueChange={setFormaPagamento}>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="pix" id="pix" />
+                          <Label htmlFor="pix" className="font-normal">PIX</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cartao_credito" id="credito" />
+                          <Label htmlFor="credito" className="font-normal">Cartão de Crédito</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cartao_debito" id="debito" />
+                          <Label htmlFor="debito" className="font-normal">Cartão de Débito</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={inscricaoMutation.isPending}
+                  >
+                    {inscricaoMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      "Confirmar Inscrição"
+                    )}
+                  </Button>
+                </>
+              )}
+            </form>
+          </CardContent>
+        </Card>
+      </main>
+
+      {/* Footer */}
+      <footer className="py-6 text-center text-sm text-muted-foreground">
+        <p>Igreja Gileade © {new Date().getFullYear()}</p>
+      </footer>
+    </div>
+  );
+};
+
+export default InscricaoEvento;

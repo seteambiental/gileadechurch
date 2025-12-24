@@ -69,7 +69,8 @@ serve(async (req) => {
       valorCusto,
       comentariosCusto,
       horariosPorDia,
-      corFundo
+      corFundo,
+      linkInscricao
     } = await req.json();
 
     if (!titulo) {
@@ -175,64 +176,59 @@ serve(async (req) => {
     const backgroundColorName = getColorName(corFundo || "#1e3a5f");
     const backgroundColorHex = corFundo || "#1e3a5f";
 
-    // Criar prompt detalhado para o flyer informativo - TODO EM PORTUGUÊS
-    const prompt = `GERE UMA IMAGEM: Crie um flyer informativo de evento de igreja.
+    // Informação do link de inscrição
+    let inscricaoInfo = "";
+    if (linkInscricao) {
+      inscricaoInfo = `\n\nINSCRIÇÕES:\nAcesse: ${linkInscricao}`;
+    }
 
-IDIOMA: TODO O TEXTO DEVE ESTAR EM PORTUGUÊS DO BRASIL. NÃO USE INGLÊS.
+    // Criar prompt detalhado para o flyer informativo - 100% PORTUGUÊS BRASILEIRO
+    const prompt = `CRIAR IMAGEM DE FLYER DE EVENTO RELIGIOSO.
 
-CONTEÚDO DO FLYER (deve estar visível e legível na imagem):
+ATENÇÃO MÁXIMA: ESCREVA ABSOLUTAMENTE TUDO EM PORTUGUÊS DO BRASIL.
+NÃO USE NENHUMA PALAVRA EM INGLÊS. ZERO INGLÊS. APENAS PORTUGUÊS BRASILEIRO.
 
-TÍTULO (topo, centralizado, maior destaque):
-"${titulo}"
+TEXTOS OBRIGATÓRIOS NO FLYER (copie exatamente como está):
 
-DATA E HORÁRIO (abaixo do título):
-${dataHorarioInfo}
+TÍTULO PRINCIPAL (bem grande, no topo):
+${titulo}
+
+DATA:
+${formatDate(dataEvento)}
+${horaInicio ? `Horário: ${horaInicio}${horaFim ? ` às ${horaFim}` : ''}` : ''}
 ${cronogramaMultidatas}
 
-INFORMAÇÕES DO EVENTO (organizadas em seções claras):
-${descricao ? `Descrição: ${descricao}` : ''}
-Público Alvo: ${publicoAlvo || 'Todos'}
-${refeicaoInfo}
-${custoInfo}
-${localInfo}
+DETALHES:
+${descricao ? descricao : ''}
+Público: ${publicoAlvo || 'Todos'}
+${temRefeicao ? 'Refeições inclusas' : ''}${comentariosRefeicao ? ` - ${comentariosRefeicao}` : ''}
+${temCusto && valorCusto ? `Investimento: R$ ${parseFloat(valorCusto).toFixed(2).replace('.', ',')}` : 'Evento gratuito'}${comentariosCusto ? ` - ${comentariosCusto}` : ''}
+${local ? `Local: ${local}` : ''}
+${inscricaoInfo}
 
-LOGO DA IGREJA GILEADE:
-- Posicionar a logo "GILEADE" no CANTO INFERIOR DIREITO do flyer
-- A logo deve ser pequena mas visível
-- Texto "Igreja Gileade" ou apenas "GILEADE" em branco
+LOGO NO CANTO INFERIOR DIREITO:
+Escrever "GILEADE" em letras brancas no canto inferior direito
 
-ESPECIFICAÇÕES DE DESIGN - MUITO IMPORTANTE:
-- Formato: Retrato/Vertical (proporção 9:16, como tela de celular)
-- FUNDO: Cor sólida ${backgroundColorName} (código hex: ${backgroundColorHex})
-- SEM IMAGENS de fundo, SEM FIGURAS, SEM PADRÕES, SEM GRADIENTES
-- APENAS fundo de cor sólida
-- TIPOGRAFIA: Estilo Open Sans ou Montserrat
-  - Título: NEGRITO, tamanho maior
-  - Demais textos: peso normal/regular
-- Design limpo, minimalista e profissional
-- Alto contraste entre fundo ${backgroundColorName} e texto branco/claro
-- Ícones brancos simples para cada seção (calendário, relógio, garfo/faca, cifrão, pin de localização)
+DESIGN DO FLYER:
+- Orientação: Retrato (vertical, 9:16)
+- Cor de fundo: ${backgroundColorHex} (${backgroundColorName}) - COR SÓLIDA, SEM GRADIENTE
+- Texto: Branco para máximo contraste
+- Fonte: Estilo moderno como Montserrat
+- Título: Negrito e grande
+- Ícones: Pequenos ícones brancos para data (calendário), horário (relógio), local (pin)
+- Layout: Limpo, organizado, profissional
+- SEM fotos, SEM ilustrações, SEM padrões decorativos
+- Apenas fundo sólido com texto
 
-LAYOUT DO FLYER (de cima para baixo):
-1. TÍTULO do evento (grande, negrito, centralizado) - TOPO
-2. DATA principal e HORÁRIO
-3. CRONOGRAMA detalhado (se houver múltiplas datas)
-4. PÚBLICO ALVO
-5. REFEIÇÕES (se houver)
-6. INVESTIMENTO/CUSTO
-7. LOCAL com ícone de mapa
-8. LOGO GILEADE - CANTO INFERIOR DIREITO
+IMPORTANTE:
+- Todos os textos devem estar 100% em português brasileiro
+- Usar "Inscrições" não "Registration"
+- Usar "Local" não "Location"  
+- Usar "Data" não "Date"
+- Usar "Horário" não "Time"
+- Usar "Investimento" não "Investment"
 
-REGRAS CRÍTICAS:
-- Fundo DEVE ser cor sólida ${backgroundColorName} (${backgroundColorHex})
-- NENHUMA imagem de fundo
-- NENHUMA figura decorativa ou ilustração
-- NENHUM padrão ou textura
-- Texto branco ou muito claro para máxima legibilidade
-- Aparência profissional e elegante
-- Logo GILEADE no canto inferior direito
-
-SAÍDA: Gere o flyer como uma imagem.`;
+Gere a imagem do flyer agora.`;
 
     console.log("Prompt gerado:", prompt.substring(0, 500) + "...");
 
