@@ -81,6 +81,11 @@ interface EventoFormDialogProps {
 }
 
 const CORES = [
+  { value: "#1e3a5f", label: "Azul Marinho" },
+  { value: "#7b1e3a", label: "Bordô" },
+  { value: "#2d4a3e", label: "Verde Floresta" },
+  { value: "#4a2d6b", label: "Roxo Real" },
+  { value: "#3d3d3d", label: "Cinza Carvão" },
   { value: "#dc2626", label: "Vermelho" },
   { value: "#2563eb", label: "Azul" },
   { value: "#7c3aed", label: "Roxo" },
@@ -88,6 +93,12 @@ const CORES = [
   { value: "#ea580c", label: "Laranja" },
   { value: "#0891b2", label: "Ciano" },
   { value: "#db2777", label: "Rosa" },
+  { value: "#b45309", label: "Âmbar" },
+  { value: "#0d9488", label: "Teal" },
+  { value: "#6366f1", label: "Índigo" },
+  { value: "#84cc16", label: "Lima" },
+  { value: "#f97316", label: "Tangerina" },
+  { value: "#8b5cf6", label: "Violeta" },
 ];
 
 const TIPOS_EVENTO = [
@@ -280,6 +291,7 @@ export const EventoFormDialog = ({
           valorCusto: formData.valor_custo,
           comentariosCusto: formData.comentarios_custo,
           horariosPorDia: horariosPorDia,
+          corFundo: formData.cor,
         },
       });
 

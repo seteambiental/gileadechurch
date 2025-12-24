@@ -68,7 +68,8 @@ serve(async (req) => {
       temCusto,
       valorCusto,
       comentariosCusto,
-      horariosPorDia
+      horariosPorDia,
+      corFundo
     } = await req.json();
 
     if (!titulo) {
@@ -146,6 +147,34 @@ serve(async (req) => {
       localInfo += "\n(Incluir ícone de localização sugerindo Google Maps)";
     }
 
+    // Mapear cor hex para nome descritivo
+    const getColorName = (hex: string): string => {
+      const colorMap: Record<string, string> = {
+        "#1e3a5f": "deep navy blue",
+        "#7b1e3a": "burgundy red",
+        "#2d4a3e": "dark forest green",
+        "#4a2d6b": "royal purple",
+        "#3d3d3d": "charcoal gray",
+        "#dc2626": "bright red",
+        "#2563eb": "royal blue",
+        "#7c3aed": "vivid purple",
+        "#16a34a": "emerald green",
+        "#ea580c": "vibrant orange",
+        "#0891b2": "cyan blue",
+        "#db2777": "hot pink",
+        "#b45309": "amber brown",
+        "#0d9488": "teal green",
+        "#6366f1": "indigo blue",
+        "#84cc16": "lime green",
+        "#f97316": "tangerine orange",
+        "#8b5cf6": "violet purple",
+      };
+      return colorMap[hex] || "deep navy blue";
+    };
+
+    const backgroundColorName = getColorName(corFundo || "#1e3a5f");
+    const backgroundColorHex = corFundo || "#1e3a5f";
+
     // Criar prompt detalhado para o flyer informativo
     const prompt = `GENERATE AN IMAGE: Create an informational church event flyer.
 
@@ -169,24 +198,25 @@ ${localInfo}
 
 DESIGN SPECIFICATIONS - VERY IMPORTANT:
 - Portrait flyer (9:16 aspect ratio)
-- SOLID COLOR BACKGROUND ONLY - NO IMAGES, NO FIGURES, NO PATTERNS, NO GRADIENTS
-- Background must be a single strong, solid color (choose from: deep navy blue, burgundy red, forest green, royal purple, or charcoal gray)
+- SOLID COLOR BACKGROUND: Use exactly this color: ${backgroundColorName} (hex: ${backgroundColorHex})
+- NO IMAGES, NO FIGURES, NO PATTERNS, NO GRADIENTS - ONLY SOLID ${backgroundColorName.toUpperCase()} BACKGROUND
 - TYPOGRAPHY: Use Open Sans or Montserrat font style
   - Title: BOLD weight, largest size
   - All other text: Regular/Normal weight
 - Clean, minimalist, professional design
-- High contrast between background color and white/light text
+- High contrast between ${backgroundColorName} background and white/light text
 - All text must be in Portuguese (Brazil)
-- Use simple line icons for sections (calendar, clock, utensils, dollar sign, map pin)
+- Use simple white line icons for sections (calendar, clock, utensils, dollar sign, map pin)
 - Well-organized layout with clear visual hierarchy
 - Space in corner for church logo
 
 CRITICAL RULES:
-- NO background images
+- Background MUST be solid ${backgroundColorName} color (${backgroundColorHex})
+- NO background images whatsoever
 - NO decorative figures or illustrations
 - NO patterns or textures
 - ONLY solid color background
-- Text must be crisp and readable
+- White or very light colored text for maximum readability
 - Professional and elegant appearance
 
 OUTPUT: Generate the flyer as an image.`;
