@@ -155,14 +155,39 @@ const InscricaoEvento = () => {
         forma_pagamento: formaPagamento,
       };
 
-      const { error } = await supabase.from("inscricoes_eventos").insert(payload);
+      const { data: inscricaoData, error } = await supabase
+        .from("inscricoes_eventos")
+        .insert(payload)
+        .select()
+        .single();
       if (error) throw error;
+
+      // Enviar confirmação por WhatsApp automaticamente
+      try {
+        await supabase.functions.invoke('enviar-whatsapp', {
+          body: {
+            action: 'confirmacao_inscricao',
+            inscricaoId: inscricaoData.id,
+            evento: {
+              titulo: evento?.titulo,
+              data_evento: evento?.data_evento,
+              hora_inicio: evento?.hora_inicio,
+              local: evento?.local,
+            },
+          },
+        });
+      } catch (whatsappError) {
+        console.error('Erro ao enviar WhatsApp:', whatsappError);
+        // Não bloqueia a inscrição se o WhatsApp falhar
+      }
+
+      return inscricaoData;
     },
     onSuccess: () => {
       setInscricaoRealizada(true);
       toast({
         title: "Inscrição realizada!",
-        description: "Sua inscrição foi registrada com sucesso.",
+        description: "Sua inscrição foi registrada e uma confirmação foi enviada por WhatsApp.",
       });
     },
     onError: (error: Error) => {

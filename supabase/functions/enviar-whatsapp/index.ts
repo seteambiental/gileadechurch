@@ -396,6 +396,69 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'confirmacao_inscricao') {
+      const { inscricaoId, evento } = body;
+      
+      // Buscar dados da inscrição
+      const { data: inscricao, error: inscError } = await supabase
+        .from('inscricoes_eventos')
+        .select('*')
+        .eq('id', inscricaoId)
+        .single();
+
+      if (inscError || !inscricao) {
+        throw new Error('Inscrição não encontrada');
+      }
+
+      if (!inscricao.telefone_contato) {
+        throw new Error('Telefone não cadastrado na inscrição');
+      }
+
+      const primeiroNome = inscricao.nome_participante.split(' ')[0];
+      const dataFormatada = evento?.data_evento 
+        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long' 
+          })
+        : '';
+      
+      const horaFormatada = evento?.hora_inicio ? ` às ${evento.hora_inicio.substring(0, 5)}` : '';
+      
+      const formaPagamentoMap: Record<string, string> = {
+        pix: 'PIX',
+        cartao_credito: 'Cartão de Crédito',
+        cartao_debito: 'Cartão de Débito'
+      };
+      const formaPagamentoLabel = formaPagamentoMap[inscricao.forma_pagamento] || inscricao.forma_pagamento;
+
+      const belicheMap: Record<string, string> = {
+        cima: 'Beliche de cima',
+        baixo: 'Beliche de baixo',
+        indiferente: 'Sem preferência de beliche'
+      };
+      const belicheLabel = belicheMap[inscricao.preferencia_beliche || 'indiferente'] || 'Sem preferência';
+
+      let observacoesEspeciais = '';
+      if (inscricao.tem_alergia_alimentar && inscricao.descricao_alergia) {
+        observacoesEspeciais += `\n⚠️ Alergia: ${inscricao.descricao_alergia}`;
+      }
+      if (inscricao.toma_medicamento && inscricao.descricao_medicamento) {
+        observacoesEspeciais += `\n💊 Medicamento: ${inscricao.descricao_medicamento}`;
+      }
+
+      const mensagem = `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+      
+      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Confirmação enviada por WhatsApp!' 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
