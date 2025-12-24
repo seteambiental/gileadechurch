@@ -17,35 +17,56 @@ export type Database = {
       casas_refugio: {
         Row: {
           address: string | null
+          anfitrioes: string | null
           cep: string | null
           city: string | null
+          condominio: string | null
           created_at: string
+          dias: string | null
+          frequencia: string | null
           id: string
+          lideres: string | null
           name: string
           neighborhood: string | null
+          numero: string | null
           state: string | null
+          supervisores: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          anfitrioes?: string | null
           cep?: string | null
           city?: string | null
+          condominio?: string | null
           created_at?: string
+          dias?: string | null
+          frequencia?: string | null
           id?: string
+          lideres?: string | null
           name: string
           neighborhood?: string | null
+          numero?: string | null
           state?: string | null
+          supervisores?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          anfitrioes?: string | null
           cep?: string | null
           city?: string | null
+          condominio?: string | null
           created_at?: string
+          dias?: string | null
+          frequencia?: string | null
           id?: string
+          lideres?: string | null
           name?: string
           neighborhood?: string | null
+          numero?: string | null
           state?: string | null
+          supervisores?: string | null
           updated_at?: string
         }
         Relationships: []
