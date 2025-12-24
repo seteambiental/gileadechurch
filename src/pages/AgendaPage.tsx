@@ -19,6 +19,7 @@ import {
   PartyPopper,
   Church,
   Image,
+  Download,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -409,35 +410,73 @@ const AgendaPage = () => {
                 {eventosUnicos.map(evento => (
                   <Card 
                     key={evento.id} 
-                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      setEditingEvento(evento);
-                      setShowEventoForm(true);
-                    }}
+                    className="overflow-hidden hover:shadow-md transition-shadow"
                   >
                     {evento.flyer_url ? (
-                      <div className="h-40 bg-muted">
+                      <div 
+                        className="h-40 bg-muted cursor-pointer"
+                        onClick={() => {
+                          setEditingEvento(evento);
+                          setShowEventoForm(true);
+                        }}
+                      >
                         <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
                       </div>
                     ) : (
-                      <div className="h-2" style={{ backgroundColor: evento.cor || "#dc2626" }} />
+                      <div 
+                        className="h-2 cursor-pointer" 
+                        style={{ backgroundColor: evento.cor || "#dc2626" }}
+                        onClick={() => {
+                          setEditingEvento(evento);
+                          setShowEventoForm(true);
+                        }}
+                      />
                     )}
                     <CardContent className="pt-4 space-y-2">
-                      <h4 className="font-semibold">{evento.titulo}</h4>
-                      <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CalendarIcon className="w-3 h-3" />
-                          {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
-                        </span>
-                        {evento.hora_inicio && (
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setEditingEvento(evento);
+                          setShowEventoForm(true);
+                        }}
+                      >
+                        <h4 className="font-semibold">{evento.titulo}</h4>
+                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {evento.hora_inicio.substring(0, 5)}
+                            <CalendarIcon className="w-3 h-3" />
+                            {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
                           </span>
+                          {evento.hora_inicio && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {evento.hora_inicio.substring(0, 5)}
+                            </span>
+                          )}
+                        </div>
+                        {evento.descricao && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{evento.descricao}</p>
                         )}
                       </div>
-                      {evento.descricao && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">{evento.descricao}</p>
+                      
+                      {evento.flyer_url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const link = document.createElement('a');
+                            link.href = evento.flyer_url!;
+                            link.download = `flyer-${evento.titulo.replace(/\s+/g, '-').toLowerCase()}.png`;
+                            link.target = '_blank';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Baixar Flyer
+                        </Button>
                       )}
                     </CardContent>
                   </Card>
