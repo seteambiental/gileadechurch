@@ -305,6 +305,137 @@ export type Database = {
         }
         Relationships: []
       }
+      novos_convertidos: {
+        Row: {
+          address: string | null
+          batizado: boolean | null
+          casa_refugio_frequenta_id: string | null
+          casa_refugio_id: string | null
+          cep: string | null
+          city: string | null
+          como_chegou: Database["public"]["Enums"]["arrival_method"] | null
+          complement: string | null
+          created_at: string
+          data_batismo: string | null
+          data_culto_membresia: string | null
+          data_decisao: string | null
+          data_manaim: string | null
+          data_membresia: string | null
+          datas_impacto: string[] | null
+          email: string | null
+          frequenta_casa_refugio: boolean | null
+          full_name: string
+          id: string
+          member_id: string | null
+          membro_vinculado_id: string | null
+          neighborhood: string | null
+          numero: string | null
+          participou_culto_membresia: boolean | null
+          participou_impacto: boolean | null
+          participou_manaim: boolean | null
+          state: string | null
+          tipo_conversao: Database["public"]["Enums"]["conversion_type"] | null
+          tornou_membro: boolean | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          batizado?: boolean | null
+          casa_refugio_frequenta_id?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          city?: string | null
+          como_chegou?: Database["public"]["Enums"]["arrival_method"] | null
+          complement?: string | null
+          created_at?: string
+          data_batismo?: string | null
+          data_culto_membresia?: string | null
+          data_decisao?: string | null
+          data_manaim?: string | null
+          data_membresia?: string | null
+          datas_impacto?: string[] | null
+          email?: string | null
+          frequenta_casa_refugio?: boolean | null
+          full_name: string
+          id?: string
+          member_id?: string | null
+          membro_vinculado_id?: string | null
+          neighborhood?: string | null
+          numero?: string | null
+          participou_culto_membresia?: boolean | null
+          participou_impacto?: boolean | null
+          participou_manaim?: boolean | null
+          state?: string | null
+          tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
+          tornou_membro?: boolean | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          batizado?: boolean | null
+          casa_refugio_frequenta_id?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          city?: string | null
+          como_chegou?: Database["public"]["Enums"]["arrival_method"] | null
+          complement?: string | null
+          created_at?: string
+          data_batismo?: string | null
+          data_culto_membresia?: string | null
+          data_decisao?: string | null
+          data_manaim?: string | null
+          data_membresia?: string | null
+          datas_impacto?: string[] | null
+          email?: string | null
+          frequenta_casa_refugio?: boolean | null
+          full_name?: string
+          id?: string
+          member_id?: string | null
+          membro_vinculado_id?: string | null
+          neighborhood?: string | null
+          numero?: string | null
+          participou_culto_membresia?: boolean | null
+          participou_impacto?: boolean | null
+          participou_manaim?: boolean | null
+          state?: string | null
+          tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
+          tornou_membro?: boolean | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "novos_convertidos_casa_refugio_frequenta_id_fkey"
+            columns: ["casa_refugio_frequenta_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novos_convertidos_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novos_convertidos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novos_convertidos_membro_vinculado_id_fkey"
+            columns: ["membro_vinculado_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -313,6 +444,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      arrival_method:
+        | "culto_domingo"
+        | "culto_quarta"
+        | "casa_refugio"
+        | "impacto"
+        | "acao_evangelistica"
       church_function_type:
         | "lider_casa_refugio"
         | "lider_ministerio"
@@ -321,6 +458,7 @@ export type Database = {
         | "supervisor_condominio"
         | "sindico_condominio"
         | "integrante_ministerio"
+      conversion_type: "conversao" | "reconciliacao"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -448,6 +586,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      arrival_method: [
+        "culto_domingo",
+        "culto_quarta",
+        "casa_refugio",
+        "impacto",
+        "acao_evangelistica",
+      ],
       church_function_type: [
         "lider_casa_refugio",
         "lider_ministerio",
@@ -457,6 +602,7 @@ export const Constants = {
         "sindico_condominio",
         "integrante_ministerio",
       ],
+      conversion_type: ["conversao", "reconciliacao"],
     },
   },
 } as const
