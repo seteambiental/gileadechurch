@@ -23,7 +23,7 @@ import {
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO, isWithinInterval } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Evento {
@@ -31,6 +31,7 @@ interface Evento {
   titulo: string;
   descricao: string | null;
   data_evento: string;
+  data_fim: string | null;
   hora_inicio: string | null;
   hora_fim: string | null;
   local: string | null;
@@ -131,11 +132,16 @@ const AgendaPage = () => {
           }
         });
       } else {
-        // Evento único
-        const dataEvento = parseISO(evento.data_evento);
-        if (isSameMonth(dataEvento, currentMonth)) {
-          eventosExpandidos.push({ ...evento, dataCalculada: dataEvento });
-        }
+        // Evento único ou multi-dias
+        const dataInicio = parseISO(evento.data_evento);
+        const dataFim = evento.data_fim ? parseISO(evento.data_fim) : dataInicio;
+        
+        // Verificar cada dia do mês se está dentro do intervalo do evento
+        days.forEach(day => {
+          if (isWithinInterval(day, { start: dataInicio, end: dataFim }) || isSameDay(day, dataInicio) || isSameDay(day, dataFim)) {
+            eventosExpandidos.push({ ...evento, dataCalculada: day });
+          }
+        });
       }
     });
 
