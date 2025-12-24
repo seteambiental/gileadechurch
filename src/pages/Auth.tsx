@@ -17,12 +17,13 @@ const authSchema = z.object({
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -47,6 +48,43 @@ const Auth = () => {
         setErrors(fieldErrors);
       }
       return false;
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email) {
+      setErrors({ email: "Digite seu email" });
+      return;
+    }
+    
+    try {
+      z.string().email().parse(email);
+    } catch {
+      setErrors({ email: "Email inválido" });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: error.message,
+        });
+      } else {
+        toast({
+          title: "Email enviado!",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+        setIsForgotPassword(false);
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -118,6 +156,70 @@ const Auth = () => {
     );
   }
 
+  // Forgot password form
+  if (isForgotPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
+              <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                Recuperar Senha
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Digite seu email para receber um link de recuperação
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className={errors.email ? "border-destructive" : ""}
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                variant="secondary"
+                disabled={isLoading}
+              >
+                {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Enviar Link de Recuperação
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setErrors({});
+                }}
+                className="text-sm text-secondary hover:underline"
+              >
+                ← Voltar para o login
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
@@ -168,6 +270,22 @@ const Auth = () => {
                 <p className="text-sm text-destructive">{errors.password}</p>
               )}
             </div>
+
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setErrors({});
+                  }}
+                  className="text-sm text-secondary hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
+
             <Button
               type="submit"
               className="w-full"
