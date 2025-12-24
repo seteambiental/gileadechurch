@@ -116,8 +116,6 @@ export const EventoFormDialog = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [flyerUrl, setFlyerUrl] = useState<string | null>(null);
   const [flyerPendente, setFlyerPendente] = useState<string | null>(null);
-  const [flyerPrompt, setFlyerPrompt] = useState("");
-  const [showFlyerPrompt, setShowFlyerPrompt] = useState(false);
   const [grupoEnvio, setGrupoEnvio] = useState("");
   const [isSendingFlyer, setIsSendingFlyer] = useState(false);
 
@@ -238,14 +236,28 @@ export const EventoFormDialog = ({
     }
   };
 
+  const getPublicoAlvoLabel = (value: string) => {
+    const labels: Record<string, string> = {
+      todos: "Todos",
+      homens: "Homens",
+      mulheres: "Mulheres",
+      jovens: "Jovens",
+      adolescentes: "Adolescentes",
+      criancas: "Crianças",
+      masculino: "Masculino",
+      feminino: "Feminino",
+    };
+    return labels[value] || value;
+  };
+
   const handleGenerateFlyer = async () => {
     if (!formData.titulo) {
       toast({ variant: "destructive", title: "Preencha o título primeiro" });
       return;
     }
 
-    if (!showFlyerPrompt) {
-      setShowFlyerPrompt(true);
+    if (!formData.data_evento) {
+      toast({ variant: "destructive", title: "Preencha a data do evento primeiro" });
       return;
     }
 
@@ -257,9 +269,17 @@ export const EventoFormDialog = ({
           descricao: formData.descricao,
           tipoEvento: formData.tipo_evento,
           dataEvento: formData.data_evento,
+          dataFim: formData.data_fim,
           horaInicio: formData.hora_inicio,
+          horaFim: formData.hora_fim,
           local: formData.local,
-          promptPersonalizado: flyerPrompt,
+          publicoAlvo: getPublicoAlvoLabel(formData.genero_alvo),
+          temRefeicao: formData.tem_refeicao,
+          comentariosRefeicao: formData.comentarios_refeicao,
+          temCusto: formData.tem_custo,
+          valorCusto: formData.valor_custo,
+          comentariosCusto: formData.comentarios_custo,
+          horariosPorDia: horariosPorDia,
         },
       });
 
@@ -267,7 +287,6 @@ export const EventoFormDialog = ({
       if (!data.success) throw new Error(data.error);
 
       setFlyerPendente(data.flyerUrl);
-      setShowFlyerPrompt(false);
       toast({ title: "Flyer gerado! Aceite ou descarte." });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro ao gerar flyer", description: error.message });
@@ -770,23 +789,24 @@ export const EventoFormDialog = ({
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Público Alvo</Label>
-                <Select
-                  value={formData.genero_alvo}
-                  onValueChange={(v) => setFormData({ ...formData, genero_alvo: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label>Público Alvo</Label>
+              <Select
+                value={formData.genero_alvo}
+                onValueChange={(v) => setFormData({ ...formData, genero_alvo: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="homens">Homens</SelectItem>
+                  <SelectItem value="mulheres">Mulheres</SelectItem>
+                  <SelectItem value="jovens">Jovens</SelectItem>
+                  <SelectItem value="adolescentes">Adolescentes</SelectItem>
+                  <SelectItem value="criancas">Crianças</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
@@ -830,7 +850,6 @@ export const EventoFormDialog = ({
                       onClick={() => {
                         setFlyerUrl(flyerPendente);
                         setFlyerPendente(null);
-                        setFlyerPrompt("");
                         toast({ title: "Flyer aceito!" });
                       }}
                     >
@@ -937,19 +956,6 @@ export const EventoFormDialog = ({
                 </div>
               ) : !flyerPendente && (
                 <div className="space-y-3">
-                  {showFlyerPrompt && (
-                    <div className="space-y-2">
-                      <Label htmlFor="flyerPrompt">Descreva como o flyer deve ser:</Label>
-                      <Textarea
-                        id="flyerPrompt"
-                        value={flyerPrompt}
-                        onChange={(e) => setFlyerPrompt(e.target.value)}
-                        rows={3}
-                        placeholder="Ex: Cores vibrantes, estilo moderno, com imagem de montanha ao fundo, texto em destaque..."
-                      />
-                    </div>
-                  )}
-                  
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <Input
@@ -978,25 +984,15 @@ export const EventoFormDialog = ({
                       type="button"
                       variant="secondary"
                       onClick={handleGenerateFlyer}
-                      disabled={isGeneratingFlyer || !formData.titulo}
+                      disabled={isGeneratingFlyer || !formData.titulo || !formData.data_evento}
                     >
                       {isGeneratingFlyer ? (
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       ) : (
                         <Sparkles className="w-4 h-4 mr-2" />
                       )}
-                      {showFlyerPrompt ? "Gerar Agora" : "Gerar com IA"}
+                      Gerar Flyer
                     </Button>
-                    {showFlyerPrompt && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => { setShowFlyerPrompt(false); setFlyerPrompt(""); }}
-                      >
-                        Cancelar
-                      </Button>
-                    )}
                   </div>
                 </div>
               )}

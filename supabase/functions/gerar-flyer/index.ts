@@ -8,45 +8,186 @@ const corsHeaders = {
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+interface HorarioDia {
+  data: string;
+  periodo: string;
+  hora_inicio: string;
+  hora_fim: string;
+}
+
+const formatDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr + "T12:00:00");
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  };
+  return date.toLocaleDateString('pt-BR', options);
+};
+
+const formatShortDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr + "T12:00:00");
+  const options: Intl.DateTimeFormatOptions = { 
+    weekday: 'short', 
+    day: 'numeric', 
+    month: 'short'
+  };
+  return date.toLocaleDateString('pt-BR', options);
+};
+
+const getPeriodoLabel = (periodo: string): string => {
+  const labels: Record<string, string> = {
+    manha: "Manhã",
+    tarde: "Tarde",
+    noite: "Noite",
+  };
+  return labels[periodo] || periodo;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { titulo, descricao, tipoEvento, dataEvento, horaInicio, local, promptPersonalizado } = await req.json();
+    const { 
+      titulo, 
+      descricao, 
+      tipoEvento, 
+      dataEvento, 
+      dataFim,
+      horaInicio, 
+      horaFim,
+      local, 
+      publicoAlvo,
+      temRefeicao,
+      comentariosRefeicao,
+      temCusto,
+      valorCusto,
+      comentariosCusto,
+      horariosPorDia
+    } = await req.json();
 
     if (!titulo) {
       throw new Error('Título do evento é obrigatório');
     }
 
-    console.log(`Gerando flyer para: ${titulo}`);
-    if (promptPersonalizado) {
-      console.log(`Prompt personalizado: ${promptPersonalizado}`);
+    if (!dataEvento) {
+      throw new Error('Data do evento é obrigatória');
     }
 
-    // Criar prompt detalhado para o flyer - sendo MUITO explícito sobre gerar imagem
-    const prompt = `GENERATE AN IMAGE: Create a beautiful church event flyer image.
+    console.log(`Gerando flyer informativo para: ${titulo}`);
 
-Event Details:
-- Title: ${titulo}
-- Type: ${tipoEvento || 'Church Event'}
+    // Construir informações de data/horário
+    let dataHorarioInfo = `Data Principal: ${formatDate(dataEvento)}`;
+    
+    if (horaInicio) {
+      dataHorarioInfo += ` às ${horaInicio}`;
+      if (horaFim) {
+        dataHorarioInfo += ` - ${horaFim}`;
+      }
+    }
+
+    // Se for evento multidatas, adicionar cronograma
+    let cronogramaMultidatas = "";
+    if (dataFim && dataEvento !== dataFim && horariosPorDia && horariosPorDia.length > 0) {
+      cronogramaMultidatas = "\n\nCRONOGRAMA DETALHADO:\n";
+      
+      // Agrupar horários por data
+      const horariosPorData: Record<string, HorarioDia[]> = {};
+      horariosPorDia.forEach((h: HorarioDia) => {
+        if (!horariosPorData[h.data]) {
+          horariosPorData[h.data] = [];
+        }
+        horariosPorData[h.data].push(h);
+      });
+
+      // Ordenar datas e formatar
+      const datasOrdenadas = Object.keys(horariosPorData).sort();
+      datasOrdenadas.forEach((data) => {
+        const horariosData = horariosPorData[data];
+        cronogramaMultidatas += `\n${formatShortDate(data)}:\n`;
+        horariosData.forEach((h) => {
+          cronogramaMultidatas += `  - ${getPeriodoLabel(h.periodo)}: ${h.hora_inicio} às ${h.hora_fim}\n`;
+        });
+      });
+    }
+
+    // Informações de refeição
+    let refeicaoInfo = "";
+    if (temRefeicao) {
+      refeicaoInfo = "\n\nREFEIÇÕES: Haverá refeição no local";
+      if (comentariosRefeicao) {
+        refeicaoInfo += `\n${comentariosRefeicao}`;
+      }
+    }
+
+    // Informações de custo
+    let custoInfo = "";
+    if (temCusto) {
+      custoInfo = "\n\nINVESTIMENTO:";
+      if (valorCusto) {
+        custoInfo += ` R$ ${parseFloat(valorCusto).toFixed(2).replace('.', ',')}`;
+      }
+      if (comentariosCusto) {
+        custoInfo += `\n${comentariosCusto}`;
+      }
+    } else {
+      custoInfo = "\n\nINVESTIMENTO: Evento gratuito";
+    }
+
+    // Informações de local com instrução para Google Maps
+    let localInfo = "";
+    if (local) {
+      localInfo = `\n\nLOCAL: ${local}`;
+      localInfo += "\n(Incluir ícone de localização sugerindo Google Maps)";
+    }
+
+    // Criar prompt detalhado para o flyer informativo
+    const prompt = `GENERATE AN IMAGE: Create an informational church event flyer.
+
+FLYER CONTENT (must be visible and readable on the image):
+
+HEADER:
+- Include the Gileade church logo in the top corner
+- Main title in large, prominent text: "${titulo}"
+
+DATE SECTION (below title):
+${dataHorarioInfo}
+${cronogramaMultidatas}
+
+EVENT INFO:
+- Event type: ${tipoEvento || 'Evento'}
 ${descricao ? `- Description: ${descricao}` : ''}
-${dataEvento ? `- Date: ${dataEvento}` : ''}
-${horaInicio ? `- Time: ${horaInicio}` : ''}
-${local ? `- Location: ${local}` : ''}
+- Target audience: ${publicoAlvo || 'Todos'}
+${refeicaoInfo}
+${custoInfo}
+${localInfo}
 
-${promptPersonalizado ? `User's custom design instructions (PRIORITIZE THESE): ${promptPersonalizado}` : ''}
+DESIGN SPECIFICATIONS:
+- Create a portrait flyer (9:16 aspect ratio, like a phone screen)
+- Modern, elegant church event design
+- Professional typography with clear hierarchy
+- The title "${titulo}" must be the largest and most prominent text
+- Use warm, spiritual color palette (gold, burgundy, deep blue, or purple tones)
+- All text must be in Portuguese (Brazil)
+- Include a small map/location icon near the address
+- Leave space in top-left or top-right corner for the church logo
+- Make sure all information is readable and well organized
+- Use icons for each section (calendar for date, clock for time, utensils for food, dollar for cost, pin for location)
 
-Design specifications:
-- Create a portrait flyer image (9:16 ratio)
-- Modern and elegant church event design
-- Professional typography with the event title prominent
-- Warm, spiritual color palette (gold, burgundy, deep blue)
-- Leave empty space in bottom-left corner for logo
-- Suitable for social media sharing
+IMPORTANT:
+- This is an INFORMATIONAL flyer, all details must be clearly visible
+- Text hierarchy: Title > Date > Schedule > Other info
+- Ensure high contrast for readability
+- Professional and inviting design suitable for social media sharing
 
 OUTPUT: Generate the flyer as an image.`;
+
+    console.log("Prompt gerado:", prompt.substring(0, 500) + "...");
 
     // Tentar gerar a imagem com retry
     let imageData: string | null = null;
@@ -106,7 +247,7 @@ OUTPUT: Generate the flyer as an image.`;
     }
 
     if (!imageData) {
-      throw new Error('Não foi possível gerar a imagem do flyer. Tente novamente com uma descrição diferente.');
+      throw new Error('Não foi possível gerar a imagem do flyer. Tente novamente.');
     }
 
     // Upload para o storage do Supabase
@@ -136,13 +277,13 @@ OUTPUT: Generate the flyer as an image.`;
       .from('encontros-fotos')
       .getPublicUrl(`flyers/${fileName}`);
 
-    console.log('Flyer salvo:', urlData.publicUrl);
+    console.log('Flyer informativo salvo:', urlData.publicUrl);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         flyerUrl: urlData.publicUrl,
-        message: 'Flyer gerado com sucesso!' 
+        message: 'Flyer informativo gerado com sucesso!' 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
