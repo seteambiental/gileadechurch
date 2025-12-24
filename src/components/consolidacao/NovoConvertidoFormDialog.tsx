@@ -1,0 +1,532 @@
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import { formatCep, formatPhone } from "@/lib/masks";
+
+interface NovoConvertidoFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  convertido?: any;
+}
+
+export const NovoConvertidoFormDialog = ({
+  open,
+  onOpenChange,
+  convertido,
+}: NovoConvertidoFormDialogProps) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingCep, setIsFetchingCep] = useState(false);
+
+  const [formData, setFormData] = useState({
+    full_name: convertido?.full_name || "",
+    whatsapp: convertido?.whatsapp || "",
+    email: convertido?.email || "",
+    cep: convertido?.cep || "",
+    address: convertido?.address || "",
+    numero: convertido?.numero || "",
+    complement: convertido?.complement || "",
+    neighborhood: convertido?.neighborhood || "",
+    city: convertido?.city || "",
+    state: convertido?.state || "",
+    membro_vinculado_id: convertido?.membro_vinculado_id || "",
+    casa_refugio_id: convertido?.casa_refugio_id || "",
+    tipo_conversao: convertido?.tipo_conversao || "",
+    como_chegou: convertido?.como_chegou || "",
+    data_decisao: convertido?.data_decisao || "",
+    batizado: convertido?.batizado || false,
+    data_batismo: convertido?.data_batismo || "",
+    participou_impacto: convertido?.participou_impacto || false,
+    datas_impacto: convertido?.datas_impacto?.join(", ") || "",
+    participou_manaim: convertido?.participou_manaim || false,
+    data_manaim: convertido?.data_manaim || "",
+    participou_culto_membresia: convertido?.participou_culto_membresia || false,
+    data_culto_membresia: convertido?.data_culto_membresia || "",
+    frequenta_casa_refugio: convertido?.frequenta_casa_refugio || false,
+    casa_refugio_frequenta_id: convertido?.casa_refugio_frequenta_id || "",
+  });
+
+  const { data: membros = [] } = useQuery({
+    queryKey: ["membros-lista"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas-refugio-lista"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const fetchAddressByCep = async (cep: string) => {
+    const cleanCep = cep.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+
+    setIsFetchingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      const data = await response.json();
+      if (!data.erro) {
+        setFormData((prev) => ({
+          ...prev,
+          address: data.logradouro || "",
+          neighborhood: data.bairro || "",
+          city: data.localidade || "",
+          state: data.uf || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    } finally {
+      setIsFetchingCep(false);
+    }
+  };
+
+  const handleCepChange = (value: string) => {
+    const maskedCep = formatCep(value);
+    setFormData((prev) => ({ ...prev, cep: maskedCep }));
+    if (maskedCep.replace(/\D/g, "").length === 8) {
+      fetchAddressByCep(maskedCep);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.full_name.trim()) {
+      toast({ variant: "destructive", title: "Nome é obrigatório" });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        full_name: formData.full_name.trim(),
+        whatsapp: formData.whatsapp || null,
+        email: formData.email || null,
+        cep: formData.cep || null,
+        address: formData.address || null,
+        numero: formData.numero || null,
+        complement: formData.complement || null,
+        neighborhood: formData.neighborhood || null,
+        city: formData.city || null,
+        state: formData.state || null,
+        membro_vinculado_id: formData.membro_vinculado_id || null,
+        casa_refugio_id: formData.casa_refugio_id || null,
+        tipo_conversao: formData.tipo_conversao || null,
+        como_chegou: formData.como_chegou || null,
+        data_decisao: formData.data_decisao || null,
+        batizado: formData.batizado,
+        data_batismo: formData.batizado ? formData.data_batismo || null : null,
+        participou_impacto: formData.participou_impacto,
+        datas_impacto: formData.participou_impacto && formData.datas_impacto
+          ? formData.datas_impacto.split(",").map((d) => d.trim()).filter(Boolean)
+          : null,
+        participou_manaim: formData.participou_manaim,
+        data_manaim: formData.participou_manaim ? formData.data_manaim || null : null,
+        participou_culto_membresia: formData.participou_culto_membresia,
+        data_culto_membresia: formData.participou_culto_membresia ? formData.data_culto_membresia || null : null,
+        frequenta_casa_refugio: formData.frequenta_casa_refugio,
+        casa_refugio_frequenta_id: formData.frequenta_casa_refugio ? formData.casa_refugio_frequenta_id || null : null,
+      };
+
+      if (convertido) {
+        const { error } = await supabase
+          .from("novos_convertidos")
+          .update(payload)
+          .eq("id", convertido.id);
+        if (error) throw error;
+        toast({ title: "Atualizado com sucesso!" });
+      } else {
+        const { error } = await supabase
+          .from("novos_convertidos")
+          .insert(payload);
+        if (error) throw error;
+        toast({ title: "Cadastrado com sucesso!" });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
+      onOpenChange(false);
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {convertido ? "Editar Novo Convertido" : "Cadastrar Novo Convertido"}
+          </DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Dados Pessoais */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground border-b pb-2">Dados Pessoais</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="full_name">Nome Completo *</Label>
+                <Input
+                  id="full_name"
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  value={formData.whatsapp}
+                  onChange={(e) => setFormData({ ...formData, whatsapp: formatPhone(e.target.value) })}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Endereço */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground border-b pb-2">Endereço</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="cep">CEP</Label>
+                <div className="relative">
+                  <Input
+                    id="cep"
+                    value={formData.cep}
+                    onChange={(e) => handleCepChange(e.target.value)}
+                    placeholder="00000-000"
+                  />
+                  {isFetchingCep && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+              
+              <div className="md:col-span-3">
+                <Label htmlFor="address">Logradouro</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="numero">Número</Label>
+                <Input
+                  id="numero"
+                  value={formData.numero}
+                  onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="complement">Complemento</Label>
+                <Input
+                  id="complement"
+                  value={formData.complement}
+                  onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="neighborhood">Bairro</Label>
+                <Input
+                  id="neighborhood"
+                  value={formData.neighborhood}
+                  onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="city">Cidade</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="state">Estado</Label>
+                <Input
+                  id="state"
+                  value={formData.state}
+                  onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                  maxLength={2}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Vínculos */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground border-b pb-2">Vínculos</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Membro Vinculado (Padrinho/Madrinha)</Label>
+                <Select
+                  value={formData.membro_vinculado_id}
+                  onValueChange={(v) => setFormData({ ...formData, membro_vinculado_id: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sem vínculo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vínculo</SelectItem>
+                    {membros.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label>Veio através de Casa Refúgio?</Label>
+                <Select
+                  value={formData.casa_refugio_id}
+                  onValueChange={(v) => setFormData({ ...formData, casa_refugio_id: v === "none" ? "" : v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Não veio por CR" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não veio por CR</SelectItem>
+                    {casasRefugio.map((cr) => (
+                      <SelectItem key={cr.id} value={cr.id}>{cr.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Conversão */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground border-b pb-2">Conversão</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Tipo</Label>
+                <Select
+                  value={formData.tipo_conversao}
+                  onValueChange={(v) => setFormData({ ...formData, tipo_conversao: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="conversao">Conversão</SelectItem>
+                    <SelectItem value="reconciliacao">Reconciliação</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label>Como Chegou</Label>
+                <Select
+                  value={formData.como_chegou}
+                  onValueChange={(v) => setFormData({ ...formData, como_chegou: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="culto_domingo">Culto Domingo</SelectItem>
+                    <SelectItem value="culto_quarta">Culto Quarta</SelectItem>
+                    <SelectItem value="casa_refugio">Casa Refúgio</SelectItem>
+                    <SelectItem value="impacto">Impacto</SelectItem>
+                    <SelectItem value="acao_evangelistica">Ação Evangelística</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="data_decisao">Data da Decisão</Label>
+                <Input
+                  id="data_decisao"
+                  type="date"
+                  value={formData.data_decisao}
+                  onChange={(e) => setFormData({ ...formData, data_decisao: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Trilho de Membresia */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground border-b pb-2">Trilho de Membresia</h3>
+            
+            <div className="space-y-4">
+              {/* Batismo */}
+              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="batizado"
+                  checked={formData.batizado}
+                  onCheckedChange={(c) => setFormData({ ...formData, batizado: !!c })}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="batizado" className="cursor-pointer">Batizado</Label>
+                  {formData.batizado && (
+                    <Input
+                      type="date"
+                      value={formData.data_batismo}
+                      onChange={(e) => setFormData({ ...formData, data_batismo: e.target.value })}
+                      placeholder="Data do batismo"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Impacto */}
+              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="participou_impacto"
+                  checked={formData.participou_impacto}
+                  onCheckedChange={(c) => setFormData({ ...formData, participou_impacto: !!c })}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="participou_impacto" className="cursor-pointer">Participou do Impacto</Label>
+                  {formData.participou_impacto && (
+                    <Input
+                      value={formData.datas_impacto}
+                      onChange={(e) => setFormData({ ...formData, datas_impacto: e.target.value })}
+                      placeholder="Ex: 01/2024, 06/2024"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Manaim */}
+              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="participou_manaim"
+                  checked={formData.participou_manaim}
+                  onCheckedChange={(c) => setFormData({ ...formData, participou_manaim: !!c })}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="participou_manaim" className="cursor-pointer">Participou do Manaim</Label>
+                  {formData.participou_manaim && (
+                    <Input
+                      type="date"
+                      value={formData.data_manaim}
+                      onChange={(e) => setFormData({ ...formData, data_manaim: e.target.value })}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Culto de Membresia */}
+              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="participou_culto_membresia"
+                  checked={formData.participou_culto_membresia}
+                  onCheckedChange={(c) => setFormData({ ...formData, participou_culto_membresia: !!c })}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="participou_culto_membresia" className="cursor-pointer">Participou do Culto de Membresia</Label>
+                  {formData.participou_culto_membresia && (
+                    <Input
+                      type="date"
+                      value={formData.data_culto_membresia}
+                      onChange={(e) => setFormData({ ...formData, data_culto_membresia: e.target.value })}
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Frequenta Casa Refúgio */}
+              <div className="flex items-start gap-4 p-3 bg-muted/50 rounded-lg">
+                <Checkbox
+                  id="frequenta_casa_refugio"
+                  checked={formData.frequenta_casa_refugio}
+                  onCheckedChange={(c) => setFormData({ ...formData, frequenta_casa_refugio: !!c })}
+                />
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="frequenta_casa_refugio" className="cursor-pointer">Frequenta Casa Refúgio</Label>
+                  {formData.frequenta_casa_refugio && (
+                    <Select
+                      value={formData.casa_refugio_frequenta_id}
+                      onValueChange={(v) => setFormData({ ...formData, casa_refugio_frequenta_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a Casa Refúgio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {casasRefugio.map((cr) => (
+                          <SelectItem key={cr.id} value={cr.id}>{cr.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" variant="secondary" disabled={isLoading}>
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {convertido ? "Salvar" : "Cadastrar"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
