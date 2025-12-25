@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2 } from "lucide-react";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -10,11 +10,29 @@ import MembrosTab from "@/components/cadastros/MembrosTab";
 import MinisteriosTab from "@/components/cadastros/MinisteriosTab";
 import CasasRefugioTab from "@/components/cadastros/CasasRefugioTab";
 import CondominiosTab from "@/components/cadastros/CondominiosTab";
-
+import IgrejaTab from "@/components/cadastros/IgrejaTab";
+import AprovacaoUsuariosTab from "@/components/cadastros/AprovacaoUsuariosTab";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 const Cadastros = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("membros");
+
+  // Check if user is master
+  const { data: isMaster } = useQuery({
+    queryKey: ["user_is_master", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["master", "admin"]);
+      return data && data.length > 0;
+    },
+    enabled: !!user?.id,
+  });
 
   useEffect(() => {
     if (!loading && !user && !isAuthBypassed()) {
@@ -64,7 +82,7 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6 bg-card border border-border h-12">
+          <TabsList className={`grid w-full mb-6 bg-card border border-border h-12 ${isMaster ? "grid-cols-6" : "grid-cols-5"}`}>
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
@@ -93,6 +111,22 @@ const Cadastros = () => {
               <Building2 className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Condomínios</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="igreja" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+            >
+              <Building className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Igreja</span>
+            </TabsTrigger>
+            {isMaster && (
+              <TabsTrigger 
+                value="aprovacoes" 
+                className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              >
+                <UserCheck className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Aprovações</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="membros">
@@ -110,6 +144,16 @@ const Cadastros = () => {
           <TabsContent value="condominios">
             <CondominiosTab />
           </TabsContent>
+
+          <TabsContent value="igreja">
+            <IgrejaTab />
+          </TabsContent>
+
+          {isMaster && (
+            <TabsContent value="aprovacoes">
+              <AprovacaoUsuariosTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
