@@ -77,7 +77,7 @@ const AgendaPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [activeTab, setActiveTab] = useState("eventos");
+  const [activeTab, setActiveTab] = useState("programacao");
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -288,7 +288,11 @@ const AgendaPage = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
+            <TabsTrigger value="programacao" className="flex items-center gap-2">
+              <Church className="w-4 h-4" />
+              Programação
+            </TabsTrigger>
             <TabsTrigger value="eventos" className="flex items-center gap-2">
               <PartyPopper className="w-4 h-4" />
               Eventos
@@ -299,6 +303,70 @@ const AgendaPage = () => {
             </TabsTrigger>
           </TabsList>
 
+          {/* Aba Programação - Calendário */}
+          <TabsContent value="programacao" className="space-y-6 mt-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <h3 className="font-heading font-bold">Calendário de Atividades</h3>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("eventos")}>
+                  <PartyPopper className="w-4 h-4 mr-2" />
+                  Ver Eventos
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("dashboard")}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+                <Button variant="secondary" onClick={() => {
+                  setEditingEvento(null);
+                  setShowEventoForm(true);
+                }}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Evento
+                </Button>
+              </div>
+            </div>
+
+            {renderCalendar()}
+
+            {/* Detalhes do dia selecionado */}
+            {selectedDate && (
+              <Card className="mt-4">
+                <CardContent className="pt-4">
+                  <h4 className="font-semibold mb-3">
+                    {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                  </h4>
+                  {eventosSelecionados.length === 0 ? (
+                    <p className="text-muted-foreground text-sm">Nenhum evento neste dia.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {eventosSelecionados.map((evento, i) => (
+                        <div
+                          key={`${evento.id}-${i}`}
+                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
+                          onClick={() => {
+                            setEditingEvento(evento);
+                            setShowEventoForm(true);
+                          }}
+                        >
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: evento.cor || "#dc2626" }} />
+                          <div className="flex-1">
+                            <p className="font-medium">{evento.titulo}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                              {evento.hora_inicio && ` • ${evento.hora_inicio.substring(0, 5)}`}
+                              {evento.local && ` • ${evento.local}`}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Aba Eventos - Lista de eventos especiais */}
           <TabsContent value="eventos" className="space-y-6 mt-6">
             <div className="flex items-center justify-between">
               <h3 className="font-heading font-bold">Eventos Especiais</h3>

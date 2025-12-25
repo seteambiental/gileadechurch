@@ -74,6 +74,8 @@ const InscricaoEvento = () => {
   const [formaPagamento, setFormaPagamento] = useState("");
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
+  const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
+  const [outroMinisterio, setOutroMinisterio] = useState("");
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
@@ -185,6 +187,16 @@ const InscricaoEvento = () => {
       // Verificar novamente se há vagas (para evitar race condition)
       const isListaEspera = esgotado;
       
+      // Montar observação com info do ministério
+      let observacoesMinisterio = "";
+      if (membroMinisterio === "gileade") {
+        observacoesMinisterio = "Membro de Gileade";
+      } else if (membroMinisterio === "outro") {
+        observacoesMinisterio = `Membro de outro ministério: ${outroMinisterio}`;
+      } else if (membroMinisterio === "nenhum") {
+        observacoesMinisterio = "Não é membro de nenhum ministério";
+      }
+
       const payload = {
         evento_id: eventoId,
         member_id: selectedPerson?.type === "member" ? selectedPerson.id : null,
@@ -203,6 +215,7 @@ const InscricaoEvento = () => {
         descricao_medicamento: tomaMedicamento ? descricaoMedicamento : null,
         forma_pagamento: formaPagamento,
         lista_espera: isListaEspera,
+        observacoes: observacoesMinisterio || null,
       };
 
       const { data: inscricaoData, error } = await supabase
@@ -548,6 +561,38 @@ const InscricaoEvento = () => {
                         className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
+
+                    {/* Membro de ministério */}
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">É membro de Gileade ou de outro ministério?</Label>
+                      <RadioGroup value={membroMinisterio} onValueChange={(v) => setMembroMinisterio(v as "gileade" | "outro" | "nenhum")} className="space-y-2 md:space-y-3">
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="gileade" id="gileade" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="gileade" className="font-normal text-base md:text-lg">Sim, sou membro de Gileade</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="outro" id="outro-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="outro-ministerio" className="font-normal text-base md:text-lg">Sim, de outro ministério</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="nenhum" id="nenhum-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="nenhum-ministerio" className="font-normal text-base md:text-lg">Não sou membro de nenhum ministério</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {membroMinisterio === "outro" && (
+                      <div className="space-y-2 md:space-y-3 p-4 md:p-6 bg-muted/30 rounded-lg">
+                        <Label htmlFor="outroMinisterio" className="text-base md:text-lg">Qual ministério?</Label>
+                        <Input
+                          id="outroMinisterio"
+                          value={outroMinisterio}
+                          onChange={(e) => setOutroMinisterio(e.target.value)}
+                          placeholder="Nome do ministério"
+                          className="h-10 md:h-14 text-base md:text-lg"
+                        />
+                      </div>
+                    )}
 
                     {/* Menor de idade */}
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
