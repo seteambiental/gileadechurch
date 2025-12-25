@@ -17,6 +17,7 @@ import CondominioDetalhes from "./pages/CondominioDetalhes";
 import ConsolidacaoPage from "./pages/ConsolidacaoPage";
 import AgendaPage from "./pages/AgendaPage";
 import InscricaoEvento from "./pages/InscricaoEvento";
+import KidsPage from "./pages/KidsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/membro/:id" element={<MemberDetails />} />
             <Route path="/ministerio/casas-refugio" element={<CasasRefugioPage />} />
             <Route path="/ministerio/consolidacao" element={<ConsolidacaoPage />} />
+            <Route path="/ministerio/kids" element={<KidsPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/inscricao/:eventoId" element={<InscricaoEvento />} />
             <Route path="/ministerio/:slug" element={<MinistryPage />} />
