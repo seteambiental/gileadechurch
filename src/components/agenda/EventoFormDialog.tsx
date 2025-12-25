@@ -130,6 +130,7 @@ export const EventoFormDialog = ({
   const [flyerPendente, setFlyerPendente] = useState<string | null>(null);
   const [grupoEnvio, setGrupoEnvio] = useState("");
   const [isSendingFlyer, setIsSendingFlyer] = useState(false);
+  const [templateFlyer, setTemplateFlyer] = useState("moderno");
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -288,7 +289,7 @@ export const EventoFormDialog = ({
           horaInicio: formData.hora_inicio,
           horaFim: formData.hora_fim,
           local: formData.local,
-          publicoAlvo: getPublicoAlvoLabel(formData.genero_alvo),
+          publicoAlvo: formData.genero_alvo,
           temRefeicao: formData.tem_refeicao,
           comentariosRefeicao: formData.comentarios_refeicao,
           temCusto: formData.tem_custo,
@@ -296,6 +297,7 @@ export const EventoFormDialog = ({
           comentariosCusto: formData.comentarios_custo,
           horariosPorDia: horariosPorDia,
           corFundo: formData.cor,
+          template: templateFlyer,
         },
       });
 
@@ -1005,19 +1007,30 @@ export const EventoFormDialog = ({
                         Upload
                       </Button>
                     </div>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleGenerateFlyer}
-                      disabled={isGeneratingFlyer || !formData.titulo || !formData.data_evento}
-                    >
-                      {isGeneratingFlyer ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Sparkles className="w-4 h-4 mr-2" />
-                      )}
-                      Gerar Flyer
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Select value={templateFlyer} onValueChange={setTemplateFlyer}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="moderno">Moderno</SelectItem>
+                          <SelectItem value="minimalista">Minimalista</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleGenerateFlyer}
+                        disabled={isGeneratingFlyer || !formData.titulo || !formData.data_evento}
+                      >
+                        {isGeneratingFlyer ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 mr-2" />
+                        )}
+                        Gerar Flyer
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
