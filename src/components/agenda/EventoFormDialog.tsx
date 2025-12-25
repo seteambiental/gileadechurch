@@ -290,12 +290,16 @@ export const EventoFormDialog = ({
           horaFim: formData.hora_fim,
           local: formData.local,
           publicoAlvo: formData.genero_alvo,
+          idadeMinima: formData.idade_minima,
+          idadeMaxima: formData.idade_maxima,
           temRefeicao: formData.tem_refeicao,
           comentariosRefeicao: formData.comentarios_refeicao,
           temCusto: formData.tem_custo,
           valorCusto: formData.valor_custo,
           comentariosCusto: formData.comentarios_custo,
           horariosPorDia: horariosPorDia,
+          limiteVagas: formData.limite_vagas,
+          observacoes: formData.observacoes,
           corFundo: formData.cor,
           template: templateFlyer,
         },
@@ -1015,6 +1019,9 @@ export const EventoFormDialog = ({
                         <SelectContent>
                           <SelectItem value="moderno">Moderno</SelectItem>
                           <SelectItem value="minimalista">Minimalista</SelectItem>
+                          <SelectItem value="festivo">Festivo</SelectItem>
+                          <SelectItem value="elegante">Elegante</SelectItem>
+                          <SelectItem value="corporativo">Corporativo</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
