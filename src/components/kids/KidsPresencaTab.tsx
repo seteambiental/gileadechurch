@@ -188,7 +188,7 @@ export const KidsPresencaTab = ({ turmasConfig, criancasPorTurma }: KidsPresenca
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1.5">
               <Label>Data</Label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -203,18 +203,19 @@ export const KidsPresencaTab = ({ turmasConfig, criancasPorTurma }: KidsPresenca
                     {format(selectedDate, "PPP", { locale: ptBR })}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={(date) => date && setSelectedDate(date)}
                     locale={ptBR}
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
             </div>
 
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1.5">
               <Label>Turma</Label>
               <Select value={selectedTurma} onValueChange={setSelectedTurma}>
                 <SelectTrigger className="w-[180px]">
@@ -236,7 +237,7 @@ export const KidsPresencaTab = ({ turmasConfig, criancasPorTurma }: KidsPresenca
               </Select>
             </div>
 
-            <div className="space-y-1">
+            <div className="flex flex-col gap-1.5">
               <Label>Tipo de Culto</Label>
               <Select value={tipoCulto} onValueChange={setTipoCulto}>
                 <SelectTrigger className="w-[150px]">
