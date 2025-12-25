@@ -79,51 +79,48 @@ const AprovacaoUsuariosTab = () => {
     mutationFn: async (request: any) => {
       let userId: string;
       let isExistingUser = false;
-
-      // 1. Tentar criar usuário no auth
       const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
-      
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: request.email,
-        password: tempPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
-        },
-      });
 
-      if (authError) {
-        // Se o usuário já existe, verificar se o membro já está vinculado
-        if (authError.message?.includes("already registered") || authError.code === "user_already_exists") {
-          // Buscar o membro para ver se já tem user_id
-          const { data: memberData } = await supabase
-            .from("members")
-            .select("user_id")
-            .eq("id", request.member_id)
-            .single();
-          
-          if (memberData?.user_id) {
-            userId = memberData.user_id;
-            isExistingUser = true;
-          } else {
-            throw new Error("Usuário já registrado com este email. O membro precisa fazer login e solicitar acesso novamente.");
+      // 1. Verificar se o membro já tem user_id vinculado
+      const { data: memberData } = await supabase
+        .from("members")
+        .select("user_id")
+        .eq("id", request.member_id)
+        .single();
+      
+      if (memberData?.user_id) {
+        // Membro já tem usuário vinculado, usar esse ID
+        userId = memberData.user_id;
+        isExistingUser = true;
+      } else {
+        // 2. Tentar criar usuário no auth
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: request.email,
+          password: tempPassword,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth`,
+          },
+        });
+
+        if (authError) {
+          // Se o usuário já existe mas membro não tem user_id, informar
+          if (authError.message?.includes("already registered") || authError.code === "user_already_exists") {
+            throw new Error("Este email já está registrado. O usuário precisa fazer login e vincular-se a este membro.");
           }
-        } else {
           throw authError;
         }
-      } else {
+        
         if (!authData.user) throw new Error("Falha ao criar usuário");
         userId = authData.user.id;
-      }
-
-      // 2. Vincular membro ao user_id (se não for usuário existente)
-      if (!isExistingUser) {
+        
+        // 3. Vincular membro ao user_id
         await supabase
           .from("members")
           .update({ user_id: userId })
           .eq("id", request.member_id);
       }
 
-      // 3. Adicionar role (verificar se já não existe)
+      // 4. Adicionar role (verificar se já não existe)
       const { data: existingRole } = await supabase
         .from("user_roles")
         .select("id")
