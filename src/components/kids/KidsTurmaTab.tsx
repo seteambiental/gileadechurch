@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users, UserRound, UserPlus } from "lucide-react";
-import { CriancaVisitanteFormDialog } from "./CriancaVisitanteFormDialog";
+import { Search, Users, UserRound } from "lucide-react";
 interface TurmaConfig {
   id: string;
   turma: string;
@@ -120,17 +119,14 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
               />
               Crianças - Turma {turma.nome_exibicao}
             </CardTitle>
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-              <div className="relative w-full md:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar criança..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <CriancaVisitanteFormDialog />
+            <div className="relative w-full md:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar criança..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
             </div>
           </div>
         </CardHeader>
@@ -188,9 +184,13 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                       </TableCell>
                       <TableCell>
                         <Badge 
-                          variant={crianca.tipo === "membro" ? "default" : "secondary"}
+                          variant={crianca.tipo === "membro" ? "default" : "outline"}
+                          className={crianca.tipo === "membro" 
+                            ? "" 
+                            : "bg-amber-50 text-amber-700 border-amber-200"
+                          }
                         >
-                          {crianca.tipo === "membro" ? "Membro" : "Consolidação"}
+                          {crianca.tipo === "membro" ? "Membro" : "Visitante"}
                         </Badge>
                       </TableCell>
                     </TableRow>
