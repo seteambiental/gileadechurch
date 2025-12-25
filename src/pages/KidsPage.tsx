@@ -89,6 +89,8 @@ const KidsPage = () => {
           genero, 
           whatsapp,
           membro_vinculado_id,
+          responsavel_nome,
+          responsavel_whatsapp,
           membro_vinculado:members!novos_convertidos_membro_vinculado_id_fkey(
             id,
             full_name,
@@ -184,12 +186,14 @@ const KidsPage = () => {
       );
       
       if (turma) {
-        // Primeiro tentar membro_vinculado, depois kids_responsaveis
+        // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos
         const membroVinculado = nc.membro_vinculado as Responsavel | null;
         const respVinculo = responsaveis?.find(r => r.crianca_novo_convertido_id === nc.id);
         const respKids = respVinculo?.responsavel as Responsavel | null;
         
-        const responsavel = membroVinculado || respKids;
+        // Usar dados do membro vinculado ou kids_responsaveis, ou campos diretos
+        const responsavelNome = membroVinculado?.full_name || respKids?.full_name || nc.responsavel_nome || null;
+        const responsavelWhatsapp = membroVinculado?.whatsapp || respKids?.whatsapp || nc.responsavel_whatsapp || null;
         
         resultado[turma.turma].push({
           id: nc.id,
@@ -199,8 +203,8 @@ const KidsPage = () => {
           whatsapp: nc.whatsapp,
           foto: null,
           tipo: "novo_convertido",
-          responsavelNome: responsavel?.full_name || null,
-          responsavelWhatsapp: responsavel?.whatsapp || null,
+          responsavelNome,
+          responsavelWhatsapp,
         });
       }
     });
