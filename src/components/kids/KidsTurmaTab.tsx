@@ -3,8 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Users, UserRound } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Search, Users, UserRound, UserCheck } from "lucide-react";
+import { toast } from "sonner";
 interface TurmaConfig {
   id: string;
   turma: string;
@@ -145,6 +148,7 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                     <TableHead>Gênero</TableHead>
                     <TableHead>WhatsApp Responsável</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -192,6 +196,25 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                         >
                           {crianca.tipo === "membro" ? "Membro" : "Visitante"}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {crianca.tipo === "novo_convertido" && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                onClick={() => toast.info("Funcionalidade de converter para membro será implementada em breve!")}
+                              >
+                                <UserCheck className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Converter para Membro</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

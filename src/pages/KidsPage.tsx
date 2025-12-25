@@ -181,108 +181,113 @@ const KidsPage = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate("/app")}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-              <Baby className="h-8 w-8 text-primary" />
-              Ministério Kids
-            </h1>
-            <p className="text-muted-foreground">
-              Gestão do ministério infantil por turmas e faixas etárias
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-cyan-100">
+      <div className="container mx-auto p-4 md:p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/app")}
+              className="text-gray-600 hover:text-gray-800 bg-white/50 hover:bg-white/80"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+                <span className="text-4xl">🎈</span>
+                <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent">
+                  Ministério Kids
+                </span>
+              </h1>
+              <p className="text-gray-600">
+                Gestão do ministério infantil por turmas e faixas etárias
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <CriancaVisitanteFormDialog />
+            <Badge className="text-lg px-4 py-2 bg-white/80 text-gray-700 hover:bg-white shadow-sm">
+              🌟 {totalCriancas} crianças cadastradas
+            </Badge>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <CriancaVisitanteFormDialog />
-          <Badge variant="secondary" className="text-lg px-4 py-2">
-            {totalCriancas} crianças cadastradas
-          </Badge>
-        </div>
-      </div>
 
-      {/* Cards de turmas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {turmasConfig?.map((turma) => (
-          <Card 
-            key={turma.id} 
-            className="cursor-pointer hover:shadow-lg transition-shadow"
-            style={{ borderTopColor: turma.cor_hex, borderTopWidth: 4 }}
-            onClick={() => setActiveTab(turma.turma)}
-          >
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center justify-between">
-                <span style={{ color: turma.cor_hex }}>{turma.nome_exibicao}</span>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {criancasPorTurma[turma.turma]?.length || 0}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {turma.idade_minima} a {turma.idade_maxima} anos
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex flex-wrap h-auto gap-1">
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
+        {/* Cards de turmas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {turmasConfig?.map((turma) => (
-            <TabsTrigger 
-              key={turma.turma} 
-              value={turma.turma}
-              className="flex items-center gap-2"
-              style={{ 
-                borderBottom: activeTab === turma.turma ? `3px solid ${turma.cor_hex}` : undefined 
-              }}
+            <Card 
+              key={turma.id} 
+              className="cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 bg-white/90 backdrop-blur-sm"
+              style={{ borderTopColor: turma.cor_hex, borderTopWidth: 4 }}
+              onClick={() => setActiveTab(turma.turma)}
             >
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: turma.cor_hex }} 
-              />
-              {turma.nome_exibicao}
-            </TabsTrigger>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center justify-between">
+                  <span style={{ color: turma.cor_hex }}>{turma.nome_exibicao}</span>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-800">
+                  {criancasPorTurma[turma.turma]?.length || 0}
+                </div>
+                <p className="text-sm text-gray-500">
+                  {turma.idade_minima} a {turma.idade_maxima} anos
+                </p>
+              </CardContent>
+            </Card>
           ))}
-          <TabsTrigger value="lideres" className="flex items-center gap-2">
-            <UserCheck className="h-4 w-4" />
-            Líderes
-          </TabsTrigger>
-          <TabsTrigger value="responsaveis" className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Responsáveis
-          </TabsTrigger>
-          <TabsTrigger value="presenca" className="flex items-center gap-2">
-            <CalendarCheck className="h-4 w-4" />
-            Presença
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Notificações
-          </TabsTrigger>
-          <TabsTrigger value="config" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Configurações
-          </TabsTrigger>
-        </TabsList>
+        </div>
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="flex flex-wrap h-auto gap-1 bg-white/80 backdrop-blur-sm p-2 rounded-xl">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+              <BarChart3 className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            {turmasConfig?.map((turma) => (
+              <TabsTrigger 
+                key={turma.turma} 
+                value={turma.turma}
+                className="flex items-center gap-2"
+                style={{ 
+                  borderBottom: activeTab === turma.turma ? `3px solid ${turma.cor_hex}` : undefined 
+                }}
+              >
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: turma.cor_hex }} 
+                />
+                {turma.nome_exibicao}
+              </TabsTrigger>
+            ))}
+            <TabsTrigger value="lideres" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              Líderes
+            </TabsTrigger>
+            <TabsTrigger value="responsaveis" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Responsáveis
+            </TabsTrigger>
+            <TabsTrigger value="presenca" className="flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4" />
+              Presença
+            </TabsTrigger>
+            <TabsTrigger value="notificacoes" className="flex items-center gap-2">
+              <Bell className="h-4 w-4" />
+              Notificações
+            </TabsTrigger>
+            <TabsTrigger value="config" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configurações
+            </TabsTrigger>
+          </TabsList>
+
+          <div className="mt-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm">
 
         {/* Dashboard */}
         <TabsContent value="dashboard">
@@ -328,11 +333,13 @@ const KidsPage = () => {
           <KidsNotificacoesTab />
         </TabsContent>
 
-        {/* Configurações */}
-        <TabsContent value="config">
-          <KidsConfigTab />
-        </TabsContent>
-      </Tabs>
+          {/* Configurações */}
+          <TabsContent value="config">
+            <KidsConfigTab />
+          </TabsContent>
+          </div>
+        </Tabs>
+      </div>
     </div>
   );
 };
