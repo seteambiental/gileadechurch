@@ -427,11 +427,15 @@ const Auth = () => {
   const nextStep = () => {
     if (validateSignupStep(step)) {
       setStep(step + 1);
+      // Scroll to top when changing steps
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const prevStep = () => {
     setStep(step - 1);
+    // Scroll to top when changing steps
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
