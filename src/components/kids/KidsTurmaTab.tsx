@@ -20,9 +20,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Users, UserRound, Pencil, Trash2 } from "lucide-react";
+import { Search, Users, UserRound, Pencil, Trash2, IdCard } from "lucide-react";
 import { EditarCriancaDialog } from "./EditarCriancaDialog";
+import { CarteirinhaDialog } from "./CarteirinhaDialog";
 import { toast } from "sonner";
+
 interface TurmaConfig {
   id: string;
   turma: string;
@@ -42,6 +44,7 @@ interface Crianca {
   tipo: "membro" | "novo_convertido";
   responsavelNome: string | null;
   responsavelWhatsapp: string | null;
+  kidsNumero: number | null;
 }
 
 interface KidsTurmaTabProps {
@@ -52,6 +55,7 @@ interface KidsTurmaTabProps {
 export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
   const [search, setSearch] = useState("");
   const [editingCrianca, setEditingCrianca] = useState<Crianca | null>(null);
+  const [carteirinhaCrianca, setCarteirinhaCrianca] = useState<Crianca | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
@@ -292,6 +296,23 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
+                                style={{ color: turma.cor_hex }}
+                                onClick={() => setCarteirinhaCrianca(crianca)}
+                              >
+                                <IdCard className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Carteirinha</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
                                 onClick={() => setEditingCrianca(crianca)}
                               >
                                 <Pencil className="h-4 w-4" />
@@ -373,6 +394,22 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
         open={!!editingCrianca}
         onOpenChange={(open) => !open && setEditingCrianca(null)}
         crianca={editingCrianca}
+      />
+
+      {/* Dialog da carteirinha */}
+      <CarteirinhaDialog
+        open={!!carteirinhaCrianca}
+        onOpenChange={(open) => !open && setCarteirinhaCrianca(null)}
+        crianca={carteirinhaCrianca ? {
+          id: carteirinhaCrianca.id,
+          nome: carteirinhaCrianca.nome,
+          foto: carteirinhaCrianca.foto,
+          kidsNumero: carteirinhaCrianca.kidsNumero,
+          responsavelNome: carteirinhaCrianca.responsavelNome,
+          responsavelWhatsapp: carteirinhaCrianca.responsavelWhatsapp,
+          tipo: carteirinhaCrianca.tipo,
+        } : null}
+        turma={turma}
       />
     </div>
   );

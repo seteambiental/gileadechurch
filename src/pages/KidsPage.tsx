@@ -68,7 +68,7 @@ const KidsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name, birth_date, genero, whatsapp, photo_url")
+        .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero")
         .not("birth_date", "is", null);
       
       if (error) throw error;
@@ -88,6 +88,8 @@ const KidsPage = () => {
           data_nascimento, 
           genero, 
           whatsapp,
+          photo_url,
+          kids_numero,
           membro_vinculado_id,
           responsavel_nome,
           responsavel_whatsapp,
@@ -142,6 +144,7 @@ const KidsPage = () => {
       tipo: "membro" | "novo_convertido";
       responsavelNome: string | null;
       responsavelWhatsapp: string | null;
+      kidsNumero: number | null;
     }>> = {};
 
     turmasConfig.forEach((turma) => {
@@ -172,6 +175,7 @@ const KidsPage = () => {
           tipo: "membro",
           responsavelNome: resp?.full_name || null,
           responsavelWhatsapp: resp?.whatsapp || null,
+          kidsNumero: member.kids_numero || null,
         });
       }
     });
@@ -201,10 +205,11 @@ const KidsPage = () => {
           idade,
           genero: nc.genero,
           whatsapp: nc.whatsapp,
-          foto: null,
+          foto: nc.photo_url || null,
           tipo: "novo_convertido",
           responsavelNome,
           responsavelWhatsapp,
+          kidsNumero: nc.kids_numero || null,
         });
       }
     });

@@ -794,6 +794,7 @@ export type Database = {
           full_name: string
           genero: string | null
           id: string
+          kids_numero: number | null
           member_since: string | null
           neighborhood: string | null
           number: string | null
@@ -817,6 +818,7 @@ export type Database = {
           full_name: string
           genero?: string | null
           id?: string
+          kids_numero?: number | null
           member_since?: string | null
           neighborhood?: string | null
           number?: string | null
@@ -840,6 +842,7 @@ export type Database = {
           full_name?: string
           genero?: string | null
           id?: string
+          kids_numero?: number | null
           member_since?: string | null
           neighborhood?: string | null
           number?: string | null
@@ -953,6 +956,7 @@ export type Database = {
           full_name: string
           genero: string | null
           id: string
+          kids_numero: number | null
           member_id: string | null
           membro_vinculado_id: string | null
           mensagem_boas_vindas_enviada: boolean | null
@@ -996,6 +1000,7 @@ export type Database = {
           full_name: string
           genero?: string | null
           id?: string
+          kids_numero?: number | null
           member_id?: string | null
           membro_vinculado_id?: string | null
           mensagem_boas_vindas_enviada?: boolean | null
@@ -1039,6 +1044,7 @@ export type Database = {
           full_name?: string
           genero?: string | null
           id?: string
+          kids_numero?: number | null
           member_id?: string | null
           membro_vinculado_id?: string | null
           mensagem_boas_vindas_enviada?: boolean | null
@@ -1195,6 +1201,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_next_kids_numero: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
