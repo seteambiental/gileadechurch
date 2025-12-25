@@ -28,6 +28,7 @@ import { KidsDashboard } from "@/components/kids/KidsDashboard";
 import { KidsResponsaveisTab } from "@/components/kids/KidsResponsaveisTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
+import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 
 interface TurmaConfig {
   id: string;
@@ -203,9 +204,12 @@ const KidsPage = () => {
             </p>
           </div>
         </div>
-        <Badge variant="secondary" className="text-lg px-4 py-2">
-          {totalCriancas} crianças cadastradas
-        </Badge>
+        <div className="flex items-center gap-3">
+          <CriancaVisitanteFormDialog />
+          <Badge variant="secondary" className="text-lg px-4 py-2">
+            {totalCriancas} crianças cadastradas
+          </Badge>
+        </div>
       </div>
 
       {/* Cards de turmas */}
