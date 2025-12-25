@@ -77,7 +77,7 @@ const AgendaPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [activeTab, setActiveTab] = useState("programacao");
+  const [activeTab, setActiveTab] = useState("eventos");
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -288,11 +288,7 @@ const AgendaPage = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
-            <TabsTrigger value="programacao" className="flex items-center gap-2">
-              <CalendarIcon className="w-4 h-4" />
-              Programação
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
             <TabsTrigger value="eventos" className="flex items-center gap-2">
               <PartyPopper className="w-4 h-4" />
               Eventos
@@ -302,122 +298,6 @@ const AgendaPage = () => {
               Dashboard
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="programacao" className="space-y-6 mt-6">
-            {/* Atalhos rápidos */}
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" size="sm" onClick={() => setActiveTab("eventos")}>
-                <PartyPopper className="w-4 h-4 mr-2" />
-                Ver Eventos
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setActiveTab("dashboard")}>
-                <BarChart3 className="w-4 h-4 mr-2" />
-                Ver Dashboard
-              </Button>
-            </div>
-            
-            <div className="grid lg:grid-cols-3 gap-6">
-              {/* Calendário */}
-              <div className="lg:col-span-2">
-                {isLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-                  </div>
-                ) : (
-                  renderCalendar()
-                )}
-              </div>
-
-              {/* Painel lateral - Eventos do dia */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-heading font-bold">
-                    {selectedDate 
-                      ? format(selectedDate, "dd 'de' MMMM", { locale: ptBR })
-                      : "Selecione um dia"
-                    }
-                  </h3>
-                  <Button size="sm" variant="secondary" onClick={() => {
-                    setEditingEvento(null);
-                    setShowEventoForm(true);
-                  }}>
-                    <Plus className="w-4 h-4 mr-1" />
-                    Evento
-                  </Button>
-                </div>
-
-                {selectedDate && eventosSelecionados.length === 0 && (
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-6 text-center text-muted-foreground">
-                      <CalendarIcon className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p>Nenhum evento neste dia</p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {eventosSelecionados.map((evento, i) => (
-                  <Card 
-                    key={`${evento.id}-${i}`} 
-                    className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => {
-                      setEditingEvento(evento);
-                      setShowEventoForm(true);
-                    }}
-                  >
-                    <div className="h-1" style={{ backgroundColor: evento.cor || "#dc2626" }} />
-                    <CardContent className="pt-4 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-semibold">{evento.titulo}</h4>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted">
-                            {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                          </span>
-                        </div>
-                        {evento.flyer_url && (
-                          <Image className="w-5 h-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      
-                      {(evento.hora_inicio || evento.local) && (
-                        <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
-                          {evento.hora_inicio && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {evento.hora_inicio.substring(0, 5)}
-                              {evento.hora_fim && ` - ${evento.hora_fim.substring(0, 5)}`}
-                            </span>
-                          )}
-                          {evento.local && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="w-3 h-3" />
-                              {evento.local}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {evento.descricao && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">{evento.descricao}</p>
-                      )}
-
-                      {evento.observacoes && (
-                        <div className="p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-                          {evento.observacoes}
-                        </div>
-                      )}
-
-                      {evento.recorrente && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Church className="w-3 h-3" />
-                          <span>Programação fixa</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
 
           <TabsContent value="eventos" className="space-y-6 mt-6">
             <div className="flex items-center justify-between">
