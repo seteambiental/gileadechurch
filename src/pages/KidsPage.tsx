@@ -16,14 +16,15 @@ import {
   BarChart3,
   Bell,
   ArrowLeft,
-  Settings
+  Settings,
+  CalendarDays
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
 import { KidsDashboard } from "@/components/kids/KidsDashboard";
-
+import { KidsEscalasTab } from "@/components/kids/KidsEscalasTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
@@ -322,6 +323,10 @@ const KidsPage = () => {
               <CalendarCheck className="h-4 w-4" />
               Presença
             </TabsTrigger>
+            <TabsTrigger value="escalas" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+              <CalendarDays className="h-4 w-4" />
+              Escalas
+            </TabsTrigger>
             <TabsTrigger value="notificacoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <Bell className="h-4 w-4" />
               Notificações
@@ -368,6 +373,11 @@ const KidsPage = () => {
         {/* Notificações */}
         <TabsContent value="notificacoes">
           <KidsNotificacoesTab />
+        </TabsContent>
+
+        {/* Escalas */}
+        <TabsContent value="escalas">
+          <KidsEscalasTab turmasConfig={turmasConfig || []} />
         </TabsContent>
 
           {/* Configurações */}

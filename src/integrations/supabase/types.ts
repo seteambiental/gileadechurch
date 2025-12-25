@@ -428,6 +428,83 @@ export type Database = {
           },
         ]
       }
+      kids_escalas: {
+        Row: {
+          created_at: string
+          data_culto: string
+          id: string
+          lider_id: string | null
+          observacoes: string | null
+          tipo_culto: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_culto: string
+          id?: string
+          lider_id?: string | null
+          observacoes?: string | null
+          tipo_culto?: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_culto?: string
+          id?: string
+          lider_id?: string | null
+          observacoes?: string | null
+          tipo_culto?: string
+          turma?: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_escalas_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_escalas_ajudantes: {
+        Row: {
+          ajudante_id: string
+          created_at: string
+          escala_id: string
+          id: string
+        }
+        Insert: {
+          ajudante_id: string
+          created_at?: string
+          escala_id: string
+          id?: string
+        }
+        Update: {
+          ajudante_id?: string
+          created_at?: string
+          escala_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_escalas_ajudantes_ajudante_id_fkey"
+            columns: ["ajudante_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_escalas_ajudantes_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "kids_escalas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_lideres: {
         Row: {
           ativo: boolean
