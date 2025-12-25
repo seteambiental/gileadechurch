@@ -55,6 +55,7 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
       }
 
       // Criar novo convertido como criança visitante
+      // Salvar dados do responsável diretamente quando não há membro correspondente
       const { data: novoConvertido, error: ncError } = await supabase
         .from("novos_convertidos")
         .insert({
@@ -64,13 +65,15 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
           como_chegou: "culto_domingo" as const,
           tipo_conversao: null,
           membro_vinculado_id: membroResponsavelId,
+          responsavel_nome: formData.nomeResponsavel.trim() || null,
+          responsavel_whatsapp: formData.whatsappResponsavel.replace(/\D/g, "") || null,
         })
         .select()
         .single();
 
       if (ncError) throw ncError;
 
-      // Se tiver responsável vinculado, criar também em kids_responsaveis
+      // Se tiver responsável vinculado como membro, criar também em kids_responsaveis
       if (membroResponsavelId) {
         await supabase.from("kids_responsaveis").insert({
           crianca_novo_convertido_id: novoConvertido.id,

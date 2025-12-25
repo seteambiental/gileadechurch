@@ -884,6 +884,8 @@ export type Database = {
           participou_culto_membresia: boolean | null
           participou_impacto: boolean | null
           participou_manaim: boolean | null
+          responsavel_nome: string | null
+          responsavel_whatsapp: string | null
           rg: string | null
           state: string | null
           tipo_conversao: Database["public"]["Enums"]["conversion_type"] | null
@@ -924,6 +926,8 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          responsavel_nome?: string | null
+          responsavel_whatsapp?: string | null
           rg?: string | null
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
@@ -964,6 +968,8 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          responsavel_nome?: string | null
+          responsavel_whatsapp?: string | null
           rg?: string | null
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
