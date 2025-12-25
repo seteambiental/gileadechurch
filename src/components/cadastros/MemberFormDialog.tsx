@@ -31,7 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatPhone, formatCep, unformatPhone, unformatCep } from "@/lib/masks";
+import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF, formatRG } from "@/lib/masks";
 
 const FUNCTION_TYPES = [
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
@@ -67,6 +67,8 @@ const formSchema = z.object({
   state: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
+  rg: z.string().optional(),
+  cpf: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -110,6 +112,8 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       state: "",
       whatsapp: "",
       email: "",
+      rg: "",
+      cpf: "",
     },
   });
 
@@ -138,6 +142,8 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             state: memberData.state || "",
             whatsapp: memberData.whatsapp ? formatPhone(memberData.whatsapp) : "",
             email: memberData.email || "",
+            rg: (memberData as any).rg || "",
+            cpf: (memberData as any).cpf ? formatCPF((memberData as any).cpf) : "",
           });
           setPhotoPreview(memberData.photo_url);
         }
@@ -229,6 +235,8 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,
+        rg: data.rg || null,
+        cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
       };
 
       let memberId: string;
@@ -489,6 +497,44 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="rg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>RG</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          placeholder="0000000"
+                          onChange={(e) => field.onChange(formatRG(e.target.value))}
+                          maxLength={15}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="cpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field}
+                          placeholder="000.000.000-00"
+                          onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                          maxLength={14}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

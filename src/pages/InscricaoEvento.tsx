@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { formatPhone } from "@/lib/masks";
+import { formatPhone, formatCPF, formatRG } from "@/lib/masks";
 
 interface Evento {
   id: string;
@@ -76,6 +76,8 @@ const InscricaoEvento = () => {
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
+  const [rg, setRg] = useState("");
+  const [cpf, setCpf] = useState("");
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
@@ -216,6 +218,8 @@ const InscricaoEvento = () => {
         forma_pagamento: formaPagamento,
         lista_espera: isListaEspera,
         observacoes: observacoesMinisterio || null,
+        rg: rg || null,
+        cpf: cpf ? cpf.replace(/\D/g, "") : null,
       };
 
       const { data: inscricaoData, error } = await supabase
@@ -560,6 +564,32 @@ const InscricaoEvento = () => {
                         placeholder="(00) 00000-0000"
                         className="h-10 md:h-14 text-base md:text-lg"
                       />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 md:gap-6">
+                      <div className="space-y-2 md:space-y-3">
+                        <Label htmlFor="rg" className="text-base md:text-lg">RG</Label>
+                        <Input
+                          id="rg"
+                          value={rg}
+                          onChange={(e) => setRg(formatRG(e.target.value))}
+                          placeholder="0000000"
+                          className="h-10 md:h-14 text-base md:text-lg"
+                          maxLength={15}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:space-y-3">
+                        <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
+                        <Input
+                          id="cpf"
+                          value={cpf}
+                          onChange={(e) => setCpf(formatCPF(e.target.value))}
+                          placeholder="000.000.000-00"
+                          className="h-10 md:h-14 text-base md:text-lg"
+                          maxLength={14}
+                        />
+                      </div>
                     </div>
 
                     {/* Membro de ministério */}
