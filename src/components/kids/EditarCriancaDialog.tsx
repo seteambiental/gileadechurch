@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, UserCheck, Camera, User } from "lucide-react";
+import { Loader2, UserCheck, Camera } from "lucide-react";
 import { toast } from "sonner";
 
 interface EditarCriancaDialogProps {
@@ -65,49 +65,6 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
     enabled: !!crianca && open,
   });
 
-  // Buscar responsável vinculado (qualquer um, não só principal)
-  const { data: responsavel, isLoading: loadingResponsavel } = useQuery({
-    queryKey: ["crianca-responsavel-edit", crianca?.id, crianca?.tipo],
-    queryFn: async () => {
-      if (!crianca) return null;
-      
-      const columnName = crianca.tipo === "membro" ? "crianca_member_id" : "crianca_novo_convertido_id";
-      
-      // Buscar responsáveis vinculados
-      const { data: responsaveis, error } = await supabase
-        .from("kids_responsaveis")
-        .select("*")
-        .eq(columnName, crianca.id)
-        .order("principal", { ascending: false });
-      
-      if (error) {
-        console.error("Erro ao buscar responsáveis:", error);
-        return null;
-      }
-      
-      if (!responsaveis || responsaveis.length === 0) return null;
-      
-      // Pegar o primeiro (principal tem prioridade)
-      const respData = responsaveis[0];
-      
-      if (!respData.responsavel_member_id) return null;
-      
-      // Buscar dados do membro responsável
-      const { data: memberData, error: memberError } = await supabase
-        .from("members")
-        .select("id, full_name, whatsapp")
-        .eq("id", respData.responsavel_member_id)
-        .single();
-      
-      if (memberError) {
-        console.error("Erro ao buscar membro responsável:", memberError);
-        return null;
-      }
-      
-      return { ...respData, responsavel: memberData };
-    },
-    enabled: !!crianca && open,
-  });
 
   useEffect(() => {
     if (dadosCompletos) {
@@ -310,8 +267,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
 
   if (!crianca) return null;
 
-  const responsavelInfo = responsavel?.responsavel as { id: string; full_name: string; whatsapp: string | null } | null;
-  const isLoading = loadingDados || loadingResponsavel;
+  const isLoading = loadingDados;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -396,25 +352,6 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
               </div>
             </div>
 
-            {/* Info do responsável */}
-            <div className="bg-muted/50 p-3 rounded-lg space-y-1">
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                <User className="h-3 w-3" />
-                Responsável Principal
-              </Label>
-              {responsavelInfo ? (
-                <>
-                  <p className="font-medium">{responsavelInfo.full_name}</p>
-                  {responsavelInfo.whatsapp ? (
-                    <p className="text-sm text-muted-foreground">📱 {responsavelInfo.whatsapp}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">WhatsApp não cadastrado</p>
-                  )}
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">Nenhum responsável vinculado</p>
-              )}
-            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

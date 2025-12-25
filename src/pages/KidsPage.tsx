@@ -13,9 +13,7 @@ import {
   UserCheck, 
   CalendarCheck, 
   ChevronRight,
-  Baby,
   BarChart3,
-  UserPlus,
   Bell,
   ArrowLeft,
   Settings
@@ -25,7 +23,7 @@ import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
 import { KidsDashboard } from "@/components/kids/KidsDashboard";
-import { KidsResponsaveisTab } from "@/components/kids/KidsResponsaveisTab";
+
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
@@ -269,10 +267,6 @@ const KidsPage = () => {
               <UserCheck className="h-4 w-4" />
               Líderes
             </TabsTrigger>
-            <TabsTrigger value="responsaveis" className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              Responsáveis
-            </TabsTrigger>
             <TabsTrigger value="presenca" className="flex items-center gap-2">
               <CalendarCheck className="h-4 w-4" />
               Presença
@@ -310,14 +304,6 @@ const KidsPage = () => {
         {/* Líderes */}
         <TabsContent value="lideres">
           <KidsLideresTab turmasConfig={turmasConfig || []} />
-        </TabsContent>
-
-        {/* Responsáveis */}
-        <TabsContent value="responsaveis">
-          <KidsResponsaveisTab 
-            turmasConfig={turmasConfig || []} 
-            criancasPorTurma={criancasPorTurma}
-          />
         </TabsContent>
 
         {/* Presença */}

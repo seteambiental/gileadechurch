@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,57 +35,6 @@ interface KidsTurmaTabProps {
 export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
   const [search, setSearch] = useState("");
   const [editingCrianca, setEditingCrianca] = useState<Crianca | null>(null);
-
-  // Buscar WhatsApp dos responsáveis para todas as crianças
-  const criancaIds = criancas.map(c => c.id);
-  const { data: responsaveisData } = useQuery({
-    queryKey: ["kids-responsaveis-whatsapp", criancaIds],
-    queryFn: async () => {
-      if (criancaIds.length === 0) return {};
-      
-      // Buscar responsáveis das crianças
-      const { data: responsaveis, error } = await supabase
-        .from("kids_responsaveis")
-        .select("crianca_member_id, crianca_novo_convertido_id, responsavel_member_id")
-        .eq("principal", true);
-      
-      if (error) throw error;
-      
-      // Coletar IDs dos responsáveis
-      const responsavelIds = responsaveis
-        ?.map(r => r.responsavel_member_id)
-        .filter((id): id is string => !!id) || [];
-      
-      if (responsavelIds.length === 0) return {};
-      
-      // Buscar WhatsApp dos responsáveis
-      const { data: members, error: memberError } = await supabase
-        .from("members")
-        .select("id, whatsapp")
-        .in("id", responsavelIds);
-      
-      if (memberError) throw memberError;
-      
-      // Criar mapa de criança -> whatsapp do responsável
-      const whatsappMap: Record<string, string | null> = {};
-      responsaveis?.forEach(r => {
-        const criancaId = r.crianca_member_id || r.crianca_novo_convertido_id;
-        if (criancaId && r.responsavel_member_id) {
-          const member = members?.find(m => m.id === r.responsavel_member_id);
-          if (member) {
-            whatsappMap[criancaId] = member.whatsapp;
-          }
-        }
-      });
-      
-      return whatsappMap;
-    },
-    enabled: criancaIds.length > 0,
-  });
-
-  const getWhatsappResponsavel = (criancaId: string) => {
-    return responsaveisData?.[criancaId] || null;
-  };
 
   const criancasFiltradas = criancas.filter((c) =>
     c.nome.toLowerCase().includes(search.toLowerCase())
@@ -200,7 +147,6 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                     <TableHead>Nome</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Gênero</TableHead>
-                    <TableHead>WhatsApp Responsável</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -232,11 +178,6 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                             Menina
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {getWhatsappResponsavel(crianca.id) || (
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
