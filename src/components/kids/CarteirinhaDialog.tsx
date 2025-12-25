@@ -8,9 +8,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, Loader2 } from "lucide-react";
+import { Printer, Loader2, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+import html2canvas from "html2canvas";
 
 interface CarteirinhaDialogProps {
   open: boolean;
@@ -30,9 +31,24 @@ interface CarteirinhaDialogProps {
   };
 }
 
-// Credit card dimensions: 85.6mm x 53.98mm (aspect ratio ~1.586)
 const CARD_WIDTH = 340;
 const CARD_HEIGHT = 214;
+
+const adjustColor = (hex: string, percent: number) => {
+  const num = parseInt(hex.replace("#", ""), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = (num >> 16) + amt;
+  const G = ((num >> 8) & 0x00ff) + amt;
+  const B = (num & 0x0000ff) + amt;
+  return `#${(
+    0x1000000 +
+    (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+    (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+    (B < 255 ? (B < 1 ? 0 : B) : 255)
+  )
+    .toString(16)
+    .slice(1)}`;
+};
 
 export const CarteirinhaDialog = ({
   open,
@@ -52,9 +68,7 @@ export const CarteirinhaDialog = ({
     mutationFn: async () => {
       if (!crianca) throw new Error("No crianca");
       
-      const { data: nextNum, error: rpcError } = await supabase
-        .rpc("get_next_kids_numero");
-      
+      const { data: nextNum, error: rpcError } = await supabase.rpc("get_next_kids_numero");
       if (rpcError) throw rpcError;
       
       if (crianca.tipo === "novo_convertido") {
@@ -105,25 +119,11 @@ export const CarteirinhaDialog = ({
     turma: turma.nome_exibicao,
   });
 
-  const adjustColor = (hex: string, percent: number) => {
-    const num = parseInt(hex.replace("#", ""), 16);
-    const amt = Math.round(2.55 * percent);
-    const R = (num >> 16) + amt;
-    const G = ((num >> 8) & 0x00ff) + amt;
-    const B = (num & 0x0000ff) + amt;
-    return `#${(
-      0x1000000 +
-      (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
-      (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
-      (B < 255 ? (B < 1 ? 0 : B) : 255)
-    )
-      .toString(16)
-      .slice(1)}`;
-  };
-
   const handlePrint = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
+
+    const corDark = adjustColor(turma.cor_hex, -30);
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -133,137 +133,26 @@ export const CarteirinhaDialog = ({
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
             * { box-sizing: border-box; margin: 0; padding: 0; }
-            body {
-              font-family: 'Poppins', sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-              background: #f5f5f5;
-            }
-            .card {
-              width: ${CARD_WIDTH}px;
-              height: ${CARD_HEIGHT}px;
-              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)});
-              border-radius: 16px;
-              overflow: hidden;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-              display: flex;
-              flex-direction: column;
-              position: relative;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              padding: 12px 16px 8px;
-            }
-            .logo-text {
-              color: white;
-            }
-            .logo-text h1 {
-              font-size: 14px;
-              font-weight: 700;
-              letter-spacing: 1px;
-              text-transform: uppercase;
-              margin-bottom: 2px;
-            }
-            .logo-text .turma-badge {
-              font-size: 10px;
-              background: rgba(255,255,255,0.25);
-              padding: 2px 10px;
-              border-radius: 10px;
-              font-weight: 600;
-            }
-            .numero-badge {
-              background: white;
-              color: ${turma.cor_hex};
-              padding: 4px 10px;
-              border-radius: 8px;
-              font-size: 16px;
-              font-weight: 700;
-            }
-            .content {
-              display: flex;
-              flex: 1;
-              padding: 0 16px 12px;
-              gap: 12px;
-            }
-            .photo-section {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 6px;
-            }
-            .photo {
-              width: 70px;
-              height: 70px;
-              border-radius: 10px;
-              border: 3px solid white;
-              object-fit: cover;
-              background: white;
-            }
-            .photo-placeholder {
-              width: 70px;
-              height: 70px;
-              border-radius: 10px;
-              border: 3px solid white;
-              background: rgba(255,255,255,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 28px;
-              font-weight: 700;
-              color: white;
-            }
-            .qr-container {
-              background: white;
-              padding: 4px;
-              border-radius: 6px;
-            }
-            .info-section {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              gap: 6px;
-            }
-            .info-row {
-              display: flex;
-              flex-direction: column;
-            }
-            .info-label {
-              font-size: 8px;
-              color: rgba(255,255,255,0.7);
-              text-transform: uppercase;
-              font-weight: 600;
-              letter-spacing: 0.5px;
-            }
-            .info-value {
-              font-size: 11px;
-              color: white;
-              font-weight: 600;
-            }
-            .info-value.nome {
-              font-size: 14px;
-              font-weight: 700;
-            }
-            .footer {
-              background: rgba(0,0,0,0.15);
-              padding: 6px 16px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-            .footer-text {
-              font-size: 8px;
-              color: rgba(255,255,255,0.8);
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
-            @media print {
-              body { background: white; }
-            }
+            body { font-family: 'Poppins', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
+            .card { width: ${CARD_WIDTH}px; height: ${CARD_HEIGHT}px; background: linear-gradient(135deg, ${turma.cor_hex}, ${corDark}); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px 8px; }
+            .logo-text { color: white; }
+            .logo-text h1 { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+            .logo-text .turma-badge { font-size: 10px; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+            .numero-badge { background: white; color: ${turma.cor_hex}; padding: 4px 10px; border-radius: 8px; font-size: 16px; font-weight: 700; }
+            .content { display: flex; flex: 1; padding: 0 16px 12px; gap: 12px; }
+            .photo-section { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+            .photo { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; object-fit: cover; background: white; }
+            .photo-placeholder { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; }
+            .qr-container { background: white; padding: 4px; border-radius: 6px; }
+            .info-section { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+            .info-row { display: flex; flex-direction: column; }
+            .info-label { font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase; font-weight: 600; }
+            .info-value { font-size: 11px; color: white; font-weight: 600; }
+            .info-value.nome { font-size: 14px; font-weight: 700; }
+            .footer { background: rgba(0,0,0,0.15); padding: 6px 16px; display: flex; justify-content: space-between; }
+            .footer-text { font-size: 8px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
+            @media print { body { background: white; } }
           </style>
         </head>
         <body>
@@ -278,29 +167,17 @@ export const CarteirinhaDialog = ({
             <div class="content">
               <div class="photo-section">
                 ${crianca.foto 
-                  ? `<img src="${crianca.foto}" alt="${crianca.nome}" class="photo" />`
+                  ? `<img src="${crianca.foto}" class="photo" />`
                   : `<div class="photo-placeholder">${crianca.nome.charAt(0)}</div>`
                 }
                 <div class="qr-container">
-                  <svg width="48" height="48" viewBox="0 0 48 48">
-                    <rect fill="white" width="48" height="48"/>
-                    <text x="24" y="28" text-anchor="middle" font-size="8" fill="#333">QR</text>
-                  </svg>
+                  <svg width="48" height="48"><rect fill="#eee" width="48" height="48"/><text x="24" y="28" text-anchor="middle" font-size="8">QR</text></svg>
                 </div>
               </div>
               <div class="info-section">
-                <div class="info-row">
-                  <span class="info-label">Nome</span>
-                  <span class="info-value nome">${crianca.nome}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Responsável</span>
-                  <span class="info-value">${crianca.responsavelNome || "-"}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">WhatsApp</span>
-                  <span class="info-value">${formatWhatsapp(crianca.responsavelWhatsapp)}</span>
-                </div>
+                <div class="info-row"><span class="info-label">Nome</span><span class="info-value nome">${crianca.nome}</span></div>
+                <div class="info-row"><span class="info-label">Responsável</span><span class="info-value">${crianca.responsavelNome || "-"}</span></div>
+                <div class="info-row"><span class="info-label">WhatsApp</span><span class="info-value">${formatWhatsapp(crianca.responsavelWhatsapp)}</span></div>
               </div>
             </div>
             <div class="footer">
@@ -315,110 +192,37 @@ export const CarteirinhaDialog = ({
     printWindow.print();
   };
 
-  const handleDownload = () => {
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Carteirinha - ${crianca.nome}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-            * { box-sizing: border-box; margin: 0; padding: 0; }
-            body {
-              font-family: 'Poppins', sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              min-height: 100vh;
-              background: #f5f5f5;
-            }
-            .card {
-              width: ${CARD_WIDTH}px;
-              height: ${CARD_HEIGHT}px;
-              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)});
-              border-radius: 16px;
-              overflow: hidden;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-              display: flex;
-              flex-direction: column;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              padding: 12px 16px 8px;
-            }
-            .logo-text { color: white; }
-            .logo-text h1 { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
-            .logo-text .turma-badge { font-size: 10px; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 10px; font-weight: 600; }
-            .numero-badge { background: white; color: ${turma.cor_hex}; padding: 4px 10px; border-radius: 8px; font-size: 16px; font-weight: 700; }
-            .content { display: flex; flex: 1; padding: 0 16px 12px; gap: 12px; }
-            .photo-section { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-            .photo { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; object-fit: cover; background: white; }
-            .photo-placeholder { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; }
-            .qr-container { background: white; padding: 4px; border-radius: 6px; }
-            .info-section { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
-            .info-row { display: flex; flex-direction: column; }
-            .info-label { font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-            .info-value { font-size: 11px; color: white; font-weight: 600; }
-            .info-value.nome { font-size: 14px; font-weight: 700; }
-            .footer { background: rgba(0,0,0,0.15); padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; }
-            .footer-text { font-size: 8px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
-          </style>
-        </head>
-        <body>
-          <div class="card">
-            <div class="header">
-              <div class="logo-text">
-                <h1>Pequenos Gileaditas</h1>
-                <span class="turma-badge">PG ${turma.nome_exibicao}</span>
-              </div>
-              ${displayNumero ? `<div class="numero-badge">#${String(displayNumero).padStart(4, "0")}</div>` : ""}
-            </div>
-            <div class="content">
-              <div class="photo-section">
-                ${crianca.foto 
-                  ? `<img src="${crianca.foto}" alt="${crianca.nome}" class="photo" />`
-                  : `<div class="photo-placeholder">${crianca.nome.charAt(0)}</div>`
-                }
-                <div class="qr-container">
-                  <svg width="48" height="48"><rect fill="#ddd" width="48" height="48"/><text x="24" y="28" text-anchor="middle" font-size="8">QR</text></svg>
-                </div>
-              </div>
-              <div class="info-section">
-                <div class="info-row">
-                  <span class="info-label">Nome</span>
-                  <span class="info-value nome">${crianca.nome}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">Responsável</span>
-                  <span class="info-value">${crianca.responsavelNome || "-"}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">WhatsApp</span>
-                  <span class="info-value">${formatWhatsapp(crianca.responsavelWhatsapp)}</span>
-                </div>
-              </div>
-            </div>
-            <div class="footer">
-              <span class="footer-text">Igreja Gileade</span>
-              <span class="footer-text">Ministério Infantil</span>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+  const handleDownloadPNG = async () => {
+    if (!cardRef.current) return;
 
-    const blob = new Blob([htmlContent], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `carteirinha-${crianca.nome.toLowerCase().replace(/\s+/g, "-")}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      toast.loading("Gerando imagem...");
+      
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 3,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+      });
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `carteirinha-${crianca.nome.toLowerCase().replace(/\s+/g, "-")}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.dismiss();
+      toast.success("Carteirinha baixada!");
+    } catch (err) {
+      toast.dismiss();
+      toast.error("Erro ao gerar imagem");
+      console.error(err);
+    }
   };
+
+  const corDark = adjustColor(turma.cor_hex, -30);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -427,17 +231,15 @@ export const CarteirinhaDialog = ({
           <DialogTitle>Carteirinha - {crianca.nome}</DialogTitle>
         </DialogHeader>
 
-        {/* Credit Card Style Preview */}
         <div
           ref={cardRef}
           className="mx-auto rounded-2xl overflow-hidden shadow-xl"
           style={{
             width: CARD_WIDTH,
             height: CARD_HEIGHT,
-            background: `linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)})`,
+            background: `linear-gradient(135deg, ${turma.cor_hex}, ${corDark})`,
           }}
         >
-          {/* Header */}
           <div className="flex justify-between items-start p-3 pb-2">
             <div className="text-white">
               <h1 className="text-sm font-bold tracking-wide uppercase mb-0.5">
@@ -460,9 +262,7 @@ export const CarteirinhaDialog = ({
             )}
           </div>
 
-          {/* Content */}
           <div className="flex gap-3 px-4 pb-3">
-            {/* Photo + QR */}
             <div className="flex flex-col items-center gap-1.5">
               {crianca.foto ? (
                 <img
@@ -483,7 +283,6 @@ export const CarteirinhaDialog = ({
               </div>
             </div>
 
-            {/* Info */}
             <div className="flex-1 flex flex-col justify-center gap-1.5">
               <div>
                 <span className="text-[8px] text-white/70 uppercase font-semibold tracking-wide block">
@@ -510,7 +309,6 @@ export const CarteirinhaDialog = ({
             </div>
           </div>
 
-          {/* Footer */}
           <div
             className="flex justify-between items-center px-4 py-1.5"
             style={{ background: "rgba(0,0,0,0.15)" }}
@@ -524,7 +322,6 @@ export const CarteirinhaDialog = ({
           </div>
         </div>
 
-        {/* Generate Number Button */}
         {!displayNumero && (
           <Button
             onClick={() => generateNumeroMutation.mutate()}
@@ -543,15 +340,14 @@ export const CarteirinhaDialog = ({
           </Button>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2">
           <Button variant="outline" className="flex-1" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
           </Button>
-          <Button variant="outline" className="flex-1" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-2" />
-            Baixar
+          <Button variant="outline" className="flex-1" onClick={handleDownloadPNG}>
+            <ImageIcon className="h-4 w-4 mr-2" />
+            Baixar PNG
           </Button>
         </div>
       </DialogContent>
