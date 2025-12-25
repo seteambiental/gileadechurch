@@ -388,6 +388,42 @@ export type Database = {
           },
         ]
       }
+      kids_notificacoes_config: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          dia_semana: number | null
+          hora: string
+          id: string
+          minutos_antes: number | null
+          tipo_notificacao: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          dia_semana?: number | null
+          hora: string
+          id?: string
+          minutos_antes?: number | null
+          tipo_notificacao: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          dia_semana?: number | null
+          hora?: string
+          id?: string
+          minutos_antes?: number | null
+          tipo_notificacao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kids_notificacoes_log: {
         Row: {
           crianca_member_id: string | null
