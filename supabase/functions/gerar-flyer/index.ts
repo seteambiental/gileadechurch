@@ -183,52 +183,51 @@ serve(async (req) => {
     }
 
     // Criar prompt detalhado para o flyer informativo - 100% PORTUGUÊS BRASILEIRO
-    const prompt = `CRIAR IMAGEM DE FLYER DE EVENTO RELIGIOSO.
+    const prompt = `VOCÊ É UM DESIGNER BRASILEIRO. GERE UM FLYER 100% EM PORTUGUÊS DO BRASIL.
 
-ATENÇÃO MÁXIMA: ESCREVA ABSOLUTAMENTE TUDO EM PORTUGUÊS DO BRASIL.
-NÃO USE NENHUMA PALAVRA EM INGLÊS. ZERO INGLÊS. APENAS PORTUGUÊS BRASILEIRO.
+REGRA ABSOLUTA: TODO TEXTO DEVE ESTAR EM PORTUGUÊS BRASILEIRO.
+PROIBIDO: Qualquer palavra em inglês (Registration, Location, Date, Time, Event, etc.)
+OBRIGATÓRIO: Apenas português brasileiro em todos os textos.
 
-TEXTOS OBRIGATÓRIOS NO FLYER (copie exatamente como está):
+=== CONTEÚDO DO FLYER ===
 
-TÍTULO PRINCIPAL (bem grande, no topo):
-${titulo}
+TÍTULO (letras grandes e em destaque):
+${titulo.toUpperCase()}
 
-DATA:
-${formatDate(dataEvento)}
-${horaInicio ? `Horário: ${horaInicio}${horaFim ? ` às ${horaFim}` : ''}` : ''}
-${cronogramaMultidatas}
+INFORMAÇÕES DE DATA E HORÁRIO:
+📅 ${formatDate(dataEvento)}
+${horaInicio ? `🕐 ${horaInicio}${horaFim ? ` às ${horaFim}` : ''}` : ''}
+${cronogramaMultidatas ? `\nPROGRAMAÇÃO:\n${cronogramaMultidatas}` : ''}
 
-DETALHES:
-${descricao ? descricao : ''}
-Público: ${publicoAlvo || 'Todos'}
-${temRefeicao ? 'Refeições inclusas' : ''}${comentariosRefeicao ? ` - ${comentariosRefeicao}` : ''}
-${temCusto && valorCusto ? `Investimento: R$ ${parseFloat(valorCusto).toFixed(2).replace('.', ',')}` : 'Evento gratuito'}${comentariosCusto ? ` - ${comentariosCusto}` : ''}
-${local ? `Local: ${local}` : ''}
-${inscricaoInfo}
+${descricao ? `DESCRIÇÃO:\n${descricao}\n` : ''}
 
-LOGO NO CANTO INFERIOR DIREITO:
-Escrever "GILEADE" em letras brancas no canto inferior direito
+PÚBLICO ALVO: ${publicoAlvo === 'masculino' ? 'Homens' : publicoAlvo === 'feminino' ? 'Mulheres' : publicoAlvo === 'jovens' ? 'Jovens' : 'Todos'}
 
-DESIGN DO FLYER:
-- Orientação: Retrato (vertical, 9:16)
-- Cor de fundo: ${backgroundColorHex} (${backgroundColorName}) - COR SÓLIDA, SEM GRADIENTE
-- Texto: Branco para máximo contraste
-- Fonte: Estilo moderno como Montserrat
-- Título: Negrito e grande
-- Ícones: Pequenos ícones brancos para data (calendário), horário (relógio), local (pin)
-- Layout: Limpo, organizado, profissional
-- SEM fotos, SEM ilustrações, SEM padrões decorativos
-- Apenas fundo sólido com texto
+${temRefeicao ? `🍽️ ALIMENTAÇÃO: Refeições inclusas${comentariosRefeicao ? ` (${comentariosRefeicao})` : ''}` : ''}
 
-IMPORTANTE:
-- Todos os textos devem estar 100% em português brasileiro
-- Usar "Inscrições" não "Registration"
-- Usar "Local" não "Location"  
-- Usar "Data" não "Date"
-- Usar "Horário" não "Time"
-- Usar "Investimento" não "Investment"
+${temCusto && valorCusto ? `💰 INVESTIMENTO: R$ ${parseFloat(valorCusto).toFixed(2).replace('.', ',')}${comentariosCusto ? ` - ${comentariosCusto}` : ''}` : '✅ ENTRADA GRATUITA'}
 
-Gere a imagem do flyer agora.`;
+${local ? `📍 LOCAL: ${local}` : ''}
+
+${linkInscricao ? `\n📝 INSCRIÇÕES: ${linkInscricao}` : ''}
+
+MARCA: "GILEADE" (canto inferior direito, letras brancas)
+
+=== INSTRUÇÕES DE DESIGN ===
+
+FORMATO: Vertical (retrato) 9:16
+COR DE FUNDO: ${backgroundColorHex} (cor sólida, sem gradiente, sem padrões)
+COR DO TEXTO: Branco (#FFFFFF)
+TIPOGRAFIA: Moderna (estilo Montserrat ou similar)
+LAYOUT: Limpo, organizado, profissional, minimalista
+ELEMENTOS: Apenas texto e pequenos ícones (calendário, relógio, local)
+PROIBIDO: Fotos, ilustrações, imagens de pessoas, padrões decorativos
+
+=== TRADUÇÃO OBRIGATÓRIA ===
+NÃO escreva: Date, Time, Location, Event, Register, Registration, Investment, Free
+ESCREVA: Data, Horário, Local, Evento, Inscrever, Inscrições, Investimento, Gratuito
+
+GERE A IMAGEM DO FLYER AGORA.`;
 
     console.log("Prompt gerado:", prompt.substring(0, 500) + "...");
 
