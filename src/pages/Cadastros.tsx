@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { isAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck } from "lucide-react";
+import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -15,7 +15,14 @@ import AprovacaoUsuariosTab from "@/components/cadastros/AprovacaoUsuariosTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 const Cadastros = () => {
-  const { user, loading } = useAuth();
+  const isBypassed = isAuthBypassed();
+  
+  const handleSignOut = async () => {
+    setAuthBypassed(false);
+    await signOut();
+    navigate("/");
+  };
+  const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("membros");
 
@@ -66,15 +73,38 @@ const Cadastros = () => {
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/app")}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/app")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            
+            {user ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </Button>
+            ) : isBypassed ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/auth")}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Entrar
+              </Button>
+            ) : null}
+          </div>
         </div>
       </header>
 
