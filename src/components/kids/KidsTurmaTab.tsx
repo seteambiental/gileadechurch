@@ -25,6 +25,8 @@ interface Crianca {
   whatsapp: string | null;
   foto: string | null;
   tipo: "membro" | "novo_convertido";
+  responsavelNome: string | null;
+  responsavelWhatsapp: string | null;
 }
 
 interface KidsTurmaTabProps {
@@ -145,6 +147,7 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
+                    <TableHead>Responsável</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Gênero</TableHead>
                     <TableHead>Status</TableHead>
@@ -166,6 +169,18 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                           </Avatar>
                           <span className="font-medium">{crianca.nome}</span>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {crianca.responsavelNome ? (
+                          <div className="text-sm">
+                            <p className="font-medium">{crianca.responsavelNome}</p>
+                            {crianca.responsavelWhatsapp && (
+                              <p className="text-muted-foreground text-xs">{crianca.responsavelWhatsapp}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">-</span>
+                        )}
                       </TableCell>
                       <TableCell>{crianca.idade} anos</TableCell>
                       <TableCell>

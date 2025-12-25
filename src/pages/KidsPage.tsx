@@ -37,6 +37,12 @@ interface TurmaConfig {
   idade_maxima: number;
 }
 
+interface Responsavel {
+  id: string;
+  full_name: string;
+  whatsapp: string | null;
+}
+
 const KidsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -70,14 +76,49 @@ const KidsPage = () => {
     },
   });
 
-  // Buscar novos convertidos (crianças)
+  // Buscar novos convertidos (crianças) com responsáveis vinculados
   const { data: novosConvertidos, isLoading: loadingNovos } = useQuery({
     queryKey: ["novos-convertidos-kids"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("novos_convertidos")
-        .select("id, full_name, data_nascimento, genero, whatsapp")
+        .select(`
+          id, 
+          full_name, 
+          data_nascimento, 
+          genero, 
+          whatsapp,
+          membro_vinculado_id,
+          membro_vinculado:members!novos_convertidos_membro_vinculado_id_fkey(
+            id,
+            full_name,
+            whatsapp
+          )
+        `)
         .not("data_nascimento", "is", null);
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Buscar responsáveis via kids_responsaveis
+  const { data: responsaveis } = useQuery({
+    queryKey: ["kids-responsaveis"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_responsaveis")
+        .select(`
+          crianca_novo_convertido_id,
+          crianca_member_id,
+          responsavel_member_id,
+          responsavel:members!kids_responsaveis_responsavel_member_id_fkey(
+            id,
+            full_name,
+            whatsapp
+          )
+        `)
+        .eq("principal", true);
       
       if (error) throw error;
       return data;
@@ -97,6 +138,8 @@ const KidsPage = () => {
       whatsapp: string | null;
       foto: string | null;
       tipo: "membro" | "novo_convertido";
+      responsavelNome: string | null;
+      responsavelWhatsapp: string | null;
     }>> = {};
 
     turmasConfig.forEach((turma) => {
@@ -113,6 +156,10 @@ const KidsPage = () => {
       );
       
       if (turma) {
+        // Buscar responsável via kids_responsaveis
+        const respVinculo = responsaveis?.find(r => r.crianca_member_id === member.id);
+        const resp = respVinculo?.responsavel as Responsavel | null;
+        
         resultado[turma.turma].push({
           id: member.id,
           nome: member.full_name,
@@ -121,6 +168,8 @@ const KidsPage = () => {
           whatsapp: member.whatsapp,
           foto: member.photo_url,
           tipo: "membro",
+          responsavelNome: resp?.full_name || null,
+          responsavelWhatsapp: resp?.whatsapp || null,
         });
       }
     });
@@ -135,6 +184,13 @@ const KidsPage = () => {
       );
       
       if (turma) {
+        // Primeiro tentar membro_vinculado, depois kids_responsaveis
+        const membroVinculado = nc.membro_vinculado as Responsavel | null;
+        const respVinculo = responsaveis?.find(r => r.crianca_novo_convertido_id === nc.id);
+        const respKids = respVinculo?.responsavel as Responsavel | null;
+        
+        const responsavel = membroVinculado || respKids;
+        
         resultado[turma.turma].push({
           id: nc.id,
           nome: nc.full_name,
@@ -143,6 +199,8 @@ const KidsPage = () => {
           whatsapp: nc.whatsapp,
           foto: null,
           tipo: "novo_convertido",
+          responsavelNome: responsavel?.full_name || null,
+          responsavelWhatsapp: responsavel?.whatsapp || null,
         });
       }
     });
@@ -153,7 +211,7 @@ const KidsPage = () => {
     });
 
     return resultado;
-  }, [turmasConfig, members, novosConvertidos]);
+  }, [turmasConfig, members, novosConvertidos, responsaveis]);
 
   // Totais
   const totalCriancas = useMemo(() => {
