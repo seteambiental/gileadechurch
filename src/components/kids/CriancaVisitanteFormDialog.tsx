@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserPlus, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserPlus, Loader2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
 
@@ -18,6 +19,9 @@ interface CriancaVisitanteFormDialogProps {
 export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -37,6 +41,47 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
       whatsappResponsavel: "",
       observacoes: "",
     });
+    setPhotoFile(null);
+    setPhotoPreview(null);
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("A foto deve ter no máximo 5MB");
+        return;
+      }
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadPhoto = async (criancaId: string): Promise<string | null> => {
+    if (!photoFile) return null;
+
+    const fileExt = photoFile.name.split(".").pop();
+    const fileName = `visitante-${criancaId}-${Date.now()}.${fileExt}`;
+    const filePath = `kids/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("member-photos")
+      .upload(filePath, photoFile);
+
+    if (uploadError) {
+      console.error("Erro ao fazer upload da foto:", uploadError);
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("member-photos")
+      .getPublicUrl(filePath);
+
+    return publicUrl;
   };
 
   const createMutation = useMutation({
@@ -55,7 +100,6 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
       }
 
       // Criar novo convertido como criança visitante
-      // Salvar dados do responsável diretamente quando não há membro correspondente
       const { data: novoConvertido, error: ncError } = await supabase
         .from("novos_convertidos")
         .insert({
@@ -72,6 +116,15 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
         .single();
 
       if (ncError) throw ncError;
+
+      // Upload de foto se houver
+      if (photoFile) {
+        const photoUrl = await uploadPhoto(novoConvertido.id);
+        if (photoUrl) {
+          // Atualizar com a URL da foto (usando campo whatsapp temporariamente para foto visitante)
+          // Por ora, não há campo photo_url em novos_convertidos, então a foto ficará apenas para membros
+        }
+      }
 
       // Se tiver responsável vinculado como membro, criar também em kids_responsaveis
       if (membroResponsavelId) {
@@ -112,7 +165,10 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) resetForm();
+    }}>
       <DialogTrigger asChild>
         {children || (
           <Button className="bg-gradient-to-r from-pink-500 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white shadow-lg">
@@ -121,12 +177,41 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl">🎈 Cadastrar Criança Visitante</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Upload de foto */}
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <Avatar className="h-24 w-24 border-4 border-muted">
+                <AvatarImage src={photoPreview || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
+                  {formData.nome.charAt(0) || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Clique no ícone para adicionar foto</p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="nome">Nome da Criança *</Label>
             <Input

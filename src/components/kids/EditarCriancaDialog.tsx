@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, UserCheck, Camera } from "lucide-react";
 import { toast } from "sonner";
+import { formatPhone } from "@/lib/masks";
 
 interface EditarCriancaDialogProps {
   open: boolean;
@@ -34,6 +35,8 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
     nome: "",
     dataNascimento: "",
     genero: "",
+    responsavelNome: "",
+    responsavelWhatsapp: "",
   });
 
   // Buscar dados completos da criança
@@ -68,14 +71,25 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
 
   useEffect(() => {
     if (dadosCompletos) {
+      const ncData = dadosCompletos as { 
+        responsavel_nome?: string; 
+        responsavel_whatsapp?: string;
+        photo_url?: string;
+        full_name?: string;
+        data_nascimento?: string;
+        genero?: string;
+      };
+      
       setFormData({
         nome: dadosCompletos.full_name || "",
         dataNascimento: dadosCompletos.data_nascimento || "",
         genero: dadosCompletos.genero || "",
+        responsavelNome: ncData.responsavel_nome || "",
+        responsavelWhatsapp: ncData.responsavel_whatsapp || "",
       });
       setPhotoPreview(
         dadosCompletos.tipo === "membro" 
-          ? (dadosCompletos as { photo_url?: string }).photo_url || null 
+          ? ncData.photo_url || null 
           : null
       );
     }
@@ -142,8 +156,9 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           full_name: formData.nome.trim(),
           data_nascimento: formData.dataNascimento || null,
           genero: formData.genero || null,
+          responsavel_nome: formData.responsavelNome.trim() || null,
+          responsavel_whatsapp: formData.responsavelWhatsapp.replace(/\D/g, "") || null,
         };
-        // novos_convertidos não tem photo_url, mas podemos usar após converter
         
         const { error } = await supabase
           .from("novos_convertidos")
@@ -352,6 +367,36 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
               </div>
             </div>
 
+            {/* Campos de responsável - apenas para visitantes */}
+            {crianca.tipo === "novo_convertido" && (
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">👨‍👩‍👧 Responsável</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="responsavelNome">Nome do Responsável</Label>
+                  <Input
+                    id="responsavelNome"
+                    value={formData.responsavelNome}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, responsavelNome: e.target.value }))}
+                    placeholder="Nome do pai/mãe/responsável"
+                  />
+                </div>
+
+                <div className="space-y-2 mt-3">
+                  <Label htmlFor="responsavelWhatsapp">WhatsApp do Responsável</Label>
+                  <Input
+                    id="responsavelWhatsapp"
+                    value={formatPhone(formData.responsavelWhatsapp)}
+                    onChange={(e) => setFormData((prev) => ({ 
+                      ...prev, 
+                      responsavelWhatsapp: e.target.value.replace(/\D/g, "")
+                    }))}
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
