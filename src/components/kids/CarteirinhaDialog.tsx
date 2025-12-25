@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download, Printer, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
 
 interface CarteirinhaDialogProps {
   open: boolean;
@@ -29,6 +30,10 @@ interface CarteirinhaDialogProps {
   };
 }
 
+// Credit card dimensions: 85.6mm x 53.98mm (aspect ratio ~1.586)
+const CARD_WIDTH = 340;
+const CARD_HEIGHT = 214;
+
 export const CarteirinhaDialog = ({
   open,
   onOpenChange,
@@ -39,23 +44,19 @@ export const CarteirinhaDialog = ({
   const queryClient = useQueryClient();
   const [localNumero, setLocalNumero] = useState<number | null>(null);
 
-  // Reset localNumero when crianca changes
   useEffect(() => {
     setLocalNumero(crianca?.kidsNumero || null);
   }, [crianca?.id, crianca?.kidsNumero]);
 
-  // Mutation to generate and save kids number
   const generateNumeroMutation = useMutation({
     mutationFn: async () => {
       if (!crianca) throw new Error("No crianca");
       
-      // Get next number using RPC function
       const { data: nextNum, error: rpcError } = await supabase
         .rpc("get_next_kids_numero");
       
       if (rpcError) throw rpcError;
       
-      // Save to the correct table
       if (crianca.tipo === "novo_convertido") {
         const { error } = await supabase
           .from("novos_convertidos")
@@ -97,10 +98,30 @@ export const CarteirinhaDialog = ({
     return phone;
   };
 
-  const handlePrint = () => {
-    const printContent = cardRef.current?.innerHTML;
-    if (!printContent) return;
+  const qrCodeData = JSON.stringify({
+    id: crianca.id,
+    numero: displayNumero,
+    nome: crianca.nome,
+    turma: turma.nome_exibicao,
+  });
 
+  const adjustColor = (hex: string, percent: number) => {
+    const num = parseInt(hex.replace("#", ""), 16);
+    const amt = Math.round(2.55 * percent);
+    const R = (num >> 16) + amt;
+    const G = ((num >> 8) & 0x00ff) + amt;
+    const B = (num & 0x0000ff) + amt;
+    return `#${(
+      0x1000000 +
+      (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 +
+      (G < 255 ? (G < 1 ? 0 : G) : 255) * 0x100 +
+      (B < 255 ? (B < 1 ? 0 : B) : 255)
+    )
+      .toString(16)
+      .slice(1)}`;
+  };
+
+  const handlePrint = () => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
@@ -111,118 +132,182 @@ export const CarteirinhaDialog = ({
           <title>Carteirinha - ${crianca.nome}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
               font-family: 'Poppins', sans-serif;
               display: flex;
               justify-content: center;
               align-items: center;
               min-height: 100vh;
-              margin: 0;
               background: #f5f5f5;
             }
             .card {
-              width: 350px;
-              background: white;
+              width: ${CARD_WIDTH}px;
+              height: ${CARD_HEIGHT}px;
+              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)});
               border-radius: 16px;
               overflow: hidden;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+              display: flex;
+              flex-direction: column;
+              position: relative;
             }
             .header {
-              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -20)});
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              padding: 12px 16px 8px;
+            }
+            .logo-text {
               color: white;
-              padding: 20px;
-              text-align: center;
             }
-            .header h1 {
-              font-size: 20px;
-              font-weight: 700;
-              margin: 0;
-              text-transform: uppercase;
-              letter-spacing: 2px;
-            }
-            .header .turma-badge {
-              display: inline-block;
-              background: rgba(255,255,255,0.25);
-              padding: 4px 16px;
-              border-radius: 20px;
-              margin-top: 8px;
+            .logo-text h1 {
               font-size: 14px;
+              font-weight: 700;
+              letter-spacing: 1px;
+              text-transform: uppercase;
+              margin-bottom: 2px;
+            }
+            .logo-text .turma-badge {
+              font-size: 10px;
+              background: rgba(255,255,255,0.25);
+              padding: 2px 10px;
+              border-radius: 10px;
               font-weight: 600;
             }
-            .content {
-              padding: 24px;
+            .numero-badge {
+              background: white;
+              color: ${turma.cor_hex};
+              padding: 4px 10px;
+              border-radius: 8px;
+              font-size: 16px;
+              font-weight: 700;
             }
-            .photo-container {
+            .content {
               display: flex;
-              justify-content: center;
-              margin-bottom: 20px;
+              flex: 1;
+              padding: 0 16px 12px;
+              gap: 12px;
+            }
+            .photo-section {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 6px;
             }
             .photo {
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 4px solid ${turma.cor_hex};
+              width: 70px;
+              height: 70px;
+              border-radius: 10px;
+              border: 3px solid white;
               object-fit: cover;
-              background: #e5e7eb;
+              background: white;
             }
             .photo-placeholder {
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 4px solid ${turma.cor_hex};
-              background: linear-gradient(135deg, ${turma.cor_hex}20, ${turma.cor_hex}40);
+              width: 70px;
+              height: 70px;
+              border-radius: 10px;
+              border: 3px solid white;
+              background: rgba(255,255,255,0.3);
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 40px;
+              font-size: 28px;
               font-weight: 700;
-              color: ${turma.cor_hex};
+              color: white;
+            }
+            .qr-container {
+              background: white;
+              padding: 4px;
+              border-radius: 6px;
+            }
+            .info-section {
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              gap: 6px;
             }
             .info-row {
               display: flex;
-              margin-bottom: 12px;
-              align-items: flex-start;
+              flex-direction: column;
             }
             .info-label {
-              font-size: 11px;
-              color: #6b7280;
+              font-size: 8px;
+              color: rgba(255,255,255,0.7);
               text-transform: uppercase;
               font-weight: 600;
-              width: 100px;
-              flex-shrink: 0;
+              letter-spacing: 0.5px;
             }
             .info-value {
-              font-size: 14px;
-              color: #1f2937;
-              font-weight: 500;
-            }
-            .numero-container {
-              background: linear-gradient(135deg, ${turma.cor_hex}15, ${turma.cor_hex}25);
-              padding: 16px;
-              border-radius: 12px;
-              text-align: center;
-              margin-top: 16px;
-            }
-            .numero-label {
               font-size: 11px;
-              color: #6b7280;
-              text-transform: uppercase;
+              color: white;
               font-weight: 600;
             }
-            .numero-value {
-              font-size: 32px;
+            .info-value.nome {
+              font-size: 14px;
               font-weight: 700;
-              color: ${turma.cor_hex};
-              margin-top: 4px;
+            }
+            .footer {
+              background: rgba(0,0,0,0.15);
+              padding: 6px 16px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            .footer-text {
+              font-size: 8px;
+              color: rgba(255,255,255,0.8);
+              text-transform: uppercase;
+              letter-spacing: 1px;
             }
             @media print {
               body { background: white; }
-              .card { box-shadow: none; }
             }
           </style>
         </head>
         <body>
-          ${printContent}
+          <div class="card">
+            <div class="header">
+              <div class="logo-text">
+                <h1>Pequenos Gileaditas</h1>
+                <span class="turma-badge">PG ${turma.nome_exibicao}</span>
+              </div>
+              ${displayNumero ? `<div class="numero-badge">#${String(displayNumero).padStart(4, "0")}</div>` : ""}
+            </div>
+            <div class="content">
+              <div class="photo-section">
+                ${crianca.foto 
+                  ? `<img src="${crianca.foto}" alt="${crianca.nome}" class="photo" />`
+                  : `<div class="photo-placeholder">${crianca.nome.charAt(0)}</div>`
+                }
+                <div class="qr-container">
+                  <svg width="48" height="48" viewBox="0 0 48 48">
+                    <rect fill="white" width="48" height="48"/>
+                    <text x="24" y="28" text-anchor="middle" font-size="8" fill="#333">QR</text>
+                  </svg>
+                </div>
+              </div>
+              <div class="info-section">
+                <div class="info-row">
+                  <span class="info-label">Nome</span>
+                  <span class="info-value nome">${crianca.nome}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Responsável</span>
+                  <span class="info-value">${crianca.responsavelNome || "-"}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">WhatsApp</span>
+                  <span class="info-value">${formatWhatsapp(crianca.responsavelWhatsapp)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <span class="footer-text">Igreja Gileade</span>
+              <span class="footer-text">Ministério Infantil</span>
+            </div>
+          </div>
         </body>
       </html>
     `);
@@ -230,11 +315,7 @@ export const CarteirinhaDialog = ({
     printWindow.print();
   };
 
-  const handleDownload = async () => {
-    const printContent = cardRef.current?.innerHTML;
-    if (!printContent) return;
-
-    // Create a blob with HTML content
+  const handleDownload = () => {
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -242,114 +323,88 @@ export const CarteirinhaDialog = ({
           <title>Carteirinha - ${crianca.nome}</title>
           <style>
             @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
               font-family: 'Poppins', sans-serif;
               display: flex;
               justify-content: center;
               align-items: center;
               min-height: 100vh;
-              margin: 0;
               background: #f5f5f5;
             }
             .card {
-              width: 350px;
-              background: white;
+              width: ${CARD_WIDTH}px;
+              height: ${CARD_HEIGHT}px;
+              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)});
               border-radius: 16px;
               overflow: hidden;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+              box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+              display: flex;
+              flex-direction: column;
             }
             .header {
-              background: linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -20)});
-              color: white;
-              padding: 20px;
-              text-align: center;
-            }
-            .header h1 {
-              font-size: 20px;
-              font-weight: 700;
-              margin: 0;
-              text-transform: uppercase;
-              letter-spacing: 2px;
-            }
-            .header .turma-badge {
-              display: inline-block;
-              background: rgba(255,255,255,0.25);
-              padding: 4px 16px;
-              border-radius: 20px;
-              margin-top: 8px;
-              font-size: 14px;
-              font-weight: 600;
-            }
-            .content {
-              padding: 24px;
-            }
-            .photo-container {
               display: flex;
-              justify-content: center;
-              margin-bottom: 20px;
-            }
-            .photo {
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 4px solid ${turma.cor_hex};
-              object-fit: cover;
-              background: #e5e7eb;
-            }
-            .photo-placeholder {
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 4px solid ${turma.cor_hex};
-              background: linear-gradient(135deg, ${turma.cor_hex}20, ${turma.cor_hex}40);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 40px;
-              font-weight: 700;
-              color: ${turma.cor_hex};
-            }
-            .info-row {
-              display: flex;
-              margin-bottom: 12px;
+              justify-content: space-between;
               align-items: flex-start;
+              padding: 12px 16px 8px;
             }
-            .info-label {
-              font-size: 11px;
-              color: #6b7280;
-              text-transform: uppercase;
-              font-weight: 600;
-              width: 100px;
-              flex-shrink: 0;
-            }
-            .info-value {
-              font-size: 14px;
-              color: #1f2937;
-              font-weight: 500;
-            }
-            .numero-container {
-              background: linear-gradient(135deg, ${turma.cor_hex}15, ${turma.cor_hex}25);
-              padding: 16px;
-              border-radius: 12px;
-              text-align: center;
-              margin-top: 16px;
-            }
-            .numero-label {
-              font-size: 11px;
-              color: #6b7280;
-              text-transform: uppercase;
-              font-weight: 600;
-            }
-            .numero-value {
-              font-size: 32px;
-              font-weight: 700;
-              color: ${turma.cor_hex};
-              margin-top: 4px;
-            }
+            .logo-text { color: white; }
+            .logo-text h1 { font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+            .logo-text .turma-badge { font-size: 10px; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+            .numero-badge { background: white; color: ${turma.cor_hex}; padding: 4px 10px; border-radius: 8px; font-size: 16px; font-weight: 700; }
+            .content { display: flex; flex: 1; padding: 0 16px 12px; gap: 12px; }
+            .photo-section { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+            .photo { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; object-fit: cover; background: white; }
+            .photo-placeholder { width: 70px; height: 70px; border-radius: 10px; border: 3px solid white; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; }
+            .qr-container { background: white; padding: 4px; border-radius: 6px; }
+            .info-section { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+            .info-row { display: flex; flex-direction: column; }
+            .info-label { font-size: 8px; color: rgba(255,255,255,0.7); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+            .info-value { font-size: 11px; color: white; font-weight: 600; }
+            .info-value.nome { font-size: 14px; font-weight: 700; }
+            .footer { background: rgba(0,0,0,0.15); padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; }
+            .footer-text { font-size: 8px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 1px; }
           </style>
         </head>
         <body>
-          ${printContent}
+          <div class="card">
+            <div class="header">
+              <div class="logo-text">
+                <h1>Pequenos Gileaditas</h1>
+                <span class="turma-badge">PG ${turma.nome_exibicao}</span>
+              </div>
+              ${displayNumero ? `<div class="numero-badge">#${String(displayNumero).padStart(4, "0")}</div>` : ""}
+            </div>
+            <div class="content">
+              <div class="photo-section">
+                ${crianca.foto 
+                  ? `<img src="${crianca.foto}" alt="${crianca.nome}" class="photo" />`
+                  : `<div class="photo-placeholder">${crianca.nome.charAt(0)}</div>`
+                }
+                <div class="qr-container">
+                  <svg width="48" height="48"><rect fill="#ddd" width="48" height="48"/><text x="24" y="28" text-anchor="middle" font-size="8">QR</text></svg>
+                </div>
+              </div>
+              <div class="info-section">
+                <div class="info-row">
+                  <span class="info-label">Nome</span>
+                  <span class="info-value nome">${crianca.nome}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Responsável</span>
+                  <span class="info-value">${crianca.responsavelNome || "-"}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">WhatsApp</span>
+                  <span class="info-value">${formatWhatsapp(crianca.responsavelWhatsapp)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="footer">
+              <span class="footer-text">Igreja Gileade</span>
+              <span class="footer-text">Ministério Infantil</span>
+            </div>
+          </div>
         </body>
       </html>
     `;
@@ -367,257 +422,139 @@ export const CarteirinhaDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Carteirinha - {crianca.nome}</DialogTitle>
         </DialogHeader>
 
+        {/* Credit Card Style Preview */}
         <div
           ref={cardRef}
-          className="card"
+          className="mx-auto rounded-2xl overflow-hidden shadow-xl"
           style={{
-            borderRadius: "16px",
-            overflow: "hidden",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            background: `linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -30)})`,
           }}
         >
           {/* Header */}
-          <div
-            className="header"
-            style={{
-              background: `linear-gradient(135deg, ${turma.cor_hex}, ${adjustColor(turma.cor_hex, -20)})`,
-              color: "white",
-              padding: "20px",
-              textAlign: "center",
-            }}
-          >
-            <h1
-              style={{
-                fontSize: "20px",
-                fontWeight: 700,
-                margin: 0,
-                textTransform: "uppercase",
-                letterSpacing: "2px",
-              }}
-            >
-              Pequenos Gileaditas
-            </h1>
-            <div
-              className="turma-badge"
-              style={{
-                display: "inline-block",
-                background: "rgba(255,255,255,0.25)",
-                padding: "4px 16px",
-                borderRadius: "20px",
-                marginTop: "8px",
-                fontSize: "14px",
-                fontWeight: 600,
-              }}
-            >
-              PG {turma.nome_exibicao}
+          <div className="flex justify-between items-start p-3 pb-2">
+            <div className="text-white">
+              <h1 className="text-sm font-bold tracking-wide uppercase mb-0.5">
+                Pequenos Gileaditas
+              </h1>
+              <span
+                className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.25)" }}
+              >
+                PG {turma.nome_exibicao}
+              </span>
             </div>
+            {displayNumero && (
+              <div
+                className="font-bold text-base px-2.5 py-1 rounded-lg"
+                style={{ background: "white", color: turma.cor_hex }}
+              >
+                #{String(displayNumero).padStart(4, "0")}
+              </div>
+            )}
           </div>
 
           {/* Content */}
-          <div className="content" style={{ padding: "24px", background: "white" }}>
-            {/* Photo */}
-            <div
-              className="photo-container"
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: "20px",
-              }}
-            >
+          <div className="flex gap-3 px-4 pb-3">
+            {/* Photo + QR */}
+            <div className="flex flex-col items-center gap-1.5">
               {crianca.foto ? (
                 <img
                   src={crianca.foto}
                   alt={crianca.nome}
-                  className="photo"
-                  style={{
-                    width: "100px",
-                    height: "100px",
-                    borderRadius: "50%",
-                    border: `4px solid ${turma.cor_hex}`,
-                    objectFit: "cover",
-                  }}
+                  className="w-[70px] h-[70px] rounded-xl border-[3px] border-white object-cover"
                 />
               ) : (
                 <div
-                  className="photo-placeholder"
-                  style={{
-                    width: "100px",
-                    height: "100px",
-                    borderRadius: "50%",
-                    border: `4px solid ${turma.cor_hex}`,
-                    background: `linear-gradient(135deg, ${turma.cor_hex}20, ${turma.cor_hex}40)`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "40px",
-                    fontWeight: 700,
-                    color: turma.cor_hex,
-                  }}
+                  className="w-[70px] h-[70px] rounded-xl border-[3px] border-white flex items-center justify-center text-3xl font-bold text-white"
+                  style={{ background: "rgba(255,255,255,0.3)" }}
                 >
                   {crianca.nome.charAt(0)}
                 </div>
               )}
+              <div className="bg-white p-1 rounded-md">
+                <QRCodeSVG value={qrCodeData} size={48} level="L" />
+              </div>
             </div>
 
             {/* Info */}
-            <div className="info-row" style={{ display: "flex", marginBottom: "12px" }}>
-              <span
-                className="info-label"
-                style={{
-                  fontSize: "11px",
-                  color: "#6b7280",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                  width: "100px",
-                  flexShrink: 0,
-                }}
-              >
-                Nome
-              </span>
-              <span
-                className="info-value"
-                style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}
-              >
-                {crianca.nome}
-              </span>
-            </div>
-
-            <div className="info-row" style={{ display: "flex", marginBottom: "12px" }}>
-              <span
-                className="info-label"
-                style={{
-                  fontSize: "11px",
-                  color: "#6b7280",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                  width: "100px",
-                  flexShrink: 0,
-                }}
-              >
-                Responsável
-              </span>
-              <span
-                className="info-value"
-                style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}
-              >
-                {crianca.responsavelNome || "-"}
-              </span>
-            </div>
-
-            <div className="info-row" style={{ display: "flex", marginBottom: "12px" }}>
-              <span
-                className="info-label"
-                style={{
-                  fontSize: "11px",
-                  color: "#6b7280",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                  width: "100px",
-                  flexShrink: 0,
-                }}
-              >
-                WhatsApp
-              </span>
-              <span
-                className="info-value"
-                style={{ fontSize: "14px", color: "#1f2937", fontWeight: 500 }}
-              >
-                {formatWhatsapp(crianca.responsavelWhatsapp)}
-              </span>
-            </div>
-
-            {/* Número */}
-            <div
-              className="numero-container"
-              style={{
-                background: `linear-gradient(135deg, ${turma.cor_hex}15, ${turma.cor_hex}25)`,
-                padding: "16px",
-                borderRadius: "12px",
-                textAlign: "center",
-                marginTop: "16px",
-              }}
-            >
-              <div
-                className="numero-label"
-                style={{
-                  fontSize: "11px",
-                  color: "#6b7280",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                }}
-              >
-                Nº Identificação
+            <div className="flex-1 flex flex-col justify-center gap-1.5">
+              <div>
+                <span className="text-[8px] text-white/70 uppercase font-semibold tracking-wide block">
+                  Nome
+                </span>
+                <span className="text-sm font-bold text-white">{crianca.nome}</span>
               </div>
-              <div
-                className="numero-value"
-                style={{
-                  fontSize: "32px",
-                  fontWeight: 700,
-                  color: turma.cor_hex,
-                  marginTop: "4px",
-                }}
-              >
-                {displayNumero?.toString().padStart(4, "0") || "----"}
+              <div>
+                <span className="text-[8px] text-white/70 uppercase font-semibold tracking-wide block">
+                  Responsável
+                </span>
+                <span className="text-[11px] font-semibold text-white">
+                  {crianca.responsavelNome || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-[8px] text-white/70 uppercase font-semibold tracking-wide block">
+                  WhatsApp
+                </span>
+                <span className="text-[11px] font-semibold text-white">
+                  {formatWhatsapp(crianca.responsavelWhatsapp)}
+                </span>
               </div>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div
+            className="flex justify-between items-center px-4 py-1.5"
+            style={{ background: "rgba(0,0,0,0.15)" }}
+          >
+            <span className="text-[8px] text-white/80 uppercase tracking-wider">
+              Igreja Gileade
+            </span>
+            <span className="text-[8px] text-white/80 uppercase tracking-wider">
+              Ministério Infantil
+            </span>
           </div>
         </div>
 
+        {/* Generate Number Button */}
+        {!displayNumero && (
+          <Button
+            onClick={() => generateNumeroMutation.mutate()}
+            disabled={generateNumeroMutation.isPending}
+            className="w-full"
+            style={{ background: turma.cor_hex }}
+          >
+            {generateNumeroMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              "Gerar Número de Identificação"
+            )}
+          </Button>
+        )}
+
         {/* Actions */}
-        <div className="flex flex-col gap-3 mt-4">
-          {!displayNumero && (
-            <Button 
-              onClick={() => generateNumeroMutation.mutate()}
-              disabled={generateNumeroMutation.isPending}
-              className="w-full"
-              style={{ backgroundColor: turma.cor_hex }}
-            >
-              {generateNumeroMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                "Gerar Número de Identificação"
-              )}
-            </Button>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={handleDownload} disabled={!displayNumero}>
-              <Download className="h-4 w-4 mr-2" />
-              Baixar
-            </Button>
-            <Button onClick={handlePrint} disabled={!displayNumero}>
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-          </div>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
+          <Button variant="outline" className="flex-1" onClick={handleDownload}>
+            <Download className="h-4 w-4 mr-2" />
+            Baixar
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 };
-
-// Helper function to adjust color brightness
-function adjustColor(hex: string, amount: number): string {
-  const clamp = (num: number) => Math.min(255, Math.max(0, num));
-
-  let color = hex.replace("#", "");
-  if (color.length === 3) {
-    color = color
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  }
-
-  const r = clamp(parseInt(color.slice(0, 2), 16) + amount);
-  const g = clamp(parseInt(color.slice(2, 4), 16) + amount);
-  const b = clamp(parseInt(color.slice(4, 6), 16) + amount);
-
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-}
