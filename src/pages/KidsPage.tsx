@@ -14,12 +14,16 @@ import {
   CalendarCheck, 
   ChevronRight,
   Baby,
-  BarChart3
+  BarChart3,
+  UserPlus,
+  Bell
 } from "lucide-react";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
 import { KidsDashboard } from "@/components/kids/KidsDashboard";
+import { KidsResponsaveisTab } from "@/components/kids/KidsResponsaveisTab";
+import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 
 interface TurmaConfig {
   id: string;
@@ -242,9 +246,17 @@ const KidsPage = () => {
             <UserCheck className="h-4 w-4" />
             Líderes
           </TabsTrigger>
+          <TabsTrigger value="responsaveis" className="flex items-center gap-2">
+            <UserPlus className="h-4 w-4" />
+            Responsáveis
+          </TabsTrigger>
           <TabsTrigger value="presenca" className="flex items-center gap-2">
             <CalendarCheck className="h-4 w-4" />
             Presença
+          </TabsTrigger>
+          <TabsTrigger value="notificacoes" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notificações
           </TabsTrigger>
         </TabsList>
 
@@ -271,12 +283,25 @@ const KidsPage = () => {
           <KidsLideresTab turmasConfig={turmasConfig || []} />
         </TabsContent>
 
+        {/* Responsáveis */}
+        <TabsContent value="responsaveis">
+          <KidsResponsaveisTab 
+            turmasConfig={turmasConfig || []} 
+            criancasPorTurma={criancasPorTurma}
+          />
+        </TabsContent>
+
         {/* Presença */}
         <TabsContent value="presenca">
           <KidsPresencaTab 
             turmasConfig={turmasConfig || []} 
             criancasPorTurma={criancasPorTurma}
           />
+        </TabsContent>
+
+        {/* Notificações */}
+        <TabsContent value="notificacoes">
+          <KidsNotificacoesTab />
         </TabsContent>
       </Tabs>
     </div>

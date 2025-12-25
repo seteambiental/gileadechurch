@@ -388,6 +388,73 @@ export type Database = {
           },
         ]
       }
+      kids_notificacoes_log: {
+        Row: {
+          crianca_member_id: string | null
+          crianca_novo_convertido_id: string | null
+          data_culto: string | null
+          enviada_em: string
+          erro_mensagem: string | null
+          id: string
+          mensagem: string
+          responsavel_member_id: string | null
+          status: string
+          tipo_notificacao: string
+          turma: string | null
+          whatsapp_destino: string | null
+        }
+        Insert: {
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          data_culto?: string | null
+          enviada_em?: string
+          erro_mensagem?: string | null
+          id?: string
+          mensagem: string
+          responsavel_member_id?: string | null
+          status?: string
+          tipo_notificacao: string
+          turma?: string | null
+          whatsapp_destino?: string | null
+        }
+        Update: {
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          data_culto?: string | null
+          enviada_em?: string
+          erro_mensagem?: string | null
+          id?: string
+          mensagem?: string
+          responsavel_member_id?: string | null
+          status?: string
+          tipo_notificacao?: string
+          turma?: string | null
+          whatsapp_destino?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_notificacoes_log_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_notificacoes_log_crianca_novo_convertido_id_fkey"
+            columns: ["crianca_novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_notificacoes_log_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_presencas: {
         Row: {
           created_at: string
@@ -443,6 +510,64 @@ export type Database = {
           {
             foreignKeyName: "kids_presencas_registrado_por_fkey"
             columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_responsaveis: {
+        Row: {
+          created_at: string
+          crianca_member_id: string | null
+          crianca_novo_convertido_id: string | null
+          id: string
+          notificar_ausencia: boolean
+          parentesco: string
+          principal: boolean
+          responsavel_member_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          id?: string
+          notificar_ausencia?: boolean
+          parentesco?: string
+          principal?: boolean
+          responsavel_member_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          id?: string
+          notificar_ausencia?: boolean
+          parentesco?: string
+          principal?: boolean
+          responsavel_member_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_responsaveis_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_responsaveis_crianca_novo_convertido_id_fkey"
+            columns: ["crianca_novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_responsaveis_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]

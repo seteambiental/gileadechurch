@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.gerar-flyer]
 verify_jwt = false
+
+[functions.notificar-ausencia-kids]
+verify_jwt = false

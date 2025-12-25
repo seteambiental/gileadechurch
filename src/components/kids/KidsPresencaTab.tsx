@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CalendarIcon, Save, CheckCircle2, XCircle } from "lucide-react";
+import { CalendarIcon, Save, CheckCircle2, XCircle, Bell, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TurmaConfig {
@@ -118,6 +118,32 @@ export const KidsPresencaTab = ({ turmasConfig, criancasPorTurma }: KidsPresenca
     onSuccess: () => {
       toast({ title: "Presenças salvas com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["kids-presencas"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
+  // Enviar notificações de ausência
+  const enviarNotificacoes = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('notificar-ausencia-kids', {
+        body: {
+          data_culto: dataFormatada,
+          turma: selectedTurma,
+          enviar_agora: true,
+        },
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({ 
+        title: "Notificações enviadas!", 
+        description: data.message 
+      });
+      queryClient.invalidateQueries({ queryKey: ["kids-notificacoes-log"] });
     },
     onError: (error: any) => {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -271,10 +297,25 @@ export const KidsPresencaTab = ({ turmasConfig, criancasPorTurma }: KidsPresenca
               />
               Turma {turmaConfig?.nome_exibicao} - {format(selectedDate, "dd/MM/yyyy")}
             </CardTitle>
-            <Button onClick={() => savePresencas.mutate()} disabled={savePresencas.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              {savePresencas.isPending ? "Salvando..." : "Salvar Presenças"}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => savePresencas.mutate()} disabled={savePresencas.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                {savePresencas.isPending ? "Salvando..." : "Salvar Presenças"}
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => enviarNotificacoes.mutate()}
+                disabled={enviarNotificacoes.isPending || ausentes === 0}
+                title="Enviar notificação de ausência para responsáveis"
+              >
+                {enviarNotificacoes.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Bell className="h-4 w-4 mr-2" />
+                )}
+                Notificar Ausentes
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
