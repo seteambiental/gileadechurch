@@ -17,7 +17,8 @@ import {
   BarChart3,
   UserPlus,
   Bell,
-  ArrowLeft
+  ArrowLeft,
+  Settings
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
@@ -26,6 +27,7 @@ import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
 import { KidsDashboard } from "@/components/kids/KidsDashboard";
 import { KidsResponsaveisTab } from "@/components/kids/KidsResponsaveisTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
+import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 
 interface TurmaConfig {
   id: string;
@@ -272,6 +274,10 @@ const KidsPage = () => {
             <Bell className="h-4 w-4" />
             Notificações
           </TabsTrigger>
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Configurações
+          </TabsTrigger>
         </TabsList>
 
         {/* Dashboard */}
@@ -316,6 +322,11 @@ const KidsPage = () => {
         {/* Notificações */}
         <TabsContent value="notificacoes">
           <KidsNotificacoesTab />
+        </TabsContent>
+
+        {/* Configurações */}
+        <TabsContent value="config">
+          <KidsConfigTab />
         </TabsContent>
       </Tabs>
     </div>
