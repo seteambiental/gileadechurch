@@ -181,7 +181,7 @@ const AppDashboard = () => {
               title={ministry.title}
               description={ministry.description}
               delay={index * 50}
-              variant="ministry"
+              variant={ministry.title === "Kids" ? "kids" : "ministry"}
               onClick={() => navigate(ministry.path)}
             />
           ))}
