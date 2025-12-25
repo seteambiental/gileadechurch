@@ -187,7 +187,7 @@ const KidsPage = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/dashboard")}
+            onClick={() => navigate("/app")}
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
