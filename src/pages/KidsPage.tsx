@@ -16,8 +16,10 @@ import {
   Baby,
   BarChart3,
   UserPlus,
-  Bell
+  Bell,
+  ArrowLeft
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
@@ -36,6 +38,7 @@ interface TurmaConfig {
 
 const KidsPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // Buscar configuração das turmas
@@ -178,14 +181,25 @@ const KidsPage = () => {
     <div className="container mx-auto p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Baby className="h-8 w-8 text-primary" />
-            Ministério Kids
-          </h1>
-          <p className="text-muted-foreground">
-            Gestão do ministério infantil por turmas e faixas etárias
-          </p>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/dashboard")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              <Baby className="h-8 w-8 text-primary" />
+              Ministério Kids
+            </h1>
+            <p className="text-muted-foreground">
+              Gestão do ministério infantil por turmas e faixas etárias
+            </p>
+          </div>
         </div>
         <Badge variant="secondary" className="text-lg px-4 py-2">
           {totalCriancas} crianças cadastradas
