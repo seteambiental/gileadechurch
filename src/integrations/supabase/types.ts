@@ -350,6 +350,138 @@ export type Database = {
           },
         ]
       }
+      kids_lideres: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          funcao: string
+          id: string
+          member_id: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          funcao?: string
+          id?: string
+          member_id: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          funcao?: string
+          id?: string
+          member_id?: string
+          turma?: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_lideres_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_presencas: {
+        Row: {
+          created_at: string
+          data_culto: string
+          id: string
+          member_id: string | null
+          novo_convertido_id: string | null
+          observacoes: string | null
+          presente: boolean
+          registrado_por: string | null
+          tipo_culto: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+        }
+        Insert: {
+          created_at?: string
+          data_culto: string
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          observacoes?: string | null
+          presente?: boolean
+          registrado_por?: string | null
+          tipo_culto?: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+        }
+        Update: {
+          created_at?: string
+          data_culto?: string
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          observacoes?: string | null
+          presente?: boolean
+          registrado_por?: string | null
+          tipo_culto?: string
+          turma?: Database["public"]["Enums"]["kids_turma"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_presencas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_presencas_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_presencas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kids_turmas_config: {
+        Row: {
+          cor_hex: string
+          created_at: string
+          id: string
+          idade_maxima: number
+          idade_minima: number
+          nome_exibicao: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at: string
+        }
+        Insert: {
+          cor_hex: string
+          created_at?: string
+          id?: string
+          idade_maxima: number
+          idade_minima: number
+          nome_exibicao: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Update: {
+          cor_hex?: string
+          created_at?: string
+          id?: string
+          idade_maxima?: number
+          idade_minima?: number
+          nome_exibicao?: string
+          turma?: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       member_functions: {
         Row: {
           casa_refugio_id: string | null
@@ -733,6 +865,7 @@ export type Database = {
         | "sindico_condominio"
         | "integrante_ministerio"
       conversion_type: "conversao" | "reconciliacao"
+      kids_turma: "laranja" | "amarelo" | "verde" | "azul"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -877,6 +1010,7 @@ export const Constants = {
         "integrante_ministerio",
       ],
       conversion_type: ["conversao", "reconciliacao"],
+      kids_turma: ["laranja", "amarelo", "verde", "azul"],
     },
   },
 } as const
