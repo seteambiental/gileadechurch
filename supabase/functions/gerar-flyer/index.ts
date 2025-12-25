@@ -231,15 +231,8 @@ GERE A IMAGEM DO FLYER AGORA.`;
 
     console.log("Prompt gerado:", prompt.substring(0, 500) + "...");
 
-    // Tentar gerar a imagem com retry
-    let imageData: string | null = null;
-    let attempts = 0;
-    const maxAttempts = 2;
-
-    while (!imageData && attempts < maxAttempts) {
-      attempts++;
-      console.log(`Tentativa ${attempts} de gerar imagem...`);
-
+    // Função para gerar a imagem
+    const generateImage = async (customPrompt: string): Promise<string | null> => {
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -248,48 +241,150 @@ GERE A IMAGEM DO FLYER AGORA.`;
         },
         body: JSON.stringify({
           model: 'google/gemini-2.5-flash-image-preview',
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
+          messages: [{ role: 'user', content: customPrompt }],
           modalities: ['image', 'text'],
         }),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Erro na API:', response.status, errorText);
+        console.error('Erro na API de imagem:', response.status, errorText);
         throw new Error(`Erro ao gerar imagem: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Resposta da API recebida, tentativa', attempts);
-
-      // Tentar extrair a imagem de diferentes formatos possíveis
-      imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
+      let imageData = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+      
       if (!imageData) {
-        console.log('Formato alternativo tentado...');
-        // Tentar formato alternativo
         const images = data.choices?.[0]?.message?.images;
         if (images && images.length > 0) {
           imageData = images[0]?.url || images[0]?.image_url?.url;
         }
       }
+      
+      return imageData;
+    };
 
-      if (!imageData) {
-        console.log('Resposta sem imagem na tentativa', attempts, ':', JSON.stringify(data).substring(0, 500));
+    // Função para revisar a imagem com IA
+    const reviewImage = async (imageUrl: string): Promise<{ approved: boolean; errors: string[] }> => {
+      console.log("Revisando imagem gerada...");
+      
+      const reviewPrompt = `Você é um revisor de flyers em português brasileiro. Analise esta imagem de flyer e verifique:
+
+1. SE HÁ ALGUM TEXTO EM INGLÊS (erros comuns: "Date", "Time", "Location", "Event", "Register", "Registration", "Free", "Investment")
+2. SE HÁ ERROS DE PORTUGUÊS (acentuação, ortografia, concordância)
+3. SE AS INFORMAÇÕES ESTÃO LEGÍVEIS E BEM FORMATADAS
+
+Responda APENAS em formato JSON:
+{
+  "approved": true ou false,
+  "errors": ["lista de erros encontrados em português"]
+}
+
+Se o flyer estiver 100% correto em português e sem erros, retorne approved: true e errors: [].
+Se houver QUALQUER palavra em inglês ou erro de português, retorne approved: false com a lista de erros.`;
+
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: reviewPrompt },
+                { type: 'image_url', image_url: { url: imageUrl } }
+              ]
+            }
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Erro na revisão:', response.status);
+        return { approved: true, errors: [] }; // Se falhar revisão, aceita a imagem
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      console.log("Resultado da revisão:", content);
+
+      try {
+        // Extrair JSON da resposta
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const result = JSON.parse(jsonMatch[0]);
+          return {
+            approved: result.approved === true,
+            errors: Array.isArray(result.errors) ? result.errors : []
+          };
+        }
+      } catch (e) {
+        console.log("Erro ao parsear revisão:", e);
+      }
+
+      return { approved: true, errors: [] };
+    };
+
+    // Tentar gerar e revisar a imagem
+    let imageData: string | null = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    let lastErrors: string[] = [];
+
+    while (!imageData && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Tentativa ${attempts} de gerar flyer...`);
+
+      // Adicionar correções baseadas em erros anteriores
+      let currentPrompt = prompt;
+      if (lastErrors.length > 0) {
+        currentPrompt += `\n\n⚠️ CORREÇÕES NECESSÁRIAS (erros da tentativa anterior):\n`;
+        lastErrors.forEach((err, i) => {
+          currentPrompt += `${i + 1}. ${err}\n`;
+        });
+        currentPrompt += `\nCORRIJA TODOS OS ERROS ACIMA. USE APENAS PORTUGUÊS BRASILEIRO.`;
+      }
+
+      const generatedImage = await generateImage(currentPrompt);
+      
+      if (!generatedImage) {
+        console.log('Imagem não gerada na tentativa', attempts);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+
+      console.log("Imagem gerada, iniciando revisão...");
+      
+      // Revisar a imagem
+      const review = await reviewImage(generatedImage);
+      
+      if (review.approved) {
+        console.log("✅ Flyer aprovado na revisão!");
+        imageData = generatedImage;
+      } else {
+        console.log("❌ Flyer reprovado. Erros:", review.errors);
+        lastErrors = review.errors;
+        
         if (attempts < maxAttempts) {
-          console.log('Tentando novamente...');
+          console.log("Gerando nova versão com correções...");
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
     }
 
+    // Se após todas as tentativas não conseguiu aprovar, usar a última imagem gerada
     if (!imageData) {
-      throw new Error('Não foi possível gerar a imagem do flyer. Tente novamente.');
+      console.log("Usando última imagem gerada após", maxAttempts, "tentativas");
+      imageData = await generateImage(prompt + "\n\nATENÇÃO MÁXIMA: APENAS PORTUGUÊS BRASILEIRO. NENHUMA PALAVRA EM INGLÊS.");
+      
+      if (!imageData) {
+        throw new Error('Não foi possível gerar a imagem do flyer. Tente novamente.');
+      }
     }
 
     // Upload para o storage do Supabase
