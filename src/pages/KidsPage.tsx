@@ -247,35 +247,19 @@ const KidsPage = () => {
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
-            {turmasConfig?.map((turma) => (
-              <TabsTrigger 
-                key={turma.turma} 
-                value={turma.turma}
-                className="flex items-center gap-2"
-                style={{ 
-                  borderBottom: activeTab === turma.turma ? `3px solid ${turma.cor_hex}` : undefined 
-                }}
-              >
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: turma.cor_hex }} 
-                />
-                {turma.nome_exibicao}
-              </TabsTrigger>
-            ))}
-            <TabsTrigger value="lideres" className="flex items-center gap-2">
+            <TabsTrigger value="lideres" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <UserCheck className="h-4 w-4" />
               Líderes
             </TabsTrigger>
-            <TabsTrigger value="presenca" className="flex items-center gap-2">
+            <TabsTrigger value="presenca" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <CalendarCheck className="h-4 w-4" />
               Presença
             </TabsTrigger>
-            <TabsTrigger value="notificacoes" className="flex items-center gap-2">
+            <TabsTrigger value="notificacoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <Bell className="h-4 w-4" />
               Notificações
             </TabsTrigger>
-            <TabsTrigger value="config" className="flex items-center gap-2">
+            <TabsTrigger value="config" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
@@ -291,7 +275,7 @@ const KidsPage = () => {
           />
         </TabsContent>
 
-        {/* Tabs de cada turma */}
+        {/* Tabs de cada turma (acessadas pelos cards) */}
         {turmasConfig?.map((turma) => (
           <TabsContent key={turma.turma} value={turma.turma}>
             <KidsTurmaTab 
