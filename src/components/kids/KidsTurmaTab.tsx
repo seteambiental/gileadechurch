@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Search, Users, UserRound, Pencil, Trash2 } from "lucide-react";
 import { EditarCriancaDialog } from "./EditarCriancaDialog";
 import { toast } from "sonner";
@@ -42,21 +53,42 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
   const [search, setSearch] = useState("");
   const [editingCrianca, setEditingCrianca] = useState<Crianca | null>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("is_admin");
+      if (error) throw error;
+      return !!data;
+    },
+  });
+
+  const canDelete = !!user && isAdmin;
 
   const deleteMutation = useMutation({
     mutationFn: async (crianca: Crianca) => {
+      if (!canDelete) {
+        throw new Error(user ? "not_admin" : "not_logged_in");
+      }
+
       if (crianca.tipo === "novo_convertido") {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("novos_convertidos")
           .delete()
-          .eq("id", crianca.id);
+          .eq("id", crianca.id)
+          .select("id");
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error("not_deleted");
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("members")
           .delete()
-          .eq("id", crianca.id);
+          .eq("id", crianca.id)
+          .select("id");
         if (error) throw error;
+        if (!data || data.length === 0) throw new Error("not_deleted");
       }
     },
     onSuccess: () => {
@@ -66,6 +98,19 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
     },
     onError: (error) => {
       console.error("Erro ao excluir criança:", error);
+      const message = (error as Error)?.message;
+      if (message === "not_logged_in") {
+        toast.error("Faça login para excluir.");
+        return;
+      }
+      if (message === "not_admin") {
+        toast.error("Somente admins podem excluir.");
+        return;
+      }
+      if (message === "not_deleted") {
+        toast.error("Sem permissão para excluir (não foi removido).", { description: "Verifique se você está logado como admin." });
+        return;
+      }
       toast.error("Erro ao excluir criança");
     },
   });
@@ -257,42 +302,61 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
                             </TooltipContent>
                           </Tooltip>
                           
-                          <AlertDialog>
+                          {canDelete ? (
+                            <AlertDialog>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      disabled={deleteMutation.isPending}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Excluir</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir <strong>{crianca.nome}</strong>? 
+                                    Esta ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => deleteMutation.mutate(crianca)}
+                                  >
+                                    Excluir
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground"
+                                  onClick={() => toast.error(user ? "Somente admins podem excluir." : "Faça login para excluir.")}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Excluir</p>
+                                <p>{user ? "Somente admins" : "Faça login"}</p>
                               </TooltipContent>
                             </Tooltip>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja excluir <strong>{crianca.nome}</strong>? 
-                                  Esta ação não pode ser desfeita.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => deleteMutation.mutate(crianca)}
-                                >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
