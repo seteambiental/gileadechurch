@@ -249,6 +249,7 @@ export type Database = {
       }
       inscricoes_eventos: {
         Row: {
+          cpf: string | null
           created_at: string
           descricao_alergia: string | null
           descricao_medicamento: string | null
@@ -264,6 +265,7 @@ export type Database = {
           novo_convertido_id: string | null
           observacoes: string | null
           preferencia_beliche: string | null
+          rg: string | null
           status_pagamento: string | null
           telefone_contato: string
           telefone_emergencia: string | null
@@ -273,6 +275,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
           descricao_alergia?: string | null
           descricao_medicamento?: string | null
@@ -288,6 +291,7 @@ export type Database = {
           novo_convertido_id?: string | null
           observacoes?: string | null
           preferencia_beliche?: string | null
+          rg?: string | null
           status_pagamento?: string | null
           telefone_contato: string
           telefone_emergencia?: string | null
@@ -297,6 +301,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cpf?: string | null
           created_at?: string
           descricao_alergia?: string | null
           descricao_medicamento?: string | null
@@ -312,6 +317,7 @@ export type Database = {
           novo_convertido_id?: string | null
           observacoes?: string | null
           preferencia_beliche?: string | null
+          rg?: string | null
           status_pagamento?: string | null
           telefone_contato?: string
           telefone_emergencia?: string | null
@@ -411,6 +417,7 @@ export type Database = {
           cep: string | null
           city: string | null
           complement: string | null
+          cpf: string | null
           created_at: string
           email: string | null
           full_name: string
@@ -420,6 +427,7 @@ export type Database = {
           neighborhood: string | null
           number: string | null
           photo_url: string | null
+          rg: string | null
           state: string | null
           updated_at: string
           user_id: string | null
@@ -432,6 +440,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           complement?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name: string
@@ -441,6 +450,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          rg?: string | null
           state?: string | null
           updated_at?: string
           user_id?: string | null
@@ -453,6 +463,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           complement?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string
@@ -462,6 +473,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          rg?: string | null
           state?: string | null
           updated_at?: string
           user_id?: string | null
@@ -556,6 +568,7 @@ export type Database = {
           city: string | null
           como_chegou: Database["public"]["Enums"]["arrival_method"] | null
           complement: string | null
+          cpf: string | null
           created_at: string
           data_batismo: string | null
           data_culto_membresia: string | null
@@ -578,6 +591,7 @@ export type Database = {
           participou_culto_membresia: boolean | null
           participou_impacto: boolean | null
           participou_manaim: boolean | null
+          rg: string | null
           state: string | null
           tipo_conversao: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro: boolean | null
@@ -594,6 +608,7 @@ export type Database = {
           city?: string | null
           como_chegou?: Database["public"]["Enums"]["arrival_method"] | null
           complement?: string | null
+          cpf?: string | null
           created_at?: string
           data_batismo?: string | null
           data_culto_membresia?: string | null
@@ -616,6 +631,7 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          rg?: string | null
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro?: boolean | null
@@ -632,6 +648,7 @@ export type Database = {
           city?: string | null
           como_chegou?: Database["public"]["Enums"]["arrival_method"] | null
           complement?: string | null
+          cpf?: string | null
           created_at?: string
           data_batismo?: string | null
           data_culto_membresia?: string | null
@@ -654,6 +671,7 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          rg?: string | null
           state?: string | null
           tipo_conversao?: Database["public"]["Enums"]["conversion_type"] | null
           tornou_membro?: boolean | null

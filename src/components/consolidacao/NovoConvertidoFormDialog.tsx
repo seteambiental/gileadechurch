@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { formatCep, formatPhone } from "@/lib/masks";
+import { formatCep, formatPhone, formatCPF, formatRG } from "@/lib/masks";
 
 interface NovoConvertidoFormDialogProps {
   open: boolean;
@@ -34,6 +34,8 @@ const getInitialFormData = (convertido?: any) => ({
   email: convertido?.email || "",
   genero: convertido?.genero || "",
   data_nascimento: convertido?.data_nascimento || "",
+  rg: convertido?.rg || "",
+  cpf: convertido?.cpf ? formatCPF(convertido.cpf) : "",
   cep: convertido?.cep || "",
   address: convertido?.address || "",
   numero: convertido?.numero || "",
@@ -149,6 +151,8 @@ export const NovoConvertidoFormDialog = ({
         email: formData.email || null,
         genero: formData.genero || null,
         data_nascimento: formData.data_nascimento || null,
+        rg: formData.rg || null,
+        cpf: formData.cpf ? formData.cpf.replace(/\D/g, "") : null,
         cep: formData.cep || null,
         address: formData.address || null,
         numero: formData.numero || null,
@@ -264,6 +268,28 @@ export const NovoConvertidoFormDialog = ({
                   type="date"
                   value={formData.data_nascimento}
                   onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rg">RG</Label>
+                <Input
+                  id="rg"
+                  value={formData.rg}
+                  onChange={(e) => setFormData({ ...formData, rg: formatRG(e.target.value) })}
+                  placeholder="0000000"
+                  maxLength={15}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  value={formData.cpf}
+                  onChange={(e) => setFormData({ ...formData, cpf: formatCPF(e.target.value) })}
+                  placeholder="000.000.000-00"
+                  maxLength={14}
                 />
               </div>
             </div>

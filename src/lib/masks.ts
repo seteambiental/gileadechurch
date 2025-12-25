@@ -32,6 +32,27 @@ export const unformatCep = (value: string): string => {
   return value.replace(/\D/g, "");
 };
 
+export const formatCPF = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  
+  if (numbers.length <= 3) {
+    return numbers;
+  }
+  if (numbers.length <= 6) {
+    return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+  }
+  if (numbers.length <= 9) {
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+  }
+  return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+};
+
+export const formatRG = (value: string): string => {
+  // RG format can vary by state, keeping it simple with dots
+  const cleaned = value.replace(/[^0-9Xx]/g, "");
+  return cleaned.toUpperCase();
+};
+
 // Parse date string (YYYY-MM-DD) without timezone issues
 export const formatDateBR = (dateString: string | null): string => {
   if (!dateString) return "-";
