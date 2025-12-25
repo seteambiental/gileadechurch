@@ -663,10 +663,9 @@ const Auth = () => {
     );
   }
 
-  // Signup form with steps
   return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl border-border/50 bg-card/95 backdrop-blur">
+    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4 overflow-y-auto">
+      <Card className="w-full max-w-2xl border-border/50 bg-card/95 backdrop-blur my-4 max-h-[95vh] flex flex-col">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
             <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
@@ -711,9 +710,9 @@ const Auth = () => {
           </div>
         </CardHeader>
 
-        <CardContent>
-          <ScrollArea className="max-h-[60vh]">
-            <form onSubmit={handleSignup} className="space-y-4 pr-4">
+        <CardContent className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full max-h-[50vh]">
+            <form onSubmit={handleSignup} className="space-y-4 pr-4 pb-4">
               {/* Step 1: Personal Data */}
               {step === 1 && (
                 <div className="space-y-4">
