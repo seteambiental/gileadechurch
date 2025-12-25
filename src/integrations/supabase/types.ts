@@ -962,6 +962,7 @@ export type Database = {
           participou_culto_membresia: boolean | null
           participou_impacto: boolean | null
           participou_manaim: boolean | null
+          photo_url: string | null
           responsavel_nome: string | null
           responsavel_whatsapp: string | null
           rg: string | null
@@ -1004,6 +1005,7 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          photo_url?: string | null
           responsavel_nome?: string | null
           responsavel_whatsapp?: string | null
           rg?: string | null
@@ -1046,6 +1048,7 @@ export type Database = {
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
+          photo_url?: string | null
           responsavel_nome?: string | null
           responsavel_whatsapp?: string | null
           rg?: string | null

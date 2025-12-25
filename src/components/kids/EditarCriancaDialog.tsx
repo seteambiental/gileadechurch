@@ -87,11 +87,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
         responsavelNome: ncData.responsavel_nome || "",
         responsavelWhatsapp: ncData.responsavel_whatsapp || "",
       });
-      setPhotoPreview(
-        dadosCompletos.tipo === "membro" 
-          ? ncData.photo_url || null 
-          : null
-      );
+      setPhotoPreview(ncData.photo_url || null);
     }
   }, [dadosCompletos]);
 
@@ -159,6 +155,10 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           responsavel_nome: formData.responsavelNome.trim() || null,
           responsavel_whatsapp: formData.responsavelWhatsapp.replace(/\D/g, "") || null,
         };
+        
+        if (photoUrl) {
+          updateData.photo_url = photoUrl;
+        }
         
         const { error } = await supabase
           .from("novos_convertidos")
