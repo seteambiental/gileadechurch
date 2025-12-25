@@ -82,7 +82,7 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full mb-6 bg-card border border-border h-12 ${isMaster ? "grid-cols-6" : "grid-cols-5"}`}>
+          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-6">
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
@@ -118,15 +118,13 @@ const Cadastros = () => {
               <Building className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Igreja</span>
             </TabsTrigger>
-            {isMaster && (
-              <TabsTrigger 
-                value="aprovacoes" 
-                className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
-              >
-                <UserCheck className="w-4 h-4 shrink-0" />
-                <span className="hidden sm:inline">Aprovações</span>
-              </TabsTrigger>
-            )}
+            <TabsTrigger 
+              value="aprovacoes" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+            >
+              <UserCheck className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Aprovações</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="membros">
@@ -149,11 +147,9 @@ const Cadastros = () => {
             <IgrejaTab />
           </TabsContent>
 
-          {isMaster && (
-            <TabsContent value="aprovacoes">
-              <AprovacaoUsuariosTab />
-            </TabsContent>
-          )}
+          <TabsContent value="aprovacoes">
+            <AprovacaoUsuariosTab />
+          </TabsContent>
         </Tabs>
       </main>
     </div>
