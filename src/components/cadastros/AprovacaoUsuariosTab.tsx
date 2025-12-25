@@ -77,7 +77,10 @@ const AprovacaoUsuariosTab = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (request: any) => {
-      // 1. Criar usuário no auth (usando a mesma senha temporária)
+      let userId: string;
+      let isExistingUser = false;
+
+      // 1. Tentar criar usuário no auth
       const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -88,26 +91,56 @@ const AprovacaoUsuariosTab = () => {
         },
       });
 
-      if (authError) throw authError;
-      if (!authData.user) throw new Error("Falha ao criar usuário");
+      if (authError) {
+        // Se o usuário já existe, verificar se o membro já está vinculado
+        if (authError.message?.includes("already registered") || authError.code === "user_already_exists") {
+          // Buscar o membro para ver se já tem user_id
+          const { data: memberData } = await supabase
+            .from("members")
+            .select("user_id")
+            .eq("id", request.member_id)
+            .single();
+          
+          if (memberData?.user_id) {
+            userId = memberData.user_id;
+            isExistingUser = true;
+          } else {
+            throw new Error("Usuário já registrado com este email. O membro precisa fazer login e solicitar acesso novamente.");
+          }
+        } else {
+          throw authError;
+        }
+      } else {
+        if (!authData.user) throw new Error("Falha ao criar usuário");
+        userId = authData.user.id;
+      }
 
-      const newUserId = authData.user.id;
+      // 2. Vincular membro ao user_id (se não for usuário existente)
+      if (!isExistingUser) {
+        await supabase
+          .from("members")
+          .update({ user_id: userId })
+          .eq("id", request.member_id);
+      }
 
-      // 2. Vincular membro ao user_id
-      await supabase
-        .from("members")
-        .update({ user_id: newUserId })
-        .eq("id", request.member_id);
-
-      // 3. Adicionar role
-      await supabase
+      // 3. Adicionar role (verificar se já não existe)
+      const { data: existingRole } = await supabase
         .from("user_roles")
-        .insert({ user_id: newUserId, role: request.requested_role });
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", request.requested_role)
+        .maybeSingle();
+
+      if (!existingRole) {
+        await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: request.requested_role });
+      }
 
       // 4. Se ministerial, vincular aos ministérios selecionados
       if (request.requested_role === "ministerial" && selectedMinistries.length > 0) {
         const ministryInserts = selectedMinistries.map(ministry_id => ({
-          user_id: newUserId,
+          user_id: userId,
           ministry_id,
         }));
         await supabase.from("user_ministries").insert(ministryInserts);
@@ -123,13 +156,16 @@ const AprovacaoUsuariosTab = () => {
         })
         .eq("id", request.id);
 
-      return { tempPassword, email: request.email };
+      return { tempPassword: isExistingUser ? null : tempPassword, email: request.email, isExistingUser };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user_access_requests"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
       toast({ 
         title: "Usuário aprovado!",
-        description: `Senha temporária enviada para ${data.email}`,
+        description: data.isExistingUser 
+          ? `Permissões atualizadas para ${data.email}` 
+          : `Senha temporária gerada para ${data.email}`,
       });
       setApproveDialogOpen(false);
       setSelectedRequest(null);
