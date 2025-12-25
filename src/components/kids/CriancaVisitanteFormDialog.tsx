@@ -41,6 +41,19 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
 
   const createMutation = useMutation({
     mutationFn: async () => {
+      // Buscar membro responsável pelo whatsapp (se informado)
+      let membroResponsavelId: string | null = null;
+      
+      if (formData.whatsappResponsavel) {
+        const { data: responsavel } = await supabase
+          .from("members")
+          .select("id")
+          .eq("whatsapp", formData.whatsappResponsavel.replace(/\D/g, ""))
+          .maybeSingle();
+        
+        membroResponsavelId = responsavel?.id || null;
+      }
+
       // Criar novo convertido como criança visitante
       const { data: novoConvertido, error: ncError } = await supabase
         .from("novos_convertidos")
@@ -50,31 +63,22 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
           genero: formData.genero || null,
           como_chegou: "culto_domingo" as const,
           tipo_conversao: null,
+          membro_vinculado_id: membroResponsavelId,
         })
         .select()
         .single();
 
       if (ncError) throw ncError;
 
-      // Se tiver responsável, buscar ou criar e vincular
-      if (formData.nomeResponsavel && formData.whatsappResponsavel) {
-        // Buscar membro responsável pelo whatsapp
-        const { data: responsavel } = await supabase
-          .from("members")
-          .select("id")
-          .eq("whatsapp", formData.whatsappResponsavel.replace(/\D/g, ""))
-          .maybeSingle();
-
-        if (responsavel) {
-          // Vincular responsável existente
-          await supabase.from("kids_responsaveis").insert({
-            crianca_novo_convertido_id: novoConvertido.id,
-            responsavel_member_id: responsavel.id,
-            parentesco: "responsavel",
-            principal: true,
-            notificar_ausencia: true,
-          });
-        }
+      // Se tiver responsável vinculado, criar também em kids_responsaveis
+      if (membroResponsavelId) {
+        await supabase.from("kids_responsaveis").insert({
+          crianca_novo_convertido_id: novoConvertido.id,
+          responsavel_member_id: membroResponsavelId,
+          parentesco: "responsavel",
+          principal: true,
+          notificar_ausencia: true,
+        });
       }
 
       return novoConvertido;
