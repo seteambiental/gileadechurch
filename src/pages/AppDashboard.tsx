@@ -116,7 +116,17 @@ const AppDashboard = () => {
             </div>
           </div>
 
-          {user ? (
+          <div className="flex items-center gap-2">
+            {!user && isBypassed && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/auth")}
+                className="text-secondary border-secondary hover:bg-secondary/10"
+              >
+                Fazer Login
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -124,18 +134,9 @@ const AppDashboard = () => {
               className="text-muted-foreground hover:text-foreground"
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Sair
+              {user ? "Sair" : "Encerrar Sessão"}
             </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate("/auth")}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Entrar
-            </Button>
-          )}
+          </div>
         </div>
       </header>
 
