@@ -247,6 +247,84 @@ export type Database = {
           },
         ]
       }
+      igreja_config: {
+        Row: {
+          address: string | null
+          cargo_responsavel: string | null
+          celular: string | null
+          cep: string | null
+          city: string | null
+          cnpj: string
+          complement: string | null
+          cpf_responsavel: string | null
+          created_at: string
+          email: string | null
+          id: string
+          inscricao_estadual: string | null
+          inscricao_municipal: string | null
+          logo_url: string | null
+          neighborhood: string | null
+          nome_fantasia: string
+          number: string | null
+          razao_social: string
+          responsavel_legal: string
+          state: string | null
+          telefone: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          cargo_responsavel?: string | null
+          celular?: string | null
+          cep?: string | null
+          city?: string | null
+          cnpj: string
+          complement?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logo_url?: string | null
+          neighborhood?: string | null
+          nome_fantasia: string
+          number?: string | null
+          razao_social: string
+          responsavel_legal: string
+          state?: string | null
+          telefone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          cargo_responsavel?: string | null
+          celular?: string | null
+          cep?: string | null
+          city?: string | null
+          cnpj?: string
+          complement?: string | null
+          cpf_responsavel?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          inscricao_estadual?: string | null
+          inscricao_municipal?: string | null
+          logo_url?: string | null
+          neighborhood?: string | null
+          nome_fantasia?: string
+          number?: string | null
+          razao_social?: string
+          responsavel_legal?: string
+          state?: string | null
+          telefone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       inscricoes_eventos: {
         Row: {
           cpf: string | null
@@ -1009,6 +1087,85 @@ export type Database = {
           },
         ]
       }
+      user_access_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          email: string
+          id: string
+          member_id: string
+          rejection_reason: string | null
+          requested_ministry_ids: string[] | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          member_id: string
+          rejection_reason?: string | null
+          requested_ministry_ids?: string[] | null
+          requested_role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          member_id?: string
+          rejection_reason?: string | null
+          requested_ministry_ids?: string[] | null
+          requested_role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_access_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_ministries: {
+        Row: {
+          created_at: string
+          id: string
+          ministry_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ministry_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ministry_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_ministries_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1043,6 +1200,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_master: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "lider" | "membro" | "master" | "ministerial"

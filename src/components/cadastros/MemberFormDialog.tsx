@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Upload, Loader2 } from "lucide-react";
+import { Plus, X, Upload, Loader2, UserCog } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF, formatRG } from "@/lib/masks";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const FUNCTION_TYPES = [
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
@@ -41,6 +44,12 @@ const FUNCTION_TYPES = [
   { value: "supervisor_condominio", label: "Supervisor de Condomínio" },
   { value: "sindico_condominio", label: "Síndico de Condomínio" },
   { value: "integrante_ministerio", label: "Integrante de Ministério" },
+] as const;
+
+const ROLE_TYPES = [
+  { value: "admin", label: "Administrador", description: "Gerencia todo o sistema" },
+  { value: "master", label: "Master", description: "Gerencia usuários e aprovações" },
+  { value: "ministerial", label: "Ministerial", description: "Acesso ao ministério vinculado" },
 ] as const;
 
 type FunctionType = typeof FUNCTION_TYPES[number]["value"];
@@ -69,6 +78,9 @@ const formSchema = z.object({
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   rg: z.string().optional(),
   cpf: z.string().optional(),
+  // Campos para criar usuário do sistema
+  criar_usuario: z.boolean().optional(),
+  perfil_usuario: z.enum(["admin", "master", "ministerial"]).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -85,6 +97,7 @@ interface MemberFormDialogProps {
     photo_url: string | null;
     city: string | null;
     state: string | null;
+    user_id?: string | null;
   } | null;
 }
 
@@ -93,6 +106,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [memberFunctions, setMemberFunctions] = useState<MemberFunction[]>([]);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [selectedMinistryIds, setSelectedMinistryIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -114,8 +128,13 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       email: "",
       rg: "",
       cpf: "",
+      criar_usuario: false,
+      perfil_usuario: undefined,
     },
   });
+
+  const criarUsuario = form.watch("criar_usuario");
+  const perfilUsuario = form.watch("perfil_usuario");
 
   // Fetch member details if editing
   useEffect(() => {
@@ -144,6 +163,8 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             email: memberData.email || "",
             rg: (memberData as any).rg || "",
             cpf: (memberData as any).cpf ? formatCPF((memberData as any).cpf) : "",
+            criar_usuario: false,
+            perfil_usuario: undefined,
           });
           setPhotoPreview(memberData.photo_url);
         }
@@ -166,6 +187,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         form.reset();
         setPhotoPreview(null);
         setMemberFunctions([]);
+        setSelectedMinistryIds([]);
       }
     };
 
@@ -173,6 +195,31 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       fetchMemberDetails();
     }
   }, [member, open, form]);
+
+  // Fetch options for functions
+  const { data: ministries = [] } = useQuery({
+    queryKey: ["ministries"],
+    queryFn: async () => {
+      const { data } = await supabase.from("ministries").select("id, name").order("name");
+      return data || [];
+    },
+  });
+
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas_refugio"],
+    queryFn: async () => {
+      const { data } = await supabase.from("casas_refugio").select("id, name").order("name");
+      return data || [];
+    },
+  });
+
+  const { data: condominios = [] } = useQuery({
+    queryKey: ["condominios"],
+    queryFn: async () => {
+      const { data } = await supabase.from("condominios").select("id, name").order("name");
+      return data || [];
+    },
+  });
 
   // Fetch options for functions
   const { data: ministries = [] } = useQuery({
