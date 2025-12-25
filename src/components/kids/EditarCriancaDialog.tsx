@@ -1,16 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, UserCheck } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Loader2, UserCheck, Camera, User } from "lucide-react";
 import { toast } from "sonner";
-import { formatPhone } from "@/lib/masks";
 
 interface EditarCriancaDialogProps {
   open: boolean;
@@ -21,68 +20,93 @@ interface EditarCriancaDialogProps {
     idade: number;
     genero: string | null;
     whatsapp: string | null;
+    foto?: string | null;
     tipo: "membro" | "novo_convertido";
   } | null;
 }
 
 export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCriancaDialogProps) {
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
     dataNascimento: "",
     genero: "",
-    observacoes: "",
   });
 
-  // Buscar dados completos do novo convertido
-  const { data: dadosCompletos } = useQuery({
+  // Buscar dados completos da criança
+  const { data: dadosCompletos, isLoading: loadingDados } = useQuery({
     queryKey: ["crianca-detalhes", crianca?.id, crianca?.tipo],
     queryFn: async () => {
-      if (!crianca || crianca.tipo !== "novo_convertido") return null;
+      if (!crianca) return null;
       
-      const { data, error } = await supabase
-        .from("novos_convertidos")
-        .select("*")
-        .eq("id", crianca.id)
-        .single();
-      
-      if (error) throw error;
-      return data;
+      if (crianca.tipo === "novo_convertido") {
+        const { data, error } = await supabase
+          .from("novos_convertidos")
+          .select("*")
+          .eq("id", crianca.id)
+          .single();
+        
+        if (error) throw error;
+        return { ...data, tipo: "novo_convertido" as const };
+      } else {
+        const { data, error } = await supabase
+          .from("members")
+          .select("*")
+          .eq("id", crianca.id)
+          .single();
+        
+        if (error) throw error;
+        return { ...data, tipo: "membro" as const, data_nascimento: data.birth_date };
+      }
     },
-    enabled: !!crianca && crianca.tipo === "novo_convertido",
+    enabled: !!crianca && open,
   });
 
-  // Buscar responsável vinculado
-  const { data: responsavel } = useQuery({
-    queryKey: ["crianca-responsavel", crianca?.id, crianca?.tipo],
+  // Buscar responsável vinculado (qualquer um, não só principal)
+  const { data: responsavel, isLoading: loadingResponsavel } = useQuery({
+    queryKey: ["crianca-responsavel-edit", crianca?.id, crianca?.tipo],
     queryFn: async () => {
       if (!crianca) return null;
       
       const columnName = crianca.tipo === "membro" ? "crianca_member_id" : "crianca_novo_convertido_id";
       
-      const { data, error } = await supabase
+      // Buscar responsáveis vinculados
+      const { data: responsaveis, error } = await supabase
         .from("kids_responsaveis")
-        .select("*, responsavel_member_id")
+        .select("*")
         .eq(columnName, crianca.id)
-        .eq("principal", true)
-        .maybeSingle();
+        .order("principal", { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao buscar responsáveis:", error);
+        return null;
+      }
       
-      if (!data?.responsavel_member_id) return null;
+      if (!responsaveis || responsaveis.length === 0) return null;
       
-      // Buscar dados do responsável separadamente
+      // Pegar o primeiro (principal tem prioridade)
+      const respData = responsaveis[0];
+      
+      if (!respData.responsavel_member_id) return null;
+      
+      // Buscar dados do membro responsável
       const { data: memberData, error: memberError } = await supabase
         .from("members")
         .select("id, full_name, whatsapp")
-        .eq("id", data.responsavel_member_id)
+        .eq("id", respData.responsavel_member_id)
         .single();
       
-      if (memberError) return null;
+      if (memberError) {
+        console.error("Erro ao buscar membro responsável:", memberError);
+        return null;
+      }
       
-      return { ...data, responsavel: memberData };
+      return { ...respData, responsavel: memberData };
     },
-    enabled: !!crianca,
+    enabled: !!crianca && open,
   });
 
   useEffect(() => {
@@ -91,41 +115,98 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
         nome: dadosCompletos.full_name || "",
         dataNascimento: dadosCompletos.data_nascimento || "",
         genero: dadosCompletos.genero || "",
-        observacoes: "",
       });
-    } else if (crianca) {
-      setFormData({
-        nome: crianca.nome || "",
-        dataNascimento: "",
-        genero: crianca.genero || "",
-        observacoes: "",
-      });
+      setPhotoPreview(
+        dadosCompletos.tipo === "membro" 
+          ? (dadosCompletos as { photo_url?: string }).photo_url || null 
+          : null
+      );
     }
-  }, [dadosCompletos, crianca]);
+  }, [dadosCompletos]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setPhotoFile(null);
+      setPhotoPreview(null);
+    }
+  }, [open]);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("A foto deve ter no máximo 5MB");
+        return;
+      }
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadPhoto = async (criancaId: string, tipo: "membro" | "novo_convertido"): Promise<string | null> => {
+    if (!photoFile) return null;
+
+    const fileExt = photoFile.name.split(".").pop();
+    const fileName = `${tipo}-${criancaId}-${Date.now()}.${fileExt}`;
+    const filePath = `kids/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("member-photos")
+      .upload(filePath, photoFile);
+
+    if (uploadError) {
+      console.error("Erro ao fazer upload da foto:", uploadError);
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("member-photos")
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   const updateMutation = useMutation({
     mutationFn: async () => {
       if (!crianca) return;
       
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        photoUrl = await uploadPhoto(crianca.id, crianca.tipo);
+      }
+      
       if (crianca.tipo === "novo_convertido") {
+        const updateData: Record<string, unknown> = {
+          full_name: formData.nome.trim(),
+          data_nascimento: formData.dataNascimento || null,
+          genero: formData.genero || null,
+        };
+        // novos_convertidos não tem photo_url, mas podemos usar após converter
+        
         const { error } = await supabase
           .from("novos_convertidos")
-          .update({
-            full_name: formData.nome.trim(),
-            data_nascimento: formData.dataNascimento || null,
-            genero: formData.genero || null,
-          })
+          .update(updateData)
           .eq("id", crianca.id);
         
         if (error) throw error;
       } else {
+        const updateData: Record<string, unknown> = {
+          full_name: formData.nome.trim(),
+          birth_date: formData.dataNascimento || null,
+          genero: formData.genero || null,
+        };
+        if (photoUrl) {
+          updateData.photo_url = photoUrl;
+        }
+        
         const { error } = await supabase
           .from("members")
-          .update({
-            full_name: formData.nome.trim(),
-            birth_date: formData.dataNascimento || null,
-            genero: formData.genero || null,
-          })
+          .update(updateData)
           .eq("id", crianca.id);
         
         if (error) throw error;
@@ -134,6 +215,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["novos-convertidos-kids"] });
       queryClient.invalidateQueries({ queryKey: ["members-kids"] });
+      queryClient.invalidateQueries({ queryKey: ["crianca-detalhes"] });
       toast.success("Criança atualizada com sucesso!");
       onOpenChange(false);
     },
@@ -147,24 +229,36 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
     mutationFn: async () => {
       if (!crianca || crianca.tipo !== "novo_convertido" || !dadosCompletos) return;
       
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        photoUrl = await uploadPhoto(crianca.id, "membro");
+      }
+      
       // Criar membro a partir do novo convertido
+      const ncData = dadosCompletos as { 
+        full_name: string; data_nascimento: string; genero: string; whatsapp: string;
+        email: string; cep: string; address: string; numero: string; complement: string;
+        neighborhood: string; city: string; state: string; cpf: string; rg: string;
+      };
+      
       const { data: novoMembro, error: memberError } = await supabase
         .from("members")
         .insert({
-          full_name: dadosCompletos.full_name,
-          birth_date: dadosCompletos.data_nascimento,
-          genero: dadosCompletos.genero,
-          whatsapp: dadosCompletos.whatsapp,
-          email: dadosCompletos.email,
-          cep: dadosCompletos.cep,
-          address: dadosCompletos.address,
-          number: dadosCompletos.numero,
-          complement: dadosCompletos.complement,
-          neighborhood: dadosCompletos.neighborhood,
-          city: dadosCompletos.city,
-          state: dadosCompletos.state,
-          cpf: dadosCompletos.cpf,
-          rg: dadosCompletos.rg,
+          full_name: ncData.full_name,
+          birth_date: ncData.data_nascimento,
+          genero: ncData.genero,
+          whatsapp: ncData.whatsapp,
+          email: ncData.email,
+          cep: ncData.cep,
+          address: ncData.address,
+          number: ncData.numero,
+          complement: ncData.complement,
+          neighborhood: ncData.neighborhood,
+          city: ncData.city,
+          state: ncData.state,
+          cpf: ncData.cpf,
+          rg: ncData.rg,
+          photo_url: photoUrl,
           member_since: new Date().toISOString().split("T")[0],
         })
         .select()
@@ -183,15 +277,13 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
         .eq("id", crianca.id);
 
       // Atualizar responsáveis para apontar para o novo membro
-      if (responsavel) {
-        await supabase
-          .from("kids_responsaveis")
-          .update({
-            crianca_member_id: novoMembro.id,
-            crianca_novo_convertido_id: null,
-          })
-          .eq("crianca_novo_convertido_id", crianca.id);
-      }
+      await supabase
+        .from("kids_responsaveis")
+        .update({
+          crianca_member_id: novoMembro.id,
+          crianca_novo_convertido_id: null,
+        })
+        .eq("crianca_novo_convertido_id", crianca.id);
 
       return novoMembro;
     },
@@ -219,6 +311,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
   if (!crianca) return null;
 
   const responsavelInfo = responsavel?.responsavel as { id: string; full_name: string; whatsapp: string | null } | null;
+  const isLoading = loadingDados || loadingResponsavel;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -229,96 +322,140 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nome">Nome da Criança *</Label>
-            <Input
-              id="nome"
-              value={formData.nome}
-              onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
-              placeholder="Nome completo"
-              required
-            />
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Upload de foto */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-muted">
+                  <AvatarImage src={photoPreview || undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
+                    {crianca.nome.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="secondary"
+                  className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">Clique no ícone para adicionar foto</p>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+              <Label htmlFor="nome">Nome da Criança *</Label>
               <Input
-                id="dataNascimento"
-                type="date"
-                value={formData.dataNascimento}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dataNascimento: e.target.value }))}
+                id="nome"
+                value={formData.nome}
+                onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
+                placeholder="Nome completo"
+                required
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="genero">Gênero</Label>
-              <Select
-                value={formData.genero}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, genero: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masculino">Masculino</SelectItem>
-                  <SelectItem value="feminino">Feminino</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+                <Input
+                  id="dataNascimento"
+                  type="date"
+                  value={formData.dataNascimento}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, dataNascimento: e.target.value }))}
+                />
+              </div>
 
-          {/* Info do responsável */}
-          {responsavelInfo && (
+              <div className="space-y-2">
+                <Label htmlFor="genero">Gênero</Label>
+                <Select
+                  value={formData.genero}
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, genero: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Info do responsável */}
             <div className="bg-muted/50 p-3 rounded-lg space-y-1">
-              <Label className="text-xs text-muted-foreground">Responsável Principal</Label>
-              <p className="font-medium">{responsavelInfo.full_name}</p>
-              {responsavelInfo.whatsapp && (
-                <p className="text-sm text-muted-foreground">📱 {responsavelInfo.whatsapp}</p>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <User className="h-3 w-3" />
+                Responsável Principal
+              </Label>
+              {responsavelInfo ? (
+                <>
+                  <p className="font-medium">{responsavelInfo.full_name}</p>
+                  {responsavelInfo.whatsapp ? (
+                    <p className="text-sm text-muted-foreground">📱 {responsavelInfo.whatsapp}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">WhatsApp não cadastrado</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Nenhum responsável vinculado</p>
               )}
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salvar
-            </Button>
-          </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateMutation.isPending}
+              >
+                {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Salvar
+              </Button>
+            </div>
 
-          {/* Botão converter para membro */}
-          {crianca.tipo === "novo_convertido" && (
-            <>
-              <Separator />
-              <div className="pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800"
-                  onClick={() => convertToMemberMutation.mutate()}
-                  disabled={convertToMemberMutation.isPending}
-                >
-                  {convertToMemberMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <UserCheck className="h-4 w-4 mr-2" />
-                  )}
-                  Converter para Membro
-                </Button>
-                <p className="text-xs text-muted-foreground text-center mt-2">
-                  Isso criará um cadastro completo de membro para esta criança
-                </p>
-              </div>
-            </>
-          )}
-        </form>
+            {/* Botão converter para membro */}
+            {crianca.tipo === "novo_convertido" && (
+              <>
+                <Separator />
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800"
+                    onClick={() => convertToMemberMutation.mutate()}
+                    disabled={convertToMemberMutation.isPending}
+                  >
+                    {convertToMemberMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <UserCheck className="h-4 w-4 mr-2" />
+                    )}
+                    Converter para Membro
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Isso criará um cadastro completo de membro para esta criança
+                  </p>
+                </div>
+              </>
+            )}
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
