@@ -221,31 +221,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     },
   });
 
-  // Fetch options for functions
-  const { data: ministries = [] } = useQuery({
-    queryKey: ["ministries"],
-    queryFn: async () => {
-      const { data } = await supabase.from("ministries").select("id, name").order("name");
-      return data || [];
-    },
-  });
-
-  const { data: casasRefugio = [] } = useQuery({
-    queryKey: ["casas_refugio"],
-    queryFn: async () => {
-      const { data } = await supabase.from("casas_refugio").select("id, name").order("name");
-      return data || [];
-    },
-  });
-
-  const { data: condominios = [] } = useQuery({
-    queryKey: ["condominios"],
-    queryFn: async () => {
-      const { data } = await supabase.from("condominios").select("id, name").order("name");
-      return data || [];
-    },
-  });
-
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       let photoUrl = member?.photo_url || null;
@@ -324,14 +299,39 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
         if (funcError) throw funcError;
       }
+
+      // Criar solicitação de acesso ao sistema
+      if (data.criar_usuario && data.email && data.perfil_usuario) {
+        const { error: accessError } = await supabase
+          .from("user_access_requests")
+          .insert({
+            member_id: memberId,
+            email: data.email,
+            requested_role: data.perfil_usuario,
+            requested_ministry_ids: data.perfil_usuario === "ministerial" ? selectedMinistryIds : [],
+            status: "pendente",
+          });
+
+        if (accessError) throw accessError;
+      }
+
+      return { criarUsuario: data.criar_usuario };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast({ title: member ? "Membro atualizado!" : "Membro cadastrado!" });
+      if (result?.criarUsuario) {
+        toast({ 
+          title: member ? "Membro atualizado!" : "Membro cadastrado!",
+          description: "Solicitação de acesso enviada para aprovação.",
+        });
+      } else {
+        toast({ title: member ? "Membro atualizado!" : "Membro cadastrado!" });
+      }
       onOpenChange(false);
       setPhotoFile(null);
       setPhotoPreview(null);
       setMemberFunctions([]);
+      setSelectedMinistryIds([]);
     },
     onError: (error) => {
       toast({ title: "Erro ao salvar membro", description: String(error), variant: "destructive" });
@@ -790,7 +790,132 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                 )}
               </div>
 
-              {/* Submit */}
+              {/* Criar Usuário do Sistema */}
+              {!member?.user_id && (
+                <div className="space-y-4 p-4 rounded-lg bg-secondary/5 border border-secondary/20">
+                  <div className="flex items-center gap-3">
+                    <UserCog className="w-5 h-5 text-secondary" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground">Usuário do Sistema</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Criar acesso ao sistema para este membro
+                      </p>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name="criar_usuario"
+                      render={({ field }) => (
+                        <FormItem className="flex items-center space-x-2">
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {criarUsuario && (
+                    <div className="space-y-4 pt-2">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <FormLabel>Email para acesso *</FormLabel>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Será usado o email cadastrado acima
+                          </p>
+                          <Input 
+                            value={form.watch("email") || ""} 
+                            disabled 
+                            className="bg-muted"
+                          />
+                          {!form.watch("email") && (
+                            <p className="text-xs text-destructive mt-1">
+                              Preencha o email acima para criar usuário
+                            </p>
+                          )}
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="perfil_usuario"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Perfil de Acesso *</FormLabel>
+                              <Select
+                                value={field.value}
+                                onValueChange={field.onChange}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione o perfil" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {ROLE_TYPES.map((role) => (
+                                    <SelectItem key={role.value} value={role.value}>
+                                      <div>
+                                        <span>{role.label}</span>
+                                        <span className="text-xs text-muted-foreground ml-2">
+                                          - {role.description}
+                                        </span>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {perfilUsuario === "ministerial" && (
+                        <div className="space-y-2">
+                          <FormLabel>Vincular aos Ministérios</FormLabel>
+                          <div className="max-h-32 overflow-y-auto space-y-2 p-3 rounded-lg bg-background border border-border">
+                            {ministries.map((ministry) => (
+                              <div key={ministry.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`ministry-${ministry.id}`}
+                                  checked={selectedMinistryIds.includes(ministry.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedMinistryIds([...selectedMinistryIds, ministry.id]);
+                                    } else {
+                                      setSelectedMinistryIds(selectedMinistryIds.filter(id => id !== ministry.id));
+                                    }
+                                  }}
+                                />
+                                <label 
+                                  htmlFor={`ministry-${ministry.id}`} 
+                                  className="text-sm cursor-pointer"
+                                >
+                                  {ministry.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground bg-yellow-500/10 p-2 rounded border border-yellow-500/20">
+                        ⚠️ A solicitação de acesso será enviada para aprovação de um usuário MASTER
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {member?.user_id && (
+                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2 text-green-500">
+                    <UserCog className="w-5 h-5" />
+                    <span className="font-medium">Este membro já possui acesso ao sistema</span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
