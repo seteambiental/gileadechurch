@@ -77,7 +77,7 @@ const AgendaPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [activeTab, setActiveTab] = useState("calendario");
+  const [activeTab, setActiveTab] = useState("programacao");
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -289,9 +289,9 @@ const AgendaPage = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
-            <TabsTrigger value="calendario" className="flex items-center gap-2">
+            <TabsTrigger value="programacao" className="flex items-center gap-2">
               <CalendarIcon className="w-4 h-4" />
-              Calendário
+              Programação
             </TabsTrigger>
             <TabsTrigger value="eventos" className="flex items-center gap-2">
               <PartyPopper className="w-4 h-4" />
@@ -303,7 +303,19 @@ const AgendaPage = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="calendario" className="space-y-6 mt-6">
+          <TabsContent value="programacao" className="space-y-6 mt-6">
+            {/* Atalhos rápidos */}
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" onClick={() => setActiveTab("eventos")}>
+                <PartyPopper className="w-4 h-4 mr-2" />
+                Ver Eventos
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setActiveTab("dashboard")}>
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Ver Dashboard
+              </Button>
+            </div>
+            
             <div className="grid lg:grid-cols-3 gap-6">
               {/* Calendário */}
               <div className="lg:col-span-2">
