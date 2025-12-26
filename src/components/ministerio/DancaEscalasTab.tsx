@@ -440,9 +440,66 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     );
   };
 
-  const addExtraIntegrante = (integranteId: string) => {
-    if (!extraIntegrantes.includes(integranteId)) {
+  // Função para criar ou obter integrante do ministério de dança
+  const getOrCreateIntegrante = async (memberId: string): Promise<string | null> => {
+    // Verificar se já existe integrante
+    const existingIntegrante = integrantes.find((i) => i.member.id === memberId);
+    if (existingIntegrante) {
+      return existingIntegrante.id;
+    }
+
+    // Verificar se existe uma função padrão "Dançarino(a)" para o ministério
+    let funcaoId: string | null = null;
+    const { data: funcoes } = await supabase
+      .from("ministerio_funcoes")
+      .select("id")
+      .eq("ministry_id", ministryId)
+      .limit(1);
+
+    if (funcoes && funcoes.length > 0) {
+      funcaoId = funcoes[0].id;
+    } else {
+      // Criar função padrão "Dançarino(a)"
+      const { data: novaFuncao, error: funcaoError } = await supabase
+        .from("ministerio_funcoes")
+        .insert({ ministry_id: ministryId, nome: "Dançarino(a)" })
+        .select("id")
+        .single();
+      
+      if (funcaoError || !novaFuncao) {
+        console.error("Erro ao criar função:", funcaoError);
+        return null;
+      }
+      funcaoId = novaFuncao.id;
+    }
+
+    // Criar o integrante
+    const { data: novoIntegrante, error: integranteError } = await supabase
+      .from("ministerio_integrantes")
+      .insert({ ministry_id: ministryId, member_id: memberId, funcao_id: funcaoId, ativo: true })
+      .select("id")
+      .single();
+
+    if (integranteError || !novoIntegrante) {
+      console.error("Erro ao criar integrante:", integranteError);
+      return null;
+    }
+
+    // Refetch integrantes
+    queryClient.invalidateQueries({ queryKey: ["ministerio-integrantes-danca", ministryId] });
+    
+    return novoIntegrante.id;
+  };
+
+  const addExtraIntegrante = async (memberId: string, memberName: string) => {
+    // Tentar obter ou criar o integrante
+    const integranteId = await getOrCreateIntegrante(memberId);
+    
+    if (integranteId && !extraIntegrantes.includes(integranteId)) {
       setExtraIntegrantes((prev) => [...prev, integranteId]);
+      toast.success(`${memberName} adicionado(a) como extra`);
+    } else if (!integranteId) {
+      toast.error("Erro ao adicionar membro extra");
     }
     setShowAddExtraDialog(false);
   };
@@ -792,14 +849,12 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
           <div className="space-y-2">
             <Label>Selecione um membro de outra equipe</Label>
             <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
-              {availableExtras
-                .filter((m) => m.integranteId !== null)
-                .map((member, idx) => (
+              {availableExtras.map((member, idx) => (
                   <Button
                     key={`${member.memberId}-${member.equipeName}-${member.subTime || ''}-${idx}`}
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => member.integranteId && addExtraIntegrante(member.integranteId)}
+                    onClick={() => addExtraIntegrante(member.memberId, member.memberName)}
                   >
                     <Users className="w-4 h-4 mr-2" />
                     {member.memberName}
@@ -808,7 +863,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                     </Badge>
                   </Button>
                 ))}
-              {availableExtras.filter((m) => m.integranteId !== null).length === 0 && (
+              {availableExtras.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Todos os membros das equipes já foram selecionados
                 </p>
