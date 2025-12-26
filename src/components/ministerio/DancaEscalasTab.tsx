@@ -192,17 +192,21 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
 
   // Todos os membros de todas as equipes de dança
   const allDancaMembers = useMemo(() => {
-    const membersMap = new Map<string, { memberId: string; memberName: string; integranteId: string | null }>();
+    const membersMap = new Map<string, { memberId: string; memberName: string; integranteId: string | null; equipeName: string; subTime: string | null }>();
     
     equipes.forEach((equipe) => {
       equipe.membros?.forEach((m) => {
-        if (!membersMap.has(m.member.id)) {
-          // Buscar o integrante correspondente
-          const integrante = integrantes.find((i) => i.member.id === m.member.id);
-          membersMap.set(m.member.id, {
+        // Buscar o integrante correspondente
+        const integrante = integrantes.find((i) => i.member.id === m.member.id);
+        const key = `${m.member.id}-${equipe.nome}-${m.sub_time || ''}`;
+        
+        if (!membersMap.has(key)) {
+          membersMap.set(key, {
             memberId: m.member.id,
             memberName: m.member.full_name,
             integranteId: integrante?.id || null,
+            equipeName: equipe.nome,
+            subTime: m.sub_time,
           });
         }
       });
@@ -790,15 +794,18 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
             <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
               {availableExtras
                 .filter((m) => m.integranteId !== null)
-                .map((member) => (
+                .map((member, idx) => (
                   <Button
-                    key={member.memberId}
+                    key={`${member.memberId}-${member.equipeName}-${member.subTime || ''}-${idx}`}
                     variant="ghost"
                     className="w-full justify-start"
                     onClick={() => member.integranteId && addExtraIntegrante(member.integranteId)}
                   >
                     <Users className="w-4 h-4 mr-2" />
                     {member.memberName}
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      {member.equipeName}{member.subTime ? ` - ${member.subTime}` : ''}
+                    </Badge>
                   </Button>
                 ))}
               {availableExtras.filter((m) => m.integranteId !== null).length === 0 && (
