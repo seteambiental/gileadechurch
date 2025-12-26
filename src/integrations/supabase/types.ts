@@ -1146,6 +1146,63 @@ export type Database = {
           },
         ]
       }
+      ministerio_repertorio: {
+        Row: {
+          artista: string | null
+          created_at: string
+          escala_id: string
+          id: string
+          ministry_id: string
+          observacoes: string | null
+          ordem: number | null
+          titulo: string
+          tom: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          artista?: string | null
+          created_at?: string
+          escala_id: string
+          id?: string
+          ministry_id: string
+          observacoes?: string | null
+          ordem?: number | null
+          titulo: string
+          tom?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          artista?: string | null
+          created_at?: string
+          escala_id?: string
+          id?: string
+          ministry_id?: string
+          observacoes?: string | null
+          ordem?: number | null
+          titulo?: string
+          tom?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_repertorio_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_escalas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_repertorio_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           created_at: string

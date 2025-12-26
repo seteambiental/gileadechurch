@@ -26,10 +26,12 @@ import {
   Users,
   CalendarDays,
   BarChart3,
+  ListMusic,
 } from "lucide-react";
 import { MinisterioEquipeTab } from "@/components/ministerio/MinisterioEquipeTab";
 import { MinisterioEscalasTab } from "@/components/ministerio/MinisterioEscalasTab";
 import { MinisterioEstatisticasTab } from "@/components/ministerio/MinisterioEstatisticasTab";
+import { MinisterioRepertorioTab } from "@/components/ministerio/MinisterioRepertorioTab";
 
 interface MinistryInfo {
   title: string;
@@ -37,6 +39,7 @@ interface MinistryInfo {
   icon: LucideIcon;
   fullDescription: string;
   hasEscalas?: boolean;
+  hasRepertorio?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -118,6 +121,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério responsável pela condução do louvor e adoração nos cultos e eventos da igreja.",
     hasEscalas: true,
+    hasRepertorio: true,
   },
   midia: {
     title: "Mídia",
@@ -208,6 +212,7 @@ const MinistryPage = () => {
 
   const IconComponent = ministry.icon;
   const hasEscalas = ministry.hasEscalas && ministryFromDb?.id;
+  const hasRepertorio = ministry.hasRepertorio && ministryFromDb?.id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -244,7 +249,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {hasEscalas ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsList className={`grid w-full ${hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -257,6 +262,12 @@ const MinistryPage = () => {
                 <CalendarDays className="w-4 h-4" />
                 <span className="hidden sm:inline">Escalas</span>
               </TabsTrigger>
+              {hasRepertorio && (
+                <TabsTrigger value="repertorio" className="flex items-center gap-2">
+                  <ListMusic className="w-4 h-4" />
+                  <span className="hidden sm:inline">Repertório</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="estatisticas" className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 <span className="hidden sm:inline">Estatísticas</span>
@@ -286,6 +297,12 @@ const MinistryPage = () => {
             <TabsContent value="escalas">
               <MinisterioEscalasTab ministryId={ministryFromDb.id} />
             </TabsContent>
+
+            {hasRepertorio && (
+              <TabsContent value="repertorio">
+                <MinisterioRepertorioTab ministryId={ministryFromDb.id} />
+              </TabsContent>
+            )}
 
             <TabsContent value="estatisticas">
               <MinisterioEstatisticasTab ministryId={ministryFromDb.id} />
