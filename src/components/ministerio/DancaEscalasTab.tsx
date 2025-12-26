@@ -102,6 +102,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showAddExtraDialog, setShowAddExtraDialog] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [editingEscala, setEditingEscala] = useState<Escala | null>(null);
   const [escalaToDelete, setEscalaToDelete] = useState<string | null>(null);
 
@@ -627,7 +628,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Data do Culto</Label>
-              <Popover>
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -638,7 +639,16 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarComponent mode="single" selected={dataCulto} onSelect={setDataCulto} initialFocus />
+                  <CalendarComponent 
+                    mode="single" 
+                    selected={dataCulto} 
+                    onSelect={(date) => {
+                      setDataCulto(date);
+                      setCalendarOpen(false);
+                    }} 
+                    initialFocus 
+                    className="pointer-events-auto"
+                  />
                 </PopoverContent>
               </Popover>
             </div>
