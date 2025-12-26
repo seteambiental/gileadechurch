@@ -428,10 +428,25 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
         .insert(compartilhamentosToInsert);
 
       if (error) throw error;
+
+      // Enviar notificação via WhatsApp
+      try {
+        await supabase.functions.invoke('enviar-whatsapp', {
+          body: {
+            action: 'notificar_escala_compartilhada',
+            escalaId: escalaToShare.id,
+            ministeriosDestino: selectedMinistries,
+            ministerioOrigem: 'Ministério de Louvor',
+          }
+        });
+      } catch (whatsappError) {
+        console.error('Erro ao enviar notificações WhatsApp:', whatsappError);
+        // Não falhar a operação se o WhatsApp falhar
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["escalas-compartilhadas"] });
-      toast({ title: "Escala compartilhada com sucesso!" });
+      toast({ title: "Escala compartilhada e notificações enviadas!" });
       setShowShareDialog(false);
       setEscalaToShare(null);
       setSelectedMinistries([]);
