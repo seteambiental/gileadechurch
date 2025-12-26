@@ -1059,6 +1059,58 @@ export type Database = {
           },
         ]
       }
+      ministerio_escalas_compartilhadas: {
+        Row: {
+          compartilhado_em: string
+          compartilhado_por: string | null
+          escala_id: string
+          id: string
+          ministry_destino_id: string
+          visualizado: boolean | null
+          visualizado_em: string | null
+        }
+        Insert: {
+          compartilhado_em?: string
+          compartilhado_por?: string | null
+          escala_id: string
+          id?: string
+          ministry_destino_id: string
+          visualizado?: boolean | null
+          visualizado_em?: string | null
+        }
+        Update: {
+          compartilhado_em?: string
+          compartilhado_por?: string | null
+          escala_id?: string
+          id?: string
+          ministry_destino_id?: string
+          visualizado?: boolean | null
+          visualizado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_escalas_compartilhadas_compartilhado_por_fkey"
+            columns: ["compartilhado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_escalas_compartilhadas_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_escalas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_escalas_compartilhadas_ministry_destino_id_fkey"
+            columns: ["ministry_destino_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministerio_funcoes: {
         Row: {
           created_at: string
@@ -1139,6 +1191,53 @@ export type Database = {
           },
           {
             foreignKeyName: "ministerio_integrantes_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministerio_musicas_banco: {
+        Row: {
+          artista: string | null
+          created_at: string
+          id: string
+          ministry_id: string
+          titulo: string
+          tom: string | null
+          ultima_vez_tocada: string | null
+          updated_at: string
+          vezes_tocada: number | null
+          video_url: string | null
+        }
+        Insert: {
+          artista?: string | null
+          created_at?: string
+          id?: string
+          ministry_id: string
+          titulo: string
+          tom?: string | null
+          ultima_vez_tocada?: string | null
+          updated_at?: string
+          vezes_tocada?: number | null
+          video_url?: string | null
+        }
+        Update: {
+          artista?: string | null
+          created_at?: string
+          id?: string
+          ministry_id?: string
+          titulo?: string
+          tom?: string | null
+          ultima_vez_tocada?: string | null
+          updated_at?: string
+          vezes_tocada?: number | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_musicas_banco_ministry_id_fkey"
             columns: ["ministry_id"]
             isOneToOne: false
             referencedRelation: "ministries"
