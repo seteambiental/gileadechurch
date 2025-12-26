@@ -130,12 +130,6 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     },
   });
 
-  // Agrupar líderes por turma
-  const lideresPorTurma = turmasConfig.reduce((acc, turma) => {
-    acc[turma.turma] = lideres?.filter((l) => l.turma === turma.turma) || [];
-    return acc;
-  }, {} as Record<string, typeof lideres>);
-
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -143,10 +137,10 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-primary" />
-            Líderes e Professores
+            Equipe Kids
           </h2>
           <p className="text-sm text-muted-foreground">
-            Gerencie os voluntários responsáveis por cada turma
+            Gerencie os voluntários responsáveis pelo ministério
           </p>
         </div>
 
@@ -154,12 +148,12 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Líder
+              Adicionar Membro
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar Líder ao Kids</DialogTitle>
+              <DialogTitle>Adicionar Membro à Equipe</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div>
@@ -221,70 +215,73 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                 onClick={() => addLider.mutate()}
                 disabled={!selectedMember || !selectedTurma || addLider.isPending}
               >
-                {addLider.isPending ? "Adicionando..." : "Adicionar Líder"}
+                {addLider.isPending ? "Adicionando..." : "Adicionar à Equipe"}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Cards por turma */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {turmasConfig.map((turma) => (
-          <Card key={turma.turma} style={{ borderTopColor: turma.cor_hex, borderTopWidth: 4 }}>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: turma.cor_hex }} 
-                />
-                Turma {turma.nome_exibicao}
-                <Badge variant="secondary" className="ml-auto">
-                  {lideresPorTurma[turma.turma]?.length || 0} líderes
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {lideresPorTurma[turma.turma]?.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum líder cadastrado
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {lideresPorTurma[turma.turma]?.map((lider) => (
-                    <div 
-                      key={lider.id} 
-                      className="flex items-center justify-between p-2 rounded-lg bg-muted/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={lider.member?.photo_url || undefined} />
-                          <AvatarFallback>
-                            {lider.member?.full_name?.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">{lider.member?.full_name}</p>
+      {/* Lista sequencial */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center justify-between">
+            <span>Membros da Equipe</span>
+            <Badge variant="secondary">{lideres?.length || 0} pessoas</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!lideres?.length ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum membro cadastrado na equipe
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {lideres?.map((lider) => {
+                const turmaConfig = turmasConfig.find(t => t.turma === lider.turma);
+                return (
+                  <div 
+                    key={lider.id} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={lider.member?.photo_url || undefined} />
+                        <AvatarFallback>
+                          {lider.member?.full_name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{lider.member?.full_name}</p>
+                        <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className="text-xs">
                             {FUNCOES.find((f) => f.value === lider.funcao)?.label}
                           </Badge>
+                          {turmaConfig && (
+                            <Badge 
+                              className="text-xs text-white"
+                              style={{ backgroundColor: turmaConfig.cor_hex }}
+                            >
+                              {turmaConfig.nome_exibicao}
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeLider.mutate(lider.id)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeLider.mutate(lider.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
