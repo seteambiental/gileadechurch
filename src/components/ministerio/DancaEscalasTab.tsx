@@ -111,8 +111,8 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
   const [observacoes, setObservacoes] = useState("");
   const [selectedEquipeId, setSelectedEquipeId] = useState<string>("");
   const [selectedSubTime, setSelectedSubTime] = useState<string>("todos");
-  const [selectedIntegrantes, setSelectedIntegrantes] = useState<string[]>([]);
-  const [extraIntegrantes, setExtraIntegrantes] = useState<string[]>([]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [extraMemberIds, setExtraMemberIds] = useState<string[]>([]);
   const [enviarNotificacao, setEnviarNotificacao] = useState(true);
 
   // Fetch equipes de dança
@@ -190,30 +190,29 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     },
   });
 
-  // Todos os membros de todas as equipes de dança
+  // Todos os membros de todas as equipes de dança (para extras)
   const allDancaMembers = useMemo(() => {
-    const membersMap = new Map<string, { memberId: string; memberName: string; integranteId: string | null; equipeName: string; subTime: string | null }>();
-    
+    const membersMap = new Map<
+      string,
+      { memberId: string; memberName: string; equipeName: string; subTime: string | null }
+    >();
+
     equipes.forEach((equipe) => {
       equipe.membros?.forEach((m) => {
-        // Buscar o integrante correspondente
-        const integrante = integrantes.find((i) => i.member.id === m.member.id);
-        const key = `${m.member.id}-${equipe.nome}-${m.sub_time || ''}`;
-        
+        const key = `${m.member.id}-${equipe.nome}-${m.sub_time || ""}`;
         if (!membersMap.has(key)) {
           membersMap.set(key, {
             memberId: m.member.id,
             memberName: m.member.full_name,
-            integranteId: integrante?.id || null,
             equipeName: equipe.nome,
             subTime: m.sub_time,
           });
         }
       });
     });
-    
+
     return Array.from(membersMap.values());
-  }, [equipes, integrantes]);
+  }, [equipes]);
 
   // Membros da equipe selecionada (filtrados por sub-time se aplicável)
   const equipeMembros = useMemo(() => {
@@ -230,29 +229,25 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     return membros;
   }, [selectedEquipeId, selectedSubTime, equipes]);
 
-  // IDs dos membros já selecionados na equipe atual
-  const selectedMemberIds = useMemo(() => {
-    return new Set(
-      equipeMembros
-        .filter((em) => {
-          const integrante = integrantes.find((i) => i.member.id === em.member.id);
-          return integrante && selectedIntegrantes.includes(integrante.id);
-        })
-        .map((em) => em.member.id)
-    );
-  }, [equipeMembros, integrantes, selectedIntegrantes]);
+  const selectedMemberIdSet = useMemo(() => new Set(selectedMemberIds), [selectedMemberIds]);
+  const extraMemberIdSet = useMemo(() => new Set(extraMemberIds), [extraMemberIds]);
+  const currentEquipeMemberIdSet = useMemo(
+    () => new Set(equipeMembros.map((em) => em.member.id)),
+    [equipeMembros],
+  );
 
-  // Membros disponíveis para adicionar como extras (de outras equipes ou não selecionados)
+  // Membros disponíveis para adicionar como extras (apenas de outras equipes)
   const availableExtras = useMemo(() => {
-    // Membros que estão em outras equipes de dança mas não foram selecionados
     return allDancaMembers.filter((m) => {
-      // Já está selecionado como membro da equipe
-      if (selectedMemberIds.has(m.memberId)) return false;
+      // Não permitir membros da equipe atual como extras
+      if (currentEquipeMemberIdSet.has(m.memberId)) return false;
+      // Já está selecionado como membro escalado
+      if (selectedMemberIdSet.has(m.memberId)) return false;
       // Já foi adicionado como extra
-      if (m.integranteId && extraIntegrantes.includes(m.integranteId)) return false;
+      if (extraMemberIdSet.has(m.memberId)) return false;
       return true;
     });
-  }, [allDancaMembers, selectedMemberIds, extraIntegrantes]);
+  }, [allDancaMembers, currentEquipeMemberIdSet, selectedMemberIdSet, extraMemberIdSet]);
 
   // Verificar se a equipe selecionada é "Jovens/Adultos" (tem sub-times)
   const selectedEquipe = equipes.find((e) => e.id === selectedEquipeId);
@@ -282,13 +277,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
 
   // Selecionar todos os membros da equipe
   const selectAllEquipeMembros = () => {
-    const integranteIds = equipeMembros
-      .map((em) => {
-        const integrante = integrantes.find((i) => i.member.id === em.member.id);
-        return integrante?.id;
-      })
-      .filter(Boolean) as string[];
-    setSelectedIntegrantes(integranteIds);
+    setSelectedMemberIds(equipeMembros.map((em) => em.member.id));
   };
 
   // Mutation para enviar notificação WhatsApp
@@ -322,7 +311,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     mutationFn: async () => {
       if (!dataCulto) throw new Error("Data é obrigatória");
 
-      const allSelectedIntegrantes = [...selectedIntegrantes, ...extraIntegrantes];
+      const uniqueMemberIds = Array.from(new Set([...selectedMemberIds, ...extraMemberIds]));
       const equipeNome = equipes.find((e) => e.id === selectedEquipeId)?.nome || "";
 
       const escalaData = {
@@ -346,13 +335,28 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
         await supabase.from("ministerio_escala_membros").delete().eq("escala_id", editingEscala.id);
         escalaId = editingEscala.id;
 
-        if (allSelectedIntegrantes.length > 0) {
-          const membrosData = allSelectedIntegrantes.map((intId) => ({
+        if (uniqueMemberIds.length > 0) {
+          const integranteIds = (
+            await Promise.all(uniqueMemberIds.map((memberId) => getOrCreateIntegrante(memberId)))
+          ).filter(Boolean) as string[];
+
+          const membrosData = integranteIds.map((intId) => ({
             escala_id: editingEscala.id,
             integrante_id: intId,
           }));
           const { error: membrosError } = await supabase.from("ministerio_escala_membros").insert(membrosData);
           if (membrosError) throw membrosError;
+
+          // Enviar notificação se ativado e não estiver editando
+          if (enviarNotificacao && !editingEscala && integranteIds.length > 0) {
+            await notifyMutation.mutateAsync({
+              dataCulto: format(dataCulto, "yyyy-MM-dd"),
+              tipoCulto,
+              equipeNome,
+              subTime: selectedSubTime,
+              membrosIds: integranteIds,
+            });
+          }
         }
       } else {
         const { data: newEscala, error: insertError } = await supabase
@@ -363,25 +367,29 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
         if (insertError) throw insertError;
         escalaId = newEscala.id;
 
-        if (allSelectedIntegrantes.length > 0) {
-          const membrosData = allSelectedIntegrantes.map((intId) => ({
+        if (uniqueMemberIds.length > 0) {
+          const integranteIds = (
+            await Promise.all(uniqueMemberIds.map((memberId) => getOrCreateIntegrante(memberId)))
+          ).filter(Boolean) as string[];
+
+          const membrosData = integranteIds.map((intId) => ({
             escala_id: newEscala.id,
             integrante_id: intId,
           }));
           const { error: membrosError } = await supabase.from("ministerio_escala_membros").insert(membrosData);
           if (membrosError) throw membrosError;
-        }
-      }
 
-      // Enviar notificação se ativado e não estiver editando
-      if (enviarNotificacao && !editingEscala && allSelectedIntegrantes.length > 0) {
-        await notifyMutation.mutateAsync({
-          dataCulto: format(dataCulto, "yyyy-MM-dd"),
-          tipoCulto,
-          equipeNome,
-          subTime: selectedSubTime,
-          membrosIds: allSelectedIntegrantes,
-        });
+          // Enviar notificação se ativado e não estiver editando
+          if (enviarNotificacao && !editingEscala && integranteIds.length > 0) {
+            await notifyMutation.mutateAsync({
+              dataCulto: format(dataCulto, "yyyy-MM-dd"),
+              tipoCulto,
+              equipeNome,
+              subTime: selectedSubTime,
+              membrosIds: integranteIds,
+            });
+          }
+        }
       }
 
       return escalaId;
@@ -417,8 +425,8 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setObservacoes("");
     setSelectedEquipeId("");
     setSelectedSubTime("todos");
-    setSelectedIntegrantes([]);
-    setExtraIntegrantes([]);
+    setSelectedMemberIds([]);
+    setExtraMemberIds([]);
     setEnviarNotificacao(true);
   };
 
@@ -429,87 +437,62 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setObservacoes(escala.observacoes || "");
     setSelectedEquipeId(escala.danca_equipe_id || "");
     setSelectedSubTime(escala.danca_sub_time || "todos");
-    setSelectedIntegrantes(escala.membros.map((m) => m.integrante_id));
+    setSelectedMemberIds(escala.membros.map((m) => m.integrante.member.id));
+    setExtraMemberIds([]);
     setEnviarNotificacao(false);
     setShowDialog(true);
   };
 
-  const toggleIntegrante = (id: string) => {
-    setSelectedIntegrantes((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+  const toggleMember = (memberId: string) => {
+    setSelectedMemberIds((prev) =>
+      prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId],
     );
   };
 
-  // Função para criar ou obter integrante do ministério de dança
+  // Garante que existe um integrante para o memberId (necessário para salvar em ministerio_escala_membros)
   const getOrCreateIntegrante = async (memberId: string): Promise<string | null> => {
-    // Verificar se já existe integrante
     const existingIntegrante = integrantes.find((i) => i.member.id === memberId);
-    if (existingIntegrante) {
-      return existingIntegrante.id;
-    }
+    if (existingIntegrante) return existingIntegrante.id;
 
-    // Verificar se existe uma função padrão "Dançarino(a)" para o ministério
-    let funcaoId: string | null = null;
-    const { data: funcoes } = await supabase
+    // Garantir ao menos 1 função cadastrada no ministério
+    const { data: funcoes, error: funcoesError } = await supabase
       .from("ministerio_funcoes")
       .select("id")
       .eq("ministry_id", ministryId)
       .limit(1);
+    if (funcoesError) throw funcoesError;
 
-    if (funcoes && funcoes.length > 0) {
-      funcaoId = funcoes[0].id;
-    } else {
-      // Criar função padrão "Dançarino(a)"
+    let funcaoId = funcoes?.[0]?.id ?? null;
+    if (!funcaoId) {
       const { data: novaFuncao, error: funcaoError } = await supabase
         .from("ministerio_funcoes")
         .insert({ ministry_id: ministryId, nome: "Dançarino(a)" })
         .select("id")
         .single();
-      
-      if (funcaoError || !novaFuncao) {
-        console.error("Erro ao criar função:", funcaoError);
-        return null;
-      }
+      if (funcaoError) throw funcaoError;
       funcaoId = novaFuncao.id;
     }
 
-    // Criar o integrante
     const { data: novoIntegrante, error: integranteError } = await supabase
       .from("ministerio_integrantes")
       .insert({ ministry_id: ministryId, member_id: memberId, funcao_id: funcaoId, ativo: true })
       .select("id")
       .single();
+    if (integranteError) throw integranteError;
 
-    if (integranteError || !novoIntegrante) {
-      console.error("Erro ao criar integrante:", integranteError);
-      return null;
-    }
+    // Atualizar cache de integrantes
+    queryClient.invalidateQueries({ queryKey: ["ministerio-integrantes", ministryId] });
 
-    // Refetch integrantes
-    queryClient.invalidateQueries({ queryKey: ["ministerio-integrantes-danca", ministryId] });
-    
     return novoIntegrante.id;
   };
 
-  const addExtraIntegrante = async (memberId: string, memberName: string) => {
-    // Tentar obter ou criar o integrante
-    const integranteId = await getOrCreateIntegrante(memberId);
-    
-    if (integranteId && !extraIntegrantes.includes(integranteId)) {
-      setExtraIntegrantes((prev) => [...prev, integranteId]);
-      toast.success(`${memberName} adicionado(a) como extra`);
-    } else if (!integranteId) {
-      toast.error("Erro ao adicionar membro extra");
-    }
+  const addExtraMember = (memberId: string) => {
+    setExtraMemberIds((prev) => (prev.includes(memberId) ? prev : [...prev, memberId]));
     setShowAddExtraDialog(false);
   };
 
-  const removeExtraIntegrante = (integranteId: string) => {
-    setExtraIntegrantes((prev) => prev.filter((id) => id !== integranteId));
-  };
-
-  const getIntegranteByMemberId = (memberId: string) => {
-    return integrantes.find((i) => i.member.id === memberId);
+  const removeExtraMember = (memberId: string) => {
+    setExtraMemberIds((prev) => prev.filter((id) => id !== memberId));
   };
 
   // Formatar nome da equipe para exibição
@@ -676,7 +659,6 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
               </Select>
             </div>
 
-            {/* Seleção de equipe */}
             <div className="space-y-2">
               <Label>Equipe</Label>
               <Select 
@@ -684,7 +666,8 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                 onValueChange={(value) => {
                   setSelectedEquipeId(value);
                   setSelectedSubTime("todos");
-                  setSelectedIntegrantes([]);
+                  setSelectedMemberIds([]);
+                  setExtraMemberIds([]);
                 }}
               >
                 <SelectTrigger>
@@ -743,47 +726,43 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                 </div>
               ) : (
                 <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
-                  {equipeMembros.map((em) => {
-                    const integrante = getIntegranteByMemberId(em.member.id);
-                    if (!integrante) return null;
-                    return (
-                      <div key={em.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={em.id}
-                          checked={selectedIntegrantes.includes(integrante.id)}
-                          onCheckedChange={() => toggleIntegrante(integrante.id)}
-                        />
-                        <label htmlFor={em.id} className="text-sm flex-1 cursor-pointer flex items-center gap-2">
-                          {em.member.full_name}
-                          {em.sub_time && (
-                            <Badge variant="outline" className="text-xs">
-                              {em.sub_time}
-                            </Badge>
-                          )}
-                        </label>
-                      </div>
-                    );
-                  })}
+                  {equipeMembros.map((em) => (
+                    <div key={em.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={em.id}
+                        checked={selectedMemberIds.includes(em.member.id)}
+                        onCheckedChange={() => toggleMember(em.member.id)}
+                      />
+                      <label htmlFor={em.id} className="text-sm flex-1 cursor-pointer flex items-center gap-2">
+                        {em.member.full_name}
+                        {em.sub_time && (
+                          <Badge variant="outline" className="text-xs">
+                            {em.sub_time}
+                          </Badge>
+                        )}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
             {/* Membros extras adicionados */}
-            {extraIntegrantes.length > 0 && (
+            {extraMemberIds.length > 0 && (
               <div className="space-y-2">
                 <Label>Membros Extras</Label>
                 <div className="border rounded-lg p-3 space-y-2">
-                  {extraIntegrantes.map((intId) => {
-                    const integrante = integrantes.find((i) => i.id === intId);
-                    if (!integrante) return null;
+                  {extraMemberIds.map((memberId) => {
+                    const memberName =
+                      allDancaMembers.find((m) => m.memberId === memberId)?.memberName || "Membro";
                     return (
-                      <div key={intId} className="flex items-center justify-between">
-                        <span className="text-sm">{integrante.member.full_name}</span>
+                      <div key={memberId} className="flex items-center justify-between">
+                        <span className="text-sm">{memberName}</span>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 text-destructive"
-                          onClick={() => removeExtraIntegrante(intId)}
+                          onClick={() => removeExtraMember(memberId)}
                         >
                           <Trash2 className="w-3 h-3" />
                         </Button>
@@ -854,7 +833,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                     key={`${member.memberId}-${member.equipeName}-${member.subTime || ''}-${idx}`}
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => addExtraIntegrante(member.memberId, member.memberName)}
+                    onClick={() => addExtraMember(member.memberId)}
                   >
                     <Users className="w-4 h-4 mr-2" />
                     {member.memberName}
