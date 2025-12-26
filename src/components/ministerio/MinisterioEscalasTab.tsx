@@ -268,7 +268,7 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
           </Button>
         </div>
 
-        <Button size="sm" onClick={() => setShowDialog(true)} disabled={integrantes.length === 0}>
+        <Button size="sm" onClick={() => setShowDialog(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Nova Escala
         </Button>
@@ -400,23 +400,34 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
 
             <div className="space-y-2">
               <Label>Membros Escalados</Label>
-              <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
-                {integrantes.map((int) => (
-                  <div key={int.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={int.id}
-                      checked={selectedIntegrantes.includes(int.id)}
-                      onCheckedChange={() => toggleIntegrante(int.id)}
-                    />
-                    <label htmlFor={int.id} className="text-sm flex-1 cursor-pointer">
-                      {int.member?.full_name}
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {int.funcao?.nome}
-                      </Badge>
-                    </label>
-                  </div>
-                ))}
-              </div>
+              {integrantes.length === 0 ? (
+                <div className="border rounded-lg p-4 text-center bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum integrante cadastrado neste ministério.
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Adicione integrantes na aba "Equipe" primeiro.
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  {integrantes.map((int) => (
+                    <div key={int.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={int.id}
+                        checked={selectedIntegrantes.includes(int.id)}
+                        onCheckedChange={() => toggleIntegrante(int.id)}
+                      />
+                      <label htmlFor={int.id} className="text-sm flex-1 cursor-pointer">
+                        {int.member?.full_name}
+                        <Badge variant="outline" className="ml-2 text-xs">
+                          {int.funcao?.nome}
+                        </Badge>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
