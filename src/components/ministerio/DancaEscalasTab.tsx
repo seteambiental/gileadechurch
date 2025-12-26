@@ -31,8 +31,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users, UserPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users, UserPlus, Send } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -79,6 +80,12 @@ interface Escala {
   data_culto: string;
   tipo_culto: string;
   observacoes: string | null;
+  danca_equipe_id: string | null;
+  danca_sub_time: string | null;
+  danca_equipe?: {
+    id: string;
+    nome: string;
+  } | null;
   membros: EscalaMembro[];
 }
 
@@ -106,6 +113,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
   const [selectedSubTime, setSelectedSubTime] = useState<string>("todos");
   const [selectedIntegrantes, setSelectedIntegrantes] = useState<string[]>([]);
   const [extraIntegrantes, setExtraIntegrantes] = useState<string[]>([]);
+  const [enviarNotificacao, setEnviarNotificacao] = useState(true);
 
   // Fetch equipes de dança
   const { data: equipes = [] } = useQuery({
@@ -146,22 +154,9 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     },
   });
 
-  // Fetch todos os membros (para adicionar pessoas fora do ministério)
-  const { data: allMembers = [] } = useQuery({
-    queryKey: ["all-members"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("members")
-        .select("id, full_name")
-        .order("full_name");
-      if (error) throw error;
-      return data;
-    },
-  });
-
   // Fetch escalas do mês
   const { data: escalas = [], isLoading } = useQuery({
-    queryKey: ["ministerio-escalas", ministryId, format(currentMonth, "yyyy-MM")],
+    queryKey: ["ministerio-escalas-danca", ministryId, format(currentMonth, "yyyy-MM")],
     queryFn: async () => {
       const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
@@ -173,6 +168,9 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
           data_culto,
           tipo_culto,
           observacoes,
+          danca_equipe_id,
+          danca_sub_time,
+          danca_equipe:danca_equipes(id, nome),
           membros:ministerio_escala_membros(
             id,
             integrante_id,
@@ -200,7 +198,6 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
 
     let membros = equipe.membros || [];
     
-    // Filtrar por sub-time se selecionado e não for "todos"
     if (selectedSubTime && selectedSubTime !== "todos") {
       membros = membros.filter((m) => m.sub_time === selectedSubTime);
     }
@@ -221,20 +218,6 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     });
     return Array.from(subTimes).sort();
   }, [hasSubTimes, selectedEquipe]);
-
-  // Membros disponíveis para adicionar como extras (não estão na equipe selecionada)
-  const availableExtras = useMemo(() => {
-    const equipesMemberIds = new Set(equipeMembros.map((m) => m.member.id));
-    const selectedMemberIds = new Set(
-      integrantes
-        .filter((i) => selectedIntegrantes.includes(i.id))
-        .map((i) => i.member.id)
-    );
-
-    return allMembers.filter(
-      (m) => !equipesMemberIds.has(m.id) && !selectedMemberIds.has(m.id)
-    );
-  }, [equipeMembros, selectedIntegrantes, integrantes, allMembers]);
 
   // Agrupar escalas por data
   const escalasByDate = useMemo(() => {
@@ -259,19 +242,50 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setSelectedIntegrantes(integranteIds);
   };
 
+  // Mutation para enviar notificação WhatsApp
+  const notifyMutation = useMutation({
+    mutationFn: async (params: {
+      dataCulto: string;
+      tipoCulto: string;
+      equipeNome: string;
+      subTime: string;
+      membrosIds: string[];
+    }) => {
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: {
+          action: "notificar_escala_danca",
+          ...params,
+        },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Notificações enviadas para ${data.enviados} pessoas`);
+    },
+    onError: () => {
+      toast.error("Erro ao enviar notificações");
+    },
+  });
+
   // Mutation para salvar escala
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!dataCulto) throw new Error("Data é obrigatória");
 
       const allSelectedIntegrantes = [...selectedIntegrantes, ...extraIntegrantes];
+      const equipeNome = equipes.find((e) => e.id === selectedEquipeId)?.nome || "";
 
       const escalaData = {
         ministry_id: ministryId,
         data_culto: format(dataCulto, "yyyy-MM-dd"),
         tipo_culto: tipoCulto,
         observacoes: observacoes || null,
+        danca_equipe_id: selectedEquipeId || null,
+        danca_sub_time: selectedSubTime !== "todos" ? selectedSubTime : null,
       };
+
+      let escalaId: string;
 
       if (editingEscala) {
         const { error: updateError } = await supabase
@@ -281,6 +295,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
         if (updateError) throw updateError;
 
         await supabase.from("ministerio_escala_membros").delete().eq("escala_id", editingEscala.id);
+        escalaId = editingEscala.id;
 
         if (allSelectedIntegrantes.length > 0) {
           const membrosData = allSelectedIntegrantes.map((intId) => ({
@@ -297,6 +312,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
           .select("id")
           .single();
         if (insertError) throw insertError;
+        escalaId = newEscala.id;
 
         if (allSelectedIntegrantes.length > 0) {
           const membrosData = allSelectedIntegrantes.map((intId) => ({
@@ -307,9 +323,22 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
           if (membrosError) throw membrosError;
         }
       }
+
+      // Enviar notificação se ativado e não estiver editando
+      if (enviarNotificacao && !editingEscala && allSelectedIntegrantes.length > 0) {
+        await notifyMutation.mutateAsync({
+          dataCulto: format(dataCulto, "yyyy-MM-dd"),
+          tipoCulto,
+          equipeNome,
+          subTime: selectedSubTime,
+          membrosIds: allSelectedIntegrantes,
+        });
+      }
+
+      return escalaId;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas", ministryId] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-danca", ministryId] });
       toast.success(editingEscala ? "Escala atualizada!" : "Escala criada!");
       resetForm();
     },
@@ -323,7 +352,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas", ministryId] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-danca", ministryId] });
       toast.success("Escala removida!");
       setEscalaToDelete(null);
       setShowDeleteDialog(false);
@@ -341,6 +370,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setSelectedSubTime("todos");
     setSelectedIntegrantes([]);
     setExtraIntegrantes([]);
+    setEnviarNotificacao(true);
   };
 
   const handleEdit = (escala: Escala) => {
@@ -348,7 +378,10 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setDataCulto(parseISO(escala.data_culto));
     setTipoCulto(escala.tipo_culto);
     setObservacoes(escala.observacoes || "");
+    setSelectedEquipeId(escala.danca_equipe_id || "");
+    setSelectedSubTime(escala.danca_sub_time || "todos");
     setSelectedIntegrantes(escala.membros.map((m) => m.integrante_id));
+    setEnviarNotificacao(false);
     setShowDialog(true);
   };
 
@@ -369,9 +402,18 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     setExtraIntegrantes((prev) => prev.filter((id) => id !== integranteId));
   };
 
-  // Mapear member_id para integrante
   const getIntegranteByMemberId = (memberId: string) => {
     return integrantes.find((i) => i.member.id === memberId);
+  };
+
+  // Formatar nome da equipe para exibição
+  const formatEquipeNome = (escala: Escala) => {
+    if (!escala.danca_equipe) return null;
+    const nome = escala.danca_equipe.nome;
+    if (escala.danca_sub_time) {
+      return `${nome} - ${escala.danca_sub_time}`;
+    }
+    return nome;
   };
 
   return (
@@ -428,53 +470,59 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {dateEscalas.map((escala) => (
-                    <div key={escala.id} className="bg-muted/30 rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant="outline">
-                          {TIPOS_CULTO.find((t) => t.value === escala.tipo_culto)?.label || escala.tipo_culto}
-                        </Badge>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(escala)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive"
-                            onClick={() => {
-                              setEscalaToDelete(escala.id);
-                              setShowDeleteDialog(true);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                  {dateEscalas.map((escala) => {
+                    const equipeNome = formatEquipeNome(escala);
+                    return (
+                      <div key={escala.id} className="bg-muted/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline">
+                              {TIPOS_CULTO.find((t) => t.value === escala.tipo_culto)?.label || escala.tipo_culto}
+                            </Badge>
+                            {equipeNome && (
+                              <Badge variant="secondary" className="flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                {equipeNome}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(escala)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive"
+                              onClick={() => {
+                                setEscalaToDelete(escala.id);
+                                setShowDeleteDialog(true);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
+
+                        {escala.membros.length > 0 ? (
+                          <div className="flex flex-wrap gap-2">
+                            {escala.membros.map((m) => (
+                              <div key={m.id} className="flex items-center gap-1 text-sm bg-background rounded px-2 py-1">
+                                <Users className="w-3 h-3 text-muted-foreground" />
+                                <span>{m.integrante?.member?.full_name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Nenhum membro escalado</p>
+                        )}
+
+                        {escala.observacoes && (
+                          <p className="text-xs text-muted-foreground mt-2 italic">{escala.observacoes}</p>
+                        )}
                       </div>
-
-                      {escala.membros.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {escala.membros.map((m) => (
-                            <div key={m.id} className="flex items-center gap-1 text-sm bg-background rounded px-2 py-1">
-                              <Users className="w-3 h-3 text-muted-foreground" />
-                              <span>{m.integrante?.member?.full_name}</span>
-                              {m.integrante?.funcao?.nome && (
-                                <Badge variant="secondary" className="text-xs ml-1">
-                                  {m.integrante?.funcao?.nome}
-                                </Badge>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Nenhum membro escalado</p>
-                      )}
-
-                      {escala.observacoes && (
-                        <p className="text-xs text-muted-foreground mt-2 italic">{escala.observacoes}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </CardContent>
               </Card>
             ))}
@@ -660,6 +708,20 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                 rows={2}
               />
             </div>
+
+            {/* Opção de enviar notificação (apenas para nova escala) */}
+            {!editingEscala && (
+              <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Send className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">Enviar notificação WhatsApp</span>
+                </div>
+                <Switch
+                  checked={enviarNotificacao}
+                  onCheckedChange={setEnviarNotificacao}
+                />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={resetForm}>

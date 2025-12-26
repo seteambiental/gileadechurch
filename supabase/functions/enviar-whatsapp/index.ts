@@ -702,6 +702,74 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'notificar_escala_danca') {
+      const { escalaId, dataCulto, tipoCulto, equipeNome, subTime, membrosIds } = body;
+      
+      console.log(`Notificando escala de dança para membros:`, membrosIds);
+
+      // Buscar membros escalados
+      const { data: membrosEscalados, error: membrosError } = await supabase
+        .from('ministerio_integrantes')
+        .select(`
+          id,
+          member:members(id, full_name, whatsapp)
+        `)
+        .in('id', membrosIds);
+
+      if (membrosError) {
+        console.error('Erro ao buscar membros:', membrosError);
+        throw new Error('Erro ao buscar membros');
+      }
+
+      // Formatar data
+      const dataFormatada = new Date(dataCulto).toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      });
+
+      const tipoCultoMap: Record<string, string> = {
+        domingo: 'Domingo',
+        quarta: 'Quarta-feira',
+        sabado: 'Sábado',
+        especial: 'Evento Especial'
+      };
+
+      // Montar nome da equipe com sub-time
+      const nomeEquipeCompleto = subTime && subTime !== 'todos' 
+        ? `${equipeNome} - ${subTime}` 
+        : equipeNome;
+
+      const mensagem = `💃 *ESCALA DE DANÇA*\n\n📅 *${dataFormatada}*\nCulto: ${tipoCultoMap[tipoCulto] || tipoCulto}\n\n👯 *Equipe:* ${nomeEquipeCompleto}\n\nVocê foi escalado(a) para dançar nesse dia! Prepare-se! 🙏\n\n_Ministério de Dança - Igreja Gileade_ 💙`;
+
+      let enviados = 0;
+      let erros = 0;
+
+      for (const integrante of membrosEscalados || []) {
+        const membro = integrante.member as any;
+        if (membro?.whatsapp) {
+          try {
+            await enviarMensagemZAPI(membro.whatsapp, mensagem);
+            enviados++;
+            console.log(`Notificação enviada para ${membro.full_name}`);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          } catch (err) {
+            console.error(`Erro ao enviar para ${membro.full_name}:`, err);
+            erros++;
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Notificações enviadas para ${enviados} pessoas. ${erros > 0 ? `${erros} falhas.` : ''}`,
+        enviados,
+        erros
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {

@@ -1110,6 +1110,8 @@ export type Database = {
       ministerio_escalas: {
         Row: {
           created_at: string
+          danca_equipe_id: string | null
+          danca_sub_time: string | null
           data_culto: string
           id: string
           ministry_id: string
@@ -1119,6 +1121,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          danca_equipe_id?: string | null
+          danca_sub_time?: string | null
           data_culto: string
           id?: string
           ministry_id: string
@@ -1128,6 +1132,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          danca_equipe_id?: string | null
+          danca_sub_time?: string | null
           data_culto?: string
           id?: string
           ministry_id?: string
@@ -1136,6 +1142,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ministerio_escalas_danca_equipe_id_fkey"
+            columns: ["danca_equipe_id"]
+            isOneToOne: false
+            referencedRelation: "danca_equipes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ministerio_escalas_ministry_id_fkey"
             columns: ["ministry_id"]
