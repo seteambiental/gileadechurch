@@ -807,6 +807,7 @@ export type Database = {
           id: string
           member_id: string
           ministry_id: string | null
+          subfuncao: string | null
         }
         Insert: {
           casa_refugio_id?: string | null
@@ -816,6 +817,7 @@ export type Database = {
           id?: string
           member_id: string
           ministry_id?: string | null
+          subfuncao?: string | null
         }
         Update: {
           casa_refugio_id?: string | null
@@ -825,6 +827,7 @@ export type Database = {
           id?: string
           member_id?: string
           ministry_id?: string | null
+          subfuncao?: string | null
         }
         Relationships: [
           {

@@ -252,6 +252,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             ministry_id: f.ministry_id,
             casa_refugio_id: f.casa_refugio_id,
             condominio_id: f.condominio_id,
+            subfuncao: f.subfuncao,
           })));
         }
       } else {
@@ -362,6 +363,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           ministry_id: f.ministry_id || null,
           casa_refugio_id: f.casa_refugio_id || null,
           condominio_id: f.condominio_id || null,
+          subfuncao: f.subfuncao || null,
         }));
 
         const { error: funcError } = await supabase
