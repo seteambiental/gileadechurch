@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -21,8 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, UserCheck } from "lucide-react";
+import { Plus, Trash2, UserCheck, Filter } from "lucide-react";
 
 interface TurmaConfig {
   id: string;
@@ -50,6 +49,10 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
   const [selectedMember, setSelectedMember] = useState("");
   const [selectedTurma, setSelectedTurma] = useState("");
   const [selectedFuncao, setSelectedFuncao] = useState("professor");
+  
+  // Filtros
+  const [filterTurma, setFilterTurma] = useState<string>("todas");
+  const [filterFuncao, setFilterFuncao] = useState<string>("todas");
 
   // Buscar líderes
   const { data: lideres, isLoading } = useQuery({
@@ -83,6 +86,17 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     },
   });
 
+  // Filtrar líderes
+  const filteredLideres = useMemo(() => {
+    if (!lideres) return [];
+    
+    return lideres.filter((lider) => {
+      const matchTurma = filterTurma === "todas" || lider.turma === filterTurma;
+      const matchFuncao = filterFuncao === "todas" || lider.funcao === filterFuncao;
+      return matchTurma && matchFuncao;
+    });
+  }, [lideres, filterTurma, filterFuncao]);
+
   // Adicionar líder
   const addLider = useMutation({
     mutationFn: async () => {
@@ -94,7 +108,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Líder adicionado com sucesso!" });
+      toast({ title: "Membro adicionado com sucesso!" });
       queryClient.invalidateQueries({ queryKey: ["kids-lideres"] });
       setIsDialogOpen(false);
       setSelectedMember("");
@@ -122,7 +136,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: "Líder removido" });
+      toast({ title: "Membro removido" });
       queryClient.invalidateQueries({ queryKey: ["kids-lideres"] });
     },
     onError: (error: any) => {
@@ -132,7 +146,59 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
+      {/* Filtros */}
+      <Card className="bg-muted/30">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros:</span>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Turma</Label>
+                <Select value={filterTurma} onValueChange={setFilterTurma}>
+                  <SelectTrigger className="w-[160px] h-9 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as turmas</SelectItem>
+                    {turmasConfig.map((t) => (
+                      <SelectItem key={t.turma} value={t.turma}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: t.cor_hex }} 
+                          />
+                          {t.nome_exibicao}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Função</Label>
+                <Select value={filterFuncao} onValueChange={setFilterFuncao}>
+                  <SelectTrigger className="w-[160px] h-9 bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as funções</SelectItem>
+                    {FUNCOES.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Header com botão */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -227,17 +293,17 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center justify-between">
             <span>Membros da Equipe</span>
-            <Badge variant="secondary">{lideres?.length || 0} pessoas</Badge>
+            <Badge variant="secondary">{filteredLideres.length} de {lideres?.length || 0} pessoas</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!lideres?.length ? (
+          {!filteredLideres.length ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhum membro cadastrado na equipe
+              {lideres?.length ? "Nenhum membro encontrado com os filtros selecionados" : "Nenhum membro cadastrado na equipe"}
             </p>
           ) : (
             <div className="space-y-2">
-              {lideres?.map((lider) => {
+              {filteredLideres.map((lider) => {
                 const turmaConfig = turmasConfig.find(t => t.turma === lider.turma);
                 return (
                   <div 
