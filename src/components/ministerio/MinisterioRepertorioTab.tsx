@@ -11,8 +11,8 @@ import {
   Video, 
   Trash2, 
   Edit2,
-  GripVertical,
-  ExternalLink
+  X,
+  Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
 interface MinisterioRepertorioTabProps {
@@ -68,12 +69,27 @@ interface Escala {
   tipo_culto: string;
 }
 
+interface MusicaForm {
+  titulo: string;
+  artista: string;
+  tom: string;
+  video_url: string;
+  observacoes: string;
+}
+
 const TONS = [
   "C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B",
   "Cm", "C#m", "Dbm", "Dm", "D#m", "Ebm", "Em", "Fm", "F#m", "Gbm", "Gm", "G#m", "Abm", "Am", "A#m", "Bbm", "Bm"
 ];
 
-const TIPOS_CULTO: Record<string, string> = {
+const TIPOS_CULTO = [
+  { value: "domingo", label: "Domingo" },
+  { value: "quarta", label: "Quarta-feira" },
+  { value: "especial", label: "Especial" },
+  { value: "evento", label: "Evento" },
+];
+
+const TIPOS_CULTO_MAP: Record<string, string> = {
   domingo: "Domingo",
   quarta: "Quarta-feira",
   especial: "Especial",
@@ -83,17 +99,28 @@ const TIPOS_CULTO: Record<string, string> = {
 export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showMusicDialog, setShowMusicDialog] = useState(false);
+  const [showNewEscalaDialog, setShowNewEscalaDialog] = useState(false);
   const [selectedEscala, setSelectedEscala] = useState<Escala | null>(null);
   const [editingMusica, setEditingMusica] = useState<Musica | null>(null);
   const [deleteMusica, setDeleteMusica] = useState<Musica | null>(null);
   
-  const [musicaForm, setMusicaForm] = useState({
+  // Form para editar música individual
+  const [musicaForm, setMusicaForm] = useState<MusicaForm>({
     titulo: "",
     artista: "",
     tom: "",
     video_url: "",
     observacoes: "",
   });
+
+  // Form para nova escala com múltiplas músicas
+  const [novaEscalaForm, setNovaEscalaForm] = useState({
+    data_culto: "",
+    tipo_culto: "domingo",
+  });
+  const [novasMusicasForm, setNovasMusicasForm] = useState<MusicaForm[]>([
+    { titulo: "", artista: "", tom: "", video_url: "", observacoes: "" }
+  ]);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -203,6 +230,55 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     },
   });
 
+  // Mutation para criar nova escala com músicas
+  const createEscalaMutation = useMutation({
+    mutationFn: async () => {
+      // Criar a escala
+      const { data: escala, error: escalaError } = await supabase
+        .from("ministerio_escalas")
+        .insert({
+          ministry_id: ministryId,
+          data_culto: novaEscalaForm.data_culto,
+          tipo_culto: novaEscalaForm.tipo_culto,
+        })
+        .select()
+        .single();
+
+      if (escalaError) throw escalaError;
+
+      // Inserir as músicas (somente as que têm título)
+      const musicasValidas = novasMusicasForm.filter(m => m.titulo.trim());
+      if (musicasValidas.length > 0) {
+        const musicasToInsert = musicasValidas.map((m, index) => ({
+          escala_id: escala.id,
+          ministry_id: ministryId,
+          titulo: m.titulo,
+          artista: m.artista || null,
+          tom: m.tom || null,
+          video_url: m.video_url || null,
+          observacoes: m.observacoes || null,
+          ordem: index + 1,
+        }));
+
+        const { error: musicasError } = await supabase
+          .from("ministerio_repertorio")
+          .insert(musicasToInsert);
+
+        if (musicasError) throw musicasError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-repertorio"] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-repertorio"] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas"] });
+      toast({ title: "Escala criada com sucesso!" });
+      resetNovaEscalaForm();
+    },
+    onError: (error) => {
+      toast({ title: "Erro ao criar escala", description: String(error), variant: "destructive" });
+    },
+  });
+
   const resetForm = () => {
     setShowMusicDialog(false);
     setSelectedEscala(null);
@@ -214,6 +290,28 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
       video_url: "",
       observacoes: "",
     });
+  };
+
+  const resetNovaEscalaForm = () => {
+    setShowNewEscalaDialog(false);
+    setNovaEscalaForm({ data_culto: "", tipo_culto: "domingo" });
+    setNovasMusicasForm([{ titulo: "", artista: "", tom: "", video_url: "", observacoes: "" }]);
+  };
+
+  const addNovaMusicaField = () => {
+    setNovasMusicasForm([...novasMusicasForm, { titulo: "", artista: "", tom: "", video_url: "", observacoes: "" }]);
+  };
+
+  const removeNovaMusicaField = (index: number) => {
+    if (novasMusicasForm.length > 1) {
+      setNovasMusicasForm(novasMusicasForm.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateNovaMusicaField = (index: number, field: keyof MusicaForm, value: string) => {
+    const updated = [...novasMusicasForm];
+    updated[index] = { ...updated[index], [field]: value };
+    setNovasMusicasForm(updated);
   };
 
   const handleAddMusica = (escala: Escala) => {
@@ -249,26 +347,32 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
 
   return (
     <div className="space-y-6">
-      {/* Header com navegação de mês */}
-      <div className="flex items-center justify-between">
+      {/* Header com navegação de mês e botão nova escala */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-lg font-semibold text-foreground">Repertório</h2>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[140px] text-center">
-            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          >
-            <ChevronRight className="w-4 h-4" />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <span className="text-sm font-medium min-w-[140px] text-center">
+              {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+          <Button onClick={() => setShowNewEscalaDialog(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Incluir Escala
           </Button>
         </div>
       </div>
@@ -279,7 +383,14 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
           <CardContent className="py-8 text-center text-muted-foreground">
             <Music className="w-12 h-12 mx-auto mb-4 opacity-50" />
             <p>Nenhuma escala cadastrada para este mês.</p>
-            <p className="text-sm mt-1">Crie escalas na aba "Escalas" para adicionar repertório.</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => setShowNewEscalaDialog(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Criar primeira escala
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -297,7 +408,7 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
                         {dataFormatada}
                       </CardTitle>
                       <Badge variant="outline" className="text-xs">
-                        {TIPOS_CULTO[escala.tipo_culto] || escala.tipo_culto}
+                        {TIPOS_CULTO_MAP[escala.tipo_culto] || escala.tipo_culto}
                       </Badge>
                     </div>
                     <Button
@@ -467,6 +578,165 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
               disabled={!musicaForm.titulo || saveMutation.isPending}
             >
               {saveMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para criar nova escala com músicas */}
+      <Dialog open={showNewEscalaDialog} onOpenChange={(open) => !open && resetNovaEscalaForm()}>
+        <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Incluir Escala
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[calc(90vh-180px)] pr-4">
+            <div className="space-y-6 py-4">
+              {/* Dados da escala */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Data da Escala *</Label>
+                  <Input
+                    type="date"
+                    value={novaEscalaForm.data_culto}
+                    onChange={(e) => setNovaEscalaForm({ ...novaEscalaForm, data_culto: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Tipo de Culto</Label>
+                  <Select
+                    value={novaEscalaForm.tipo_culto}
+                    onValueChange={(v) => setNovaEscalaForm({ ...novaEscalaForm, tipo_culto: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TIPOS_CULTO.map((tipo) => (
+                        <SelectItem key={tipo.value} value={tipo.value}>
+                          {tipo.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Lista de músicas */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label className="text-base font-semibold">Músicas</Label>
+                </div>
+
+                {novasMusicasForm.map((musica, index) => (
+                  <Card key={index} className="bg-muted/30 border-border">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Música {index + 1}
+                        </span>
+                        {novasMusicasForm.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => removeNovaMusicaField(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Nome da Música *</Label>
+                          <Input
+                            value={musica.titulo}
+                            onChange={(e) => updateNovaMusicaField(index, "titulo", e.target.value)}
+                            placeholder="Ex: Lugar Secreto"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Artista/Banda</Label>
+                          <Input
+                            value={musica.artista}
+                            onChange={(e) => updateNovaMusicaField(index, "artista", e.target.value)}
+                            placeholder="Ex: Gabriela Rocha"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Tom</Label>
+                          <Select
+                            value={musica.tom}
+                            onValueChange={(v) => updateNovaMusicaField(index, "tom", v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {TONS.map((tom) => (
+                                <SelectItem key={tom} value={tom}>
+                                  {tom}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Link do Vídeo (YouTube)</Label>
+                          <Input
+                            value={musica.video_url}
+                            onChange={(e) => updateNovaMusicaField(index, "video_url", e.target.value)}
+                            placeholder="https://youtube.com/..."
+                          />
+                        </div>
+                      </div>
+
+                      {musica.video_url && extractVideoId(musica.video_url) && (
+                        <div className="rounded-lg overflow-hidden aspect-video">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${extractVideoId(musica.video_url)}`}
+                            className="w-full h-full"
+                            allowFullScreen
+                            title={`Preview - ${musica.titulo || 'Vídeo'}`}
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={addNovaMusicaField}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar mais música
+                </Button>
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={resetNovaEscalaForm}>
+              Fechar
+            </Button>
+            <Button
+              onClick={() => createEscalaMutation.mutate()}
+              disabled={
+                !novaEscalaForm.data_culto || 
+                !novasMusicasForm.some(m => m.titulo.trim()) ||
+                createEscalaMutation.isPending
+              }
+            >
+              {createEscalaMutation.isPending ? "Salvando..." : "Salvar"}
             </Button>
           </DialogFooter>
         </DialogContent>
