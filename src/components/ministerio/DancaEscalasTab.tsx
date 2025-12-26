@@ -704,14 +704,7 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
             )}
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Membros Escalados</Label>
-                {selectedEquipeId && equipeMembros.length > 0 && (
-                  <Button variant="link" size="sm" className="h-auto p-0" onClick={selectAllEquipeMembros}>
-                    Selecionar todos
-                  </Button>
-                )}
-              </div>
+              <Label>Membros Escalados</Label>
               {!selectedEquipeId ? (
                 <div className="border rounded-lg p-4 text-center bg-muted/30">
                   <p className="text-sm text-muted-foreground">
@@ -725,22 +718,16 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
                   </p>
                 </div>
               ) : (
-                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-1">
                   {equipeMembros.map((em) => (
-                    <div key={em.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={em.id}
-                        checked={selectedMemberIds.includes(em.member.id)}
-                        onCheckedChange={() => toggleMember(em.member.id)}
-                      />
-                      <label htmlFor={em.id} className="text-sm flex-1 cursor-pointer flex items-center gap-2">
-                        {em.member.full_name}
-                        {em.sub_time && (
-                          <Badge variant="outline" className="text-xs">
-                            {em.sub_time}
-                          </Badge>
-                        )}
-                      </label>
+                    <div key={em.id} className="flex items-center gap-2 py-1">
+                      <Users className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-sm">{em.member.full_name}</span>
+                      {em.sub_time && (
+                        <Badge variant="outline" className="text-xs">
+                          {em.sub_time}
+                        </Badge>
+                      )}
                     </div>
                   ))}
                 </div>
