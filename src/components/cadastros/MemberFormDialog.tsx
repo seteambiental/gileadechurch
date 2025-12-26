@@ -52,6 +52,76 @@ const ROLE_TYPES = [
   { value: "ministerial", label: "Ministerial", description: "Acesso ao ministério vinculado" },
 ] as const;
 
+// Funções específicas por ministério (baseado no nome do ministério)
+const MINISTRY_SPECIFIC_FUNCTIONS: Record<string, { value: string; label: string }[]> = {
+  "louvor": [
+    { value: "vocal", label: "Vocal" },
+    { value: "backing_vocal", label: "Backing Vocal" },
+    { value: "violao", label: "Violão" },
+    { value: "guitarra", label: "Guitarra" },
+    { value: "baixo", label: "Baixo" },
+    { value: "bateria", label: "Bateria" },
+    { value: "teclado", label: "Teclado" },
+    { value: "percussao", label: "Percussão" },
+    { value: "saxofone", label: "Saxofone" },
+    { value: "trompete", label: "Trompete" },
+  ],
+  "infantil": [
+    { value: "lider", label: "Líder" },
+    { value: "professor", label: "Professor" },
+    { value: "auxiliar", label: "Auxiliar" },
+  ],
+  "kids": [
+    { value: "lider", label: "Líder" },
+    { value: "professor", label: "Professor" },
+    { value: "auxiliar", label: "Auxiliar" },
+  ],
+  "mídia": [
+    { value: "audio", label: "Áudio" },
+    { value: "video", label: "Vídeo" },
+    { value: "redes_sociais", label: "Redes Sociais" },
+  ],
+  "midia": [
+    { value: "audio", label: "Áudio" },
+    { value: "video", label: "Vídeo" },
+    { value: "redes_sociais", label: "Redes Sociais" },
+  ],
+  "casa refúgio": [
+    { value: "lider", label: "Líder" },
+    { value: "colider", label: "Co-líder" },
+    { value: "secretario", label: "Secretário" },
+  ],
+  "ensino": [
+    { value: "professor", label: "Professor" },
+    { value: "midia", label: "Mídia" },
+  ],
+  "jovens": [
+    { value: "lider", label: "Líder" },
+    { value: "colider", label: "Co-líder" },
+  ],
+  "impacto": [
+    { value: "ministrador", label: "Ministrador" },
+    { value: "apoio", label: "Apoio" },
+  ],
+  "dança": [
+    { value: "lider", label: "Líder" },
+    { value: "dançarino", label: "Dançarino(a)" },
+  ],
+};
+
+// Função para encontrar funções específicas pelo nome do ministério
+const getMinistrySpecificFunctions = (ministryName: string | undefined) => {
+  if (!ministryName) return null;
+  const normalizedName = ministryName.toLowerCase().trim();
+  
+  for (const [key, functions] of Object.entries(MINISTRY_SPECIFIC_FUNCTIONS)) {
+    if (normalizedName.includes(key)) {
+      return functions;
+    }
+  }
+  return null;
+};
+
 type FunctionType = typeof FUNCTION_TYPES[number]["value"];
 
 interface MemberFunction {
@@ -60,6 +130,7 @@ interface MemberFunction {
   ministry_id?: string | null;
   casa_refugio_id?: string | null;
   condominio_id?: string | null;
+  subfuncao?: string | null;
 }
 
 const formSchema = z.object({
@@ -716,6 +787,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
                 {memberFunctions.map((func, index) => {
                   const relatedOptions = getFunctionRelatedOptions(func.function_type);
+                  const selectedMinistry = ministries.find(m => m.id === func.ministry_id);
+                  const specificFunctions = getMinistrySpecificFunctions(selectedMinistry?.name);
+                  
                   return (
                     <div key={index} className="flex gap-2 items-start p-4 rounded-lg bg-background border border-border">
                       <div className="flex-1 grid gap-2 sm:grid-cols-2">
@@ -746,7 +820,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                             }
                             onValueChange={(value) => {
                               if (relatedOptions.type === "ministry") {
-                                updateFunction(index, { ministry_id: value });
+                                updateFunction(index, { ministry_id: value, subfuncao: null });
                               } else if (relatedOptions.type === "casa_refugio") {
                                 updateFunction(index, { casa_refugio_id: value });
                               } else {
@@ -764,6 +838,25 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                               {relatedOptions.options.map((opt) => (
                                 <SelectItem key={opt.id} value={opt.id}>
                                   {opt.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+
+                        {/* Subfunção específica do ministério */}
+                        {specificFunctions && func.ministry_id && (
+                          <Select
+                            value={func.subfuncao || ""}
+                            onValueChange={(value) => updateFunction(index, { subfuncao: value })}
+                          >
+                            <SelectTrigger className="bg-card sm:col-span-2">
+                              <SelectValue placeholder="Selecione a função no ministério" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-card border-border z-50">
+                              {specificFunctions.map((sf) => (
+                                <SelectItem key={sf.value} value={sf.value}>
+                                  {sf.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>
