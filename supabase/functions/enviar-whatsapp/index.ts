@@ -537,6 +537,171 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'notificar_escala_compartilhada') {
+      const { escalaId, ministeriosDestino, ministerioOrigem } = body;
+      
+      console.log(`Notificando escala ${escalaId} para ministérios:`, ministeriosDestino);
+
+      // Buscar dados da escala
+      const { data: escala, error: escalaError } = await supabase
+        .from('ministerio_escalas')
+        .select('id, data_culto, tipo_culto, ministry_id')
+        .eq('id', escalaId)
+        .single();
+
+      if (escalaError || !escala) {
+        throw new Error('Escala não encontrada');
+      }
+
+      // Buscar músicas da escala
+      const { data: musicas, error: musicasError } = await supabase
+        .from('ministerio_repertorio')
+        .select('titulo, artista, tom')
+        .eq('escala_id', escalaId)
+        .order('ordem');
+
+      if (musicasError) {
+        throw new Error('Erro ao buscar músicas');
+      }
+
+      // Formatar data
+      const dataFormatada = new Date(escala.data_culto).toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      });
+
+      const tipoCultoMap: Record<string, string> = {
+        domingo: 'Domingo',
+        quarta: 'Quarta-feira',
+        especial: 'Especial',
+        evento: 'Evento'
+      };
+
+      // Montar lista de músicas
+      let listaMusicas = '';
+      musicas?.forEach((m, i) => {
+        listaMusicas += `${i + 1}. *${m.titulo}*`;
+        if (m.artista) listaMusicas += ` - ${m.artista}`;
+        if (m.tom) listaMusicas += ` (Tom: ${m.tom})`;
+        listaMusicas += '\n';
+      });
+
+      // Buscar integrantes do ministério de louvor para notificar
+      const { data: integrantesLouvor, error: integrantesError } = await supabase
+        .from('ministerio_integrantes')
+        .select(`
+          id,
+          member_id,
+          members:member_id (full_name, whatsapp)
+        `)
+        .eq('ministry_id', escala.ministry_id)
+        .eq('ativo', true);
+
+      if (integrantesError) {
+        console.error('Erro ao buscar integrantes do louvor:', integrantesError);
+      }
+
+      // Buscar líderes dos ministérios de destino (Dança e Mídia)
+      const { data: lideresMiniDest } = await supabase
+        .from('member_functions')
+        .select(`
+          id,
+          member_id,
+          ministry_id,
+          members:member_id (full_name, whatsapp)
+        `)
+        .in('ministry_id', ministeriosDestino)
+        .eq('function_type', 'lider_ministerio');
+
+      // Também buscar integrantes dos ministérios de destino
+      const { data: integrantesDestino } = await supabase
+        .from('ministerio_integrantes')
+        .select(`
+          id,
+          member_id,
+          members:member_id (full_name, whatsapp)
+        `)
+        .in('ministry_id', ministeriosDestino)
+        .eq('ativo', true);
+
+      // Mensagem para equipe de louvor
+      const mensagemLouvor = `🎵 *REPERTÓRIO DO CULTO*\n\n📅 *${dataFormatada}*\nCulto: ${tipoCultoMap[escala.tipo_culto] || escala.tipo_culto}\n\n🎶 *Músicas:*\n${listaMusicas}\nBons ensaios! 🙏\n\n_${ministerioOrigem || 'Ministério de Louvor'}_ 💙`;
+
+      // Mensagem para Dança e Mídia
+      const mensagemOutros = `📢 *REPERTÓRIO COMPARTILHADO*\n\nO Ministério de Louvor compartilhou o repertório para:\n\n📅 *${dataFormatada}*\nCulto: ${tipoCultoMap[escala.tipo_culto] || escala.tipo_culto}\n\n🎶 *Músicas:*\n${listaMusicas}\nPreparem-se! 🙏\n\n_Igreja Gileade_ 💙`;
+
+      let enviados = 0;
+      let erros = 0;
+      const telefonesEnviados = new Set<string>();
+
+      // Enviar para integrantes do louvor
+      if (integrantesLouvor) {
+        for (const integrante of integrantesLouvor) {
+          const membro = integrante.members as any;
+          if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
+            try {
+              await enviarMensagemZAPI(membro.whatsapp, mensagemLouvor);
+              telefonesEnviados.add(membro.whatsapp);
+              enviados++;
+              console.log(`Enviado para ${membro.full_name} (Louvor)`);
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            } catch (err) {
+              console.error(`Erro ao enviar para ${membro.full_name}:`, err);
+              erros++;
+            }
+          }
+        }
+      }
+
+      // Enviar para líderes dos ministérios de destino
+      if (lideresMiniDest) {
+        for (const lider of lideresMiniDest) {
+          const membro = lider.members as any;
+          if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
+            try {
+              await enviarMensagemZAPI(membro.whatsapp, mensagemOutros);
+              telefonesEnviados.add(membro.whatsapp);
+              enviados++;
+              console.log(`Enviado para ${membro.full_name} (Líder)`);
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            } catch (err) {
+              console.error(`Erro ao enviar para ${membro.full_name}:`, err);
+              erros++;
+            }
+          }
+        }
+      }
+
+      // Enviar para integrantes dos ministérios de destino
+      if (integrantesDestino) {
+        for (const integrante of integrantesDestino) {
+          const membro = integrante.members as any;
+          if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
+            try {
+              await enviarMensagemZAPI(membro.whatsapp, mensagemOutros);
+              telefonesEnviados.add(membro.whatsapp);
+              enviados++;
+              console.log(`Enviado para ${membro.full_name} (Integrante)`);
+              await new Promise(resolve => setTimeout(resolve, 1500));
+            } catch (err) {
+              console.error(`Erro ao enviar para ${membro.full_name}:`, err);
+              erros++;
+            }
+          }
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Notificações enviadas para ${enviados} pessoas. ${erros > 0 ? `${erros} falhas.` : ''}`,
+        enviados,
+        erros
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
