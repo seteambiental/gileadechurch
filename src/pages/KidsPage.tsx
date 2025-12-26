@@ -317,7 +317,7 @@ const KidsPage = () => {
             </TabsTrigger>
             <TabsTrigger value="lideres" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <UserCheck className="h-4 w-4" />
-              Líderes
+              Equipe
             </TabsTrigger>
             <TabsTrigger value="presenca" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <CalendarCheck className="h-4 w-4" />
