@@ -12,7 +12,9 @@ import {
   Trash2, 
   Edit2,
   X,
-  Calendar
+  Calendar,
+  Share2,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +46,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,6 +93,20 @@ interface MusicaForm {
   observacoes: string;
 }
 
+interface MusicaBanco {
+  id: string;
+  titulo: string;
+  artista: string | null;
+  tom: string | null;
+  video_url: string | null;
+  vezes_tocada: number;
+}
+
+interface Ministry {
+  id: string;
+  name: string;
+}
+
 const TONS = [
   "C", "C#", "Db", "D", "D#", "Eb", "E", "F", "F#", "Gb", "G", "G#", "Ab", "A", "A#", "Bb", "B",
   "Cm", "C#m", "Dbm", "Dm", "D#m", "Ebm", "Em", "Fm", "F#m", "Gbm", "Gm", "G#m", "Abm", "Am", "A#m", "Bbm", "Bm"
@@ -100,9 +130,16 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showMusicDialog, setShowMusicDialog] = useState(false);
   const [showNewEscalaDialog, setShowNewEscalaDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedEscala, setSelectedEscala] = useState<Escala | null>(null);
+  const [escalaToShare, setEscalaToShare] = useState<Escala | null>(null);
   const [editingMusica, setEditingMusica] = useState<Musica | null>(null);
   const [deleteMusica, setDeleteMusica] = useState<Musica | null>(null);
+  const [selectedMinistries, setSelectedMinistries] = useState<string[]>([]);
+  
+  // Autocomplete states
+  const [openAutocomplete, setOpenAutocomplete] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Form para editar música individual
   const [musicaForm, setMusicaForm] = useState<MusicaForm>({
@@ -127,6 +164,49 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
+
+  // Fetch banco de músicas para autocomplete
+  const { data: musicasBanco = [] } = useQuery({
+    queryKey: ["ministerio-musicas-banco", ministryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministerio_musicas_banco")
+        .select("*")
+        .eq("ministry_id", ministryId)
+        .order("vezes_tocada", { ascending: false });
+      if (error) throw error;
+      return data as MusicaBanco[];
+    },
+  });
+
+  // Fetch ministérios para compartilhamento (Dança e Mídia)
+  const { data: ministries = [] } = useQuery({
+    queryKey: ["ministries-for-share"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministries")
+        .select("id, name")
+        .or("name.ilike.%dança%,name.ilike.%midia%,name.ilike.%mídia%,name.ilike.%dance%,name.ilike.%media%")
+        .order("name");
+      if (error) throw error;
+      return data as Ministry[];
+    },
+  });
+
+  // Fetch compartilhamentos existentes
+  const { data: compartilhamentos = [] } = useQuery({
+    queryKey: ["escalas-compartilhadas", escalaToShare?.id],
+    queryFn: async () => {
+      if (!escalaToShare) return [];
+      const { data, error } = await supabase
+        .from("ministerio_escalas_compartilhadas")
+        .select("ministry_destino_id")
+        .eq("escala_id", escalaToShare.id);
+      if (error) throw error;
+      return data.map(c => c.ministry_destino_id);
+    },
+    enabled: !!escalaToShare,
+  });
 
   // Fetch escalas do mês
   const { data: escalas = [] } = useQuery({
@@ -162,6 +242,18 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     enabled: escalas.length > 0,
   });
 
+  // Filtrar músicas para autocomplete
+  const filteredMusicasBanco = useMemo(() => {
+    if (!searchQuery) return musicasBanco.slice(0, 10);
+    const query = searchQuery.toLowerCase();
+    return musicasBanco
+      .filter(m => 
+        m.titulo.toLowerCase().includes(query) || 
+        m.artista?.toLowerCase().includes(query)
+      )
+      .slice(0, 10);
+  }, [musicasBanco, searchQuery]);
+
   // Agrupar músicas por escala
   const musicasByEscala = useMemo(() => {
     const grouped: Record<string, Musica[]> = {};
@@ -171,6 +263,31 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     });
     return grouped;
   }, [repertorio]);
+
+  // Salvar música no banco de músicas
+  const saveToBanco = async (musica: MusicaForm, dataCulto: string) => {
+    if (!musica.titulo.trim()) return;
+    
+    // Tentar fazer upsert no banco de músicas
+    const { error } = await supabase
+      .from("ministerio_musicas_banco")
+      .upsert({
+        ministry_id: ministryId,
+        titulo: musica.titulo.trim(),
+        artista: musica.artista || null,
+        tom: musica.tom || null,
+        video_url: musica.video_url || null,
+        ultima_vez_tocada: dataCulto,
+        vezes_tocada: 1,
+      }, {
+        onConflict: "ministry_id,titulo,artista",
+        ignoreDuplicates: false,
+      });
+    
+    if (error && !error.message.includes("duplicate")) {
+      console.error("Erro ao salvar no banco:", error);
+    }
+  };
 
   // Mutation para salvar música
   const saveMutation = useMutation({
@@ -200,9 +317,13 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
           .insert(musicaData);
         if (error) throw error;
       }
+
+      // Salvar no banco de músicas
+      await saveToBanco(musicaForm, selectedEscala.data_culto);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministerio-repertorio"] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-musicas-banco"] });
       toast({ title: editingMusica ? "Música atualizada!" : "Música adicionada!" });
       resetForm();
     },
@@ -265,17 +386,58 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
           .insert(musicasToInsert);
 
         if (musicasError) throw musicasError;
+
+        // Salvar todas no banco de músicas
+        for (const musica of musicasValidas) {
+          await saveToBanco(musica, novaEscalaForm.data_culto);
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-repertorio"] });
       queryClient.invalidateQueries({ queryKey: ["ministerio-repertorio"] });
       queryClient.invalidateQueries({ queryKey: ["ministerio-escalas"] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-musicas-banco"] });
       toast({ title: "Escala criada com sucesso!" });
       resetNovaEscalaForm();
     },
     onError: (error) => {
       toast({ title: "Erro ao criar escala", description: String(error), variant: "destructive" });
+    },
+  });
+
+  // Mutation para compartilhar escala
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      if (!escalaToShare || selectedMinistries.length === 0) return;
+
+      // Remover compartilhamentos anteriores
+      await supabase
+        .from("ministerio_escalas_compartilhadas")
+        .delete()
+        .eq("escala_id", escalaToShare.id);
+
+      // Inserir novos compartilhamentos
+      const compartilhamentosToInsert = selectedMinistries.map(ministryId => ({
+        escala_id: escalaToShare.id,
+        ministry_destino_id: ministryId,
+      }));
+
+      const { error } = await supabase
+        .from("ministerio_escalas_compartilhadas")
+        .insert(compartilhamentosToInsert);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["escalas-compartilhadas"] });
+      toast({ title: "Escala compartilhada com sucesso!" });
+      setShowShareDialog(false);
+      setEscalaToShare(null);
+      setSelectedMinistries([]);
+    },
+    onError: (error) => {
+      toast({ title: "Erro ao compartilhar", description: String(error), variant: "destructive" });
     },
   });
 
@@ -296,6 +458,8 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     setShowNewEscalaDialog(false);
     setNovaEscalaForm({ data_culto: "", tipo_culto: "domingo" });
     setNovasMusicasForm([{ titulo: "", artista: "", tom: "", video_url: "", observacoes: "" }]);
+    setOpenAutocomplete(null);
+    setSearchQuery("");
   };
 
   const addNovaMusicaField = () => {
@@ -312,6 +476,20 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     const updated = [...novasMusicasForm];
     updated[index] = { ...updated[index], [field]: value };
     setNovasMusicasForm(updated);
+  };
+
+  const selectMusicaFromBanco = (index: number, musica: MusicaBanco) => {
+    const updated = [...novasMusicasForm];
+    updated[index] = {
+      titulo: musica.titulo,
+      artista: musica.artista || "",
+      tom: musica.tom || "",
+      video_url: musica.video_url || "",
+      observacoes: "",
+    };
+    setNovasMusicasForm(updated);
+    setOpenAutocomplete(null);
+    setSearchQuery("");
   };
 
   const handleAddMusica = (escala: Escala) => {
@@ -339,6 +517,18 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
     });
     setShowMusicDialog(true);
   };
+
+  const handleOpenShare = (escala: Escala) => {
+    setEscalaToShare(escala);
+    setShowShareDialog(true);
+  };
+
+  // Setar ministérios selecionados quando buscar compartilhamentos
+  useMemo(() => {
+    if (compartilhamentos.length > 0) {
+      setSelectedMinistries(compartilhamentos);
+    }
+  }, [compartilhamentos]);
 
   const extractVideoId = (url: string) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
@@ -402,7 +592,7 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
             return (
               <Card key={escala.id} className="bg-card border-border">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-3">
                       <CardTitle className="text-base font-medium capitalize">
                         {dataFormatada}
@@ -411,14 +601,24 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
                         {TIPOS_CULTO_MAP[escala.tipo_culto] || escala.tipo_culto}
                       </Badge>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddMusica(escala)}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Adicionar Música
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenShare(escala)}
+                      >
+                        <Share2 className="w-4 h-4 mr-1" />
+                        Compartilhar
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddMusica(escala)}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Adicionar Música
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -504,11 +704,55 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
           <div className="space-y-4 py-4">
             <div>
               <Label>Título *</Label>
-              <Input
-                value={musicaForm.titulo}
-                onChange={(e) => setMusicaForm({ ...musicaForm, titulo: e.target.value })}
-                placeholder="Nome da música"
-              />
+              <Popover open={openAutocomplete === -1} onOpenChange={(open) => setOpenAutocomplete(open ? -1 : null)}>
+                <PopoverTrigger asChild>
+                  <Input
+                    value={musicaForm.titulo}
+                    onChange={(e) => {
+                      setMusicaForm({ ...musicaForm, titulo: e.target.value });
+                      setSearchQuery(e.target.value);
+                      if (e.target.value.length >= 2) {
+                        setOpenAutocomplete(-1);
+                      }
+                    }}
+                    placeholder="Nome da música"
+                  />
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0" align="start">
+                  <Command>
+                    <CommandList>
+                      <CommandEmpty>Nenhuma música encontrada no banco</CommandEmpty>
+                      <CommandGroup heading="Músicas do banco">
+                        {filteredMusicasBanco.map((musica) => (
+                          <CommandItem
+                            key={musica.id}
+                            onSelect={() => {
+                              setMusicaForm({
+                                titulo: musica.titulo,
+                                artista: musica.artista || "",
+                                tom: musica.tom || "",
+                                video_url: musica.video_url || "",
+                                observacoes: "",
+                              });
+                              setOpenAutocomplete(null);
+                            }}
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">{musica.titulo}</span>
+                              {musica.artista && (
+                                <span className="text-xs text-muted-foreground">{musica.artista}</span>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="ml-auto text-xs">
+                              {musica.vezes_tocada}x
+                            </Badge>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
@@ -629,6 +873,11 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Label className="text-base font-semibold">Músicas</Label>
+                  {musicasBanco.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {musicasBanco.length} músicas no banco
+                    </Badge>
+                  )}
                 </div>
 
                 {novasMusicasForm.map((musica, index) => (
@@ -653,11 +902,49 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label className="text-xs">Nome da Música *</Label>
-                          <Input
-                            value={musica.titulo}
-                            onChange={(e) => updateNovaMusicaField(index, "titulo", e.target.value)}
-                            placeholder="Ex: Lugar Secreto"
-                          />
+                          <Popover 
+                            open={openAutocomplete === index} 
+                            onOpenChange={(open) => setOpenAutocomplete(open ? index : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <Input
+                                value={musica.titulo}
+                                onChange={(e) => {
+                                  updateNovaMusicaField(index, "titulo", e.target.value);
+                                  setSearchQuery(e.target.value);
+                                  if (e.target.value.length >= 2) {
+                                    setOpenAutocomplete(index);
+                                  }
+                                }}
+                                placeholder="Digite para buscar..."
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[300px] p-0" align="start">
+                              <Command>
+                                <CommandList>
+                                  <CommandEmpty>Nenhuma música encontrada</CommandEmpty>
+                                  <CommandGroup heading="Sugestões do banco">
+                                    {filteredMusicasBanco.map((m) => (
+                                      <CommandItem
+                                        key={m.id}
+                                        onSelect={() => selectMusicaFromBanco(index, m)}
+                                      >
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{m.titulo}</span>
+                                          {m.artista && (
+                                            <span className="text-xs text-muted-foreground">{m.artista}</span>
+                                          )}
+                                        </div>
+                                        <Badge variant="outline" className="ml-auto text-xs">
+                                          {m.vezes_tocada}x
+                                        </Badge>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </div>
                         <div>
                           <Label className="text-xs">Artista/Banda</Label>
@@ -737,6 +1024,88 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
               }
             >
               {createEscalaMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para compartilhar escala */}
+      <Dialog open={showShareDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowShareDialog(false);
+          setEscalaToShare(null);
+          setSelectedMinistries([]);
+        }
+      }}>
+        <DialogContent className="bg-card border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5" />
+              Compartilhar Escala
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {escalaToShare && (
+              <p className="text-sm text-muted-foreground">
+                Compartilhar escala de{" "}
+                <strong>
+                  {format(new Date(escalaToShare.data_culto + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                </strong>{" "}
+                com os ministérios:
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {ministries.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">
+                  Nenhum ministério de Dança ou Mídia cadastrado.
+                </p>
+              ) : (
+                ministries.map((ministry) => (
+                  <div
+                    key={ministry.id}
+                    className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg"
+                  >
+                    <Checkbox
+                      id={ministry.id}
+                      checked={selectedMinistries.includes(ministry.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedMinistries([...selectedMinistries, ministry.id]);
+                        } else {
+                          setSelectedMinistries(selectedMinistries.filter(id => id !== ministry.id));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={ministry.id} className="flex-1 cursor-pointer">
+                      {ministry.name}
+                    </Label>
+                    {compartilhamentos.includes(ministry.id) && (
+                      <Badge variant="secondary" className="text-xs">
+                        <Check className="w-3 h-3 mr-1" />
+                        Já compartilhado
+                      </Badge>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowShareDialog(false);
+              setEscalaToShare(null);
+              setSelectedMinistries([]);
+            }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => shareMutation.mutate()}
+              disabled={selectedMinistries.length === 0 || shareMutation.isPending}
+            >
+              {shareMutation.isPending ? "Compartilhando..." : "Compartilhar"}
             </Button>
           </DialogFooter>
         </DialogContent>
