@@ -191,6 +191,86 @@ export type Database = {
         }
         Relationships: []
       }
+      danca_equipe_membros: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          equipe_id: string
+          funcao: string | null
+          id: string
+          member_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          equipe_id: string
+          funcao?: string | null
+          id?: string
+          member_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          equipe_id?: string
+          funcao?: string | null
+          id?: string
+          member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "danca_equipe_membros_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "danca_equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "danca_equipe_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      danca_equipes: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          ministry_id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ministry_id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ministry_id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "danca_equipes_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encontros_casa_refugio: {
         Row: {
           casa_refugio_id: string

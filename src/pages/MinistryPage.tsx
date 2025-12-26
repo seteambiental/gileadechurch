@@ -32,6 +32,8 @@ import { MinisterioEquipeTab } from "@/components/ministerio/MinisterioEquipeTab
 import { MinisterioEscalasTab } from "@/components/ministerio/MinisterioEscalasTab";
 import { MinisterioEstatisticasTab } from "@/components/ministerio/MinisterioEstatisticasTab";
 import { MinisterioRepertorioTab } from "@/components/ministerio/MinisterioRepertorioTab";
+import { DancaRepertorioTab } from "@/components/ministerio/DancaRepertorioTab";
+import { DancaEquipesTab } from "@/components/ministerio/DancaEquipesTab";
 
 interface MinistryInfo {
   title: string;
@@ -40,6 +42,7 @@ interface MinistryInfo {
   fullDescription: string;
   hasEscalas?: boolean;
   hasRepertorio?: boolean;
+  isDanca?: boolean; // Specific for Dança ministry
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -71,6 +74,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério de adoração através da dança, expressando louvor ao Senhor através de coreografias.",
     hasEscalas: true,
+    isDanca: true,
   },
   ensino: {
     title: "Ensino",
@@ -213,6 +217,7 @@ const MinistryPage = () => {
   const IconComponent = ministry.icon;
   const hasEscalas = ministry.hasEscalas && ministryFromDb?.id;
   const hasRepertorio = ministry.hasRepertorio && ministryFromDb?.id;
+  const isDanca = ministry.isDanca && ministryFromDb?.id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -249,20 +254,20 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {hasEscalas ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
               <TabsTrigger value="equipe" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">Equipe</span>
+                <span className="hidden sm:inline">{isDanca ? 'Equipes' : 'Equipe'}</span>
               </TabsTrigger>
               <TabsTrigger value="escalas" className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4" />
                 <span className="hidden sm:inline">Escalas</span>
               </TabsTrigger>
-              {hasRepertorio && (
+              {(hasRepertorio || isDanca) && (
                 <TabsTrigger value="repertorio" className="flex items-center gap-2">
                   <ListMusic className="w-4 h-4" />
                   <span className="hidden sm:inline">Repertório</span>
@@ -291,7 +296,11 @@ const MinistryPage = () => {
             </TabsContent>
 
             <TabsContent value="equipe">
-              <MinisterioEquipeTab ministryId={ministryFromDb.id} ministryName={ministry.title} />
+              {isDanca ? (
+                <DancaEquipesTab ministryId={ministryFromDb.id} />
+              ) : (
+                <MinisterioEquipeTab ministryId={ministryFromDb.id} ministryName={ministry.title} />
+              )}
             </TabsContent>
 
             <TabsContent value="escalas">
@@ -301,6 +310,12 @@ const MinistryPage = () => {
             {hasRepertorio && (
               <TabsContent value="repertorio">
                 <MinisterioRepertorioTab ministryId={ministryFromDb.id} />
+              </TabsContent>
+            )}
+
+            {isDanca && !hasRepertorio && (
+              <TabsContent value="repertorio">
+                <DancaRepertorioTab ministryId={ministryFromDb.id} />
               </TabsContent>
             )}
 
