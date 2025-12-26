@@ -108,16 +108,28 @@ export const MinisterioEquipeTab = ({ ministryId, ministryName }: MinisterioEqui
     },
   });
 
-  // Fetch all members for selection
-  const { data: allMembers = [] } = useQuery({
-    queryKey: ["members-for-ministry"],
+  // Fetch only members who selected this ministry in their registration
+  const { data: membersInMinistry = [] } = useQuery({
+    queryKey: ["members-for-ministry", ministryId],
     queryFn: async () => {
+      // Get members who have this ministry in their member_functions
       const { data, error } = await supabase
-        .from("members")
-        .select("id, full_name")
-        .order("full_name");
+        .from("member_functions")
+        .select("member_id, member:members(id, full_name)")
+        .eq("ministry_id", ministryId)
+        .in("function_type", ["integrante_ministerio", "lider_ministerio"]);
       if (error) throw error;
-      return data;
+      
+      // Return unique members
+      const uniqueMembers = new Map();
+      data.forEach((item: any) => {
+        if (item.member && !uniqueMembers.has(item.member.id)) {
+          uniqueMembers.set(item.member.id, item.member);
+        }
+      });
+      return Array.from(uniqueMembers.values()).sort((a, b) => 
+        a.full_name.localeCompare(b.full_name)
+      );
     },
   });
 
@@ -379,9 +391,15 @@ export const MinisterioEquipeTab = ({ ministryId, ministryName }: MinisterioEqui
                   <SelectValue placeholder="Selecione um membro" />
                 </SelectTrigger>
                 <SelectContent>
-                  {allMembers.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-                  ))}
+                  {membersInMinistry.length === 0 ? (
+                    <div className="p-3 text-sm text-muted-foreground text-center">
+                      Nenhum membro selecionou este ministério no cadastro
+                    </div>
+                  ) : (
+                    membersInMinistry.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
