@@ -190,6 +190,27 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
     },
   });
 
+  // Todos os membros de todas as equipes de dança
+  const allDancaMembers = useMemo(() => {
+    const membersMap = new Map<string, { memberId: string; memberName: string; integranteId: string | null }>();
+    
+    equipes.forEach((equipe) => {
+      equipe.membros?.forEach((m) => {
+        if (!membersMap.has(m.member.id)) {
+          // Buscar o integrante correspondente
+          const integrante = integrantes.find((i) => i.member.id === m.member.id);
+          membersMap.set(m.member.id, {
+            memberId: m.member.id,
+            memberName: m.member.full_name,
+            integranteId: integrante?.id || null,
+          });
+        }
+      });
+    });
+    
+    return Array.from(membersMap.values());
+  }, [equipes, integrantes]);
+
   // Membros da equipe selecionada (filtrados por sub-time se aplicável)
   const equipeMembros = useMemo(() => {
     if (!selectedEquipeId) return [];
@@ -204,6 +225,30 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
 
     return membros;
   }, [selectedEquipeId, selectedSubTime, equipes]);
+
+  // IDs dos membros já selecionados na equipe atual
+  const selectedMemberIds = useMemo(() => {
+    return new Set(
+      equipeMembros
+        .filter((em) => {
+          const integrante = integrantes.find((i) => i.member.id === em.member.id);
+          return integrante && selectedIntegrantes.includes(integrante.id);
+        })
+        .map((em) => em.member.id)
+    );
+  }, [equipeMembros, integrantes, selectedIntegrantes]);
+
+  // Membros disponíveis para adicionar como extras (de outras equipes ou não selecionados)
+  const availableExtras = useMemo(() => {
+    // Membros que estão em outras equipes de dança mas não foram selecionados
+    return allDancaMembers.filter((m) => {
+      // Já está selecionado como membro da equipe
+      if (selectedMemberIds.has(m.memberId)) return false;
+      // Já foi adicionado como extra
+      if (m.integranteId && extraIntegrantes.includes(m.integranteId)) return false;
+      return true;
+    });
+  }, [allDancaMembers, selectedMemberIds, extraIntegrantes]);
 
   // Verificar se a equipe selecionada é "Jovens/Adultos" (tem sub-times)
   const selectedEquipe = equipes.find((e) => e.id === selectedEquipeId);
@@ -741,29 +786,24 @@ export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
             <DialogTitle>Incluir Pessoa Extra</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <Label>Selecione um membro do ministério</Label>
+            <Label>Selecione um membro de outra equipe</Label>
             <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
-              {integrantes
-                .filter((i) => !selectedIntegrantes.includes(i.id) && !extraIntegrantes.includes(i.id))
-                .map((integrante) => (
+              {availableExtras
+                .filter((m) => m.integranteId !== null)
+                .map((member) => (
                   <Button
-                    key={integrante.id}
+                    key={member.memberId}
                     variant="ghost"
                     className="w-full justify-start"
-                    onClick={() => addExtraIntegrante(integrante.id)}
+                    onClick={() => member.integranteId && addExtraIntegrante(member.integranteId)}
                   >
                     <Users className="w-4 h-4 mr-2" />
-                    {integrante.member.full_name}
-                    {integrante.funcao?.nome && (
-                      <Badge variant="outline" className="ml-2 text-xs">
-                        {integrante.funcao.nome}
-                      </Badge>
-                    )}
+                    {member.memberName}
                   </Button>
                 ))}
-              {integrantes.filter((i) => !selectedIntegrantes.includes(i.id) && !extraIntegrantes.includes(i.id)).length === 0 && (
+              {availableExtras.filter((m) => m.integranteId !== null).length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Todos os membros do ministério já foram selecionados
+                  Todos os membros das equipes já foram selecionados
                 </p>
               )}
             </div>
