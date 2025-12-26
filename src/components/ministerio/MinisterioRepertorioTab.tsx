@@ -719,29 +719,34 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
           <div className="space-y-4 py-4">
             <div>
               <Label>Título *</Label>
-              <Popover open={openAutocomplete === -1} onOpenChange={(open) => setOpenAutocomplete(open ? -1 : null)}>
-                <PopoverTrigger asChild>
-                  <Input
-                    value={musicaForm.titulo}
-                    onChange={(e) => {
-                      setMusicaForm({ ...musicaForm, titulo: e.target.value });
-                      setSearchQuery(e.target.value);
-                      if (e.target.value.length >= 2) {
-                        setOpenAutocomplete(-1);
-                      }
-                    }}
-                    placeholder="Nome da música"
-                  />
-                </PopoverTrigger>
-                <PopoverContent className="w-[300px] p-0" align="start">
-                  <Command>
-                    <CommandList>
-                      <CommandEmpty>Nenhuma música encontrada no banco</CommandEmpty>
-                      <CommandGroup heading="Músicas do banco">
+              <div className="relative">
+                <Input
+                  value={musicaForm.titulo}
+                  onChange={(e) => {
+                    setMusicaForm({ ...musicaForm, titulo: e.target.value });
+                    setSearchQuery(e.target.value);
+                    if (e.target.value.length >= 2) {
+                      setOpenAutocomplete(-1);
+                    } else {
+                      setOpenAutocomplete(null);
+                    }
+                  }}
+                  onBlur={() => setTimeout(() => setOpenAutocomplete(null), 200)}
+                  placeholder="Digite o nome da música"
+                />
+                {openAutocomplete === -1 && searchQuery.length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-[300px] overflow-auto">
+                    {filteredMusicasBanco.length > 0 ? (
+                      <>
+                        <div className="px-3 py-2 text-xs font-medium text-muted-foreground border-b">
+                          Sugestões do banco
+                        </div>
                         {filteredMusicasBanco.map((musica) => (
-                          <CommandItem
+                          <div
                             key={musica.id}
-                            onSelect={() => {
+                            className="px-3 py-2 cursor-pointer hover:bg-accent flex items-center justify-between"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
                               setMusicaForm({
                                 titulo: musica.titulo,
                                 artista: musica.artista || "",
@@ -750,24 +755,44 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
                                 observacoes: "",
                               });
                               setOpenAutocomplete(null);
+                              setSearchQuery("");
                             }}
                           >
                             <div className="flex flex-col">
-                              <span className="font-medium">{musica.titulo}</span>
+                              <span className="font-medium text-sm">{musica.titulo}</span>
                               {musica.artista && (
                                 <span className="text-xs text-muted-foreground">{musica.artista}</span>
                               )}
                             </div>
-                            <Badge variant="outline" className="ml-auto text-xs">
+                            <Badge variant="outline" className="text-xs ml-2">
                               {musica.vezes_tocada}x
                             </Badge>
-                          </CommandItem>
+                          </div>
                         ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                      </>
+                    ) : (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        Nenhuma música encontrada
+                      </div>
+                    )}
+                    <div className="border-t">
+                      <div
+                        className="px-3 py-2 cursor-pointer hover:bg-accent flex items-center gap-2 text-primary"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setOpenAutocomplete(null);
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span className="text-sm font-medium">Usar "{searchQuery}" como nova música</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Digite para buscar ou cadastrar uma nova música
+              </p>
             </div>
 
             <div>
@@ -917,49 +942,69 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <Label className="text-xs">Nome da Música *</Label>
-                          <Popover 
-                            open={openAutocomplete === index} 
-                            onOpenChange={(open) => setOpenAutocomplete(open ? index : null)}
-                          >
-                            <PopoverTrigger asChild>
-                              <Input
-                                value={musica.titulo}
-                                onChange={(e) => {
-                                  updateNovaMusicaField(index, "titulo", e.target.value);
-                                  setSearchQuery(e.target.value);
-                                  if (e.target.value.length >= 2) {
-                                    setOpenAutocomplete(index);
-                                  }
-                                }}
-                                placeholder="Digite para buscar..."
-                              />
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0" align="start">
-                              <Command>
-                                <CommandList>
-                                  <CommandEmpty>Nenhuma música encontrada</CommandEmpty>
-                                  <CommandGroup heading="Sugestões do banco">
+                          <div className="relative">
+                            <Input
+                              value={musica.titulo}
+                              onChange={(e) => {
+                                updateNovaMusicaField(index, "titulo", e.target.value);
+                                setSearchQuery(e.target.value);
+                                if (e.target.value.length >= 2) {
+                                  setOpenAutocomplete(index);
+                                } else {
+                                  setOpenAutocomplete(null);
+                                }
+                              }}
+                              onBlur={() => setTimeout(() => setOpenAutocomplete(null), 200)}
+                              placeholder="Digite para buscar ou criar..."
+                            />
+                            {openAutocomplete === index && searchQuery.length >= 2 && (
+                              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-md shadow-lg max-h-[250px] overflow-auto">
+                                {filteredMusicasBanco.length > 0 ? (
+                                  <>
+                                    <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b">
+                                      Sugestões
+                                    </div>
                                     {filteredMusicasBanco.map((m) => (
-                                      <CommandItem
+                                      <div
                                         key={m.id}
-                                        onSelect={() => selectMusicaFromBanco(index, m)}
+                                        className="px-3 py-2 cursor-pointer hover:bg-accent flex items-center justify-between"
+                                        onMouseDown={(e) => {
+                                          e.preventDefault();
+                                          selectMusicaFromBanco(index, m);
+                                        }}
                                       >
                                         <div className="flex flex-col">
-                                          <span className="font-medium">{m.titulo}</span>
+                                          <span className="font-medium text-sm">{m.titulo}</span>
                                           {m.artista && (
                                             <span className="text-xs text-muted-foreground">{m.artista}</span>
                                           )}
                                         </div>
-                                        <Badge variant="outline" className="ml-auto text-xs">
+                                        <Badge variant="outline" className="text-xs ml-2">
                                           {m.vezes_tocada}x
                                         </Badge>
-                                      </CommandItem>
+                                      </div>
                                     ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
+                                  </>
+                                ) : (
+                                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                                    Nenhuma sugestão
+                                  </div>
+                                )}
+                                <div className="border-t">
+                                  <div
+                                    className="px-3 py-2 cursor-pointer hover:bg-accent flex items-center gap-2 text-primary"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      setOpenAutocomplete(null);
+                                    }}
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span className="text-xs font-medium">Criar nova: "{searchQuery}"</span>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs">Artista/Banda</Label>
