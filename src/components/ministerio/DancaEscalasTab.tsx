@@ -1,0 +1,732 @@
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users, UserPlus } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+interface DancaEscalasTabProps {
+  ministryId: string;
+}
+
+interface DancaEquipe {
+  id: string;
+  nome: string;
+  membros: {
+    id: string;
+    sub_time: string | null;
+    member: {
+      id: string;
+      full_name: string;
+    };
+  }[];
+}
+
+interface Integrante {
+  id: string;
+  member: {
+    id: string;
+    full_name: string;
+  };
+  funcao: {
+    id: string;
+    nome: string;
+  };
+}
+
+interface EscalaMembro {
+  id: string;
+  integrante_id: string;
+  integrante: Integrante;
+}
+
+interface Escala {
+  id: string;
+  data_culto: string;
+  tipo_culto: string;
+  observacoes: string | null;
+  membros: EscalaMembro[];
+}
+
+const TIPOS_CULTO = [
+  { value: "domingo", label: "Domingo" },
+  { value: "quarta", label: "Quarta-feira" },
+  { value: "sabado", label: "Sábado" },
+  { value: "especial", label: "Evento Especial" },
+];
+
+export const DancaEscalasTab = ({ ministryId }: DancaEscalasTabProps) => {
+  const queryClient = useQueryClient();
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showDialog, setShowDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showAddExtraDialog, setShowAddExtraDialog] = useState(false);
+  const [editingEscala, setEditingEscala] = useState<Escala | null>(null);
+  const [escalaToDelete, setEscalaToDelete] = useState<string | null>(null);
+
+  // Form state
+  const [dataCulto, setDataCulto] = useState<Date | undefined>(undefined);
+  const [tipoCulto, setTipoCulto] = useState("domingo");
+  const [observacoes, setObservacoes] = useState("");
+  const [selectedEquipeId, setSelectedEquipeId] = useState<string>("");
+  const [selectedSubTime, setSelectedSubTime] = useState<string>("todos");
+  const [selectedIntegrantes, setSelectedIntegrantes] = useState<string[]>([]);
+  const [extraIntegrantes, setExtraIntegrantes] = useState<string[]>([]);
+
+  // Fetch equipes de dança
+  const { data: equipes = [] } = useQuery({
+    queryKey: ["danca-equipes", ministryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("danca_equipes")
+        .select(`
+          id,
+          nome,
+          membros:danca_equipe_membros(
+            id,
+            sub_time,
+            member:members(id, full_name)
+          )
+        `)
+        .eq("ministry_id", ministryId);
+      if (error) throw error;
+      return data as unknown as DancaEquipe[];
+    },
+  });
+
+  // Fetch integrantes do ministério (para adicionar extras)
+  const { data: integrantes = [] } = useQuery({
+    queryKey: ["ministerio-integrantes", ministryId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministerio_integrantes")
+        .select(`
+          id,
+          member:members(id, full_name),
+          funcao:ministerio_funcoes(id, nome)
+        `)
+        .eq("ministry_id", ministryId)
+        .eq("ativo", true);
+      if (error) throw error;
+      return data as unknown as Integrante[];
+    },
+  });
+
+  // Fetch todos os membros (para adicionar pessoas fora do ministério)
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ["all-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch escalas do mês
+  const { data: escalas = [], isLoading } = useQuery({
+    queryKey: ["ministerio-escalas", ministryId, format(currentMonth, "yyyy-MM")],
+    queryFn: async () => {
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+
+      const { data, error } = await supabase
+        .from("ministerio_escalas")
+        .select(`
+          id,
+          data_culto,
+          tipo_culto,
+          observacoes,
+          membros:ministerio_escala_membros(
+            id,
+            integrante_id,
+            integrante:ministerio_integrantes(
+              id,
+              member:members(id, full_name),
+              funcao:ministerio_funcoes(id, nome)
+            )
+          )
+        `)
+        .eq("ministry_id", ministryId)
+        .gte("data_culto", start)
+        .lte("data_culto", end)
+        .order("data_culto");
+      if (error) throw error;
+      return data as unknown as Escala[];
+    },
+  });
+
+  // Membros da equipe selecionada (filtrados por sub-time se aplicável)
+  const equipeMembros = useMemo(() => {
+    if (!selectedEquipeId) return [];
+    const equipe = equipes.find((e) => e.id === selectedEquipeId);
+    if (!equipe) return [];
+
+    let membros = equipe.membros || [];
+    
+    // Filtrar por sub-time se selecionado e não for "todos"
+    if (selectedSubTime && selectedSubTime !== "todos") {
+      membros = membros.filter((m) => m.sub_time === selectedSubTime);
+    }
+
+    return membros;
+  }, [selectedEquipeId, selectedSubTime, equipes]);
+
+  // Verificar se a equipe selecionada é "Jovens/Adultos" (tem sub-times)
+  const selectedEquipe = equipes.find((e) => e.id === selectedEquipeId);
+  const hasSubTimes = selectedEquipe?.nome === "Jovens/Adultos";
+
+  // Sub-times disponíveis
+  const availableSubTimes = useMemo(() => {
+    if (!hasSubTimes || !selectedEquipe) return [];
+    const subTimes = new Set<string>();
+    selectedEquipe.membros?.forEach((m) => {
+      if (m.sub_time) subTimes.add(m.sub_time);
+    });
+    return Array.from(subTimes).sort();
+  }, [hasSubTimes, selectedEquipe]);
+
+  // Membros disponíveis para adicionar como extras (não estão na equipe selecionada)
+  const availableExtras = useMemo(() => {
+    const equipesMemberIds = new Set(equipeMembros.map((m) => m.member.id));
+    const selectedMemberIds = new Set(
+      integrantes
+        .filter((i) => selectedIntegrantes.includes(i.id))
+        .map((i) => i.member.id)
+    );
+
+    return allMembers.filter(
+      (m) => !equipesMemberIds.has(m.id) && !selectedMemberIds.has(m.id)
+    );
+  }, [equipeMembros, selectedIntegrantes, integrantes, allMembers]);
+
+  // Agrupar escalas por data
+  const escalasByDate = useMemo(() => {
+    const grouped: Record<string, Escala[]> = {};
+    escalas.forEach((escala) => {
+      if (!grouped[escala.data_culto]) {
+        grouped[escala.data_culto] = [];
+      }
+      grouped[escala.data_culto].push(escala);
+    });
+    return grouped;
+  }, [escalas]);
+
+  // Selecionar todos os membros da equipe
+  const selectAllEquipeMembros = () => {
+    const integranteIds = equipeMembros
+      .map((em) => {
+        const integrante = integrantes.find((i) => i.member.id === em.member.id);
+        return integrante?.id;
+      })
+      .filter(Boolean) as string[];
+    setSelectedIntegrantes(integranteIds);
+  };
+
+  // Mutation para salvar escala
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!dataCulto) throw new Error("Data é obrigatória");
+
+      const allSelectedIntegrantes = [...selectedIntegrantes, ...extraIntegrantes];
+
+      const escalaData = {
+        ministry_id: ministryId,
+        data_culto: format(dataCulto, "yyyy-MM-dd"),
+        tipo_culto: tipoCulto,
+        observacoes: observacoes || null,
+      };
+
+      if (editingEscala) {
+        const { error: updateError } = await supabase
+          .from("ministerio_escalas")
+          .update(escalaData)
+          .eq("id", editingEscala.id);
+        if (updateError) throw updateError;
+
+        await supabase.from("ministerio_escala_membros").delete().eq("escala_id", editingEscala.id);
+
+        if (allSelectedIntegrantes.length > 0) {
+          const membrosData = allSelectedIntegrantes.map((intId) => ({
+            escala_id: editingEscala.id,
+            integrante_id: intId,
+          }));
+          const { error: membrosError } = await supabase.from("ministerio_escala_membros").insert(membrosData);
+          if (membrosError) throw membrosError;
+        }
+      } else {
+        const { data: newEscala, error: insertError } = await supabase
+          .from("ministerio_escalas")
+          .insert(escalaData)
+          .select("id")
+          .single();
+        if (insertError) throw insertError;
+
+        if (allSelectedIntegrantes.length > 0) {
+          const membrosData = allSelectedIntegrantes.map((intId) => ({
+            escala_id: newEscala.id,
+            integrante_id: intId,
+          }));
+          const { error: membrosError } = await supabase.from("ministerio_escala_membros").insert(membrosData);
+          if (membrosError) throw membrosError;
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas", ministryId] });
+      toast.success(editingEscala ? "Escala atualizada!" : "Escala criada!");
+      resetForm();
+    },
+    onError: () => toast.error("Erro ao salvar escala"),
+  });
+
+  // Mutation para deletar escala
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ministerio_escalas").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas", ministryId] });
+      toast.success("Escala removida!");
+      setEscalaToDelete(null);
+      setShowDeleteDialog(false);
+    },
+    onError: () => toast.error("Erro ao remover escala"),
+  });
+
+  const resetForm = () => {
+    setShowDialog(false);
+    setEditingEscala(null);
+    setDataCulto(undefined);
+    setTipoCulto("domingo");
+    setObservacoes("");
+    setSelectedEquipeId("");
+    setSelectedSubTime("todos");
+    setSelectedIntegrantes([]);
+    setExtraIntegrantes([]);
+  };
+
+  const handleEdit = (escala: Escala) => {
+    setEditingEscala(escala);
+    setDataCulto(parseISO(escala.data_culto));
+    setTipoCulto(escala.tipo_culto);
+    setObservacoes(escala.observacoes || "");
+    setSelectedIntegrantes(escala.membros.map((m) => m.integrante_id));
+    setShowDialog(true);
+  };
+
+  const toggleIntegrante = (id: string) => {
+    setSelectedIntegrantes((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const addExtraIntegrante = (integranteId: string) => {
+    if (!extraIntegrantes.includes(integranteId)) {
+      setExtraIntegrantes((prev) => [...prev, integranteId]);
+    }
+    setShowAddExtraDialog(false);
+  };
+
+  const removeExtraIntegrante = (integranteId: string) => {
+    setExtraIntegrantes((prev) => prev.filter((id) => id !== integranteId));
+  };
+
+  // Mapear member_id para integrante
+  const getIntegranteByMemberId = (memberId: string) => {
+    return integrantes.find((i) => i.member.id === memberId);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header com navegação de mês */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="font-medium min-w-32 text-center capitalize">
+            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+          </span>
+          <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <Button size="sm" onClick={() => setShowDialog(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Escala
+        </Button>
+      </div>
+
+      {equipes.length === 0 && (
+        <Card className="bg-muted/30">
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">
+              Adicione equipes na aba "Equipes" antes de criar escalas
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lista de escalas */}
+      {isLoading ? (
+        <p className="text-center text-muted-foreground">Carregando...</p>
+      ) : Object.keys(escalasByDate).length === 0 && equipes.length > 0 ? (
+        <Card className="bg-muted/30">
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">Nenhuma escala neste mês</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(escalasByDate)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, dateEscalas]) => (
+              <Card key={date} className="bg-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-primary" />
+                    {format(parseISO(date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {dateEscalas.map((escala) => (
+                    <div key={escala.id} className="bg-muted/30 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline">
+                          {TIPOS_CULTO.find((t) => t.value === escala.tipo_culto)?.label || escala.tipo_culto}
+                        </Badge>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(escala)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive"
+                            onClick={() => {
+                              setEscalaToDelete(escala.id);
+                              setShowDeleteDialog(true);
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {escala.membros.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {escala.membros.map((m) => (
+                            <div key={m.id} className="flex items-center gap-1 text-sm bg-background rounded px-2 py-1">
+                              <Users className="w-3 h-3 text-muted-foreground" />
+                              <span>{m.integrante?.member?.full_name}</span>
+                              {m.integrante?.funcao?.nome && (
+                                <Badge variant="secondary" className="text-xs ml-1">
+                                  {m.integrante?.funcao?.nome}
+                                </Badge>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhum membro escalado</p>
+                      )}
+
+                      {escala.observacoes && (
+                        <p className="text-xs text-muted-foreground mt-2 italic">{escala.observacoes}</p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      )}
+
+      {/* Dialog para criar/editar escala */}
+      <Dialog open={showDialog} onOpenChange={(open) => !open && resetForm()}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingEscala ? "Editar Escala" : "Nova Escala"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Data do Culto</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !dataCulto && "text-muted-foreground")}
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dataCulto ? format(dataCulto, "dd/MM/yyyy") : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent mode="single" selected={dataCulto} onSelect={setDataCulto} initialFocus />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Tipo de Culto</Label>
+              <Select value={tipoCulto} onValueChange={setTipoCulto}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_CULTO.map((tipo) => (
+                    <SelectItem key={tipo.value} value={tipo.value}>
+                      {tipo.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Seleção de equipe */}
+            <div className="space-y-2">
+              <Label>Equipe</Label>
+              <Select 
+                value={selectedEquipeId} 
+                onValueChange={(value) => {
+                  setSelectedEquipeId(value);
+                  setSelectedSubTime("todos");
+                  setSelectedIntegrantes([]);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma equipe" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipes.map((equipe) => (
+                    <SelectItem key={equipe.id} value={equipe.id}>
+                      {equipe.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Seleção de sub-time (apenas para Jovens/Adultos) */}
+            {hasSubTimes && availableSubTimes.length > 0 && (
+              <div className="space-y-2">
+                <Label>Sub-Time</Label>
+                <Select value={selectedSubTime} onValueChange={setSelectedSubTime}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os sub-times</SelectItem>
+                    {availableSubTimes.map((subTime) => (
+                      <SelectItem key={subTime} value={subTime}>
+                        {subTime}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Membros Escalados</Label>
+                {selectedEquipeId && equipeMembros.length > 0 && (
+                  <Button variant="link" size="sm" className="h-auto p-0" onClick={selectAllEquipeMembros}>
+                    Selecionar todos
+                  </Button>
+                )}
+              </div>
+              {!selectedEquipeId ? (
+                <div className="border rounded-lg p-4 text-center bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione uma equipe para ver os membros
+                  </p>
+                </div>
+              ) : equipeMembros.length === 0 ? (
+                <div className="border rounded-lg p-4 text-center bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum membro nesta equipe{hasSubTimes && selectedSubTime !== "todos" ? ` (${selectedSubTime})` : ""}
+                  </p>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                  {equipeMembros.map((em) => {
+                    const integrante = getIntegranteByMemberId(em.member.id);
+                    if (!integrante) return null;
+                    return (
+                      <div key={em.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={em.id}
+                          checked={selectedIntegrantes.includes(integrante.id)}
+                          onCheckedChange={() => toggleIntegrante(integrante.id)}
+                        />
+                        <label htmlFor={em.id} className="text-sm flex-1 cursor-pointer flex items-center gap-2">
+                          {em.member.full_name}
+                          {em.sub_time && (
+                            <Badge variant="outline" className="text-xs">
+                              {em.sub_time}
+                            </Badge>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Membros extras adicionados */}
+            {extraIntegrantes.length > 0 && (
+              <div className="space-y-2">
+                <Label>Membros Extras</Label>
+                <div className="border rounded-lg p-3 space-y-2">
+                  {extraIntegrantes.map((intId) => {
+                    const integrante = integrantes.find((i) => i.id === intId);
+                    if (!integrante) return null;
+                    return (
+                      <div key={intId} className="flex items-center justify-between">
+                        <span className="text-sm">{integrante.member.full_name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-destructive"
+                          onClick={() => removeExtraIntegrante(intId)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Botão para adicionar pessoas extras */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setShowAddExtraDialog(true)}
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Incluir pessoa extra
+            </Button>
+
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Textarea
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Observações opcionais..."
+                rows={2}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={resetForm}>
+              Cancelar
+            </Button>
+            <Button onClick={() => saveMutation.mutate()} disabled={!dataCulto || saveMutation.isPending}>
+              {editingEscala ? "Salvar" : "Criar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para adicionar pessoa extra */}
+      <Dialog open={showAddExtraDialog} onOpenChange={setShowAddExtraDialog}>
+        <DialogContent className="max-w-md max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Incluir Pessoa Extra</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Selecione um membro do ministério</Label>
+            <div className="border rounded-lg p-3 max-h-64 overflow-y-auto space-y-2">
+              {integrantes
+                .filter((i) => !selectedIntegrantes.includes(i.id) && !extraIntegrantes.includes(i.id))
+                .map((integrante) => (
+                  <Button
+                    key={integrante.id}
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => addExtraIntegrante(integrante.id)}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    {integrante.member.full_name}
+                    {integrante.funcao?.nome && (
+                      <Badge variant="outline" className="ml-2 text-xs">
+                        {integrante.funcao.nome}
+                      </Badge>
+                    )}
+                  </Button>
+                ))}
+              {integrantes.filter((i) => !selectedIntegrantes.includes(i.id) && !extraIntegrantes.includes(i.id)).length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Todos os membros do ministério já foram selecionados
+                </p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* AlertDialog Deletar Escala */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover escala?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => escalaToDelete && deleteMutation.mutate(escalaToDelete)}
+            >
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};

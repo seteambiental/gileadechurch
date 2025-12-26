@@ -34,6 +34,7 @@ import { MinisterioEstatisticasTab } from "@/components/ministerio/MinisterioEst
 import { MinisterioRepertorioTab } from "@/components/ministerio/MinisterioRepertorioTab";
 import { DancaRepertorioTab } from "@/components/ministerio/DancaRepertorioTab";
 import { DancaEquipesTab } from "@/components/ministerio/DancaEquipesTab";
+import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
 
 interface MinistryInfo {
   title: string;
@@ -304,7 +305,11 @@ const MinistryPage = () => {
             </TabsContent>
 
             <TabsContent value="escalas">
-              <MinisterioEscalasTab ministryId={ministryFromDb.id} />
+              {isDanca ? (
+                <DancaEscalasTab ministryId={ministryFromDb.id} />
+              ) : (
+                <MinisterioEscalasTab ministryId={ministryFromDb.id} />
+              )}
             </TabsContent>
 
             {hasRepertorio && (
