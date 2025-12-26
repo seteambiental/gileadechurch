@@ -25,9 +25,11 @@ import {
   UserCheck,
   Users,
   CalendarDays,
+  BarChart3,
 } from "lucide-react";
 import { MinisterioEquipeTab } from "@/components/ministerio/MinisterioEquipeTab";
 import { MinisterioEscalasTab } from "@/components/ministerio/MinisterioEscalasTab";
+import { MinisterioEstatisticasTab } from "@/components/ministerio/MinisterioEstatisticasTab";
 
 interface MinistryInfo {
   title: string;
@@ -242,18 +244,22 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {hasEscalas ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
-                Sobre
+                <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
               <TabsTrigger value="equipe" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Equipe
+                <span className="hidden sm:inline">Equipe</span>
               </TabsTrigger>
               <TabsTrigger value="escalas" className="flex items-center gap-2">
                 <CalendarDays className="w-4 h-4" />
-                Escalas
+                <span className="hidden sm:inline">Escalas</span>
+              </TabsTrigger>
+              <TabsTrigger value="estatisticas" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                <span className="hidden sm:inline">Estatísticas</span>
               </TabsTrigger>
             </TabsList>
 
@@ -279,6 +285,10 @@ const MinistryPage = () => {
 
             <TabsContent value="escalas">
               <MinisterioEscalasTab ministryId={ministryFromDb.id} />
+            </TabsContent>
+
+            <TabsContent value="estatisticas">
+              <MinisterioEstatisticasTab ministryId={ministryFromDb.id} />
             </TabsContent>
           </Tabs>
         ) : (
