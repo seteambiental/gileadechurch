@@ -199,6 +199,7 @@ export type Database = {
           funcao: string | null
           id: string
           member_id: string
+          sub_time: string | null
           updated_at: string
         }
         Insert: {
@@ -208,6 +209,7 @@ export type Database = {
           funcao?: string | null
           id?: string
           member_id: string
+          sub_time?: string | null
           updated_at?: string
         }
         Update: {
@@ -217,6 +219,7 @@ export type Database = {
           funcao?: string | null
           id?: string
           member_id?: string
+          sub_time?: string | null
           updated_at?: string
         }
         Relationships: [
