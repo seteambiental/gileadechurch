@@ -1,10 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2, LucideIcon, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import {
   Baby,
@@ -20,13 +23,18 @@ import {
   Music,
   Sparkles,
   UserCheck,
+  Users,
+  CalendarDays,
 } from "lucide-react";
+import { MinisterioEquipeTab } from "@/components/ministerio/MinisterioEquipeTab";
+import { MinisterioEscalasTab } from "@/components/ministerio/MinisterioEscalasTab";
 
 interface MinistryInfo {
   title: string;
   description: string;
   icon: LucideIcon;
   fullDescription: string;
+  hasEscalas?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -57,6 +65,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Disc3,
     fullDescription:
       "Ministério de adoração através da dança, expressando louvor ao Senhor através de coreografias.",
+    hasEscalas: true,
   },
   ensino: {
     title: "Ensino",
@@ -106,6 +115,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Music,
     fullDescription:
       "Ministério responsável pela condução do louvor e adoração nos cultos e eventos da igreja.",
+    hasEscalas: true,
   },
   midia: {
     title: "Mídia",
@@ -113,6 +123,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Camera,
     fullDescription:
       "Ministério de comunicação responsável por fotos, vídeos, transmissões e mídias sociais da igreja.",
+    hasEscalas: true,
   },
   servico: {
     title: "Serviço (Dorcas)",
@@ -134,8 +145,31 @@ const MinistryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("info");
 
   const bypass = isAuthBypassed();
+
+  // Fetch ministry from database to get ID
+  const { data: ministryFromDb } = useQuery({
+    queryKey: ["ministry-by-name", slug],
+    queryFn: async () => {
+      if (!slug) return null;
+      const ministry = ministriesData[slug];
+      if (!ministry) return null;
+      
+      // Search for ministry by partial name match
+      const { data, error } = await supabase
+        .from("ministries")
+        .select("id, name")
+        .or(`name.ilike.%${ministry.title}%,name.ilike.%ministério de ${ministry.title}%`)
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!slug,
+  });
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -155,7 +189,6 @@ const MinistryPage = () => {
     return null;
   }
 
-
   const ministry = slug ? ministriesData[slug] : null;
 
   if (!ministry) {
@@ -172,6 +205,7 @@ const MinistryPage = () => {
   }
 
   const IconComponent = ministry.icon;
+  const hasEscalas = ministry.hasEscalas && ministryFromDb?.id;
 
   return (
     <div className="min-h-screen bg-background">
@@ -206,46 +240,89 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <Card className="bg-card border-border">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto mb-4 flex items-center justify-center w-20 h-20 rounded-2xl bg-destructive text-destructive-foreground shadow-red">
-              <IconComponent className="w-10 h-10" strokeWidth={1.5} />
-            </div>
-            <CardTitle className="text-2xl font-heading">{ministry.title}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <p className="text-muted-foreground text-center max-w-2xl mx-auto">
-              {ministry.fullDescription}
-            </p>
+        {hasEscalas ? (
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="info" className="flex items-center gap-2">
+                <IconComponent className="w-4 h-4" />
+                Sobre
+              </TabsTrigger>
+              <TabsTrigger value="equipe" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Equipe
+              </TabsTrigger>
+              <TabsTrigger value="escalas" className="flex items-center gap-2">
+                <CalendarDays className="w-4 h-4" />
+                Escalas
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="grid gap-4 md:grid-cols-3 pt-4">
-              <Card className="bg-muted/30 border-border">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-3xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Membros</p>
+            <TabsContent value="info">
+              <Card className="bg-card border-border">
+                <CardHeader className="text-center pb-4">
+                  <div className="mx-auto mb-4 flex items-center justify-center w-20 h-20 rounded-2xl bg-destructive text-destructive-foreground shadow-red">
+                    <IconComponent className="w-10 h-10" strokeWidth={1.5} />
+                  </div>
+                  <CardTitle className="text-2xl font-heading">{ministry.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+                    {ministry.fullDescription}
+                  </p>
                 </CardContent>
               </Card>
-              <Card className="bg-muted/30 border-border">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-3xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Líderes</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-muted/30 border-border">
-                <CardContent className="pt-6 text-center">
-                  <p className="text-3xl font-bold text-foreground">0</p>
-                  <p className="text-sm text-muted-foreground">Eventos</p>
-                </CardContent>
-              </Card>
-            </div>
+            </TabsContent>
 
-            <div className="flex justify-center pt-4">
-              <p className="text-sm text-muted-foreground italic">
-                Em breve: gestão completa do ministério
+            <TabsContent value="equipe">
+              <MinisterioEquipeTab ministryId={ministryFromDb.id} ministryName={ministry.title} />
+            </TabsContent>
+
+            <TabsContent value="escalas">
+              <MinisterioEscalasTab ministryId={ministryFromDb.id} />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Card className="bg-card border-border">
+            <CardHeader className="text-center pb-4">
+              <div className="mx-auto mb-4 flex items-center justify-center w-20 h-20 rounded-2xl bg-destructive text-destructive-foreground shadow-red">
+                <IconComponent className="w-10 h-10" strokeWidth={1.5} />
+              </div>
+              <CardTitle className="text-2xl font-heading">{ministry.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-muted-foreground text-center max-w-2xl mx-auto">
+                {ministry.fullDescription}
               </p>
-            </div>
-          </CardContent>
-        </Card>
+
+              <div className="grid gap-4 md:grid-cols-3 pt-4">
+                <Card className="bg-muted/30 border-border">
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-3xl font-bold text-foreground">0</p>
+                    <p className="text-sm text-muted-foreground">Membros</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/30 border-border">
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-3xl font-bold text-foreground">0</p>
+                    <p className="text-sm text-muted-foreground">Líderes</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/30 border-border">
+                  <CardContent className="pt-6 text-center">
+                    <p className="text-3xl font-bold text-foreground">0</p>
+                    <p className="text-sm text-muted-foreground">Eventos</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="flex justify-center pt-4">
+                <p className="text-sm text-muted-foreground italic">
+                  Em breve: gestão completa do ministério
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
     </div>
   );

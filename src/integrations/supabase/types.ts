@@ -985,6 +985,167 @@ export type Database = {
           },
         ]
       }
+      ministerio_escala_membros: {
+        Row: {
+          created_at: string
+          escala_id: string
+          id: string
+          integrante_id: string
+        }
+        Insert: {
+          created_at?: string
+          escala_id: string
+          id?: string
+          integrante_id: string
+        }
+        Update: {
+          created_at?: string
+          escala_id?: string
+          id?: string
+          integrante_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_escala_membros_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_escalas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_escala_membros_integrante_id_fkey"
+            columns: ["integrante_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_integrantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministerio_escalas: {
+        Row: {
+          created_at: string
+          data_culto: string
+          id: string
+          ministry_id: string
+          observacoes: string | null
+          tipo_culto: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_culto: string
+          id?: string
+          ministry_id: string
+          observacoes?: string | null
+          tipo_culto?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_culto?: string
+          id?: string
+          ministry_id?: string
+          observacoes?: string | null
+          tipo_culto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_escalas_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministerio_funcoes: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          ministry_id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ministry_id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ministry_id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_funcoes_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministerio_integrantes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          funcao_id: string
+          id: string
+          member_id: string
+          ministry_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          funcao_id: string
+          id?: string
+          member_id: string
+          ministry_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          funcao_id?: string
+          id?: string
+          member_id?: string
+          ministry_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministerio_integrantes_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_funcoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_integrantes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_integrantes_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ministries: {
         Row: {
           created_at: string
