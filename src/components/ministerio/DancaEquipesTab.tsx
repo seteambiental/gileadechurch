@@ -33,7 +33,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Plus, Trash2, User, Users, Settings } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface DancaEquipesTabProps {
   ministryId: string;
@@ -51,6 +50,7 @@ interface EquipeMembro {
   member_id: string;
   funcao: string;
   ativo: boolean;
+  sub_time: string | null;
   member: {
     id: string;
     full_name: string;
@@ -65,6 +65,8 @@ const EQUIPES_PADRAO = [
   { nome: "Jovens/Adultos", descricao: "Equipe de dança para jovens e adultos (composta por 3 times)" },
 ];
 
+const SUB_TIMES = ["Time 1", "Time 2", "Time 3"];
+
 export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
   const queryClient = useQueryClient();
   const [selectedEquipe, setSelectedEquipe] = useState<string>("all");
@@ -76,6 +78,7 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
   const [selectedMemberId, setSelectedMemberId] = useState("");
   const [selectedEquipeId, setSelectedEquipeId] = useState("");
   const [selectedFuncao, setSelectedFuncao] = useState("integrante");
+  const [selectedSubTime, setSelectedSubTime] = useState("");
   const [membroToDelete, setMembroToDelete] = useState<string | null>(null);
   const [equipeToDelete, setEquipeToDelete] = useState<string | null>(null);
 
@@ -108,6 +111,7 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
           member_id,
           funcao,
           ativo,
+          sub_time,
           member:members(id, full_name, photo_url, whatsapp)
         `)
         .in("equipe_id", equipeIds)
@@ -142,7 +146,7 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
     },
   });
 
-  // Agrupar membros por equipe
+  // Agrupar membros por equipe e sub-time
   const membrosByEquipe = useMemo(() => {
     const grouped: Record<string, EquipeMembro[]> = {};
     membros.forEach(m => {
@@ -151,6 +155,12 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
     });
     return grouped;
   }, [membros]);
+
+  // Verificar se a equipe selecionada é Jovens/Adultos
+  const isJovensAdultosEquipe = (equipeId: string) => {
+    const equipe = equipes.find(e => e.id === equipeId);
+    return equipe?.nome === "Jovens/Adultos";
+  };
 
   // Mutation para criar equipe
   const createEquipeMutation = useMutation({
@@ -192,10 +202,12 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
   // Mutation para adicionar membro à equipe
   const addMembroMutation = useMutation({
     mutationFn: async () => {
+      const isJovensAdultos = isJovensAdultosEquipe(selectedEquipeId);
       const { error } = await supabase.from("danca_equipe_membros").insert({
         equipe_id: selectedEquipeId,
         member_id: selectedMemberId,
         funcao: selectedFuncao,
+        sub_time: isJovensAdultos && selectedSubTime ? selectedSubTime : null,
       });
       if (error) throw error;
     },
@@ -206,8 +218,9 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
       setSelectedMemberId("");
       setSelectedEquipeId("");
       setSelectedFuncao("integrante");
+      setSelectedSubTime("");
     },
-    onError: () => toast.error("Erro ao adicionar membro. Verifique se já não está na equipe."),
+    onError: () => toast.error("Erro ao adicionar membro"),
   });
 
   // Mutation para remover membro da equipe
@@ -232,11 +245,48 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
     });
   };
 
-  // Filtrar membros já adicionados
+  // Membros disponíveis para adicionar (permite múltiplas equipes)
   const availableMembers = useMemo(() => {
-    const addedMemberIds = new Set(membros.map(m => m.member_id));
-    return membersInMinistry.filter(m => !addedMemberIds.has(m.id));
-  }, [membersInMinistry, membros]);
+    if (!selectedEquipeId) return membersInMinistry;
+    
+    // Verifica se o membro já está na equipe selecionada (e no sub-time se for Jovens/Adultos)
+    const isJovensAdultos = isJovensAdultosEquipe(selectedEquipeId);
+    
+    return membersInMinistry.filter(m => {
+      const existingInEquipe = membros.filter(
+        em => em.member_id === m.id && em.equipe_id === selectedEquipeId
+      );
+      
+      if (!isJovensAdultos) {
+        // Para outras equipes, não permitir duplicatas
+        return existingInEquipe.length === 0;
+      } else {
+        // Para Jovens/Adultos, permitir adicionar em diferentes sub-times
+        if (!selectedSubTime) return true;
+        return !existingInEquipe.some(em => em.sub_time === selectedSubTime);
+      }
+    });
+  }, [membersInMinistry, membros, selectedEquipeId, selectedSubTime, equipes]);
+
+  // Agrupar membros por sub-time para Jovens/Adultos
+  const getMembrosBySubTime = (equipeMembros: EquipeMembro[]) => {
+    const grouped: Record<string, EquipeMembro[]> = {
+      "Time 1": [],
+      "Time 2": [],
+      "Time 3": [],
+      "Sem time": [],
+    };
+    
+    equipeMembros.forEach(m => {
+      if (m.sub_time && SUB_TIMES.includes(m.sub_time)) {
+        grouped[m.sub_time].push(m);
+      } else {
+        grouped["Sem time"].push(m);
+      }
+    });
+    
+    return grouped;
+  };
 
   return (
     <div className="space-y-4">
@@ -293,6 +343,8 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
             .filter(e => selectedEquipe === "all" || e.id === selectedEquipe)
             .map((equipe) => {
               const equipeMembros = membrosByEquipe[equipe.id] || [];
+              const isJovensAdultos = equipe.nome === "Jovens/Adultos";
+              const membrosBySubTime = isJovensAdultos ? getMembrosBySubTime(equipeMembros) : null;
               
               return (
                 <Card key={equipe.id} className="bg-card border-border">
@@ -328,44 +380,71 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
                       <p className="text-sm text-muted-foreground text-center py-4">
                         Nenhum membro nesta equipe
                       </p>
+                    ) : isJovensAdultos && membrosBySubTime ? (
+                      <div className="space-y-4">
+                        {SUB_TIMES.map(subTime => {
+                          const subTimeMembros = membrosBySubTime[subTime];
+                          if (subTimeMembros.length === 0) return null;
+                          
+                          return (
+                            <div key={subTime} className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                  {subTime}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {subTimeMembros.length} membro(s)
+                                </span>
+                              </div>
+                              <div className="grid gap-2 pl-4">
+                                {subTimeMembros.map((membro) => (
+                                  <MemberCard
+                                    key={membro.id}
+                                    membro={membro}
+                                    onDelete={() => {
+                                      setMembroToDelete(membro.id);
+                                      setShowDeleteMembroDialog(true);
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {membrosBySubTime["Sem time"].length > 0 && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">Sem time definido</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {membrosBySubTime["Sem time"].length} membro(s)
+                              </span>
+                            </div>
+                            <div className="grid gap-2 pl-4">
+                              {membrosBySubTime["Sem time"].map((membro) => (
+                                <MemberCard
+                                  key={membro.id}
+                                  membro={membro}
+                                  onDelete={() => {
+                                    setMembroToDelete(membro.id);
+                                    setShowDeleteMembroDialog(true);
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <div className="grid gap-2">
                         {equipeMembros.map((membro) => (
-                          <div
+                          <MemberCard
                             key={membro.id}
-                            className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                          >
-                            <div className="flex items-center gap-3">
-                              {membro.member?.photo_url ? (
-                                <img
-                                  src={membro.member.photo_url}
-                                  alt={membro.member?.full_name}
-                                  className="w-10 h-10 rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                                  <User className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div>
-                                <p className="font-medium text-foreground">{membro.member?.full_name}</p>
-                                <Badge variant="outline" className="text-xs capitalize">
-                                  {membro.funcao}
-                                </Badge>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                setMembroToDelete(membro.id);
-                                setShowDeleteMembroDialog(true);
-                              }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                            membro={membro}
+                            onDelete={() => {
+                              setMembroToDelete(membro.id);
+                              setShowDeleteMembroDialog(true);
+                            }}
+                          />
                         ))}
                       </div>
                     )}
@@ -432,7 +511,15 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
       </Dialog>
 
       {/* Dialog Adicionar Membro */}
-      <Dialog open={showAddMembroDialog} onOpenChange={setShowAddMembroDialog}>
+      <Dialog open={showAddMembroDialog} onOpenChange={(open) => {
+        setShowAddMembroDialog(open);
+        if (!open) {
+          setSelectedEquipeId("");
+          setSelectedMemberId("");
+          setSelectedSubTime("");
+          setSelectedFuncao("integrante");
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Adicionar Membro à Equipe</DialogTitle>
@@ -440,7 +527,11 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Equipe</Label>
-              <Select value={selectedEquipeId} onValueChange={setSelectedEquipeId}>
+              <Select value={selectedEquipeId} onValueChange={(value) => {
+                setSelectedEquipeId(value);
+                setSelectedSubTime("");
+                setSelectedMemberId("");
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma equipe" />
                 </SelectTrigger>
@@ -451,6 +542,27 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Sub-time para Jovens/Adultos */}
+            {selectedEquipeId && isJovensAdultosEquipe(selectedEquipeId) && (
+              <div className="space-y-2">
+                <Label>Sub-time</Label>
+                <Select value={selectedSubTime} onValueChange={(value) => {
+                  setSelectedSubTime(value);
+                  setSelectedMemberId("");
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um sub-time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SUB_TIMES.map((time) => (
+                      <SelectItem key={time} value={time}>{time}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Membro</Label>
               <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
@@ -460,7 +572,7 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
                 <SelectContent>
                   {availableMembers.length === 0 ? (
                     <div className="p-3 text-sm text-muted-foreground text-center">
-                      Nenhum membro disponível (já estão em equipes ou não selecionaram este ministério)
+                      Nenhum membro disponível
                     </div>
                   ) : (
                     availableMembers.map((m) => (
@@ -469,6 +581,9 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
                   )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Membros podem participar de múltiplas equipes
+              </p>
             </div>
             <div className="space-y-2">
               <Label>Função</Label>
@@ -542,3 +657,42 @@ export const DancaEquipesTab = ({ ministryId }: DancaEquipesTabProps) => {
     </div>
   );
 };
+
+// Componente auxiliar para exibir membro
+const MemberCard = ({ 
+  membro, 
+  onDelete 
+}: { 
+  membro: EquipeMembro; 
+  onDelete: () => void;
+}) => (
+  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+    <div className="flex items-center gap-3">
+      {membro.member?.photo_url ? (
+        <img
+          src={membro.member.photo_url}
+          alt={membro.member?.full_name}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      ) : (
+        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+          <User className="w-5 h-5 text-muted-foreground" />
+        </div>
+      )}
+      <div>
+        <p className="font-medium text-foreground">{membro.member?.full_name}</p>
+        <Badge variant="outline" className="text-xs capitalize">
+          {membro.funcao}
+        </Badge>
+      </div>
+    </div>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="text-destructive hover:text-destructive"
+      onClick={onDelete}
+    >
+      <Trash2 className="w-4 h-4" />
+    </Button>
+  </div>
+);
