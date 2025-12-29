@@ -107,6 +107,22 @@ const MINISTRY_SPECIFIC_FUNCTIONS: Record<string, { value: string; label: string
     { value: "lider", label: "Líder" },
     { value: "dançarino", label: "Dançarino(a)" },
   ],
+  "estacionamento": [
+    { value: "coordenador", label: "Coordenador" },
+    { value: "orientador", label: "Orientador de Vagas" },
+    { value: "manobrista", label: "Manobrista" },
+  ],
+  "organização": [
+    { value: "coordenador", label: "Coordenador" },
+    { value: "organizador", label: "Organizador" },
+    { value: "acomodacao", label: "Acomodação" },
+    { value: "som", label: "Som/Microfone" },
+  ],
+  "recepção": [
+    { value: "coordenador", label: "Coordenador" },
+    { value: "recepcionista", label: "Recepcionista" },
+    { value: "informacao", label: "Informações" },
+  ],
 };
 
 // Função para encontrar funções específicas pelo nome do ministério
