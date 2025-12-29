@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, UserMinus, User, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { IndexarRostoButton } from "./IndexarRostoButton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,14 +131,20 @@ export const MembrosVinculadosList = ({
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    onClick={() => setDesvincularMembro({ id: membro.id, nome: membro.full_name })}
-                  >
-                    <UserMinus className="w-4 h-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <IndexarRostoButton
+                      memberId={membro.id}
+                      photoUrl={membro.photo_url}
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setDesvincularMembro({ id: membro.id, nome: membro.full_name })}
+                    >
+                      <UserMinus className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

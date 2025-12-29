@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.lembrete-culto-kids]
 verify_jwt = false
+
+[functions.rekognition-faces]
+verify_jwt = false
