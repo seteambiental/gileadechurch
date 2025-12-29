@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVinculadosList";
 import { VincularMembroDialog } from "@/components/casas-refugio/VincularMembroDialog";
+import { AnalisePresencaDialog } from "@/components/casas-refugio/AnalisePresencaDialog";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,11 @@ const CasaRefugioDetalhes = () => {
   const [endDate, setEndDate] = useState("");
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
+  const [analiseEncontro, setAnaliseEncontro] = useState<{
+    id: string;
+    photoUrl: string;
+    dataEncontro: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -262,22 +268,35 @@ const CasaRefugioDetalhes = () => {
                 const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
                 return (
                   <div key={encontro.id} className="bg-card border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-foreground">
-                        {format(new Date(encontro.data_encontro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {encontro.photo_url && (
-                          <button
-                            onClick={() => setSelectedPhoto(encontro.photo_url)}
-                            className="p-1 rounded hover:bg-muted"
-                          >
-                            <Image className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                        )}
-                        <span className="text-sm text-muted-foreground">{total} pessoas</span>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-foreground">
+                          {format(new Date(encontro.data_encontro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {encontro.photo_url && (
+                            <>
+                              <button
+                                onClick={() => setAnaliseEncontro({
+                                  id: encontro.id,
+                                  photoUrl: encontro.photo_url!,
+                                  dataEncontro: encontro.data_encontro,
+                                })}
+                                className="p-1 rounded hover:bg-muted"
+                                title="Analisar presença"
+                              >
+                                <ScanFace className="w-4 h-4 text-destructive" />
+                              </button>
+                              <button
+                                onClick={() => setSelectedPhoto(encontro.photo_url)}
+                                className="p-1 rounded hover:bg-muted"
+                              >
+                                <Image className="w-4 h-4 text-muted-foreground" />
+                              </button>
+                            </>
+                          )}
+                          <span className="text-sm text-muted-foreground">{total} pessoas</span>
+                        </div>
                       </div>
-                    </div>
                     <div className="grid grid-cols-4 gap-2 text-xs text-center">
                       <div><span className="text-blue-600 font-medium">{encontro.qtd_lideres}</span> líd.</div>
                       <div><span className="text-green-600 font-medium">{encontro.qtd_membros}</span> memb.</div>
@@ -318,6 +337,18 @@ const CasaRefugioDetalhes = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Analise Presenca Dialog */}
+      {id && analiseEncontro && (
+        <AnalisePresencaDialog
+          open={!!analiseEncontro}
+          onOpenChange={(open) => !open && setAnaliseEncontro(null)}
+          encontroId={analiseEncontro.id}
+          casaRefugioId={id}
+          photoUrl={analiseEncontro.photoUrl}
+          dataEncontro={analiseEncontro.dataEncontro}
+        />
+      )}
 
       {/* Vincular Membro Dialog */}
       {id && casa && (

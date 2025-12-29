@@ -274,6 +274,64 @@ export type Database = {
           },
         ]
       }
+      encontro_presencas: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          encontro_id: string
+          id: string
+          member_id: string | null
+          mensagem_ausencia_enviada: boolean
+          mensagem_enviada_em: string | null
+          novo_convertido_id: string | null
+          presente: boolean
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          encontro_id: string
+          id?: string
+          member_id?: string | null
+          mensagem_ausencia_enviada?: boolean
+          mensagem_enviada_em?: string | null
+          novo_convertido_id?: string | null
+          presente?: boolean
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          encontro_id?: string
+          id?: string
+          member_id?: string | null
+          mensagem_ausencia_enviada?: boolean
+          mensagem_enviada_em?: string | null
+          novo_convertido_id?: string | null
+          presente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "encontro_presencas_encontro_id_fkey"
+            columns: ["encontro_id"]
+            isOneToOne: false
+            referencedRelation: "encontros_casa_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encontro_presencas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encontro_presencas_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       encontros_casa_refugio: {
         Row: {
           casa_refugio_id: string
@@ -880,6 +938,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      member_face_indexes: {
+        Row: {
+          created_at: string
+          external_image_id: string | null
+          face_id: string
+          id: string
+          member_id: string | null
+          novo_convertido_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          external_image_id?: string | null
+          face_id: string
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          external_image_id?: string | null
+          face_id?: string
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_face_indexes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_face_indexes_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       member_functions: {
         Row: {
