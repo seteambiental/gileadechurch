@@ -29,6 +29,7 @@ import {
   Megaphone,
   Car,
   ClipboardList,
+  DoorOpen,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -53,6 +54,7 @@ const ministries = [
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
   { icon: Crown, title: "Mulheres", description: "Ministério feminino", path: "/ministerio/mulheres" },
   { icon: ClipboardList, title: "Organização de Culto", description: "Logística dos cultos", path: "/ministerio/organizacao-culto" },
+  { icon: DoorOpen, title: "Recepção", description: "Acolhimento", path: "/ministerio/recepcao" },
   { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social", path: "/ministerio/servico" },
   { icon: Drama, title: "Teatro", description: "Artes cênicas", path: "/ministerio/teatro" },
   { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
