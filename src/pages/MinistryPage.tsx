@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -157,6 +157,14 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: ClipboardList,
     fullDescription:
       "Ministério responsável pela organização e logística dos cultos, incluindo recepção, acomodação e suporte geral.",
+    hasEscalas: true,
+  },
+  recepcao: {
+    title: "Recepção",
+    description: "Acolhimento",
+    icon: DoorOpen,
+    fullDescription:
+      "Ministério dedicado a receber e acolher as pessoas na entrada dos cultos e eventos, proporcionando uma experiência acolhedora.",
     hasEscalas: true,
   },
   servico: {
