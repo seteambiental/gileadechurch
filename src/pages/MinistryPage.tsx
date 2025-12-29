@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -84,6 +84,14 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério focado na formação bíblica e teológica dos membros através de cursos e estudos sistemáticos.",
   },
+  estacionamento: {
+    title: "Estacionamento",
+    description: "Organização de vagas",
+    icon: Car,
+    fullDescription:
+      "Ministério responsável pela organização e direcionamento do estacionamento nos cultos e eventos da igreja.",
+    hasEscalas: true,
+  },
   evangelizacao: {
     title: "Evangelização",
     description: "Alcançar vidas",
@@ -134,6 +142,21 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Camera,
     fullDescription:
       "Ministério de comunicação responsável por fotos, vídeos, transmissões e mídias sociais da igreja.",
+    hasEscalas: true,
+  },
+  mulheres: {
+    title: "Mulheres",
+    description: "Ministério feminino",
+    icon: Crown,
+    fullDescription:
+      "Ministério dedicado ao fortalecimento e discipulado das mulheres da igreja.",
+  },
+  "organizacao-culto": {
+    title: "Organização de Culto",
+    description: "Logística dos cultos",
+    icon: ClipboardList,
+    fullDescription:
+      "Ministério responsável pela organização e logística dos cultos, incluindo recepção, acomodação e suporte geral.",
     hasEscalas: true,
   },
   servico: {
