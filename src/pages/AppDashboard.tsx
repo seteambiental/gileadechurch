@@ -27,6 +27,8 @@ import {
   Shield,
   Zap,
   Megaphone,
+  Car,
+  ClipboardList,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -40,6 +42,7 @@ const ministries = [
   { icon: UserCheck, title: "Consolidação", description: "Novos convertidos", path: "/ministerio/consolidacao" },
   { icon: Disc3, title: "Dança", description: "Expressão corporal", path: "/ministerio/danca" },
   { icon: BookOpen, title: "Ensino", description: "Discipulado", path: "/ministerio/ensino" },
+  { icon: Car, title: "Estacionamento", description: "Organização de vagas", path: "/ministerio/estacionamento" },
   { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
@@ -49,6 +52,7 @@ const ministries = [
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
   { icon: Crown, title: "Mulheres", description: "Ministério feminino", path: "/ministerio/mulheres" },
+  { icon: ClipboardList, title: "Organização de Culto", description: "Logística dos cultos", path: "/ministerio/organizacao-culto" },
   { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social", path: "/ministerio/servico" },
   { icon: Drama, title: "Teatro", description: "Artes cênicas", path: "/ministerio/teatro" },
   { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
