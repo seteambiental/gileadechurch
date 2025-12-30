@@ -69,6 +69,10 @@ interface RecognitionResult {
   totalMatched: number;
   presentMembers: RecognizedPerson[];
   presentNC: RecognizedPerson[];
+  presentChildren: RecognizedPerson[];
+  estimatedChildren: number;
+  unidentifiedChildren: number;
+  unidentifiedAdults: number;
   error?: string;
 }
 
@@ -223,12 +227,11 @@ export const EncontroFormDialog = ({
       if (data.success) {
         setRecognitionResult(data);
         
-        // Calculate counts
+        // Calculate counts with new children data
         const recognizedMembers = data.presentMembers?.length || 0;
         const recognizedNC = data.presentNC?.length || 0;
-        const totalRecognized = recognizedMembers + recognizedNC;
-        const totalFaces = data.totalFaces || 0;
-        const unrecognized = Math.max(0, totalFaces - totalRecognized);
+        const recognizedChildren = data.presentChildren?.length || 0;
+        const totalRecognized = recognizedMembers + recognizedNC + recognizedChildren;
         
         // Find leaders among recognized
         const liderIds = lideres.map((l: any) => l?.id);
@@ -236,17 +239,29 @@ export const EncontroFormDialog = ({
           liderIds.includes(m.id)
         )?.length || 0;
         
-        // Members = recognized members that are NOT leaders
+        // Members = recognized members that are NOT leaders + NC (excluding children)
         const membersCount = recognizedMembers - recognizedLeaders + recognizedNC;
+        
+        // Children = identified children + estimated unidentified children
+        const childrenCount = recognizedChildren + (data.unidentifiedChildren || 0);
+        
+        // Visitors = unidentified adults
+        const visitorsCount = data.unidentifiedAdults || 0;
         
         // Update form values
         form.setValue("qtd_lideres", recognizedLeaders);
         form.setValue("qtd_membros", membersCount);
-        form.setValue("qtd_visitantes", unrecognized); // Unrecognized = visitors/children
+        form.setValue("qtd_criancas", childrenCount);
+        form.setValue("qtd_visitantes", visitorsCount);
+        
+        const parts = [];
+        if (totalRecognized > 0) parts.push(`${totalRecognized} identificado(s)`);
+        if (childrenCount > 0) parts.push(`${childrenCount} criança(s)`);
+        if (visitorsCount > 0) parts.push(`${visitorsCount} visitante(s)`);
         
         toast({
           title: "Análise concluída!",
-          description: `${totalRecognized} pessoa(s) reconhecida(s), ${unrecognized} não identificada(s).`,
+          description: parts.join(", ") || "Nenhuma pessoa identificada",
         });
       } else {
         toast({
@@ -502,49 +517,95 @@ export const EncontroFormDialog = ({
 
             {/* Recognition Results */}
             {recognitionResult && recognitionResult.success && (
-              <div className="space-y-2 p-3 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Check className="w-4 h-4 text-green-500" />
-                  Reconhecimento Facial
+              <div className="space-y-3 p-3 bg-muted/50 rounded-lg border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Check className="w-4 h-4 text-green-500" />
+                    Reconhecimento Facial
+                  </div>
+                  <Badge variant="secondary" className="text-xs">
+                    {recognitionResult.totalFaces} rosto(s)
+                  </Badge>
                 </div>
                 
-                <div className="text-xs text-muted-foreground">
-                  {recognitionResult.totalFaces} rosto(s) detectado(s), {recognitionResult.totalMatched} identificado(s)
-                </div>
-                
-                {(recognitionResult.presentMembers?.length > 0 || recognitionResult.presentNC?.length > 0) && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {recognitionResult.presentMembers?.map((person) => (
-                      <div key={person.id} className="flex items-center gap-1 bg-background rounded-full pl-1 pr-2 py-0.5 border">
-                        <Avatar className="w-5 h-5">
-                          <AvatarImage src={person.photo_url || undefined} />
-                          <AvatarFallback className="text-[8px]">
-                            {getInitials(person.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs truncate max-w-[80px]">{person.full_name.split(" ")[0]}</span>
-                      </div>
-                    ))}
-                    {recognitionResult.presentNC?.map((person) => (
-                      <div key={person.id} className="flex items-center gap-1 bg-amber-500/10 rounded-full pl-1 pr-2 py-0.5 border border-amber-500/20">
-                        <Avatar className="w-5 h-5">
-                          <AvatarImage src={person.photo_url || undefined} />
-                          <AvatarFallback className="text-[8px]">
-                            {getInitials(person.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-xs truncate max-w-[80px]">{person.full_name.split(" ")[0]}</span>
-                      </div>
-                    ))}
+                {/* Identified Members */}
+                {recognitionResult.presentMembers?.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">Membros Identificados:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {recognitionResult.presentMembers?.map((person) => (
+                        <div key={person.id} className="flex items-center gap-1 bg-green-500/10 rounded-full pl-1 pr-2 py-0.5 border border-green-500/30">
+                          <Avatar className="w-5 h-5">
+                            <AvatarImage src={person.photo_url || undefined} />
+                            <AvatarFallback className="text-[8px]">
+                              {getInitials(person.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs truncate max-w-[80px] text-green-700">{person.full_name.split(" ")[0]}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 
-                {recognitionResult.totalFaces > recognitionResult.totalMatched && (
-                  <div className="flex items-center gap-1 text-xs text-amber-600 mt-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {recognitionResult.totalFaces - recognitionResult.totalMatched} pessoa(s) não identificada(s) (visitantes/crianças)
+                {/* Identified NC */}
+                {recognitionResult.presentNC?.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">Novos Convertidos:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {recognitionResult.presentNC?.map((person) => (
+                        <div key={person.id} className="flex items-center gap-1 bg-amber-500/10 rounded-full pl-1 pr-2 py-0.5 border border-amber-500/30">
+                          <Avatar className="w-5 h-5">
+                            <AvatarImage src={person.photo_url || undefined} />
+                            <AvatarFallback className="text-[8px]">
+                              {getInitials(person.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs truncate max-w-[80px] text-amber-700">{person.full_name.split(" ")[0]}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
+                
+                {/* Identified Children */}
+                {recognitionResult.presentChildren?.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-muted-foreground">Crianças Identificadas:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {recognitionResult.presentChildren?.map((person) => (
+                        <div key={person.id} className="flex items-center gap-1 bg-blue-500/10 rounded-full pl-1 pr-2 py-0.5 border border-blue-500/30">
+                          <Avatar className="w-5 h-5">
+                            <AvatarImage src={person.photo_url || undefined} />
+                            <AvatarFallback className="text-[8px]">
+                              {getInitials(person.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-xs truncate max-w-[80px] text-blue-700">{person.full_name.split(" ")[0]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Summary of unidentified */}
+                <div className="flex flex-wrap gap-2 text-xs pt-1 border-t border-border">
+                  {(recognitionResult.unidentifiedChildren || 0) > 0 && (
+                    <div className="flex items-center gap-1 text-blue-600">
+                      <AlertCircle className="w-3 h-3" />
+                      ~{recognitionResult.unidentifiedChildren} criança(s) não cadastrada(s)
+                    </div>
+                  )}
+                  {(recognitionResult.unidentifiedAdults || 0) > 0 && (
+                    <div className="flex items-center gap-1 text-amber-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {recognitionResult.unidentifiedAdults} visitante(s)
+                    </div>
+                  )}
+                  {recognitionResult.totalMatched === 0 && recognitionResult.totalFaces === 0 && (
+                    <div className="text-muted-foreground">Nenhum rosto detectado na foto</div>
+                  )}
+                </div>
               </div>
             )}
 
