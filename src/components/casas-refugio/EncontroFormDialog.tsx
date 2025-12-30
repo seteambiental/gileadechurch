@@ -24,7 +24,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Users, Package, DollarSign, Calendar, Camera, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
 
 const formSchema = z.object({
@@ -404,7 +403,7 @@ export const EncontroFormDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-destructive" />
@@ -717,7 +716,7 @@ export const EncontroFormDialog = ({
                   )}
                 </span>
                 
-                <div className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-lg p-2 bg-muted/30">
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-border rounded-lg p-2 bg-muted/30">
                   {membrosVinculados.map((membro) => {
                     const isPresente = presencas[membro.id] || false;
                     const isLider = lideres.some((l: any) => l?.id === membro.id);
@@ -726,56 +725,52 @@ export const EncontroFormDialog = ({
                     return (
                       <div
                         key={membro.id}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                        className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${
                           isPresente 
-                            ? "bg-green-500/10 border border-green-500/30" 
-                            : "hover:bg-muted/50"
+                            ? "bg-green-500/20 border border-green-500/50" 
+                            : "hover:bg-muted/50 border border-transparent"
                         }`}
                         onClick={() => togglePresenca(membro.id)}
                       >
-                        <Checkbox
-                          checked={isPresente}
-                          onCheckedChange={() => togglePresenca(membro.id)}
-                          className={`${
+                        <div 
+                          className={`h-4 w-4 shrink-0 rounded-sm border flex items-center justify-center ${
                             isPresente 
-                              ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" 
-                              : ""
+                              ? "bg-green-500 border-green-500" 
+                              : "border-input"
                           }`}
-                        />
+                        >
+                          {isPresente && <Check className="h-3 w-3 text-white" />}
+                        </div>
                         
                         {membro.photo_url ? (
-                          <Avatar className="w-8 h-8">
+                          <Avatar className="w-6 h-6">
                             <AvatarImage src={membro.photo_url} />
-                            <AvatarFallback className="text-xs">
+                            <AvatarFallback className="text-[10px]">
                               {getInitials(membro.full_name)}
                             </AvatarFallback>
                           </Avatar>
                         ) : (
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                            <User className="w-4 h-4 text-muted-foreground" />
+                          <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                            <User className="w-3 h-3 text-muted-foreground" />
                           </div>
                         )}
                         
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{membro.full_name}</p>
+                          <p className="text-xs font-medium truncate">{membro.full_name}</p>
                           <div className="flex items-center gap-1">
                             {isLider && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                              <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
                                 Líder
                               </Badge>
                             )}
                             {wasRecognized && (
-                              <Badge className="text-[10px] px-1 py-0 bg-green-500/20 text-green-600 border-green-500/30">
-                                <ScanFace className="w-2.5 h-2.5 mr-0.5" />
-                                Reconhecido
+                              <Badge className="text-[9px] px-1 py-0 h-4 bg-green-500/20 text-green-600 border-green-500/30">
+                                <ScanFace className="w-2 h-2 mr-0.5" />
+                                ID
                               </Badge>
                             )}
                           </div>
                         </div>
-                        
-                        {isPresente && (
-                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                        )}
                       </div>
                     );
                   })}
