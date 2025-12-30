@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Calendar, Users, ChevronRight, UserCheck, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,9 +26,11 @@ interface CasaRefugioRowProps {
 
 export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleCasaClick = () => {
-    navigate(`/casa-refugio/${casa.id}`);
+    // Preserve current search params for return navigation
+    navigate(`/casa-refugio/${casa.id}${location.search}`);
   };
 
   const handleSupervisorClick = (e: React.MouseEvent) => {
