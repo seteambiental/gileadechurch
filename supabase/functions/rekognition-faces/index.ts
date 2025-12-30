@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const AWS_ACCESS_KEY_ID = Deno.env.get("AWS_ACCESS_KEY_ID")!;
 const AWS_SECRET_ACCESS_KEY = Deno.env.get("AWS_SECRET_ACCESS_KEY")!;
+const AWS_SESSION_TOKEN = Deno.env.get("AWS_SESSION_TOKEN");
 const AWS_REGION = Deno.env.get("AWS_REGION") || "us-east-1";
 const COLLECTION_ID = "gileade-faces";
 
@@ -39,6 +40,9 @@ async function createAWSSignature(
   
   const payloadHash = await crypto.subtle.digest("SHA-256", encoder.encode(payload));
   const payloadHashHex = Array.from(new Uint8Array(payloadHash)).map(b => b.toString(16).padStart(2, "0")).join("");
+
+  // Some AWS services require this header for SigV4 (safe to include for all).
+  headers["x-amz-content-sha256"] = payloadHashHex;
   
   const canonicalRequest = [
     method,
@@ -110,6 +114,11 @@ async function callRekognition(action: string, payload: object) {
     "content-type": "application/x-amz-json-1.1",
     "x-amz-target": `RekognitionService.${action}`,
   };
+
+  // If credentials are temporary (STS/SSO), AWS requires the session token header.
+  if (AWS_SESSION_TOKEN) {
+    headers["x-amz-security-token"] = AWS_SESSION_TOKEN;
+  }
   
   const signedHeaders = await createAWSSignature(
     "POST",
