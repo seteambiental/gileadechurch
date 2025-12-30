@@ -8,19 +8,8 @@ const corsHeaders = {
 
 const AWS_ACCESS_KEY_ID = (Deno.env.get("AWS_ACCESS_KEY_ID") ?? "").trim();
 const AWS_SECRET_ACCESS_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") ?? "").trim();
-// If your base credentials are temporary (SSO/STS), AWS requires the session token.
-const AWS_BASE_SESSION_TOKEN = (Deno.env.get("AWS_SESSION_TOKEN") ?? "").trim() || undefined;
 const AWS_REGION = (Deno.env.get("AWS_REGION") || "us-east-1").trim();
-const AWS_ROLE_ARN = (Deno.env.get("AWS_ROLE_ARN") ?? "").trim();
 const COLLECTION_ID = "gileade-faces";
-
-// Cache for STS credentials
-let cachedCredentials: {
-  accessKeyId: string;
-  secretAccessKey: string;
-  sessionToken: string;
-  expiration: Date;
-} | null = null;
 
 // Helper to create AWS signature
 async function createAWSSignature(
@@ -33,8 +22,7 @@ async function createAWSSignature(
   payload: string,
   accessKey: string,
   secretKey: string,
-  region: string,
-  sessionToken?: string
+  region: string
 ): Promise<Record<string, string>> {
   const encoder = new TextEncoder();
 
@@ -44,11 +32,6 @@ async function createAWSSignature(
 
   headers["x-amz-date"] = amzDate;
   headers["host"] = host;
-
-  // Add session token if provided
-  if (sessionToken) {
-    headers["x-amz-security-token"] = sessionToken;
-  }
 
   const payloadHash = await crypto.subtle.digest("SHA-256", encoder.encode(payload));
   const payloadHashHex = Array.from(new Uint8Array(payloadHash)).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -119,113 +102,12 @@ async function createAWSSignature(
   };
 }
 
-// Get temporary credentials via STS AssumeRole
-async function getSTSCredentials(): Promise<{
-  accessKeyId: string;
-  secretAccessKey: string;
-  sessionToken: string;
-}> {
-  // Return cached credentials if still valid (with 5 min buffer)
-  if (cachedCredentials && cachedCredentials.expiration > new Date(Date.now() + 5 * 60 * 1000)) {
-    console.log("Using cached STS credentials");
-    return {
-      accessKeyId: cachedCredentials.accessKeyId,
-      secretAccessKey: cachedCredentials.secretAccessKey,
-      sessionToken: cachedCredentials.sessionToken,
-    };
-  }
-
-  console.log("Getting new STS credentials via AssumeRole...");
-  console.log(
-    `Base credentials: accessKeyId=${AWS_ACCESS_KEY_ID ? AWS_ACCESS_KEY_ID.slice(0, 4) + "..." : "missing"}, sessionToken=${AWS_BASE_SESSION_TOKEN ? "yes" : "no"}`
-  );
-
-  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
-    throw new Error("AWS base credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in secrets.");
-  }
-
-  if (!AWS_ROLE_ARN) {
-    throw new Error("AWS_ROLE_ARN not configured. Please set the ARN of the role to assume.");
-  }
-
-  const host = `sts.${AWS_REGION}.amazonaws.com`;
-  const endpoint = `https://${host}`;
-  
-  const params = new URLSearchParams({
-    Action: "AssumeRole",
-    Version: "2011-06-15",
-    RoleArn: AWS_ROLE_ARN,
-    RoleSessionName: "rekognition-edge-function",
-    DurationSeconds: "3600", // 1 hour
-  });
-
-  const body = params.toString();
-  
-  const headers: Record<string, string> = {
-    "content-type": "application/x-www-form-urlencoded",
-  };
-  
-  const signedHeaders = await createAWSSignature(
-    "POST",
-    "sts",
-    host,
-    "/",
-    "",
-    headers,
-    body,
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    AWS_REGION,
-    AWS_BASE_SESSION_TOKEN
-  );
-  
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: signedHeaders,
-    body
-  });
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("STS AssumeRole error:", errorText);
-    throw new Error(`STS AssumeRole failed: ${response.status} - ${errorText}`);
-  }
-  
-  const responseText = await response.text();
-  
-  // Parse XML response
-  const accessKeyIdMatch = responseText.match(/<AccessKeyId>([^<]+)<\/AccessKeyId>/);
-  const secretAccessKeyMatch = responseText.match(/<SecretAccessKey>([^<]+)<\/SecretAccessKey>/);
-  const sessionTokenMatch = responseText.match(/<SessionToken>([^<]+)<\/SessionToken>/);
-  const expirationMatch = responseText.match(/<Expiration>([^<]+)<\/Expiration>/);
-  
-  if (!accessKeyIdMatch || !secretAccessKeyMatch || !sessionTokenMatch) {
-    console.error("Failed to parse STS response:", responseText);
-    throw new Error("Failed to parse STS AssumeRole response");
-  }
-  
-  // Cache the credentials
-  cachedCredentials = {
-    accessKeyId: accessKeyIdMatch[1],
-    secretAccessKey: secretAccessKeyMatch[1],
-    sessionToken: sessionTokenMatch[1],
-    expiration: expirationMatch ? new Date(expirationMatch[1]) : new Date(Date.now() + 3600 * 1000),
-  };
-  
-  console.log("STS credentials obtained, expires:", cachedCredentials.expiration.toISOString());
-  
-  return {
-    accessKeyId: cachedCredentials.accessKeyId,
-    secretAccessKey: cachedCredentials.secretAccessKey,
-    sessionToken: cachedCredentials.sessionToken,
-  };
-}
-
 async function callRekognition(action: string, payload: object) {
-  // Get temporary credentials via STS
-  const credentials = await getSTSCredentials();
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+    throw new Error("AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in secrets.");
+  }
 
-  console.log(`Rekognition call: ${action}, using STS credentials`);
+  console.log(`Rekognition call: ${action}, region=${AWS_REGION}, accessKeyId=${AWS_ACCESS_KEY_ID.slice(0, 4)}...`);
 
   const host = `rekognition.${AWS_REGION}.amazonaws.com`;
   const endpoint = `https://${host}`;
@@ -245,10 +127,9 @@ async function callRekognition(action: string, payload: object) {
     "",
     headers,
     body,
-    credentials.accessKeyId,
-    credentials.secretAccessKey,
-    AWS_REGION,
-    credentials.sessionToken
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+    AWS_REGION
   );
   
   const response = await fetch(endpoint, {
@@ -271,9 +152,14 @@ async function ensureCollectionExists() {
     await callRekognition("DescribeCollection", { CollectionId: COLLECTION_ID });
     console.log("Collection exists:", COLLECTION_ID);
   } catch (error) {
-    // Collection doesn't exist, create it
-    console.log("Creating collection:", COLLECTION_ID);
-    await callRekognition("CreateCollection", { CollectionId: COLLECTION_ID });
+    const errorMessage = error instanceof Error ? error.message : "";
+    // Only create if collection doesn't exist (ResourceNotFoundException)
+    if (errorMessage.includes("ResourceNotFoundException") || errorMessage.includes("does not exist")) {
+      console.log("Creating collection:", COLLECTION_ID);
+      await callRekognition("CreateCollection", { CollectionId: COLLECTION_ID });
+    } else {
+      throw error;
+    }
   }
 }
 
