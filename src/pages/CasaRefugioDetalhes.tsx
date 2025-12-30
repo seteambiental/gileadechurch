@@ -139,29 +139,83 @@ const CasaRefugioDetalhes = () => {
     },
   });
 
-  const exportEncontroPDF = (encontro: any) => {
+  const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
+    const dataFormatada = format(parseISO(encontro.data_encontro), "dd/MM/yyyy");
     
-    doc.setFontSize(18);
-    doc.text(`Relatório - ${casa?.name}`, 14, 22);
+    // Title
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("RELATÓRIO DA CASA REFÚGIO", 105, 20, { align: "center" });
+    
+    doc.setFontSize(14);
+    doc.text(`${casa?.name?.toUpperCase() || ""}`, 105, 30, { align: "center" });
     
     doc.setFontSize(12);
-    doc.text(`Data: ${format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}`, 14, 35);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Data: ${dataFormatada}`, 105, 40, { align: "center" });
     
+    let startY = 55;
+    
+    // Add photo if exists
+    if (encontro.photo_url) {
+      try {
+        // Load image using HTMLImageElement
+        const img = document.createElement("img") as HTMLImageElement;
+        img.crossOrigin = "anonymous";
+        
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => {
+            const maxWidth = 180;
+            const maxHeight = 100;
+            let width = img.width;
+            let height = img.height;
+            
+            // Scale to fit
+            if (width > maxWidth) {
+              height = (maxWidth / width) * height;
+              width = maxWidth;
+            }
+            if (height > maxHeight) {
+              width = (maxHeight / height) * width;
+              height = maxHeight;
+            }
+            
+            const x = (210 - width) / 2; // Center horizontally
+            doc.addImage(img, "JPEG", x, startY, width, height);
+            startY += height + 10;
+            resolve();
+          };
+          img.onerror = () => {
+            // Continue without image if loading fails
+            resolve();
+          };
+          img.src = encontro.photo_url;
+        });
+      } catch (error) {
+        console.error("Error loading image for PDF:", error);
+      }
+    }
+    
+    // Table with data
     autoTable(doc, {
-      startY: 45,
+      startY: startY,
       head: [["Descrição", "Valor"]],
       body: [
         ["Líderes", String(encontro.qtd_lideres || 0)],
         ["Membros", String(encontro.qtd_membros || 0)],
         ["Crianças", String(encontro.qtd_criancas || 0)],
         ["Visitantes", String(encontro.qtd_visitantes || 0)],
-        ["Total", String(total)],
+        ["Total de Pessoas", String(total)],
         ["Kilos Arrecadados", `${encontro.kilos_arrecadados || 0} kg`],
         ["Ofertas", `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`],
       ],
       headStyles: { fillColor: [220, 53, 69] },
+      styles: { fontSize: 11 },
+      columnStyles: {
+        0: { fontStyle: "bold" },
+      },
     });
     
     if (encontro.observacoes) {
