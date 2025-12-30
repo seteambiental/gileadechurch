@@ -6,10 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const AWS_ACCESS_KEY_ID = Deno.env.get("AWS_ACCESS_KEY_ID")!;
-const AWS_SECRET_ACCESS_KEY = Deno.env.get("AWS_SECRET_ACCESS_KEY")!;
-const AWS_SESSION_TOKEN = Deno.env.get("AWS_SESSION_TOKEN");
-const AWS_REGION = Deno.env.get("AWS_REGION") || "us-east-1";
+const AWS_ACCESS_KEY_ID = (Deno.env.get("AWS_ACCESS_KEY_ID") ?? "").trim();
+const AWS_SECRET_ACCESS_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") ?? "").trim();
+const AWS_SESSION_TOKEN = (Deno.env.get("AWS_SESSION_TOKEN") ?? "").trim() || undefined;
+const AWS_REGION = (Deno.env.get("AWS_REGION") || "us-east-1").trim();
 const COLLECTION_ID = "gileade-faces";
 
 // Helper to create AWS signature
@@ -26,23 +26,24 @@ async function createAWSSignature(
   region: string
 ): Promise<Record<string, string>> {
   const encoder = new TextEncoder();
-  
+
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
-  
+
   headers["x-amz-date"] = amzDate;
   headers["host"] = host;
-  
-  const sortedHeaders = Object.keys(headers).sort();
-  const signedHeaders = sortedHeaders.join(";");
-  const canonicalHeaders = sortedHeaders.map(k => `${k}:${headers[k]}\n`).join("");
-  
+
   const payloadHash = await crypto.subtle.digest("SHA-256", encoder.encode(payload));
-  const payloadHashHex = Array.from(new Uint8Array(payloadHash)).map(b => b.toString(16).padStart(2, "0")).join("");
+  const payloadHashHex = Array.from(new Uint8Array(payloadHash)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   // Some AWS services require this header for SigV4 (safe to include for all).
+  // Important: must be included BEFORE computing signed headers/canonical headers.
   headers["x-amz-content-sha256"] = payloadHashHex;
+
+  const sortedHeaders = Object.keys(headers).sort();
+  const signedHeaders = sortedHeaders.join(";");
+  const canonicalHeaders = sortedHeaders.map((k) => `${k}:${headers[k]}\n`).join("");
   
   const canonicalRequest = [
     method,
@@ -105,9 +106,19 @@ async function createAWSSignature(
 }
 
 async function callRekognition(action: string, payload: object) {
+  if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
+    throw new Error(
+      "AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in secrets."
+    );
+  }
+
+  console.log(
+    `Rekognition config: region=${AWS_REGION}, sessionToken=${AWS_SESSION_TOKEN ? "yes" : "no"}, accessKeyId=${AWS_ACCESS_KEY_ID.slice(0, 4)}...`
+  );
+
   const host = `rekognition.${AWS_REGION}.amazonaws.com`;
   const endpoint = `https://${host}`;
-  
+
   const body = JSON.stringify(payload);
   
   const headers: Record<string, string> = {
