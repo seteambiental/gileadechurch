@@ -23,6 +23,19 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary);
 }
 
+// Helper to calculate age from birth date
+function calculateAge(birthDate: string | null): number | null {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
 // Helper to create AWS signature
 async function createAWSSignature(
   method: string,
@@ -237,43 +250,50 @@ serve(async (req) => {
         // Analyze a photo to find faces and match against collection
         const { imageUrl, casaRefugioId, encontroId } = params;
         
+        console.log(`Analyzing photo for casa_refugio: ${casaRefugioId}`);
+        
         // Fetch image
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBytes = arrayBufferToBase64(imageBuffer);
         
-        // First, detect faces to count total
+        // First, detect faces to count total and get age estimates
         const detectResult = await callRekognition("DetectFaces", {
           Image: { Bytes: imageBytes },
-          Attributes: ["DEFAULT"]
+          Attributes: ["ALL"] // Get age estimates
         });
         
-        const totalFaces = detectResult.FaceDetails?.length || 0;
+        const faceDetails = detectResult.FaceDetails || [];
+        const totalFaces = faceDetails.length;
         
-        // Search for faces in collection
-        const searchResult = await callRekognition("SearchFacesByImage", {
-          CollectionId: COLLECTION_ID,
-          Image: { Bytes: imageBytes },
-          MaxFaces: 50,
-          FaceMatchThreshold: 80
-        });
+        console.log(`Detected ${totalFaces} faces in photo`);
         
-        const matchedFaces = searchResult.FaceMatches || [];
+        // Count children by AWS age estimation (under 12 years old)
+        let estimatedChildren = 0;
+        for (const face of faceDetails) {
+          if (face.AgeRange) {
+            const avgAge = (face.AgeRange.Low + face.AgeRange.High) / 2;
+            if (avgAge < 12) {
+              estimatedChildren++;
+              console.log(`Face estimated as child: age range ${face.AgeRange.Low}-${face.AgeRange.High}`);
+            }
+          }
+        }
         
         // Get database connection
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
         
-        // Get all members and novos_convertidos linked to this casa_refugio
+        // Get all members and novos_convertidos linked to this casa_refugio with birth_date
         const { data: membrosVinculados } = await supabase
           .from("members")
-          .select("id, full_name, whatsapp, photo_url")
+          .select("id, full_name, whatsapp, photo_url, birth_date")
           .eq("casa_refugio_id", casaRefugioId);
         
         const { data: ncVinculados } = await supabase
           .from("novos_convertidos")
-          .select("id, full_name, whatsapp, photo_url")
+          .select("id, full_name, whatsapp, photo_url, data_nascimento")
           .or(`casa_refugio_id.eq.${casaRefugioId},casa_refugio_frequenta_id.eq.${casaRefugioId}`);
         
         // Get face indexes
@@ -281,36 +301,92 @@ serve(async (req) => {
           .from("member_face_indexes")
           .select("*");
         
+        console.log(`Found ${faceIndexes?.length || 0} indexed faces in database`);
+        
+        // Search for faces in collection - this returns all matches
+        let matchedFaces: any[] = [];
+        try {
+          const searchResult = await callRekognition("SearchFacesByImage", {
+            CollectionId: COLLECTION_ID,
+            Image: { Bytes: imageBytes },
+            MaxFaces: 50,
+            FaceMatchThreshold: 70 // Lowered threshold for better detection
+          });
+          matchedFaces = searchResult.FaceMatches || [];
+          console.log(`SearchFacesByImage found ${matchedFaces.length} matches`);
+        } catch (searchError) {
+          console.log("SearchFacesByImage error (may be no faces in collection):", searchError);
+        }
+        
         // Map matched faces to members
         const presentMembers: any[] = [];
         const presentNC: any[] = [];
+        const presentChildren: any[] = [];
+        const matchedFaceIds = new Set<string>();
         
         for (const match of matchedFaces) {
           const faceId = match.Face.FaceId;
           const confidence = match.Similarity;
           
+          // Skip if already processed
+          if (matchedFaceIds.has(faceId)) continue;
+          matchedFaceIds.add(faceId);
+          
           const faceIndex = faceIndexes?.find(fi => fi.face_id === faceId);
           if (faceIndex) {
+            console.log(`Matched face ${faceId} with confidence ${confidence}%`);
+            
             if (faceIndex.member_id) {
               const member = membrosVinculados?.find(m => m.id === faceIndex.member_id);
               if (member) {
-                presentMembers.push({ ...member, confidence });
+                const age = calculateAge(member.birth_date);
+                const isChild = age !== null && age < 12;
+                
+                if (isChild) {
+                  presentChildren.push({ ...member, confidence, age, type: 'member' });
+                  console.log(`Identified child member: ${member.full_name}, age ${age}`);
+                } else {
+                  presentMembers.push({ ...member, confidence, age });
+                  console.log(`Identified adult member: ${member.full_name}`);
+                }
               }
             } else if (faceIndex.novo_convertido_id) {
               const nc = ncVinculados?.find(n => n.id === faceIndex.novo_convertido_id);
               if (nc) {
-                presentNC.push({ ...nc, confidence });
+                const age = calculateAge(nc.data_nascimento);
+                const isChild = age !== null && age < 12;
+                
+                if (isChild) {
+                  presentChildren.push({ ...nc, confidence, age, type: 'nc' });
+                  console.log(`Identified child NC: ${nc.full_name}, age ${age}`);
+                } else {
+                  presentNC.push({ ...nc, confidence, age });
+                  console.log(`Identified adult NC: ${nc.full_name}`);
+                }
               }
             }
           }
         }
         
-        // Find absent members
+        // Calculate unidentified faces
+        const totalIdentified = presentMembers.length + presentNC.length + presentChildren.length;
+        const unidentifiedFaces = Math.max(0, totalFaces - totalIdentified);
+        
+        // Estimate unidentified children based on AWS detection minus identified children
+        const unidentifiedChildren = Math.max(0, estimatedChildren - presentChildren.length);
+        const unidentifiedAdults = Math.max(0, unidentifiedFaces - unidentifiedChildren);
+        
+        console.log(`Summary: ${totalFaces} faces, ${totalIdentified} identified, ${unidentifiedFaces} unidentified`);
+        console.log(`Children: ${presentChildren.length} identified, ~${unidentifiedChildren} unidentified (AWS estimate)`);
+        
+        // Find absent members (those linked to casa but not present)
         const presentMemberIds = presentMembers.map(m => m.id);
         const presentNCIds = presentNC.map(n => n.id);
+        const presentChildrenIds = presentChildren.map(c => c.id);
+        const allPresentIds = [...presentMemberIds, ...presentNCIds, ...presentChildrenIds];
         
-        const absentMembers = membrosVinculados?.filter(m => !presentMemberIds.includes(m.id)) || [];
-        const absentNC = ncVinculados?.filter(n => !presentNCIds.includes(n.id)) || [];
+        const absentMembers = membrosVinculados?.filter(m => !allPresentIds.includes(m.id)) || [];
+        const absentNC = ncVinculados?.filter(n => !allPresentIds.includes(n.id)) || [];
         
         // Save presence records if encontroId provided
         if (encontroId) {
@@ -318,7 +394,7 @@ serve(async (req) => {
           await supabase.from("encontro_presencas").delete().eq("encontro_id", encontroId);
           
           // Insert present members
-          for (const member of presentMembers) {
+          for (const member of [...presentMembers, ...presentChildren.filter(c => c.type === 'member')]) {
             await supabase.from("encontro_presencas").insert({
               encontro_id: encontroId,
               member_id: member.id,
@@ -327,7 +403,7 @@ serve(async (req) => {
             });
           }
           
-          for (const nc of presentNC) {
+          for (const nc of [...presentNC, ...presentChildren.filter(c => c.type === 'nc')]) {
             await supabase.from("encontro_presencas").insert({
               encontro_id: encontroId,
               novo_convertido_id: nc.id,
@@ -357,11 +433,15 @@ serve(async (req) => {
         return new Response(JSON.stringify({
           success: true,
           totalFaces,
-          totalMatched: matchedFaces.length,
+          totalMatched: totalIdentified,
           presentMembers,
           presentNC,
+          presentChildren,
           absentMembers,
-          absentNC
+          absentNC,
+          estimatedChildren,
+          unidentifiedChildren,
+          unidentifiedAdults
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
