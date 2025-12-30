@@ -30,6 +30,7 @@ const CasaRefugioDetalhes = () => {
   const { id } = useParams<{ id: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const bypass = isAuthBypassed();
 
   const [startDate, setStartDate] = useState("");
@@ -259,7 +260,14 @@ const CasaRefugioDetalhes = () => {
               <p className="text-xs text-muted-foreground">{casa.condominio}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              const params = searchParams.toString();
+              navigate(`/ministerio/casas-refugio${params ? `?${params}` : ""}`);
+            }}
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
