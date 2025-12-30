@@ -28,6 +28,10 @@ interface Member {
   member_functions?: MemberFunction[];
 }
 
+interface FaceIndex {
+  member_id: string | null;
+}
+
 const functionTypeLabels: Record<string, string> = {
   lider_casa_refugio: "Líder de Casa Refúgio",
   lider_ministerio: "Líder de Ministério",
@@ -60,7 +64,9 @@ const formatMemberFunctions = (member: Member): string => {
   return member.member_functions.map(getFunctionDisplay).join("; ");
 };
 
-export const exportToExcel = (members: Member[], filename: string = "membros") => {
+export const exportToExcel = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = []) => {
+  const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
+  
   const data = members.map((member) => ({
     Nome: member.full_name,
     WhatsApp: member.whatsapp ? formatPhone(member.whatsapp) : "-",
@@ -68,6 +74,8 @@ export const exportToExcel = (members: Member[], filename: string = "membros") =
     Cidade: member.city || "-",
     Estado: member.state || "-",
     "Membro Desde": formatDateBR(member.member_since),
+    "Foto": member.photo_url ? "Sim" : "Não",
+    "Reconhecimento Facial": indexedMemberIds.has(member.id) ? "Indexado" : "Não indexado",
     Funções: formatMemberFunctions(member),
   }));
 
@@ -91,8 +99,9 @@ export const exportToExcel = (members: Member[], filename: string = "membros") =
   XLSX.writeFile(workbook, `${filename}.xlsx`);
 };
 
-export const exportToPDF = (members: Member[], filename: string = "membros") => {
+export const exportToPDF = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = []) => {
   const doc = new jsPDF();
+  const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
 
   // Title
   doc.setFontSize(18);
@@ -109,15 +118,17 @@ export const exportToPDF = (members: Member[], filename: string = "membros") => 
     member.whatsapp ? formatPhone(member.whatsapp) : "-",
     member.city && member.state ? `${member.city}/${member.state}` : "-",
     formatDateBR(member.member_since),
+    member.photo_url ? "Sim" : "Não",
+    indexedMemberIds.has(member.id) ? "✓" : "-",
     formatMemberFunctions(member),
   ]);
 
   autoTable(doc, {
-    head: [["Nome", "WhatsApp", "Cidade/UF", "Membro Desde", "Funções"]],
+    head: [["Nome", "WhatsApp", "Cidade/UF", "Membro Desde", "Foto", "RF", "Funções"]],
     body: tableData,
     startY: 42,
     styles: {
-      fontSize: 8,
+      fontSize: 7,
       cellPadding: 2,
     },
     headStyles: {
@@ -129,11 +140,13 @@ export const exportToPDF = (members: Member[], filename: string = "membros") => 
       fillColor: [248, 249, 250],
     },
     columnStyles: {
-      0: { cellWidth: 45 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: "auto" },
+      0: { cellWidth: 40 },
+      1: { cellWidth: 28 },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 22 },
+      4: { cellWidth: 12 },
+      5: { cellWidth: 10 },
+      6: { cellWidth: "auto" },
     },
   });
 

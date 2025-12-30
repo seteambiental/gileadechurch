@@ -138,6 +138,17 @@ const MembrosTab = () => {
     },
   });
 
+  const { data: faceIndexes = [] } = useQuery({
+    queryKey: ["face-indexes-all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_face_indexes")
+        .select("member_id");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: ministries = [] } = useQuery({
     queryKey: ["ministries"],
     queryFn: async () => {
@@ -337,11 +348,11 @@ const MembrosTab = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => exportToExcel(filteredMembers)}>
+                <DropdownMenuItem onClick={() => exportToExcel(filteredMembers, "membros", faceIndexes)}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Excel (.xlsx)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportToPDF(filteredMembers)}>
+                <DropdownMenuItem onClick={() => exportToPDF(filteredMembers, "membros", faceIndexes)}>
                   <FileText className="w-4 h-4 mr-2" />
                   PDF
                 </DropdownMenuItem>
