@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { format, parseISO, isWithinInterval } from "date-fns";
@@ -15,6 +15,12 @@ import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVinculadosList";
 import { VincularMembroDialog } from "@/components/casas-refugio/VincularMembroDialog";
 import { AnalisePresencaDialog } from "@/components/casas-refugio/AnalisePresencaDialog";
+import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +41,9 @@ const CasaRefugioDetalhes = () => {
     photoUrl: string;
     dataEncontro: string;
   } | null>(null);
+  const [editingEncontro, setEditingEncontro] = useState<any>(null);
+  const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -112,6 +121,58 @@ const CasaRefugioDetalhes = () => {
     setEndDate("");
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: async (encontroId: string) => {
+      const { error } = await supabase
+        .from("encontros_casa_refugio")
+        .delete()
+        .eq("id", encontroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["encontros-casa", id] });
+      toast.success("Encontro excluído com sucesso!");
+      setDeletingEncontroId(null);
+    },
+    onError: () => {
+      toast.error("Erro ao excluir encontro");
+    },
+  });
+
+  const exportEncontroPDF = (encontro: any) => {
+    const doc = new jsPDF();
+    const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
+    
+    doc.setFontSize(18);
+    doc.text(`Relatório - ${casa?.name}`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.text(`Data: ${format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}`, 14, 35);
+    
+    autoTable(doc, {
+      startY: 45,
+      head: [["Descrição", "Valor"]],
+      body: [
+        ["Líderes", String(encontro.qtd_lideres || 0)],
+        ["Membros", String(encontro.qtd_membros || 0)],
+        ["Crianças", String(encontro.qtd_criancas || 0)],
+        ["Visitantes", String(encontro.qtd_visitantes || 0)],
+        ["Total", String(total)],
+        ["Kilos Arrecadados", `${encontro.kilos_arrecadados || 0} kg`],
+        ["Ofertas", `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`],
+      ],
+      headStyles: { fillColor: [220, 53, 69] },
+    });
+    
+    if (encontro.observacoes) {
+      const finalY = (doc as any).lastAutoTable.finalY || 100;
+      doc.setFontSize(10);
+      doc.text(`Observações: ${encontro.observacoes}`, 14, finalY + 10);
+    }
+    
+    doc.save(`encontro-${format(parseISO(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
+  };
+
   if (authLoading || loadingCasa) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -144,7 +205,7 @@ const CasaRefugioDetalhes = () => {
               <p className="text-xs text-muted-foreground">{casa.condominio}</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/ministerio/casas-refugio")}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
@@ -248,7 +309,7 @@ const CasaRefugioDetalhes = () => {
         {/* Charts */}
         <EncontrosCharts encontros={filteredEncontros} />
 
-        {/* Encontros List */}
+        {/* Encontros Table */}
         <div>
           <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <Calendar className="w-4 h-4" />
@@ -263,64 +324,101 @@ const CasaRefugioDetalhes = () => {
               Nenhum encontro registrado
             </div>
           ) : (
-            <div className="space-y-2">
-              {filteredEncontros.map((encontro) => {
-                const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
-                return (
-                  <div key={encontro.id} className="bg-card border border-border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-foreground">
-                          {format(new Date(encontro.data_encontro), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {encontro.photo_url && (
-                            <>
-                              <button
-                                onClick={() => setAnaliseEncontro({
-                                  id: encontro.id,
-                                  photoUrl: encontro.photo_url!,
-                                  dataEncontro: encontro.data_encontro,
-                                })}
-                                className="p-1 rounded hover:bg-muted"
-                                title="Analisar presença"
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="text-center">Líd.</TableHead>
+                      <TableHead className="text-center">Memb.</TableHead>
+                      <TableHead className="text-center">Vis.</TableHead>
+                      <TableHead className="text-center">Cri.</TableHead>
+                      <TableHead className="text-center">Total</TableHead>
+                      <TableHead className="text-center">Kilos</TableHead>
+                      <TableHead className="text-center">Ofertas</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEncontros.map((encontro) => {
+                      const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
+                      return (
+                        <TableRow key={encontro.id}>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                          </TableCell>
+                          <TableCell className="text-center text-blue-600">{encontro.qtd_lideres || 0}</TableCell>
+                          <TableCell className="text-center text-green-600">{encontro.qtd_membros || 0}</TableCell>
+                          <TableCell className="text-center text-purple-600">{encontro.qtd_visitantes || 0}</TableCell>
+                          <TableCell className="text-center text-amber-600">{encontro.qtd_criancas || 0}</TableCell>
+                          <TableCell className="text-center font-medium">{total}</TableCell>
+                          <TableCell className="text-center">{encontro.kilos_arrecadados || 0}</TableCell>
+                          <TableCell className="text-center whitespace-nowrap">R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
+                              {encontro.photo_url && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setAnaliseEncontro({
+                                      id: encontro.id,
+                                      photoUrl: encontro.photo_url!,
+                                      dataEncontro: encontro.data_encontro,
+                                    })}
+                                    title="Analisar presença"
+                                  >
+                                    <ScanFace className="w-4 h-4 text-destructive" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={() => setSelectedPhoto(encontro.photo_url)}
+                                    title="Ver foto"
+                                  >
+                                    <Image className="w-4 h-4" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => exportEncontroPDF(encontro)}
+                                title="Exportar PDF"
                               >
-                                <ScanFace className="w-4 h-4 text-destructive" />
-                              </button>
-                              <button
-                                onClick={() => setSelectedPhoto(encontro.photo_url)}
-                                className="p-1 rounded hover:bg-muted"
+                                <FileDown className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setEditingEncontro(encontro)}
+                                title="Editar"
                               >
-                                <Image className="w-4 h-4 text-muted-foreground" />
-                              </button>
-                            </>
-                          )}
-                          <span className="text-sm text-muted-foreground">{total} pessoas</span>
-                        </div>
-                      </div>
-                    <div className="grid grid-cols-4 gap-2 text-xs text-center">
-                      <div><span className="text-blue-600 font-medium">{encontro.qtd_lideres}</span> líd.</div>
-                      <div><span className="text-green-600 font-medium">{encontro.qtd_membros}</span> memb.</div>
-                      <div><span className="text-amber-600 font-medium">{encontro.qtd_criancas}</span> cri.</div>
-                      <div><span className="text-purple-600 font-medium">{encontro.qtd_visitantes}</span> vis.</div>
-                    </div>
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Package className="w-3 h-3" />{encontro.kilos_arrecadados || 0} kg</span>
-                      <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" />R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</span>
-                    </div>
-                    {encontro.photo_url && (
-                      <div className="mt-2 pt-2 border-t border-border">
-                        <img
-                          src={encontro.photo_url}
-                          alt="Foto do encontro"
-                          className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => setSelectedPhoto(encontro.photo_url)}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => setDeletingEncontroId(encontro.id)}
+                                title="Excluir"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
           )}
         </div>
       </main>
@@ -359,6 +457,37 @@ const CasaRefugioDetalhes = () => {
           casaRefugioName={casa.name}
         />
       )}
+
+      {/* Edit Encontro Dialog */}
+      {casa && editingEncontro && (
+        <EncontroFormDialog
+          open={!!editingEncontro}
+          onOpenChange={(open) => !open && setEditingEncontro(null)}
+          casa={casa}
+          editingEncontro={editingEncontro}
+        />
+      )}
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletingEncontroId} onOpenChange={() => setDeletingEncontroId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este encontro? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletingEncontroId && deleteMutation.mutate(deletingEncontroId)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

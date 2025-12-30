@@ -76,16 +76,31 @@ interface RecognitionResult {
   error?: string;
 }
 
+interface Encontro {
+  id: string;
+  data_encontro: string;
+  qtd_lideres: number;
+  qtd_membros: number;
+  qtd_criancas: number;
+  qtd_visitantes: number;
+  kilos_arrecadados: number | null;
+  ofertas: number | null;
+  observacoes: string | null;
+  photo_url: string | null;
+}
+
 interface EncontroFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   casa: CasaRefugio | null;
+  editingEncontro?: Encontro | null;
 }
 
 export const EncontroFormDialog = ({
   open,
   onOpenChange,
   casa,
+  editingEncontro,
 }: EncontroFormDialogProps) => {
   const queryClient = useQueryClient();
   const [photo, setPhoto] = useState<File | null>(null);
@@ -143,22 +158,42 @@ export const EncontroFormDialog = ({
 
   useEffect(() => {
     if (open) {
-      form.reset({
-        data_encontro: new Date().toISOString().split("T")[0],
-        qtd_lideres: 0,
-        qtd_membros: 0,
-        qtd_criancas: 0,
-        qtd_visitantes: 0,
-        kilos_arrecadados: 0,
-        ofertas: "",
-        observacoes: "",
-      });
-      setPhoto(null);
-      setPhotoPreview(null);
+      if (editingEncontro) {
+        // Load existing data for editing
+        const ofertasValue = editingEncontro.ofertas 
+          ? Number(editingEncontro.ofertas).toFixed(2).replace(".", ",")
+          : "";
+        form.reset({
+          data_encontro: editingEncontro.data_encontro,
+          qtd_lideres: editingEncontro.qtd_lideres || 0,
+          qtd_membros: editingEncontro.qtd_membros || 0,
+          qtd_criancas: editingEncontro.qtd_criancas || 0,
+          qtd_visitantes: editingEncontro.qtd_visitantes || 0,
+          kilos_arrecadados: editingEncontro.kilos_arrecadados || 0,
+          ofertas: ofertasValue,
+          observacoes: editingEncontro.observacoes || "",
+        });
+        if (editingEncontro.photo_url) {
+          setPhotoPreview(editingEncontro.photo_url);
+        }
+      } else {
+        form.reset({
+          data_encontro: new Date().toISOString().split("T")[0],
+          qtd_lideres: 0,
+          qtd_membros: 0,
+          qtd_criancas: 0,
+          qtd_visitantes: 0,
+          kilos_arrecadados: 0,
+          ofertas: "",
+          observacoes: "",
+        });
+        setPhoto(null);
+        setPhotoPreview(null);
+      }
       setRecognitionResult(null);
       setPresencas({});
     }
-  }, [open, form]);
+  }, [open, form, editingEncontro]);
 
   // Update presencas when recognition result changes
   useEffect(() => {
@@ -289,14 +324,14 @@ export const EncontroFormDialog = ({
     mutationFn: async (data: FormData) => {
       if (!casa) throw new Error("Casa não selecionada");
 
-      let photoUrl: string | null = null;
+      let photoUrl: string | null = editingEncontro?.photo_url || null;
 
-      // Upload photo if exists
+      // Upload photo if exists (new photo)
       if (photo) {
         const fileExt = photo.name.split(".").pop();
         const fileName = `${casa.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError, data: uploadData } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("encontros-fotos")
           .upload(fileName, photo);
 
@@ -314,8 +349,7 @@ export const EncontroFormDialog = ({
         ? parseFloat(data.ofertas.replace(/\./g, "").replace(",", ".")) 
         : 0;
 
-      const { error } = await supabase.from("encontros_casa_refugio").insert({
-        casa_refugio_id: casa.id,
+      const payload = {
         data_encontro: data.data_encontro,
         qtd_lideres: data.qtd_lideres,
         qtd_membros: data.qtd_membros,
@@ -325,9 +359,23 @@ export const EncontroFormDialog = ({
         ofertas: ofertasValue,
         observacoes: data.observacoes || null,
         photo_url: photoUrl,
-      });
+      };
 
-      if (error) throw error;
+      if (editingEncontro) {
+        // Update existing
+        const { error } = await supabase
+          .from("encontros_casa_refugio")
+          .update(payload)
+          .eq("id", editingEncontro.id);
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase.from("encontros_casa_refugio").insert({
+          ...payload,
+          casa_refugio_id: casa.id,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["encontros"] });
@@ -335,7 +383,7 @@ export const EncontroFormDialog = ({
       queryClient.invalidateQueries({ queryKey: ["encontros-supervisor"] });
       queryClient.invalidateQueries({ queryKey: ["encontros-condominio"] });
       toast({
-        title: "Encontro registrado!",
+        title: editingEncontro ? "Encontro atualizado!" : "Encontro registrado!",
         description: "O relatório foi salvo com sucesso.",
       });
       onOpenChange(false);
@@ -422,7 +470,7 @@ export const EncontroFormDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5 text-destructive" />
-            Registrar Encontro
+            {editingEncontro ? "Editar Encontro" : "Registrar Encontro"}
           </DialogTitle>
           {casa && (
             <p className="text-sm text-muted-foreground">
