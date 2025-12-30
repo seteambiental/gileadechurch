@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { ArrowLeft, Loader2, Home, Search, Filter, X, Calendar, Users } from "lucide-react";
@@ -38,13 +38,33 @@ interface CasaRefugio {
 const CasasRefugioPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const bypass = isAuthBypassed();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [condominioFilter, setCondominioFilter] = useState<string>("all");
-  const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
+  // Get filter values from URL or use defaults
+  const searchTerm = searchParams.get("q") || "";
+  const condominioFilter = searchParams.get("cond") || "all";
+  const supervisorFilter = searchParams.get("sup") || "all";
+
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
+
+  // Helper to update search params without replacing
+  const updateSearchParams = useCallback((key: string, value: string) => {
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      if (value === "" || value === "all") {
+        newParams.delete(key);
+      } else {
+        newParams.set(key, value);
+      }
+      return newParams;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const setSearchTerm = (value: string) => updateSearchParams("q", value);
+  const setCondominioFilter = (value: string) => updateSearchParams("cond", value);
+  const setSupervisorFilter = (value: string) => updateSearchParams("sup", value);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -92,12 +112,10 @@ const CasasRefugioPage = () => {
   }, [casas, searchTerm, condominioFilter, supervisorFilter]);
 
   const hasActiveFilters =
-    condominioFilter !== "all" || supervisorFilter !== "all";
+    condominioFilter !== "all" || supervisorFilter !== "all" || searchTerm !== "";
 
   const clearFilters = () => {
-    setCondominioFilter("all");
-    setSupervisorFilter("all");
-    setSearchTerm("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleOpenEncontro = (casa: CasaRefugio) => {
