@@ -24,7 +24,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, Package, DollarSign, Calendar, Camera, X, ScanFace, Check, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
 
 const formSchema = z.object({
   data_encontro: z.string().min(1, "Data é obrigatória"),
@@ -88,6 +89,7 @@ export const EncontroFormDialog = ({
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
+  const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch leaders linked to this casa
@@ -102,6 +104,22 @@ export const EncontroFormDialog = ({
         .eq("function_type", "lider_casa_refugio");
       if (error) throw error;
       return data.map(d => d.members).filter(Boolean);
+    },
+    enabled: !!casa?.id && open,
+  });
+
+  // Fetch members linked to this casa
+  const { data: membrosVinculados = [] } = useQuery({
+    queryKey: ["membros-casa", casa?.id],
+    queryFn: async () => {
+      if (!casa?.id) return [];
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp, photo_url")
+        .eq("casa_refugio_id", casa.id)
+        .order("full_name");
+      if (error) throw error;
+      return data;
     },
     enabled: !!casa?.id && open,
   });
@@ -135,8 +153,43 @@ export const EncontroFormDialog = ({
       setPhoto(null);
       setPhotoPreview(null);
       setRecognitionResult(null);
+      setPresencas({});
     }
   }, [open, form]);
+
+  // Update presencas when recognition result changes
+  useEffect(() => {
+    if (recognitionResult?.success && recognitionResult.presentMembers) {
+      const recognizedIds: Record<string, boolean> = {};
+      recognitionResult.presentMembers.forEach((m) => {
+        recognizedIds[m.id] = true;
+      });
+      setPresencas((prev) => ({ ...prev, ...recognizedIds }));
+    }
+  }, [recognitionResult]);
+
+  // Recalculate counts when presencas change
+  useEffect(() => {
+    if (membrosVinculados.length > 0) {
+      const liderIds = lideres.map((l: any) => l?.id);
+      const presenteIds = Object.entries(presencas)
+        .filter(([_, presente]) => presente)
+        .map(([id]) => id);
+      
+      const lideresPresentes = presenteIds.filter((id) => liderIds.includes(id)).length;
+      const membrosPresentes = presenteIds.filter((id) => !liderIds.includes(id)).length;
+      
+      form.setValue("qtd_lideres", lideresPresentes);
+      form.setValue("qtd_membros", membrosPresentes);
+    }
+  }, [presencas, membrosVinculados, lideres, form]);
+
+  const togglePresenca = (memberId: string) => {
+    setPresencas((prev) => ({
+      ...prev,
+      [memberId]: !prev[memberId],
+    }));
+  };
 
   const analyzePhoto = async (photoFile: File) => {
     if (!casa?.id) return;
@@ -650,6 +703,85 @@ export const EncontroFormDialog = ({
                 )}
               />
             </div>
+
+            {/* Lista de Presença dos Membros */}
+            {membrosVinculados.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-sm font-medium flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Presença dos Membros
+                  {Object.values(presencas).filter(Boolean).length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {Object.values(presencas).filter(Boolean).length} presente(s)
+                    </Badge>
+                  )}
+                </span>
+                
+                <div className="space-y-1 max-h-48 overflow-y-auto border border-border rounded-lg p-2 bg-muted/30">
+                  {membrosVinculados.map((membro) => {
+                    const isPresente = presencas[membro.id] || false;
+                    const isLider = lideres.some((l: any) => l?.id === membro.id);
+                    const wasRecognized = recognitionResult?.presentMembers?.some((m) => m.id === membro.id);
+                    
+                    return (
+                      <div
+                        key={membro.id}
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                          isPresente 
+                            ? "bg-green-500/10 border border-green-500/30" 
+                            : "hover:bg-muted/50"
+                        }`}
+                        onClick={() => togglePresenca(membro.id)}
+                      >
+                        <Checkbox
+                          checked={isPresente}
+                          onCheckedChange={() => togglePresenca(membro.id)}
+                          className={`${
+                            isPresente 
+                              ? "border-green-500 bg-green-500 text-white data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500" 
+                              : ""
+                          }`}
+                        />
+                        
+                        {membro.photo_url ? (
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={membro.photo_url} />
+                            <AvatarFallback className="text-xs">
+                              {getInitials(membro.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{membro.full_name}</p>
+                          <div className="flex items-center gap-1">
+                            {isLider && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                Líder
+                              </Badge>
+                            )}
+                            {wasRecognized && (
+                              <Badge className="text-[10px] px-1 py-0 bg-green-500/20 text-green-600 border-green-500/30">
+                                <ScanFace className="w-2.5 h-2.5 mr-0.5" />
+                                Reconhecido
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {isPresente && (
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Observações */}
             <FormField
