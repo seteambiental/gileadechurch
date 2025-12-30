@@ -11,6 +11,18 @@ const AWS_SECRET_ACCESS_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") ?? "").trim
 const AWS_REGION = (Deno.env.get("AWS_REGION") || "us-east-1").trim();
 const COLLECTION_ID = "gileade-faces";
 
+// Helper to convert ArrayBuffer to base64 without stack overflow
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
+}
+
 // Helper to create AWS signature
 async function createAWSSignature(
   method: string,
@@ -181,7 +193,7 @@ serve(async (req) => {
         // Fetch image and convert to base64
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
-        const imageBytes = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        const imageBytes = arrayBufferToBase64(imageBuffer);
         
         const externalImageId = memberId || novoConvertidoId;
         
@@ -228,7 +240,7 @@ serve(async (req) => {
         // Fetch image
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
-        const imageBytes = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
+        const imageBytes = arrayBufferToBase64(imageBuffer);
         
         // First, detect faces to count total
         const detectResult = await callRekognition("DetectFaces", {
