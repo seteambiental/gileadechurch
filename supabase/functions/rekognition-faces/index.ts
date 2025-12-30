@@ -8,6 +8,8 @@ const corsHeaders = {
 
 const AWS_ACCESS_KEY_ID = (Deno.env.get("AWS_ACCESS_KEY_ID") ?? "").trim();
 const AWS_SECRET_ACCESS_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") ?? "").trim();
+// If your base credentials are temporary (SSO/STS), AWS requires the session token.
+const AWS_BASE_SESSION_TOKEN = (Deno.env.get("AWS_SESSION_TOKEN") ?? "").trim() || undefined;
 const AWS_REGION = (Deno.env.get("AWS_REGION") || "us-east-1").trim();
 const AWS_ROLE_ARN = (Deno.env.get("AWS_ROLE_ARN") ?? "").trim();
 const COLLECTION_ID = "gileade-faces";
@@ -134,6 +136,9 @@ async function getSTSCredentials(): Promise<{
   }
 
   console.log("Getting new STS credentials via AssumeRole...");
+  console.log(
+    `Base credentials: accessKeyId=${AWS_ACCESS_KEY_ID ? AWS_ACCESS_KEY_ID.slice(0, 4) + "..." : "missing"}, sessionToken=${AWS_BASE_SESSION_TOKEN ? "yes" : "no"}`
+  );
 
   if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) {
     throw new Error("AWS base credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in secrets.");
@@ -170,7 +175,8 @@ async function getSTSCredentials(): Promise<{
     body,
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
-    AWS_REGION
+    AWS_REGION,
+    AWS_BASE_SESSION_TOKEN
   );
   
   const response = await fetch(endpoint, {
