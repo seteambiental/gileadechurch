@@ -47,6 +47,13 @@ interface MinistryInfo {
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
+  "acao-social": {
+    title: "Ação Social",
+    description: "Ajuda comunitária",
+    icon: Heart,
+    fullDescription:
+      "Ministério dedicado a promover ações de solidariedade e assistência às comunidades carentes, incluindo distribuição de alimentos, roupas e apoio em situações de vulnerabilidade.",
+  },
   casais: {
     title: "Casais",
     description: "Ministério de casais",
@@ -169,10 +176,10 @@ const ministriesData: Record<string, MinistryInfo> = {
   },
   servico: {
     title: "Serviço (Dorcas)",
-    description: "Ação social",
-    icon: Heart,
+    description: "Apoio à igreja",
+    icon: HandHeart,
     fullDescription:
-      "Ministério de ação social que atende famílias carentes com doações, visitas e apoio prático.",
+      "Ministério de serviço dedicado ao suporte prático nas atividades da igreja, incluindo organização de eventos e apoio logístico.",
   },
   teatro: {
     title: "Teatro",

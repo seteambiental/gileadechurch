@@ -38,6 +38,7 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 
 // Ministérios (ícones vermelhos) - ordenados alfabeticamente
 const ministries = [
+  { icon: Heart, title: "Ação Social", description: "Ajuda comunitária", path: "/ministerio/acao-social" },
   { icon: HeartHandshake, title: "Casais", description: "Ministério de casais", path: "/ministerio/casais" },
   { icon: Home, title: "Casas Refúgio", description: "Células", path: "/ministerio/casas-refugio" },
   { icon: UserCheck, title: "Consolidação", description: "Novos convertidos", path: "/ministerio/consolidacao" },
@@ -55,7 +56,7 @@ const ministries = [
   { icon: Crown, title: "Mulheres", description: "Ministério feminino", path: "/ministerio/mulheres" },
   { icon: ClipboardList, title: "Organização de Culto", description: "Logística dos cultos", path: "/ministerio/organizacao-culto" },
   { icon: DoorOpen, title: "Recepção", description: "Acolhimento", path: "/ministerio/recepcao" },
-  { icon: Heart, title: "Serviço (Dorcas)", description: "Ação social", path: "/ministerio/servico" },
+  { icon: HandHeart, title: "Serviço (Dorcas)", description: "Apoio à igreja", path: "/ministerio/servico" },
   { icon: Drama, title: "Teatro", description: "Artes cênicas", path: "/ministerio/teatro" },
   { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
 ];
