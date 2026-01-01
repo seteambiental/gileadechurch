@@ -14,6 +14,303 @@ export type Database = {
   }
   public: {
     Tables: {
+      acao_social_ajudas: {
+        Row: {
+          created_at: string
+          data_ajuda: string
+          descricao: string | null
+          familia_id: string | null
+          id: string
+          instituicao_id: string | null
+          observacoes: string | null
+          quantidade_cestas: number | null
+          quantidade_itens: number | null
+          quantidade_kilos: number | null
+          registrado_por: string | null
+          tipo_ajuda: string
+          updated_at: string
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_ajuda?: string
+          descricao?: string | null
+          familia_id?: string | null
+          id?: string
+          instituicao_id?: string | null
+          observacoes?: string | null
+          quantidade_cestas?: number | null
+          quantidade_itens?: number | null
+          quantidade_kilos?: number | null
+          registrado_por?: string | null
+          tipo_ajuda: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_ajuda?: string
+          descricao?: string | null
+          familia_id?: string | null
+          id?: string
+          instituicao_id?: string | null
+          observacoes?: string | null
+          quantidade_cestas?: number | null
+          quantidade_itens?: number | null
+          quantidade_kilos?: number | null
+          registrado_por?: string | null
+          tipo_ajuda?: string
+          updated_at?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acao_social_ajudas_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "acao_social_familias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_ajudas_instituicao_id_fkey"
+            columns: ["instituicao_id"]
+            isOneToOne: false
+            referencedRelation: "acao_social_instituicoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_ajudas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acao_social_familia_membros: {
+        Row: {
+          created_at: string
+          data_nascimento: string | null
+          escolaridade: string | null
+          familia_id: string
+          genero: string | null
+          id: string
+          local_trabalho: string | null
+          nome: string
+          observacoes: string | null
+          parentesco: string | null
+          profissao: string | null
+          salario: number | null
+          trabalha: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_nascimento?: string | null
+          escolaridade?: string | null
+          familia_id: string
+          genero?: string | null
+          id?: string
+          local_trabalho?: string | null
+          nome: string
+          observacoes?: string | null
+          parentesco?: string | null
+          profissao?: string | null
+          salario?: number | null
+          trabalha?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_nascimento?: string | null
+          escolaridade?: string | null
+          familia_id?: string
+          genero?: string | null
+          id?: string
+          local_trabalho?: string | null
+          nome?: string
+          observacoes?: string | null
+          parentesco?: string | null
+          profissao?: string | null
+          salario?: number | null
+          trabalha?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acao_social_familia_membros_familia_id_fkey"
+            columns: ["familia_id"]
+            isOneToOne: false
+            referencedRelation: "acao_social_familias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acao_social_familias: {
+        Row: {
+          ativo: boolean | null
+          bairro: string | null
+          casa_refugio_id: string | null
+          cep: string | null
+          cidade: string | null
+          complemento: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          frequencia_ajuda: string | null
+          id: string
+          lider_responsavel_id: string | null
+          nome_familia: string
+          numero: string | null
+          observacoes: string | null
+          renda_total: number | null
+          telefone: string | null
+          tipo_ajuda: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          bairro?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          frequencia_ajuda?: string | null
+          id?: string
+          lider_responsavel_id?: string | null
+          nome_familia: string
+          numero?: string | null
+          observacoes?: string | null
+          renda_total?: number | null
+          telefone?: string | null
+          tipo_ajuda?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          bairro?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          cidade?: string | null
+          complemento?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          frequencia_ajuda?: string | null
+          id?: string
+          lider_responsavel_id?: string | null
+          nome_familia?: string
+          numero?: string | null
+          observacoes?: string | null
+          renda_total?: number | null
+          telefone?: string | null
+          tipo_ajuda?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acao_social_familias_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_familias_lider_responsavel_id_fkey"
+            columns: ["lider_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acao_social_instituicoes: {
+        Row: {
+          ativo: boolean | null
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          cnpj: string | null
+          complemento: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          frequencia_ajuda: string | null
+          id: string
+          nome: string
+          numero: string | null
+          observacoes: string | null
+          quantidade_atendidos: number | null
+          responsavel_nome: string | null
+          responsavel_telefone: string | null
+          telefone: string | null
+          tipo_ajuda: string | null
+          tipo_instituicao: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          frequencia_ajuda?: string | null
+          id?: string
+          nome: string
+          numero?: string | null
+          observacoes?: string | null
+          quantidade_atendidos?: number | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          telefone?: string | null
+          tipo_ajuda?: string | null
+          tipo_instituicao: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          cnpj?: string | null
+          complemento?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          frequencia_ajuda?: string | null
+          id?: string
+          nome?: string
+          numero?: string | null
+          observacoes?: string | null
+          quantidade_atendidos?: number | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          telefone?: string | null
+          tipo_ajuda?: string | null
+          tipo_instituicao?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       agenda_igreja: {
         Row: {
           ativo: boolean | null
