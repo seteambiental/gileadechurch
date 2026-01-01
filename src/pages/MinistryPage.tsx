@@ -407,15 +407,6 @@ const MinistryPage = () => {
               </>
             )}
 
-            {isDanca && !hasRepertorio && (
-              <TabsContent value="repertorio">
-                <DancaRepertorioTab ministryId={ministryFromDb.id} />
-              </TabsContent>
-            )}
-
-            <TabsContent value="estatisticas">
-              <MinisterioEstatisticasTab ministryId={ministryFromDb.id} />
-            </TabsContent>
           </Tabs>
         ) : (
           <Card className="bg-card border-border">
