@@ -123,7 +123,7 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
                     <SelectValue placeholder="Selecione o esposo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membrosMasculinos?.map((m) => (
+                    {membrosMasculinos?.filter((m) => !!m?.id).map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.full_name}
                       </SelectItem>
@@ -139,7 +139,7 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
                     <SelectValue placeholder="Selecione a esposa" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membrosFemininos?.map((m) => (
+                    {membrosFemininos?.filter((m) => !!m?.id).map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.full_name}
                       </SelectItem>
