@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -21,11 +22,25 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { formatPhone } from "@/lib/masks";
+import { differenceInYears, differenceInMonths } from "date-fns";
 
 interface CasalFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   turmaId: string;
+}
+
+function calcularTempoCasamento(dataStr: string): string {
+  if (!dataStr) return "";
+  const data = new Date(dataStr + "T00:00:00");
+  const hoje = new Date();
+  const anos = differenceInYears(hoje, data);
+  const meses = differenceInMonths(hoje, data) % 12;
+  
+  if (anos === 0 && meses === 0) return "Menos de 1 mês";
+  if (anos === 0) return meses === 1 ? "1 mês" : `${meses} meses`;
+  if (meses === 0) return anos === 1 ? "1 ano" : `${anos} anos`;
+  return `${anos} ${anos === 1 ? "ano" : "anos"} e ${meses} ${meses === 1 ? "mês" : "meses"}`;
 }
 
 export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialogProps) {
@@ -42,6 +57,13 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Calcula automaticamente o tempo de casamento quando a data muda
+  useEffect(() => {
+    if (dataCasamento) {
+      setTempoCasamento(calcularTempoCasamento(dataCasamento));
+    }
+  }, [dataCasamento]);
+
   const { data: membros } = useQuery({
     queryKey: ["members"],
     queryFn: async () => {
@@ -54,8 +76,13 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
     },
   });
 
-  const membrosMasculinos = membros?.filter((m) => m.genero?.toLowerCase() === "masculino" || !m.genero);
-  const membrosFemininos = membros?.filter((m) => m.genero?.toLowerCase() === "feminino" || !m.genero);
+  const membrosMasculinos = useMemo(() => 
+    membros?.filter((m) => !!m?.id && (m.genero?.toLowerCase() === "masculino" || !m.genero)) || []
+  , [membros]);
+
+  const membrosFemininos = useMemo(() =>
+    membros?.filter((m) => !!m?.id && (m.genero?.toLowerCase() === "feminino" || !m.genero)) || []
+  , [membros]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +108,7 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
       toast({ title: "Casal inscrito com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
       resetForm();
       onOpenChange(false);
     }
@@ -103,6 +131,9 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Casal</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do casal para inscrevê-los na turma.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -118,12 +149,16 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
             <>
               <div className="space-y-2">
                 <Label>Esposo *</Label>
-                <Select value={membroMasculinoId} onValueChange={setMembroMasculinoId}>
+                <Select 
+                  value={membroMasculinoId || "none"} 
+                  onValueChange={(v) => setMembroMasculinoId(v === "none" ? "" : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o esposo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membrosMasculinos?.filter((m) => !!m?.id).map((m) => (
+                    <SelectItem value="none">Selecione...</SelectItem>
+                    {membrosMasculinos.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.full_name}
                       </SelectItem>
@@ -134,12 +169,16 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
 
               <div className="space-y-2">
                 <Label>Esposa *</Label>
-                <Select value={membroFemininoId} onValueChange={setMembroFemininoId}>
+                <Select 
+                  value={membroFemininoId || "none"} 
+                  onValueChange={(v) => setMembroFemininoId(v === "none" ? "" : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione a esposa" />
                   </SelectTrigger>
                   <SelectContent>
-                    {membrosFemininos?.filter((m) => !!m?.id).map((m) => (
+                    <SelectItem value="none">Selecione...</SelectItem>
+                    {membrosFemininos.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.full_name}
                       </SelectItem>
@@ -208,7 +247,9 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
                 id="tempoCasamento"
                 value={tempoCasamento}
                 onChange={(e) => setTempoCasamento(e.target.value)}
-                placeholder="Ex: 5 anos"
+                placeholder="Calculado automaticamente"
+                readOnly={!!dataCasamento}
+                className={dataCasamento ? "bg-muted" : ""}
               />
             </div>
           </div>
