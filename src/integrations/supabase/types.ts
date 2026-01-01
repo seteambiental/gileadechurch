@@ -407,6 +407,264 @@ export type Database = {
         }
         Relationships: []
       }
+      casais_inscritos: {
+        Row: {
+          certificado_emitido: boolean | null
+          created_at: string
+          data_casamento: string | null
+          data_certificado: string | null
+          id: string
+          membro_feminino_id: string | null
+          membro_masculino_id: string | null
+          nome_feminino: string | null
+          nome_masculino: string | null
+          observacoes: string | null
+          status: string | null
+          tempo_casamento: string | null
+          turma_id: string
+          updated_at: string
+          whatsapp_feminino: string | null
+          whatsapp_masculino: string | null
+        }
+        Insert: {
+          certificado_emitido?: boolean | null
+          created_at?: string
+          data_casamento?: string | null
+          data_certificado?: string | null
+          id?: string
+          membro_feminino_id?: string | null
+          membro_masculino_id?: string | null
+          nome_feminino?: string | null
+          nome_masculino?: string | null
+          observacoes?: string | null
+          status?: string | null
+          tempo_casamento?: string | null
+          turma_id: string
+          updated_at?: string
+          whatsapp_feminino?: string | null
+          whatsapp_masculino?: string | null
+        }
+        Update: {
+          certificado_emitido?: boolean | null
+          created_at?: string
+          data_casamento?: string | null
+          data_certificado?: string | null
+          id?: string
+          membro_feminino_id?: string | null
+          membro_masculino_id?: string | null
+          nome_feminino?: string | null
+          nome_masculino?: string | null
+          observacoes?: string | null
+          status?: string | null
+          tempo_casamento?: string | null
+          turma_id?: string
+          updated_at?: string
+          whatsapp_feminino?: string | null
+          whatsapp_masculino?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_inscritos_membro_feminino_id_fkey"
+            columns: ["membro_feminino_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_inscritos_membro_masculino_id_fkey"
+            columns: ["membro_masculino_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_inscritos_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_lideres: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          funcao: string | null
+          id: string
+          membro_feminino_id: string | null
+          membro_masculino_id: string | null
+          turma_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          membro_feminino_id?: string | null
+          membro_masculino_id?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          funcao?: string | null
+          id?: string
+          membro_feminino_id?: string | null
+          membro_masculino_id?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_lideres_membro_feminino_id_fkey"
+            columns: ["membro_feminino_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_lideres_membro_masculino_id_fkey"
+            columns: ["membro_masculino_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_lideres_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_materiais: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          id: string
+          ordem: number | null
+          tipo: string | null
+          titulo: string
+          turma_id: string | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string | null
+          titulo: string
+          turma_id?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string | null
+          titulo?: string
+          turma_id?: string | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_materiais_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_presencas: {
+        Row: {
+          casal_id: string
+          created_at: string
+          data_aula: string
+          id: string
+          observacoes: string | null
+          presente: boolean | null
+        }
+        Insert: {
+          casal_id: string
+          created_at?: string
+          data_aula: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+        }
+        Update: {
+          casal_id?: string
+          created_at?: string
+          data_aula?: string
+          id?: string
+          observacoes?: string | null
+          presente?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_presencas_casal_id_fkey"
+            columns: ["casal_id"]
+            isOneToOne: false
+            referencedRelation: "casais_inscritos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_turmas: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          horario: string | null
+          id: string
+          local: string | null
+          nome: string
+          updated_at: string
+          vagas: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          horario?: string | null
+          id?: string
+          local?: string | null
+          nome: string
+          updated_at?: string
+          vagas?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          horario?: string | null
+          id?: string
+          local?: string | null
+          nome?: string
+          updated_at?: string
+          vagas?: number | null
+        }
+        Relationships: []
+      }
       casas_refugio: {
         Row: {
           address: string | null

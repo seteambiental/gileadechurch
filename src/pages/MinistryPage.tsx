@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +35,8 @@ import { MinisterioRepertorioTab } from "@/components/ministerio/MinisterioReper
 import { DancaRepertorioTab } from "@/components/ministerio/DancaRepertorioTab";
 import { DancaEquipesTab } from "@/components/ministerio/DancaEquipesTab";
 import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
+import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
+import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 
 interface MinistryInfo {
   title: string;
@@ -43,7 +45,8 @@ interface MinistryInfo {
   fullDescription: string;
   hasEscalas?: boolean;
   hasRepertorio?: boolean;
-  isDanca?: boolean; // Specific for Dança ministry
+  isDanca?: boolean;
+  isCasais?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -60,6 +63,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: HeartHandshake,
     fullDescription:
       "Ministério dedicado ao fortalecimento dos casamentos e famílias, promovendo encontros, retiros e aconselhamento matrimonial.",
+    isCasais: true,
   },
   "casas-refugio": {
     title: "Casas Refúgio",
@@ -257,6 +261,7 @@ const MinistryPage = () => {
   const hasEscalas = ministry.hasEscalas && ministryFromDb?.id;
   const hasRepertorio = ministry.hasRepertorio && ministryFromDb?.id;
   const isDanca = ministry.isDanca && ministryFromDb?.id;
+  const isCasais = ministry.isCasais;
 
   return (
     <div className="min-h-screen bg-background">
@@ -291,31 +296,46 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {hasEscalas ? (
+        {(hasEscalas || isCasais) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-3' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
-              <TabsTrigger value="equipe" className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span className="hidden sm:inline">{isDanca ? 'Equipes' : 'Equipe'}</span>
-              </TabsTrigger>
-              <TabsTrigger value="escalas" className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4" />
-                <span className="hidden sm:inline">Escalas</span>
-              </TabsTrigger>
-              {(hasRepertorio || isDanca) && (
-                <TabsTrigger value="repertorio" className="flex items-center gap-2">
-                  <ListMusic className="w-4 h-4" />
-                  <span className="hidden sm:inline">Repertório</span>
-                </TabsTrigger>
+              {isCasais ? (
+                <>
+                  <TabsTrigger value="turmas" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Turmas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="materiais" className="flex items-center gap-2">
+                    <BookOpenIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Materiais</span>
+                  </TabsTrigger>
+                </>
+              ) : (
+                <>
+                  <TabsTrigger value="equipe" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">{isDanca ? 'Equipes' : 'Equipe'}</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="escalas" className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="hidden sm:inline">Escalas</span>
+                  </TabsTrigger>
+                  {(hasRepertorio || isDanca) && (
+                    <TabsTrigger value="repertorio" className="flex items-center gap-2">
+                      <ListMusic className="w-4 h-4" />
+                      <span className="hidden sm:inline">Repertório</span>
+                    </TabsTrigger>
+                  )}
+                  <TabsTrigger value="estatisticas" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Estatísticas</span>
+                  </TabsTrigger>
+                </>
               )}
-              <TabsTrigger value="estatisticas" className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                <span className="hidden sm:inline">Estatísticas</span>
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="info">
@@ -334,26 +354,49 @@ const MinistryPage = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="equipe">
-              {isDanca ? (
-                <DancaEquipesTab ministryId={ministryFromDb.id} />
-              ) : (
-                <MinisterioEquipeTab ministryId={ministryFromDb.id} ministryName={ministry.title} />
-              )}
-            </TabsContent>
+            {isCasais ? (
+              <>
+                <TabsContent value="turmas">
+                  <CasaisTurmasTab />
+                </TabsContent>
+                <TabsContent value="materiais">
+                  <CasaisMateriaisTab />
+                </TabsContent>
+              </>
+            ) : (
+              <>
+                <TabsContent value="equipe">
+                  {isDanca ? (
+                    <DancaEquipesTab ministryId={ministryFromDb!.id} />
+                  ) : (
+                    <MinisterioEquipeTab ministryId={ministryFromDb!.id} ministryName={ministry.title} />
+                  )}
+                </TabsContent>
 
-            <TabsContent value="escalas">
-              {isDanca ? (
-                <DancaEscalasTab ministryId={ministryFromDb.id} />
-              ) : (
-                <MinisterioEscalasTab ministryId={ministryFromDb.id} />
-              )}
-            </TabsContent>
+                <TabsContent value="escalas">
+                  {isDanca ? (
+                    <DancaEscalasTab ministryId={ministryFromDb!.id} />
+                  ) : (
+                    <MinisterioEscalasTab ministryId={ministryFromDb!.id} />
+                  )}
+                </TabsContent>
 
-            {hasRepertorio && (
-              <TabsContent value="repertorio">
-                <MinisterioRepertorioTab ministryId={ministryFromDb.id} />
-              </TabsContent>
+                {hasRepertorio && (
+                  <TabsContent value="repertorio">
+                    <MinisterioRepertorioTab ministryId={ministryFromDb!.id} />
+                  </TabsContent>
+                )}
+
+                {isDanca && !hasRepertorio && (
+                  <TabsContent value="repertorio">
+                    <DancaRepertorioTab ministryId={ministryFromDb!.id} />
+                  </TabsContent>
+                )}
+
+                <TabsContent value="estatisticas">
+                  <MinisterioEstatisticasTab ministryId={ministryFromDb!.id} />
+                </TabsContent>
+              </>
             )}
 
             {isDanca && !hasRepertorio && (
