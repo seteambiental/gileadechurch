@@ -116,12 +116,12 @@ export function MaterialFormDialog({ open, onOpenChange, material, turmas }: Mat
             </div>
             <div className="space-y-2">
               <Label>Turma</Label>
-              <Select value={turmaId} onValueChange={(v) => setValue("turma_id", v)}>
+              <Select value={turmaId || "geral"} onValueChange={(v) => setValue("turma_id", v === "geral" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Geral" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Geral (todas turmas)</SelectItem>
+                  <SelectItem value="geral">Geral (todas turmas)</SelectItem>
                   {turmas.map((t) => (
                     <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
                   ))}
