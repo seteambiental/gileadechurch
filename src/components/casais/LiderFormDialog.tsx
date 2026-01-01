@@ -44,8 +44,8 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
     },
   });
 
-  const membrosMasculinos = membros?.filter((m) => m.genero === "Masculino" || !m.genero);
-  const membrosFemininos = membros?.filter((m) => m.genero === "Feminino" || !m.genero);
+  const membrosMasculinos = membros?.filter((m) => m.genero?.toLowerCase() === "masculino" || !m.genero);
+  const membrosFemininos = membros?.filter((m) => m.genero?.toLowerCase() === "feminino" || !m.genero);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
