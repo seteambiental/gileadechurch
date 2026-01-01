@@ -212,6 +212,7 @@ export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDe
                     <TableHeader>
                       <TableRow>
                         <TableHead>Nome</TableHead>
+                        <TableHead>Gênero</TableHead>
                         <TableHead>Parentesco</TableHead>
                         <TableHead>Idade</TableHead>
                         <TableHead className="hidden md:table-cell">Profissão</TableHead>
@@ -227,6 +228,13 @@ export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDe
                           onClick={() => handleEditMembro(membro)}
                         >
                           <TableCell className="font-medium">{membro.nome}</TableCell>
+                          <TableCell>
+                            {membro.genero ? (
+                              <Badge variant={membro.genero === "Masculino" ? "outline" : "secondary"}>
+                                {membro.genero === "Masculino" ? "M" : "F"}
+                              </Badge>
+                            ) : "-"}
+                          </TableCell>
                           <TableCell>{membro.parentesco || "-"}</TableCell>
                           <TableCell>
                             {membro.data_nascimento ? (

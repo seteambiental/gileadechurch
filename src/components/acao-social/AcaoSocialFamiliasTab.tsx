@@ -34,19 +34,28 @@ export function AcaoSocialFamiliasTab() {
     },
   });
 
-  const { data: membrosCount } = useQuery({
-    queryKey: ["acao_social_familia_membros_count"],
+  const { data: membrosData } = useQuery({
+    queryKey: ["acao_social_familia_membros_summary"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("acao_social_familia_membros")
-        .select("familia_id");
+        .select("familia_id, genero, data_nascimento");
       if (error) throw error;
       
-      const counts: Record<string, number> = {};
+      const summary: Record<string, { total: number; masculino: number; feminino: number; idades: number[] }> = {};
       data.forEach((m) => {
-        counts[m.familia_id] = (counts[m.familia_id] || 0) + 1;
+        if (!summary[m.familia_id]) {
+          summary[m.familia_id] = { total: 0, masculino: 0, feminino: 0, idades: [] };
+        }
+        summary[m.familia_id].total++;
+        if (m.genero === "Masculino") summary[m.familia_id].masculino++;
+        if (m.genero === "Feminino") summary[m.familia_id].feminino++;
+        if (m.data_nascimento) {
+          const idade = Math.floor((new Date().getTime() - new Date(m.data_nascimento + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+          summary[m.familia_id].idades.push(idade);
+        }
       });
-      return counts;
+      return summary;
     },
   });
 
@@ -137,9 +146,26 @@ export function AcaoSocialFamiliasTab() {
                     <TableRow key={familia.id}>
                       <TableCell className="font-medium">{familia.nome_familia}</TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <Badge variant="secondary">
-                          {membrosCount?.[familia.id] || 0} membros
-                        </Badge>
+                        <div className="space-y-1">
+                          <Badge variant="secondary">
+                            {membrosData?.[familia.id]?.total || 0} membros
+                          </Badge>
+                          {membrosData?.[familia.id] && (
+                            <div className="flex gap-2 text-xs text-muted-foreground">
+                              {membrosData[familia.id].masculino > 0 && (
+                                <span>{membrosData[familia.id].masculino}M</span>
+                              )}
+                              {membrosData[familia.id].feminino > 0 && (
+                                <span>{membrosData[familia.id].feminino}F</span>
+                              )}
+                              {membrosData[familia.id].idades.length > 0 && (
+                                <span className="text-muted-foreground/70">
+                                  ({Math.min(...membrosData[familia.id].idades)}-{Math.max(...membrosData[familia.id].idades)} anos)
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <span className="flex items-center gap-1">
