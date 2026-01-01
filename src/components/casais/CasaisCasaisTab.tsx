@@ -110,7 +110,7 @@ export function CasaisCasaisTab() {
     return nomeM.toLowerCase().includes(searchLower) || nomeF.toLowerCase().includes(searchLower);
   });
 
-  const turmasAtivas = turmas?.filter(t => t.ativo) || [];
+  const turmasAtivas = turmas?.filter((t) => !!t?.id && !!t?.ativo) || [];
 
   return (
     <Card className="bg-card border-border">
@@ -156,8 +156,10 @@ export function CasaisCasaisTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as turmas</SelectItem>
-              {turmas?.map((t) => (
-                <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+              {turmas?.filter((t) => !!t?.id).map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.nome}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -85,6 +86,9 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Adicionar Líder</DialogTitle>
+          <DialogDescription>
+            Selecione o esposo e/ou a esposa e informe a função.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

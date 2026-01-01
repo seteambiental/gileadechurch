@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -88,6 +89,9 @@ export function MaterialFormDialog({ open, onOpenChange, material, turmas }: Mat
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{material ? "Editar Material" : "Novo Material"}</DialogTitle>
+          <DialogDescription>
+            Preencha os dados do material e clique em {material ? "Salvar" : "Criar"}.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
