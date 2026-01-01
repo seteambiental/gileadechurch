@@ -89,12 +89,12 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Esposo</Label>
-            <Select value={membroMasculinoId} onValueChange={setMembroMasculinoId}>
+            <Select value={membroMasculinoId || "none"} onValueChange={(v) => setMembroMasculinoId(v === "none" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o esposo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {membrosMasculinos?.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.full_name}
@@ -106,12 +106,12 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
 
           <div className="space-y-2">
             <Label>Esposa</Label>
-            <Select value={membroFemininoId} onValueChange={setMembroFemininoId}>
+            <Select value={membroFemininoId || "none"} onValueChange={(v) => setMembroFemininoId(v === "none" ? "" : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a esposa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {membrosFemininos?.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.full_name}
