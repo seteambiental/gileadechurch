@@ -36,6 +36,7 @@ import { DancaRepertorioTab } from "@/components/ministerio/DancaRepertorioTab";
 import { DancaEquipesTab } from "@/components/ministerio/DancaEquipesTab";
 import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
 import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
+import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 
 interface MinistryInfo {
@@ -298,7 +299,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-3' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-4' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -306,8 +307,12 @@ const MinistryPage = () => {
               {isCasais ? (
                 <>
                   <TabsTrigger value="turmas" className="flex items-center gap-2">
-                    <Users className="w-4 h-4" />
+                    <CalendarDays className="w-4 h-4" />
                     <span className="hidden sm:inline">Turmas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="casais" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Casais</span>
                   </TabsTrigger>
                   <TabsTrigger value="materiais" className="flex items-center gap-2">
                     <BookOpenIcon className="w-4 h-4" />
@@ -358,6 +363,9 @@ const MinistryPage = () => {
               <>
                 <TabsContent value="turmas">
                   <CasaisTurmasTab />
+                </TabsContent>
+                <TabsContent value="casais">
+                  <CasaisCasaisTab />
                 </TabsContent>
                 <TabsContent value="materiais">
                   <CasaisMateriaisTab />
