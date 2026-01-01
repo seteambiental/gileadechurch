@@ -16,6 +16,7 @@ import {
   UserCheck,
   Trash2,
   Pencil,
+  UserRoundCheck,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
@@ -53,6 +54,8 @@ const ConsolidacaoPage = () => {
   const [editingConvertido, setEditingConvertido] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+  const [isConverting, setIsConverting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -101,6 +104,66 @@ const ConsolidacaoPage = () => {
     } finally {
       setIsDeleting(false);
       setDeletingId(null);
+    }
+  };
+
+  const handleConvertToMember = async () => {
+    if (!convertingId) return;
+
+    const convertido = convertidos.find((c) => c.id === convertingId);
+    if (!convertido) return;
+
+    setIsConverting(true);
+    try {
+      // Criar membro com os dados do novo convertido
+      const memberData = {
+        full_name: convertido.full_name,
+        whatsapp: convertido.whatsapp,
+        email: convertido.email,
+        birth_date: convertido.data_nascimento,
+        address: convertido.address,
+        numero: convertido.numero,
+        complement: convertido.complement,
+        neighborhood: convertido.neighborhood,
+        city: convertido.city,
+        state: convertido.state,
+        cep: convertido.cep,
+        cpf: convertido.cpf,
+        rg: convertido.rg,
+        genero: convertido.genero,
+        photo_url: convertido.photo_url,
+        casa_refugio_id: convertido.casa_refugio_frequenta_id || convertido.casa_refugio_id,
+        member_since: new Date().toISOString().split("T")[0],
+      };
+
+      const { data: newMember, error: memberError } = await supabase
+        .from("members")
+        .insert(memberData)
+        .select("id")
+        .single();
+
+      if (memberError) throw memberError;
+
+      // Atualizar novo_convertido marcando como tornou_membro e vinculando ao member_id
+      const { error: updateError } = await supabase
+        .from("novos_convertidos")
+        .update({
+          tornou_membro: true,
+          member_id: newMember.id,
+          data_membresia: new Date().toISOString().split("T")[0],
+        })
+        .eq("id", convertingId);
+
+      if (updateError) throw updateError;
+
+      toast({ title: "Convertido para membro com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
+      queryClient.invalidateQueries({ queryKey: ["members"] });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao converter", description: error.message });
+    } finally {
+      setIsConverting(false);
+      setConvertingId(null);
     }
   };
 
@@ -189,7 +252,14 @@ const ConsolidacaoPage = () => {
                 <CardContent className="pt-4 pb-4 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-foreground">{convertido.full_name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">{convertido.full_name}</h3>
+                        {convertido.tornou_membro && (
+                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                            Membro
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
                         {convertido.whatsapp && <span>{convertido.whatsapp}</span>}
                         {convertido.como_chegou && (
@@ -210,6 +280,17 @@ const ConsolidacaoPage = () => {
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      {!convertido.tornou_membro && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          onClick={() => setConvertingId(convertido.id)}
+                          title="Converter para Membro"
+                        >
+                          <UserRoundCheck className="w-4 h-4" />
+                        </Button>
+                      )}
                       <EnviarMensagemButton convertido={convertido} />
                       <Button
                         size="icon"
@@ -262,6 +343,30 @@ const ConsolidacaoPage = () => {
             >
               {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Convert to Member Confirmation */}
+      <AlertDialog open={!!convertingId} onOpenChange={() => setConvertingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Converter para Membro</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá criar um novo registro de membro com os mesmos dados deste novo convertido.
+              O registro original será mantido e marcado como "tornou-se membro".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isConverting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConvertToMember}
+              disabled={isConverting}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              {isConverting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Converter
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
