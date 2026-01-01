@@ -122,7 +122,7 @@ export function MaterialFormDialog({ open, onOpenChange, material, turmas }: Mat
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="geral">Geral (todas turmas)</SelectItem>
-                  {turmas.map((t) => (
+                  {turmas.filter((t) => !!t?.id).map((t) => (
                     <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
                   ))}
                 </SelectContent>
