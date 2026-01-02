@@ -179,8 +179,8 @@ export function FrenteFormDialog({ open, onOpenChange, frente }: FrenteFormDialo
                 <FormItem>
                   <FormLabel>Líder</FormLabel>
                   <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
+                    value={field.value || "none"}
+                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -188,8 +188,8 @@ export function FrenteFormDialog({ open, onOpenChange, frente }: FrenteFormDialo
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
-                      {members?.map((m) => (
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {members?.filter((m) => !!m?.id)?.map((m) => (
                         <SelectItem key={m.id} value={m.id}>
                           {m.full_name}
                         </SelectItem>
