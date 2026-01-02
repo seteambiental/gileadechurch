@@ -39,6 +39,8 @@ import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
 import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
+import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
+import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
 
 interface MinistryInfo {
   title: string;
@@ -50,6 +52,7 @@ interface MinistryInfo {
   isDanca?: boolean;
   isCasais?: boolean;
   isEvangelizacao?: boolean;
+  isIntercessao?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -134,6 +137,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: HandHeart,
     fullDescription:
       "Ministério de oração intercessora, levantando súplicas pela igreja, cidade e nações.",
+    isIntercessao: true,
   },
   kids: {
     title: "Kids",
@@ -267,6 +271,7 @@ const MinistryPage = () => {
   const isDanca = ministry.isDanca && ministryFromDb?.id;
   const isCasais = ministry.isCasais;
   const isEvangelizacao = ministry.isEvangelizacao;
+  const isIntercessao = ministry.isIntercessao;
 
   return (
     <div className="min-h-screen bg-background">
@@ -301,14 +306,25 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {(hasEscalas || isCasais || isEvangelizacao) ? (
+        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isIntercessao ? 'grid-cols-3' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
-              {isEvangelizacao ? (
+              {isIntercessao ? (
+                <>
+                  <TabsTrigger value="pedidos" className="flex items-center gap-2">
+                    <HandHeart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Pedidos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="testemunhos" className="flex items-center gap-2">
+                    <Heart className="w-4 h-4" />
+                    <span className="hidden sm:inline">Testemunhos</span>
+                  </TabsTrigger>
+                </>
+              ) : isEvangelizacao ? (
                 <TabsTrigger value="frentes" className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   <span className="hidden sm:inline">Frentes</span>
@@ -368,7 +384,16 @@ const MinistryPage = () => {
               </Card>
             </TabsContent>
 
-            {isEvangelizacao ? (
+            {isIntercessao ? (
+              <>
+                <TabsContent value="pedidos">
+                  <IntercessaoPedidosTab />
+                </TabsContent>
+                <TabsContent value="testemunhos">
+                  <IntercessaoTestemunhosTab />
+                </TabsContent>
+              </>
+            ) : isEvangelizacao ? (
               <TabsContent value="frentes">
                 <EvangelizacaoFrentesTab />
               </TabsContent>

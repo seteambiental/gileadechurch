@@ -2374,6 +2374,69 @@ export type Database = {
           },
         ]
       }
+      pedidos_oracao: {
+        Row: {
+          anonimo: boolean
+          created_at: string
+          id: string
+          nome: string | null
+          pedido: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          anonimo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string | null
+          pedido: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          anonimo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string | null
+          pedido?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      testemunhos: {
+        Row: {
+          anonimo: boolean
+          aprovado: boolean
+          created_at: string
+          foto_url: string | null
+          id: string
+          nome: string | null
+          testemunho: string
+          updated_at: string
+        }
+        Insert: {
+          anonimo?: boolean
+          aprovado?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string | null
+          testemunho: string
+          updated_at?: string
+        }
+        Update: {
+          anonimo?: boolean
+          aprovado?: boolean
+          created_at?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string | null
+          testemunho?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_access_requests: {
         Row: {
           approved_at: string | null

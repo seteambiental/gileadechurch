@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const PrayerRequestForm = () => {
   const [name, setName] = useState("");
   const [request, setRequest] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!request.trim()) {
@@ -18,10 +20,26 @@ const PrayerRequestForm = () => {
       return;
     }
 
-    toast.success("Pedido enviado! Nossa equipe de intercessão estará orando por você.");
-    setName("");
-    setRequest("");
-    setIsAnonymous(false);
+    setIsSubmitting(true);
+    
+    try {
+      const { error } = await supabase.from("pedidos_oracao").insert({
+        nome: isAnonymous ? null : name || null,
+        pedido: request,
+        anonimo: isAnonymous,
+      });
+      
+      if (error) throw error;
+      
+      toast.success("Pedido enviado! Nossa equipe de intercessão estará orando por você.");
+      setName("");
+      setRequest("");
+      setIsAnonymous(false);
+    } catch (error) {
+      toast.error("Erro ao enviar pedido. Tente novamente.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -60,9 +78,9 @@ const PrayerRequestForm = () => {
           className="min-h-[120px] bg-background resize-none"
         />
         
-        <Button type="submit" variant="secondary" className="w-full font-heading font-semibold shadow-gold">
+        <Button type="submit" variant="secondary" className="w-full font-heading font-semibold shadow-gold" disabled={isSubmitting}>
           <Send className="w-4 h-4 mr-2" />
-          Enviar Pedido
+          {isSubmitting ? "Enviando..." : "Enviar Pedido"}
         </Button>
       </div>
       
