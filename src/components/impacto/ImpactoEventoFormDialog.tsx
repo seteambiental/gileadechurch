@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -64,16 +65,42 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      titulo: evento?.titulo || "",
-      data_inicio: evento?.data_inicio || "",
-      data_fim: evento?.data_fim || "",
-      tipo: evento?.tipo || "",
-      local: evento?.local || "",
-      descricao: evento?.descricao || "",
-      valor_inscricao: evento?.valor_inscricao?.toString() || "",
-      limite_vagas: evento?.limite_vagas?.toString() || "",
+      titulo: "",
+      data_inicio: "",
+      data_fim: "",
+      tipo: "",
+      local: "",
+      descricao: "",
+      valor_inscricao: "",
+      limite_vagas: "",
     },
   });
+
+  useEffect(() => {
+    if (open && evento) {
+      form.reset({
+        titulo: evento.titulo || "",
+        data_inicio: evento.data_inicio || "",
+        data_fim: evento.data_fim || "",
+        tipo: evento.tipo || "",
+        local: evento.local || "",
+        descricao: evento.descricao || "",
+        valor_inscricao: evento.valor_inscricao?.toString() || "",
+        limite_vagas: evento.limite_vagas?.toString() || "",
+      });
+    } else if (open && !evento) {
+      form.reset({
+        titulo: "",
+        data_inicio: "",
+        data_fim: "",
+        tipo: "",
+        local: "",
+        descricao: "",
+        valor_inscricao: "",
+        limite_vagas: "",
+      });
+    }
+  }, [open, evento, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
