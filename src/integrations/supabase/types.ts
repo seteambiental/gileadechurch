@@ -2408,6 +2408,8 @@ export type Database = {
         Row: {
           anonimo: boolean
           aprovado: boolean
+          arquivado: boolean
+          arquivado_em: string | null
           created_at: string
           foto_url: string | null
           id: string
@@ -2418,6 +2420,8 @@ export type Database = {
         Insert: {
           anonimo?: boolean
           aprovado?: boolean
+          arquivado?: boolean
+          arquivado_em?: string | null
           created_at?: string
           foto_url?: string | null
           id?: string
@@ -2428,6 +2432,8 @@ export type Database = {
         Update: {
           anonimo?: boolean
           aprovado?: boolean
+          arquivado?: boolean
+          arquivado_em?: string | null
           created_at?: string
           foto_url?: string | null
           id?: string
