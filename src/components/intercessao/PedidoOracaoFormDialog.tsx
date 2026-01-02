@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -19,14 +19,20 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Send } from "lucide-react";
 
 const formSchema = z.object({
-  nome: z.string().optional(),
+  member_id: z.string().optional(),
   pedido: z.string().min(1, "O pedido de oração é obrigatório"),
   anonimo: z.boolean().default(false),
 });
@@ -41,10 +47,22 @@ interface PedidoOracaoFormDialogProps {
 const PedidoOracaoFormDialog = ({ open, onOpenChange }: PedidoOracaoFormDialogProps) => {
   const queryClient = useQueryClient();
 
+  const { data: members } = useQuery({
+    queryKey: ["members-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: "",
+      member_id: "",
       pedido: "",
       anonimo: false,
     },
@@ -54,8 +72,9 @@ const PedidoOracaoFormDialog = ({ open, onOpenChange }: PedidoOracaoFormDialogPr
 
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      const selectedMember = members?.find((m) => m.id === values.member_id);
       const { error } = await supabase.from("pedidos_oracao").insert({
-        nome: values.anonimo ? null : values.nome || null,
+        nome: values.anonimo ? null : selectedMember?.full_name || null,
         pedido: values.pedido,
         anonimo: values.anonimo,
       });
@@ -104,13 +123,28 @@ const PedidoOracaoFormDialog = ({ open, onOpenChange }: PedidoOracaoFormDialogPr
             {!isAnonymous && (
               <FormField
                 control={form.control}
-                name="nome"
+                name="member_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Seu nome (opcional)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Digite seu nome" {...field} />
-                    </FormControl>
+                    <FormLabel>Seu nome</FormLabel>
+                    <Select
+                      value={field.value || "none"}
+                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione seu nome" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Não informar</SelectItem>
+                        {members?.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
