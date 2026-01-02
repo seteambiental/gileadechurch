@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Edit2, Trash2, UserPlus, Loader2 } from "lucide-react";
+import { Plus, Users, Edit2, Trash2, UserPlus, Loader2, Calendar, Eye, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { FrenteFormDialog } from "./FrenteFormDialog";
 import { FrenteMembroDialog } from "./FrenteMembroDialog";
+import { FrenteDetalhesDialog } from "./FrenteDetalhesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,10 +37,17 @@ interface FrenteMembro {
   member?: { full_name: string } | null;
 }
 
+interface EventoStats {
+  frente_id: string;
+  total_eventos: number;
+  total_vidas: number;
+}
+
 export function EvangelizacaoFrentesTab() {
   const queryClient = useQueryClient();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isMembroDialogOpen, setIsMembroDialogOpen] = useState(false);
+  const [isDetalhesOpen, setIsDetalhesOpen] = useState(false);
   const [selectedFrente, setSelectedFrente] = useState<Frente | null>(null);
   const [frenteToDelete, setFrenteToDelete] = useState<Frente | null>(null);
 
@@ -72,6 +80,26 @@ export function EvangelizacaoFrentesTab() {
     },
   });
 
+  const { data: eventosStats } = useQuery({
+    queryKey: ["evangelizacao-eventos-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evangelizacao_eventos")
+        .select("frente_id, vidas_alcancadas");
+      if (error) throw error;
+      
+      const stats: Record<string, EventoStats> = {};
+      (data || []).forEach((e: { frente_id: string; vidas_alcancadas: number }) => {
+        if (!stats[e.frente_id]) {
+          stats[e.frente_id] = { frente_id: e.frente_id, total_eventos: 0, total_vidas: 0 };
+        }
+        stats[e.frente_id].total_eventos++;
+        stats[e.frente_id].total_vidas += e.vidas_alcancadas;
+      });
+      return stats;
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -99,6 +127,11 @@ export function EvangelizacaoFrentesTab() {
   const handleAddMembros = (frente: Frente) => {
     setSelectedFrente(frente);
     setIsMembroDialogOpen(true);
+  };
+
+  const handleViewDetalhes = (frente: Frente) => {
+    setSelectedFrente(frente);
+    setIsDetalhesOpen(true);
   };
 
   if (isLoading) {
@@ -150,6 +183,7 @@ export function EvangelizacaoFrentesTab() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {frentes?.map((frente) => {
             const membros = membrosMap?.[frente.id] || [];
+            const stats = eventosStats?.[frente.id];
             return (
               <Card key={frente.id} className={!frente.ativo ? "opacity-60" : ""}>
                 <CardHeader className="pb-3">
@@ -174,35 +208,42 @@ export function EvangelizacaoFrentesTab() {
                     </p>
                   )}
 
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    <span>{membros.length} membro(s)</span>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-4 h-4" />
+                      {membros.length} membro(s)
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      {stats?.total_eventos || 0} evento(s)
+                    </span>
                   </div>
 
-                  {membros.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {membros.slice(0, 3).map((m) => (
-                        <Badge key={m.id} variant="outline" className="text-xs">
-                          {m.member?.full_name?.split(" ")[0]}
-                        </Badge>
-                      ))}
-                      {membros.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{membros.length - 3}
-                        </Badge>
-                      )}
+                  {(stats?.total_vidas || 0) > 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Heart className="w-4 h-4 text-destructive" />
+                      <span className="font-medium text-destructive">
+                        {stats?.total_vidas} vidas alcançadas
+                      </span>
                     </div>
                   )}
 
                   <div className="flex gap-2 pt-2">
                     <Button
-                      variant="outline"
+                      variant="secondary"
                       size="sm"
                       className="flex-1"
+                      onClick={() => handleViewDetalhes(frente)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Eventos
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleAddMembros(frente)}
                     >
-                      <UserPlus className="w-4 h-4 mr-1" />
-                      Membros
+                      <UserPlus className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -233,11 +274,18 @@ export function EvangelizacaoFrentesTab() {
       />
 
       {selectedFrente && (
-        <FrenteMembroDialog
-          open={isMembroDialogOpen}
-          onOpenChange={setIsMembroDialogOpen}
-          frente={selectedFrente}
-        />
+        <>
+          <FrenteMembroDialog
+            open={isMembroDialogOpen}
+            onOpenChange={setIsMembroDialogOpen}
+            frente={selectedFrente}
+          />
+          <FrenteDetalhesDialog
+            open={isDetalhesOpen}
+            onOpenChange={setIsDetalhesOpen}
+            frente={selectedFrente}
+          />
+        </>
       )}
 
       <AlertDialog open={!!frenteToDelete} onOpenChange={() => setFrenteToDelete(null)}>

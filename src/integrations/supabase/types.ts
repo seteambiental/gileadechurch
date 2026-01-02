@@ -943,6 +943,56 @@ export type Database = {
           },
         ]
       }
+      evangelizacao_eventos: {
+        Row: {
+          created_at: string
+          data_evento: string
+          decisoes: number
+          descricao: string | null
+          frente_id: string
+          id: string
+          local: string | null
+          nome: string
+          observacoes: string | null
+          updated_at: string
+          vidas_alcancadas: number
+        }
+        Insert: {
+          created_at?: string
+          data_evento: string
+          decisoes?: number
+          descricao?: string | null
+          frente_id: string
+          id?: string
+          local?: string | null
+          nome: string
+          observacoes?: string | null
+          updated_at?: string
+          vidas_alcancadas?: number
+        }
+        Update: {
+          created_at?: string
+          data_evento?: string
+          decisoes?: number
+          descricao?: string | null
+          frente_id?: string
+          id?: string
+          local?: string | null
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string
+          vidas_alcancadas?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evangelizacao_eventos_frente_id_fkey"
+            columns: ["frente_id"]
+            isOneToOne: false
+            referencedRelation: "evangelizacao_frentes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evangelizacao_frentes: {
         Row: {
           ativo: boolean
