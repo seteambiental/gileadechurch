@@ -1148,6 +1148,207 @@ export type Database = {
         }
         Relationships: []
       }
+      impacto_departamentos: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          lider_id: string | null
+          nome: string
+          observacoes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          lider_id?: string | null
+          nome: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          lider_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impacto_departamentos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "impacto_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_departamentos_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impacto_equipe_membros: {
+        Row: {
+          created_at: string
+          departamento_id: string
+          funcao: string | null
+          id: string
+          member_id: string | null
+          nome_manual: string | null
+        }
+        Insert: {
+          created_at?: string
+          departamento_id: string
+          funcao?: string | null
+          id?: string
+          member_id?: string | null
+          nome_manual?: string | null
+        }
+        Update: {
+          created_at?: string
+          departamento_id?: string
+          funcao?: string | null
+          id?: string
+          member_id?: string | null
+          nome_manual?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impacto_equipe_membros_departamento_id_fkey"
+            columns: ["departamento_id"]
+            isOneToOne: false
+            referencedRelation: "impacto_departamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_equipe_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      impacto_eventos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          id: string
+          limite_vagas: number | null
+          local: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+          valor_inscricao: number | null
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          limite_vagas?: number | null
+          local?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+          valor_inscricao?: number | null
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          limite_vagas?: number | null
+          local?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+          valor_inscricao?: number | null
+        }
+        Relationships: []
+      }
+      impacto_inscricoes: {
+        Row: {
+          created_at: string
+          data_nascimento: string | null
+          data_pagamento: string | null
+          email: string | null
+          evento_id: string
+          forma_pagamento: string | null
+          genero: string | null
+          id: string
+          member_id: string | null
+          nome: string
+          observacoes: string | null
+          status_pagamento: string
+          telefone: string | null
+          updated_at: string
+          valor_pago: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_nascimento?: string | null
+          data_pagamento?: string | null
+          email?: string | null
+          evento_id: string
+          forma_pagamento?: string | null
+          genero?: string | null
+          id?: string
+          member_id?: string | null
+          nome: string
+          observacoes?: string | null
+          status_pagamento?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_pago?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_nascimento?: string | null
+          data_pagamento?: string | null
+          email?: string | null
+          evento_id?: string
+          forma_pagamento?: string | null
+          genero?: string | null
+          id?: string
+          member_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          status_pagamento?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_pago?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impacto_inscricoes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "impacto_eventos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_inscricoes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inscricoes_eventos: {
         Row: {
           cpf: string | null
