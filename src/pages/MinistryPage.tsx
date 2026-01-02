@@ -38,6 +38,7 @@ import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
 import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
 import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
+import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 
 interface MinistryInfo {
   title: string;
@@ -48,6 +49,7 @@ interface MinistryInfo {
   hasRepertorio?: boolean;
   isDanca?: boolean;
   isCasais?: boolean;
+  isEvangelizacao?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -110,6 +112,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Megaphone,
     fullDescription:
       "Ministério dedicado ao evangelismo e alcance de vidas, com ações, discipulado e iniciativas de impacto na comunidade.",
+    isEvangelizacao: true,
   },
   flow: {
     title: "Flow",
@@ -263,6 +266,7 @@ const MinistryPage = () => {
   const hasRepertorio = ministry.hasRepertorio && ministryFromDb?.id;
   const isDanca = ministry.isDanca && ministryFromDb?.id;
   const isCasais = ministry.isCasais;
+  const isEvangelizacao = ministry.isEvangelizacao;
 
   return (
     <div className="min-h-screen bg-background">
@@ -297,14 +301,19 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {(hasEscalas || isCasais) ? (
+        {(hasEscalas || isCasais || isEvangelizacao) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-4' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
-              {isCasais ? (
+              {isEvangelizacao ? (
+                <TabsTrigger value="frentes" className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <span className="hidden sm:inline">Frentes</span>
+                </TabsTrigger>
+              ) : isCasais ? (
                 <>
                   <TabsTrigger value="turmas" className="flex items-center gap-2">
                     <CalendarDays className="w-4 h-4" />
@@ -359,7 +368,11 @@ const MinistryPage = () => {
               </Card>
             </TabsContent>
 
-            {isCasais ? (
+            {isEvangelizacao ? (
+              <TabsContent value="frentes">
+                <EvangelizacaoFrentesTab />
+              </TabsContent>
+            ) : isCasais ? (
               <>
                 <TabsContent value="turmas">
                   <CasaisTurmasTab />

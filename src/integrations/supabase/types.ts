@@ -943,6 +943,83 @@ export type Database = {
           },
         ]
       }
+      evangelizacao_frentes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          lider_id: string | null
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          lider_id?: string | null
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          lider_id?: string | null
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evangelizacao_frentes_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      evangelizacao_frentes_membros: {
+        Row: {
+          created_at: string
+          frente_id: string
+          funcao: string | null
+          id: string
+          membro_id: string
+        }
+        Insert: {
+          created_at?: string
+          frente_id: string
+          funcao?: string | null
+          id?: string
+          membro_id: string
+        }
+        Update: {
+          created_at?: string
+          frente_id?: string
+          funcao?: string | null
+          id?: string
+          membro_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evangelizacao_frentes_membros_frente_id_fkey"
+            columns: ["frente_id"]
+            isOneToOne: false
+            referencedRelation: "evangelizacao_frentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evangelizacao_frentes_membros_membro_id_fkey"
+            columns: ["membro_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       igreja_config: {
         Row: {
           address: string | null
