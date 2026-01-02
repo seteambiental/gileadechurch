@@ -42,6 +42,9 @@ import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/Evangelizaca
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
 import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
+import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
+import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
+import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 
 interface MinistryInfo {
   title: string;
@@ -54,6 +57,7 @@ interface MinistryInfo {
   isCasais?: boolean;
   isEvangelizacao?: boolean;
   isIntercessao?: boolean;
+  isImpacto?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -201,6 +205,14 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério de artes cênicas que apresenta peças teatrais e esquetes com mensagens edificantes.",
   },
+  impacto: {
+    title: "Impacto",
+    description: "Eventos especiais",
+    icon: Zap,
+    fullDescription:
+      "Ministério responsável pela organização de retiros e eventos de impacto para diferentes públicos: mulheres, homens, crianças, jovens, adolescentes e casais.",
+    isImpacto: true,
+  },
 };
 
 const MinistryPage = () => {
@@ -273,6 +285,7 @@ const MinistryPage = () => {
   const isCasais = ministry.isCasais;
   const isEvangelizacao = ministry.isEvangelizacao;
   const isIntercessao = ministry.isIntercessao;
+  const isImpacto = ministry.isImpacto;
 
   return (
     <div className="min-h-screen bg-background">
@@ -307,14 +320,29 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao) ? (
+        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isImpacto ? 'grid-cols-4' : isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
-              {isIntercessao ? (
+              {isImpacto ? (
+                <>
+                  <TabsTrigger value="eventos" className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="hidden sm:inline">Eventos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="inscricoes" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Inscrições</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="financeiro" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Financeiro</span>
+                  </TabsTrigger>
+                </>
+              ) : isIntercessao ? (
                 <>
                   <TabsTrigger value="pedidos" className="flex items-center gap-2">
                     <HandHeart className="w-4 h-4" />
@@ -389,7 +417,19 @@ const MinistryPage = () => {
               </Card>
             </TabsContent>
 
-            {isIntercessao ? (
+            {isImpacto ? (
+              <>
+                <TabsContent value="eventos">
+                  <ImpactoEventosTab />
+                </TabsContent>
+                <TabsContent value="inscricoes">
+                  <ImpactoInscricoesTab />
+                </TabsContent>
+                <TabsContent value="financeiro">
+                  <ImpactoFinanceiroTab />
+                </TabsContent>
+              </>
+            ) : isIntercessao ? (
               <>
                 <TabsContent value="pedidos">
                   <IntercessaoPedidosTab />
