@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -18,16 +18,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Heart } from "lucide-react";
 
 const formSchema = z.object({
-  nome: z.string().optional(),
+  member_id: z.string().optional(),
   testemunho: z.string().min(1, "O testemunho é obrigatório").max(300, "Máximo de 300 caracteres"),
-  foto_url: z.string().optional(),
   anonimo: z.boolean().default(false),
 });
 
@@ -41,12 +46,23 @@ interface TestemunhoFormDialogProps {
 const TestemunhoFormDialog = ({ open, onOpenChange }: TestemunhoFormDialogProps) => {
   const queryClient = useQueryClient();
 
+  const { data: members } = useQuery({
+    queryKey: ["members-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, photo_url")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      nome: "",
+      member_id: "",
       testemunho: "",
-      foto_url: "",
       anonimo: false,
     },
   });
@@ -56,10 +72,11 @@ const TestemunhoFormDialog = ({ open, onOpenChange }: TestemunhoFormDialogProps)
 
   const createMutation = useMutation({
     mutationFn: async (values: FormValues) => {
+      const selectedMember = members?.find((m) => m.id === values.member_id);
       const { error } = await supabase.from("testemunhos").insert({
-        nome: values.anonimo ? null : values.nome || null,
+        nome: values.anonimo ? null : selectedMember?.full_name || null,
         testemunho: values.testemunho,
-        foto_url: values.anonimo ? null : values.foto_url || null,
+        foto_url: values.anonimo ? null : selectedMember?.photo_url || null,
         anonimo: values.anonimo,
         aprovado: false,
       });
@@ -106,35 +123,34 @@ const TestemunhoFormDialog = ({ open, onOpenChange }: TestemunhoFormDialogProps)
             />
 
             {!isAnonymous && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Seu nome (opcional)</FormLabel>
+              <FormField
+                control={form.control}
+                name="member_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seu nome</FormLabel>
+                    <Select
+                      value={field.value || "none"}
+                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                    >
                       <FormControl>
-                        <Input placeholder="Digite seu nome" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione seu nome" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="foto_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL da Foto (opcional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+                      <SelectContent>
+                        <SelectItem value="none">Não informar</SelectItem>
+                        {members?.map((m) => (
+                          <SelectItem key={m.id} value={m.id}>
+                            {m.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             )}
 
             <FormField
