@@ -6,15 +6,31 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Plus, User, UserX, CheckCircle, Clock, Trash2 } from "lucide-react";
 import PedidoOracaoFormDialog from "./PedidoOracaoFormDialog";
+import TestemunhoFormDialog from "./TestemunhoFormDialog";
 
 const IntercessaoPedidosTab = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
+  const [testemunhoFormOpen, setTestemunhoFormOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; pedidoId: string | null }>({
+    open: false,
+    pedidoId: null,
+  });
 
   const { data: pedidos, isLoading } = useQuery({
     queryKey: ["pedidos-oracao"],
@@ -58,6 +74,20 @@ const IntercessaoPedidosTab = () => {
       toast.error("Erro ao remover pedido");
     },
   });
+
+  const handleMarkResponded = (pedidoId: string) => {
+    setConfirmDialog({ open: true, pedidoId });
+  };
+
+  const handleConfirmResponded = (addTestemunho: boolean) => {
+    if (confirmDialog.pedidoId) {
+      updateStatusMutation.mutate({ id: confirmDialog.pedidoId, status: "respondido" });
+      if (addTestemunho) {
+        setTestemunhoFormOpen(true);
+      }
+    }
+    setConfirmDialog({ open: false, pedidoId: null });
+  };
 
   if (isLoading) {
     return <div className="text-center py-8">Carregando...</div>;
@@ -116,7 +146,7 @@ const IntercessaoPedidosTab = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => updateStatusMutation.mutate({ id: pedido.id, status: "respondido" })}
+                        onClick={() => handleMarkResponded(pedido.id)}
                       >
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Marcar Respondido
@@ -147,6 +177,32 @@ const IntercessaoPedidosTab = () => {
       )}
 
       <PedidoOracaoFormDialog open={formOpen} onOpenChange={setFormOpen} />
+      <TestemunhoFormDialog open={testemunhoFormOpen} onOpenChange={setTestemunhoFormOpen} />
+
+      <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ open, pedidoId: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Oração Respondida!</AlertDialogTitle>
+            <AlertDialogDescription>
+              A oração foi alcançada? Deseja compartilhar um testemunho sobre essa resposta de Deus?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={() => setConfirmDialog({ open: false, pedidoId: null })}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => handleConfirmResponded(false)}
+              className="bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            >
+              Apenas Marcar
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => handleConfirmResponded(true)}>
+              Sim, Compartilhar Testemunho
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

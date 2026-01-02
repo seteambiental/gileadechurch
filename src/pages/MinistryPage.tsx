@@ -41,6 +41,7 @@ import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
+import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
 
 interface MinistryInfo {
   title: string;
@@ -308,7 +309,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isIntercessao ? 'grid-cols-3' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -322,6 +323,10 @@ const MinistryPage = () => {
                   <TabsTrigger value="testemunhos" className="flex items-center gap-2">
                     <Heart className="w-4 h-4" />
                     <span className="hidden sm:inline">Testemunhos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="indicadores" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Indicadores</span>
                   </TabsTrigger>
                 </>
               ) : isEvangelizacao ? (
@@ -391,6 +396,9 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="testemunhos">
                   <IntercessaoTestemunhosTab />
+                </TabsContent>
+                <TabsContent value="indicadores">
+                  <IntercessaoIndicadoresTab />
                 </TabsContent>
               </>
             ) : isEvangelizacao ? (
