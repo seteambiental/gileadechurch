@@ -2411,6 +2411,133 @@ export type Database = {
         }
         Relationships: []
       }
+      missoes_mocambique_contribuicoes: {
+        Row: {
+          contribuinte_id: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          pago: boolean
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          contribuinte_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          pago?: boolean
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          contribuinte_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          pago?: boolean
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missoes_mocambique_contribuicoes_contribuinte_id_fkey"
+            columns: ["contribuinte_id"]
+            isOneToOne: false
+            referencedRelation: "missoes_mocambique_contribuintes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missoes_mocambique_contribuintes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_inicio: string
+          id: string
+          member_id: string | null
+          nome_manual: string | null
+          observacoes: string | null
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio?: string
+          id?: string
+          member_id?: string | null
+          nome_manual?: string | null
+          observacoes?: string | null
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio?: string
+          id?: string
+          member_id?: string | null
+          nome_manual?: string | null
+          observacoes?: string | null
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missoes_mocambique_contribuintes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      missoes_mocambique_fechamentos: {
+        Row: {
+          cotacao_mzn: number
+          created_at: string
+          fechado: boolean
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          total_arrecadado: number
+          total_contribuintes: number
+          updated_at: string
+          valor_convertido_mzn: number
+        }
+        Insert: {
+          cotacao_mzn?: number
+          created_at?: string
+          fechado?: boolean
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          total_arrecadado?: number
+          total_contribuintes?: number
+          updated_at?: string
+          valor_convertido_mzn?: number
+        }
+        Update: {
+          cotacao_mzn?: number
+          created_at?: string
+          fechado?: boolean
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          total_arrecadado?: number
+          total_contribuintes?: number
+          updated_at?: string
+          valor_convertido_mzn?: number
+        }
+        Relationships: []
+      }
       novos_convertidos: {
         Row: {
           address: string | null

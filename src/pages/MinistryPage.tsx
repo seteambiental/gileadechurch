@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +45,8 @@ import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndic
 import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
 import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
+import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
+import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
 
 interface MinistryInfo {
   title: string;
@@ -58,6 +60,7 @@ interface MinistryInfo {
   isEvangelizacao?: boolean;
   isIntercessao?: boolean;
   isImpacto?: boolean;
+  isMissoes?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -213,6 +216,14 @@ const ministriesData: Record<string, MinistryInfo> = {
       "Ministério responsável pela organização de retiros e eventos de impacto para diferentes públicos: mulheres, homens, crianças, jovens, adolescentes e casais.",
     isImpacto: true,
   },
+  "missoes-mocambique": {
+    title: "Missões Moçambique",
+    description: "Apoio missionário",
+    icon: Globe,
+    fullDescription:
+      "Ministério dedicado ao apoio e sustento de missionários em Moçambique, promovendo a expansão do evangelho na África através de contribuições mensais e acompanhamento das atividades missionárias.",
+    isMissoes: true,
+  },
 };
 
 const MinistryPage = () => {
@@ -286,6 +297,7 @@ const MinistryPage = () => {
   const isEvangelizacao = ministry.isEvangelizacao;
   const isIntercessao = ministry.isIntercessao;
   const isImpacto = ministry.isImpacto;
+  const isMissoes = ministry.isMissoes;
 
   return (
     <div className="min-h-screen bg-background">
@@ -320,14 +332,25 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto) ? (
+        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isImpacto ? 'grid-cols-4' : isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-3' : isImpacto ? 'grid-cols-4' : isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
               </TabsTrigger>
-              {isImpacto ? (
+              {isMissoes ? (
+                <>
+                  <TabsTrigger value="contribuintes" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Contribuintes</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="fechamento" className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Fechamento</span>
+                  </TabsTrigger>
+                </>
+              ) : isImpacto ? (
                 <>
                   <TabsTrigger value="eventos" className="flex items-center gap-2">
                     <CalendarDays className="w-4 h-4" />
@@ -417,7 +440,16 @@ const MinistryPage = () => {
               </Card>
             </TabsContent>
 
-            {isImpacto ? (
+            {isMissoes ? (
+              <>
+                <TabsContent value="contribuintes">
+                  <MissoesContribuintesTab />
+                </TabsContent>
+                <TabsContent value="fechamento">
+                  <MissoesFechamentoTab />
+                </TabsContent>
+              </>
+            ) : isImpacto ? (
               <>
                 <TabsContent value="eventos">
                   <ImpactoEventosTab />
