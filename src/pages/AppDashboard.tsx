@@ -30,6 +30,7 @@ import {
   Car,
   ClipboardList,
   DoorOpen,
+  Globe,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -53,6 +54,7 @@ const ministries = [
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
+  { icon: Globe, title: "Missões Moçambique", description: "Apoio missionário", path: "/ministerio/missoes-mocambique" },
   { icon: Crown, title: "Mulheres", description: "Ministério feminino", path: "/ministerio/mulheres" },
   { icon: ClipboardList, title: "Organização de Culto", description: "Logística dos cultos", path: "/ministerio/organizacao-culto" },
   { icon: DoorOpen, title: "Recepção", description: "Acolhimento", path: "/ministerio/recepcao" },
