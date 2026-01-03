@@ -770,6 +770,75 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'agradecimento_missoes') {
+      const { contribuinteId, valorMensal, cotacaoMZN } = body;
+      
+      console.log(`Enviando agradecimento de missões para contribuinte: ${contribuinteId}`);
+      
+      // Buscar dados do contribuinte
+      const { data: contribuinte, error: contError } = await supabase
+        .from('missoes_mocambique_contribuintes')
+        .select(`
+          *,
+          member:members(full_name, whatsapp)
+        `)
+        .eq('id', contribuinteId)
+        .single();
+
+      if (contError || !contribuinte) {
+        throw new Error('Contribuinte não encontrado');
+      }
+
+      // Determinar nome e WhatsApp
+      const nome = contribuinte.member?.full_name || contribuinte.nome_manual;
+      const whatsapp = contribuinte.member?.whatsapp;
+
+      if (!whatsapp) {
+        throw new Error('WhatsApp não cadastrado para este contribuinte');
+      }
+
+      if (!nome) {
+        throw new Error('Nome do contribuinte não encontrado');
+      }
+
+      const primeiroNome = nome.split(' ')[0];
+      const valor = valorMensal || contribuinte.valor_mensal;
+      
+      // Usar cotação informada ou padrão (aproximadamente 1 BRL = 10 MZN)
+      const cotacao = cotacaoMZN || 10.5;
+      const valorMZN = valor * cotacao;
+
+      // Referências de poder de compra em Moçambique (valores aproximados)
+      const salarioMinimo = 6500; // MZN - salário mínimo em Moçambique aprox.
+      const refeicoesBasicas = Math.floor(valorMZN / 50); // Uma refeição básica ~50 MZN
+      const kilosArroz = Math.floor(valorMZN / 80); // 1kg arroz ~80 MZN
+      const litrosLeite = Math.floor(valorMZN / 100); // 1L leite ~100 MZN
+      const percentualSalario = ((valorMZN / salarioMinimo) * 100).toFixed(1);
+
+      let comparacaoPoder = '';
+      if (valorMZN >= salarioMinimo) {
+        const salarios = (valorMZN / salarioMinimo).toFixed(1);
+        comparacaoPoder = `💼 Equivale a *${salarios} salário(s) mínimo(s)* de um trabalhador moçambicano!`;
+      } else if (valorMZN >= salarioMinimo * 0.5) {
+        comparacaoPoder = `💼 Representa *${percentualSalario}%* do salário mínimo de um trabalhador!`;
+      } else {
+        comparacaoPoder = `💼 Representa *${percentualSalario}%* do salário mínimo local!`;
+      }
+
+      const mensagem = `🙏 *Olá, ${primeiroNome}!*\n\nQueremos agradecer imensamente pelo seu carinho e fidelidade no apoio às *Missões Moçambique*! 🌍\n\nSua oferta de *R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* se transforma em *${valorMZN.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Meticais* em Moçambique!\n\n📊 *O que isso representa lá:*\n${comparacaoPoder}\n🍚 Pode comprar *${kilosArroz} kg de arroz*\n🥛 Ou *${litrosLeite} litros de leite*\n🍽️ Ou *${refeicoesBasicas} refeições básicas*\n\nCada centavo faz diferença na vida de famílias que precisam! Você está ajudando a transformar vidas e levar esperança. 💙\n\n_"Cada um contribua segundo propôs no seu coração, não com tristeza ou por necessidade; porque Deus ama ao que dá com alegria."_ - 2 Coríntios 9:7\n\nQue Deus multiplique essa semente! 🌱\n\n_Igreja Gileade - Missões Moçambique_ 🇲🇿`;
+      
+      await enviarMensagemZAPI(whatsapp, mensagem);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Mensagem de agradecimento enviada!',
+        valorMZN,
+        cotacaoUsada: cotacao
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
