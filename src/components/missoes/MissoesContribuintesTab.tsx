@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Users, MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -24,6 +24,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ContribuinteFormDialog } from "./ContribuinteFormDialog";
 import { formatDateBR } from "@/lib/masks";
 
@@ -37,6 +43,7 @@ interface Contribuinte {
   observacoes: string | null;
   member?: {
     full_name: string;
+    whatsapp: string | null;
   } | null;
 }
 
@@ -46,6 +53,7 @@ export function MissoesContribuintesTab() {
   const [selectedContribuinte, setSelectedContribuinte] = useState<Contribuinte | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contribuinteToDelete, setContribuinteToDelete] = useState<string | null>(null);
+  const [sendingMessageId, setSendingMessageId] = useState<string | null>(null);
 
   const { data: contribuintes, isLoading } = useQuery({
     queryKey: ["missoes-contribuintes"],
@@ -54,12 +62,12 @@ export function MissoesContribuintesTab() {
         .from("missoes_mocambique_contribuintes")
         .select(`
           *,
-          member:members(full_name)
+          member:members(full_name, whatsapp)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Contribuinte[];
+      return data as (Contribuinte & { member?: { full_name: string; whatsapp: string | null } | null })[];
     },
   });
 
@@ -80,6 +88,42 @@ export function MissoesContribuintesTab() {
       toast.error("Erro ao remover contribuinte");
     },
   });
+
+  const sendAgradecimentoMutation = useMutation({
+    mutationFn: async ({ contribuinteId, valorMensal }: { contribuinteId: string; valorMensal: number }) => {
+      const { data, error } = await supabase.functions.invoke('enviar-whatsapp', {
+        body: {
+          action: 'agradecimento_missoes',
+          contribuinteId,
+          valorMensal,
+          cotacaoMZN: 10.5, // Cotação aproximada
+        },
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Mensagem de agradecimento enviada!");
+      setSendingMessageId(null);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao enviar mensagem");
+      setSendingMessageId(null);
+    },
+  });
+
+  const handleSendAgradecimento = (contribuinte: Contribuinte) => {
+    if (!contribuinte.member?.whatsapp) {
+      toast.error("Este contribuinte não tem WhatsApp cadastrado");
+      return;
+    }
+    setSendingMessageId(contribuinte.id);
+    sendAgradecimentoMutation.mutate({
+      contribuinteId: contribuinte.id,
+      valorMensal: contribuinte.valor_mensal,
+    });
+  };
 
   const handleEdit = (contribuinte: Contribuinte) => {
     setSelectedContribuinte(contribuinte);
@@ -175,6 +219,29 @@ export function MissoesContribuintesTab() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleSendAgradecimento(contribuinte)}
+                            disabled={sendingMessageId === contribuinte.id || !contribuinte.member?.whatsapp}
+                          >
+                            {sendingMessageId === contribuinte.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MessageCircle className="h-4 w-4 text-green-600" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {contribuinte.member?.whatsapp 
+                            ? "Enviar agradecimento por WhatsApp" 
+                            : "WhatsApp não cadastrado"}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(contribuinte)}>
                       <Edit className="h-4 w-4" />
                     </Button>
