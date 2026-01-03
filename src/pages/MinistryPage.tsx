@@ -442,10 +442,10 @@ const MinistryPage = () => {
 
             {isMissoes ? (
               <>
-                <TabsContent value="contribuintes">
+                <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
                   <MissoesContribuintesTab />
                 </TabsContent>
-                <TabsContent value="fechamento">
+                <TabsContent value="fechamento" forceMount className={activeTab !== "fechamento" ? "hidden" : ""}>
                   <MissoesFechamentoTab />
                 </TabsContent>
               </>
