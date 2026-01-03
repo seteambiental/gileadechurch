@@ -171,14 +171,17 @@ export function ContribuinteFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Membro da Igreja</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)} 
+                    value={field.value || "none"}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um membro (opcional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Nenhum (informar nome manual)</SelectItem>
+                      <SelectItem value="none">Nenhum (informar nome manual)</SelectItem>
                       {members?.map((member) => (
                         <SelectItem key={member.id} value={member.id}>
                           {member.full_name}
