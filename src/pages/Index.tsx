@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn, User } from "lucide-react";
+import { LogIn, User, UserPlus } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -8,6 +9,7 @@ import PrayerRequestForm from "@/components/PrayerRequestForm";
 import CellGroupCard from "@/components/CellGroupCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
+import { MemberRequestForm } from "@/components/MemberRequestForm";
 import heroImage from "@/assets/hero-church.jpg";
 
 const announcements = [
@@ -92,6 +94,8 @@ const scheduleItems = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const [memberRequestOpen, setMemberRequestOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -133,8 +137,10 @@ const Index = () => {
                 size="lg"
                 variant="secondary"
                 className="font-heading font-semibold text-lg px-8 py-6 shadow-red animate-pulse-glow"
+                onClick={() => setMemberRequestOpen(true)}
               >
-                Visite-nos
+                <UserPlus className="w-5 h-5 mr-2" />
+                Quero fazer parte
               </Button>
               <Button
                 size="lg"
@@ -337,6 +343,9 @@ const Index = () => {
       </section>
 
       <Footer />
+
+      {/* Modal de Solicitação de Cadastro */}
+      <MemberRequestForm open={memberRequestOpen} onOpenChange={setMemberRequestOpen} />
     </div>
   );
 };
