@@ -218,8 +218,8 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério de artes cênicas que apresenta peças teatrais e esquetes com mensagens edificantes.",
   },
-  homens: {
-    title: "Homens",
+  "true-man": {
+    title: "True Man",
     description: "Ministério masculino",
     icon: Shield,
     fullDescription:
