@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const FUNCTION_TYPES = [
+  { value: "membro", label: "Membro" },
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
   { value: "lider_ministerio", label: "Líder de Ministério" },
   { value: "pastor_geral", label: "Pastor Geral" },
@@ -47,6 +48,7 @@ const FUNCTION_TYPES = [
 ] as const;
 
 const ROLE_TYPES = [
+  { value: "membro", label: "Membro", description: "Acesso apenas ao portal de membros" },
   { value: "admin", label: "Administrador", description: "Gerencia todo o sistema" },
   { value: "master", label: "Master", description: "Gerencia usuários e aprovações" },
   { value: "ministerial", label: "Ministerial", description: "Acesso ao ministério vinculado" },
@@ -167,7 +169,7 @@ const formSchema = z.object({
   cpf: z.string().optional(),
   // Campos para criar usuário do sistema
   criar_usuario: z.boolean().optional(),
-  perfil_usuario: z.enum(["admin", "master", "ministerial"]).optional(),
+  perfil_usuario: z.enum(["membro", "admin", "master", "ministerial"]).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
