@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,6 +47,7 @@ import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
+import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
 
 interface MinistryInfo {
   title: string;
@@ -334,7 +335,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-3' : isImpacto ? 'grid-cols-4' : isIntercessao ? 'grid-cols-4' : isCasais ? 'grid-cols-4' : isEvangelizacao ? 'grid-cols-2' : isDanca ? 'grid-cols-5' : hasRepertorio ? 'grid-cols-5' : 'grid-cols-4'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-3' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : 'grid-cols-5'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -421,6 +422,12 @@ const MinistryPage = () => {
                     <span className="hidden sm:inline">Estatísticas</span>
                   </TabsTrigger>
                 </>
+              )}
+              {ministryFromDb?.id && (
+                <TabsTrigger value="candidaturas" className="flex items-center gap-2">
+                  <UserPlus className="w-4 h-4" />
+                  <span className="hidden sm:inline">Candidaturas</span>
+                </TabsTrigger>
               )}
             </TabsList>
 
@@ -523,6 +530,13 @@ const MinistryPage = () => {
                   <MinisterioEstatisticasTab ministryId={ministryFromDb!.id} />
                 </TabsContent>
               </>
+            )}
+
+            {/* Aba de Candidaturas - disponível para todos os ministérios */}
+            {ministryFromDb?.id && (
+              <TabsContent value="candidaturas">
+                <AprovacaoCandidaturasTab ministryId={ministryFromDb.id} />
+              </TabsContent>
             )}
 
           </Tabs>
