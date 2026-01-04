@@ -407,6 +407,51 @@ export type Database = {
         }
         Relationships: []
       }
+      candidaturas_ministerio: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          mensagem: string | null
+          ministry_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          mensagem?: string | null
+          ministry_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          mensagem?: string | null
+          ministry_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidaturas_ministerio_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidaturas_ministerio_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       casais_inscritos: {
         Row: {
           certificado_emitido: boolean | null
@@ -1145,6 +1190,42 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
           website?: string | null
+        }
+        Relationships: []
+      }
+      igreja_pix: {
+        Row: {
+          ativo: boolean
+          chave: string
+          cidade: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          nome_beneficiario: string
+          tipo_chave: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          chave: string
+          cidade?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_beneficiario: string
+          tipo_chave: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          chave?: string
+          cidade?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome_beneficiario?: string
+          tipo_chave?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -2392,6 +2473,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          lider_whatsapp: string | null
           name: string
           updated_at: string
         }
@@ -2399,6 +2481,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lider_whatsapp?: string | null
           name: string
           updated_at?: string
         }
@@ -2406,6 +2489,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lider_whatsapp?: string | null
           name?: string
           updated_at?: string
         }

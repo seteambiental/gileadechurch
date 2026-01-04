@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AppDashboard from "./pages/AppDashboard";
+import PortalMembro from "./pages/PortalMembro";
 import Cadastros from "./pages/Cadastros";
 import MemberDetails from "./pages/MemberDetails";
 import MinistryPage from "./pages/MinistryPage";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/app" element={<AppDashboard />} />
+            <Route path="/portal" element={<PortalMembro />} />
             <Route path="/cadastros" element={<Cadastros />} />
             <Route path="/membro/:id" element={<MemberDetails />} />
             <Route path="/ministerio/casas-refugio" element={<CasasRefugioPage />} />
