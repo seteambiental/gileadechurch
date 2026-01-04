@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   Church,
   Zap,
   User,
+  ClipboardList,
 } from "lucide-react";
 import {
   format,
@@ -66,6 +68,8 @@ interface Evento {
   genero_alvo: string | null;
   idade_minima: number | null;
   idade_maxima: number | null;
+  limite_vagas: number | null;
+  tem_custo: boolean | null;
 }
 
 type PublicoFiltro = "todos" | "homens" | "mulheres" | "kids" | "cultos" | "jovens" | "impactos" | "adolescentes";
@@ -101,6 +105,7 @@ const tipoEventoLabels: Record<string, string> = {
 };
 
 export const PortalAgendaTab = () => {
+  const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [publicoFiltro, setPublicoFiltro] = useState<PublicoFiltro>("todos");
   const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("mes");
@@ -384,66 +389,89 @@ export const PortalAgendaTab = () => {
               </div>
 
               <div className="space-y-2">
-                {eventosData.map((evento, i) => (
-                  <Card key={`${evento.id}-${i}`} className="overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div
-                          className="w-1 h-full min-h-[60px] rounded-full flex-shrink-0"
-                          style={{ backgroundColor: evento.cor || "#dc2626" }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <h4 className="font-semibold text-foreground">{evento.titulo}</h4>
-                              <Badge variant="outline" className="text-xs mt-1">
-                                {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                              </Badge>
+                {eventosData.map((evento, i) => {
+                  const precisaInscricao = evento.limite_vagas || evento.tem_custo;
+                  
+                  return (
+                    <Card key={`${evento.id}-${i}`} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div
+                            className="w-1 h-full min-h-[60px] rounded-full flex-shrink-0"
+                            style={{ backgroundColor: evento.cor || "#dc2626" }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h4 className="font-semibold text-foreground">{evento.titulo}</h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                                  </Badge>
+                                  {precisaInscricao && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      Inscrição
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {precisaInscricao && !evento.recorrente && (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => navigate(`/inscricao/${evento.id}`)}
+                                    className="gap-1"
+                                  >
+                                    <ClipboardList className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Inscrever</span>
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() =>
+                                    setCompartilharEvento({
+                                      id: evento.id,
+                                      titulo: evento.titulo,
+                                      data_evento: format(evento.dataCalculada, "yyyy-MM-dd"),
+                                      hora_inicio: evento.hora_inicio,
+                                      local: evento.local,
+                                      flyer_url: evento.flyer_url,
+                                      cor: evento.cor,
+                                    })
+                                  }
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </Button>
+                              </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="flex-shrink-0"
-                              onClick={() =>
-                                setCompartilharEvento({
-                                  id: evento.id,
-                                  titulo: evento.titulo,
-                                  data_evento: format(evento.dataCalculada, "yyyy-MM-dd"),
-                                  hora_inicio: evento.hora_inicio,
-                                  local: evento.local,
-                                  flyer_url: evento.flyer_url,
-                                  cor: evento.cor,
-                                })
-                              }
-                            >
-                              <Share2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                          <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
-                            {evento.hora_inicio && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {evento.hora_inicio.substring(0, 5)}
-                                {evento.hora_fim && ` - ${evento.hora_fim.substring(0, 5)}`}
-                              </span>
-                            )}
-                            {evento.local && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {evento.local}
-                              </span>
+                            <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
+                              {evento.hora_inicio && (
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {evento.hora_inicio.substring(0, 5)}
+                                  {evento.hora_fim && ` - ${evento.hora_fim.substring(0, 5)}`}
+                                </span>
+                              )}
+                              {evento.local && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="w-3 h-3" />
+                                  {evento.local}
+                                </span>
+                              )}
+                            </div>
+                            {evento.descricao && (
+                              <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                {evento.descricao}
+                              </p>
                             )}
                           </div>
-                          {evento.descricao && (
-                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                              {evento.descricao}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           ))}
