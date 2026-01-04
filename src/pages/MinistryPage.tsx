@@ -575,12 +575,13 @@ const MinistryPage = () => {
                   />
                 </TabsContent>
                 <TabsContent value="membros">
-                  <MinisterioMembrosTab 
+                  <MinisterioMembrosTab
                     ministerioSlug={slug!}
                     ministerioTitle={ministry.title}
-                    idadeMinima={isFlow ? 18 : isGT ? 12 : 18}
-                    idadeMaxima={isFlow ? 35 : isGT ? 17 : 120}
+                    idadeMinima={isGT ? 11 : 18}
+                    idadeMaxima={isGT ? 17 : 120}
                     generoFiltro={isHomens ? "masculino" : isMulheres ? "feminino" : null}
+                    estadoCivilFiltro={isFlow ? "solteiro" : (isHomens || isMulheres) ? "casado" : null}
                   />
                 </TabsContent>
               </>

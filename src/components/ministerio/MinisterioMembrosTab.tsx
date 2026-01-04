@@ -28,6 +28,7 @@ interface MinisterioMembrosTabProps {
   idadeMinima?: number;
   idadeMaxima?: number;
   generoFiltro?: "masculino" | "feminino" | null;
+  estadoCivilFiltro?: "solteiro" | "casado" | null;
 }
 
 interface Membro {
@@ -47,6 +48,7 @@ export const MinisterioMembrosTab = ({
   idadeMinima = 0,
   idadeMaxima = 120,
   generoFiltro = null,
+  estadoCivilFiltro = null,
 }: MinisterioMembrosTabProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -58,14 +60,18 @@ export const MinisterioMembrosTab = ({
 
   // Buscar membros da tabela members
   const { data: membros = [], isLoading: loadingMembros } = useQuery({
-    queryKey: ["membros-ministerio", ministerioSlug],
+    queryKey: ["membros-ministerio", ministerioSlug, generoFiltro, estadoCivilFiltro],
     queryFn: async () => {
       let query = supabase
         .from("members")
-        .select("id, full_name, birth_date, whatsapp, photo_url, genero");
+        .select("id, full_name, birth_date, whatsapp, photo_url, genero, estado_civil");
       
       if (generoFiltro) {
         query = query.eq("genero", generoFiltro);
+      }
+      
+      if (estadoCivilFiltro) {
+        query = query.eq("estado_civil", estadoCivilFiltro);
       }
       
       const { data, error } = await query.order("full_name");
