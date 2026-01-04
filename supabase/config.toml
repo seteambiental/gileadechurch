@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.rekognition-faces]
 verify_jwt = false
+
+[functions.criar-usuario-membro]
+verify_jwt = false
+
+[functions.get-member-sensitive-data]
+verify_jwt = false
