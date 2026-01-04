@@ -686,8 +686,8 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4 overflow-y-auto">
-      <Card className="w-full max-w-2xl border-border/50 bg-card/95 backdrop-blur my-4 max-h-[95vh] flex flex-col">
+    <div className="min-h-screen bg-gradient-dark flex items-start justify-center p-4 py-8 overflow-y-auto">
+      <Card className="w-full max-w-2xl border-border/50 bg-card/95 backdrop-blur flex flex-col">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
             <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
@@ -732,9 +732,8 @@ const Auth = () => {
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full max-h-[50vh]">
-            <form onSubmit={handleSignup} className="space-y-4 pr-4 pb-4">
+        <CardContent>
+          <form onSubmit={handleSignup} className="space-y-4">
               {/* Step 1: Personal Data */}
               {step === 1 && (
                 <div className="space-y-4">
@@ -1039,8 +1038,6 @@ const Auth = () => {
                 )}
               </div>
             </form>
-          </ScrollArea>
-
           <div className="mt-4 text-center">
             <button
               type="button"
