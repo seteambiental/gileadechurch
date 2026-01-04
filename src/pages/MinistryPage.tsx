@@ -48,6 +48,8 @@ import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
+import { MinisterioAgendaTab } from "@/components/ministerio/MinisterioAgendaTab";
+import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosTab";
 
 interface MinistryInfo {
   title: string;
@@ -62,6 +64,10 @@ interface MinistryInfo {
   isIntercessao?: boolean;
   isImpacto?: boolean;
   isMissoes?: boolean;
+  isFlow?: boolean;
+  isGT?: boolean;
+  isHomens?: boolean;
+  isMulheres?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -132,6 +138,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Flame,
     fullDescription:
       "Ministério voltado para jovens, com encontros dinâmicos, retiros e atividades que fortalecem a fé.",
+    isFlow: true,
   },
   gt: {
     title: "GT",
@@ -139,6 +146,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Sparkles,
     fullDescription:
       "Ministério dedicado aos adolescentes, com programação especial para essa faixa etária.",
+    isGT: true,
   },
   intercessao: {
     title: "Intercessão",
@@ -178,6 +186,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Crown,
     fullDescription:
       "Ministério dedicado ao fortalecimento e discipulado das mulheres da igreja.",
+    isMulheres: true,
   },
   "organizacao-culto": {
     title: "Organização de Culto",
@@ -208,6 +217,14 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: Drama,
     fullDescription:
       "Ministério de artes cênicas que apresenta peças teatrais e esquetes com mensagens edificantes.",
+  },
+  homens: {
+    title: "Homens",
+    description: "Ministério masculino",
+    icon: Shield,
+    fullDescription:
+      "Ministério dedicado ao fortalecimento e discipulado dos homens da igreja, promovendo comunhão e crescimento espiritual.",
+    isHomens: true,
   },
   impacto: {
     title: "Impacto",
@@ -299,6 +316,11 @@ const MinistryPage = () => {
   const isIntercessao = ministry.isIntercessao;
   const isImpacto = ministry.isImpacto;
   const isMissoes = ministry.isMissoes;
+  const isFlow = ministry.isFlow;
+  const isGT = ministry.isGT;
+  const isHomens = ministry.isHomens;
+  const isMulheres = ministry.isMulheres;
+  const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
 
   return (
     <div className="min-h-screen bg-background">
@@ -333,9 +355,9 @@ const MinistryPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || ministryFromDb?.id) ? (
+        {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-3' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-3' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -399,6 +421,17 @@ const MinistryPage = () => {
                   <TabsTrigger value="materiais" className="flex items-center gap-2">
                     <BookOpenIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Materiais</span>
+                  </TabsTrigger>
+                </>
+              ) : isMinisterioEspecifico ? (
+                <>
+                  <TabsTrigger value="agenda" className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="hidden sm:inline">Agenda</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="membros" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Membros</span>
                   </TabsTrigger>
                 </>
               ) : (
@@ -494,6 +527,24 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="materiais">
                   <CasaisMateriaisTab />
+                </TabsContent>
+              </>
+            ) : isMinisterioEspecifico ? (
+              <>
+                <TabsContent value="agenda">
+                  <MinisterioAgendaTab 
+                    ministerioSlug={slug!} 
+                    ministerioTitle={ministry.title}
+                  />
+                </TabsContent>
+                <TabsContent value="membros">
+                  <MinisterioMembrosTab 
+                    ministerioSlug={slug!}
+                    ministerioTitle={ministry.title}
+                    idadeMinima={isFlow ? 18 : isGT ? 12 : 18}
+                    idadeMaxima={isFlow ? 35 : isGT ? 17 : 120}
+                    generoFiltro={isHomens ? "masculino" : isMulheres ? "feminino" : null}
+                  />
                 </TabsContent>
               </>
             ) : (
