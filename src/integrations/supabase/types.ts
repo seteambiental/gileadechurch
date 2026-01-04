@@ -2665,6 +2665,7 @@ export type Database = {
           mensagens_enviadas: number | null
           neighborhood: string | null
           numero: string | null
+          observacoes: string | null
           participou_culto_membresia: boolean | null
           participou_impacto: boolean | null
           participou_manaim: boolean | null
@@ -2709,6 +2710,7 @@ export type Database = {
           mensagens_enviadas?: number | null
           neighborhood?: string | null
           numero?: string | null
+          observacoes?: string | null
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
@@ -2753,6 +2755,7 @@ export type Database = {
           mensagens_enviadas?: number | null
           neighborhood?: string | null
           numero?: string | null
+          observacoes?: string | null
           participou_culto_membresia?: boolean | null
           participou_impacto?: boolean | null
           participou_manaim?: boolean | null
