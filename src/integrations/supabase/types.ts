@@ -2192,6 +2192,99 @@ export type Database = {
           },
         ]
       }
+      member_requests: {
+        Row: {
+          address: string | null
+          aprovado_em: string | null
+          aprovado_por: string | null
+          birth_date: string | null
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          genero: string | null
+          id: string
+          member_id: string | null
+          motivo_rejeicao: string | null
+          neighborhood: string | null
+          number: string | null
+          photo_url: string | null
+          rg: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          genero?: string | null
+          id?: string
+          member_id?: string | null
+          motivo_rejeicao?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          rg?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          birth_date?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          genero?: string | null
+          id?: string
+          member_id?: string | null
+          motivo_rejeicao?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          rg?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           address: string | null
