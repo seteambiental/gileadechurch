@@ -389,30 +389,60 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         if (funcError) throw funcError;
       }
 
-      // Criar solicitação de acesso ao sistema
-      if (data.criar_usuario && data.email && data.perfil_usuario) {
-        const { error: accessError } = await supabase
-          .from("user_access_requests")
-          .insert({
-            member_id: memberId,
-            email: data.email,
-            requested_role: data.perfil_usuario,
-            requested_ministry_ids: data.perfil_usuario === "ministerial" ? selectedMinistryIds : [],
-            status: "pendente",
-          });
+      // Criar usuário do sistema automaticamente
+      if (data.criar_usuario && data.email) {
+        try {
+          const { data: result, error: funcError } = await supabase.functions.invoke(
+            "criar-usuario-membro",
+            {
+              body: {
+                email: data.email,
+                cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
+                member_id: memberId,
+                perfil: data.perfil_usuario || "membro",
+              },
+            }
+          );
 
-        if (accessError) throw accessError;
+          if (funcError) {
+            console.error("Erro ao criar usuário:", funcError);
+            throw new Error("Erro ao criar usuário no sistema");
+          }
+
+          return { 
+            criarUsuario: true, 
+            usuarioCriado: !result.was_existing,
+            senhaDefault: result.default_password,
+          };
+        } catch (err) {
+          console.error("Erro na criação de usuário:", err);
+          // Não impede o cadastro do membro, apenas avisa
+          return { criarUsuario: true, erroUsuario: true };
+        }
       }
 
-      return { criarUsuario: data.criar_usuario };
+      return { criarUsuario: false };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
       if (result?.criarUsuario) {
-        toast({ 
-          title: member ? "Membro atualizado!" : "Membro cadastrado!",
-          description: "Solicitação de acesso enviada para aprovação.",
-        });
+        if (result.erroUsuario) {
+          toast({ 
+            title: member ? "Membro atualizado!" : "Membro cadastrado!",
+            description: "Porém houve um erro ao criar o usuário do sistema.",
+            variant: "destructive",
+          });
+        } else if (result.usuarioCriado) {
+          toast({ 
+            title: member ? "Membro atualizado!" : "Membro cadastrado!",
+            description: `Usuário criado! Senha padrão: ${result.senhaDefault}`,
+          });
+        } else {
+          toast({ 
+            title: member ? "Membro atualizado!" : "Membro cadastrado!",
+            description: "Usuário já existia e foi vinculado.",
+          });
+        }
       } else {
         toast({ title: member ? "Membro atualizado!" : "Membro cadastrado!" });
       }
