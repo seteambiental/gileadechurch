@@ -2413,8 +2413,10 @@ export type Database = {
       }
       missoes_mocambique_contribuicoes: {
         Row: {
+          agradecimento_enviado: boolean | null
           contribuinte_id: string
           created_at: string
+          data_agradecimento: string | null
           data_pagamento: string | null
           id: string
           mes_referencia: string
@@ -2424,8 +2426,10 @@ export type Database = {
           valor: number
         }
         Insert: {
+          agradecimento_enviado?: boolean | null
           contribuinte_id: string
           created_at?: string
+          data_agradecimento?: string | null
           data_pagamento?: string | null
           id?: string
           mes_referencia: string
@@ -2435,8 +2439,10 @@ export type Database = {
           valor?: number
         }
         Update: {
+          agradecimento_enviado?: boolean | null
           contribuinte_id?: string
           created_at?: string
+          data_agradecimento?: string | null
           data_pagamento?: string | null
           id?: string
           mes_referencia?: string
@@ -2460,7 +2466,9 @@ export type Database = {
           ativo: boolean
           created_at: string
           data_inicio: string
+          dia_vencimento: number | null
           id: string
+          lembrete_enviado_mes: string | null
           member_id: string | null
           nome_manual: string | null
           observacoes: string | null
@@ -2471,7 +2479,9 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           data_inicio?: string
+          dia_vencimento?: number | null
           id?: string
+          lembrete_enviado_mes?: string | null
           member_id?: string | null
           nome_manual?: string | null
           observacoes?: string | null
@@ -2482,7 +2492,9 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           data_inicio?: string
+          dia_vencimento?: number | null
           id?: string
+          lembrete_enviado_mes?: string | null
           member_id?: string | null
           nome_manual?: string | null
           observacoes?: string | null

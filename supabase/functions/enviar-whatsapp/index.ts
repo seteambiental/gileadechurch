@@ -839,6 +839,81 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'lembrete_missoes') {
+      console.log('Executando lembrete automático de missões...');
+      
+      const hoje = new Date();
+      const amanha = new Date(hoje);
+      amanha.setDate(amanha.getDate() + 1);
+      const diaAmanha = amanha.getDate();
+      const mesAtual = hoje.toISOString().slice(0, 7); // YYYY-MM
+
+      // Buscar contribuintes ativos cujo dia de vencimento é amanhã
+      // e que ainda não receberam lembrete este mês
+      const { data: contribuintes, error: contError } = await supabase
+        .from('missoes_mocambique_contribuintes')
+        .select(`
+          *,
+          member:members(full_name, whatsapp)
+        `)
+        .eq('ativo', true)
+        .eq('dia_vencimento', diaAmanha)
+        .or(`lembrete_enviado_mes.is.null,lembrete_enviado_mes.neq.${mesAtual}`);
+
+      if (contError) {
+        throw new Error('Erro ao buscar contribuintes');
+      }
+
+      console.log(`Encontrados ${contribuintes?.length || 0} contribuintes para lembrete`);
+
+      let enviados = 0;
+      let erros = 0;
+
+      for (const contribuinte of contribuintes || []) {
+        const nome = contribuinte.member?.full_name || contribuinte.nome_manual;
+        const whatsapp = contribuinte.member?.whatsapp;
+
+        if (!whatsapp || !nome) {
+          console.log(`Contribuinte ${contribuinte.id} sem WhatsApp ou nome`);
+          continue;
+        }
+
+        try {
+          const primeiroNome = nome.split(' ')[0];
+          const valor = contribuinte.valor_mensal;
+          const diaVencimento = contribuinte.dia_vencimento || 10;
+
+          const mensagem = `🙏 Olá, ${primeiroNome}!\n\nEste é um lembrete carinhoso sobre sua contribuição para as *Missões Moçambique*! 🌍\n\nAmanhã, dia *${diaVencimento}*, é o dia do seu compromisso mensal de *R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*.\n\nSua fidelidade transforma vidas! Cada centavo faz diferença para as famílias em Moçambique. 💙\n\n_"Lembrai-vos das palavras do Senhor Jesus, que disse: Mais bem-aventurada coisa é dar do que receber."_ - Atos 20:35\n\nDeus abençoe você! 🙌\n\n_Igreja Gileade - Missões Moçambique_ 🇲🇿`;
+
+          await enviarMensagemZAPI(whatsapp, mensagem);
+
+          // Marcar que o lembrete foi enviado este mês
+          await supabase
+            .from('missoes_mocambique_contribuintes')
+            .update({ lembrete_enviado_mes: mesAtual })
+            .eq('id', contribuinte.id);
+
+          enviados++;
+          console.log(`Lembrete enviado para ${nome}`);
+
+          // Delay entre envios
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (err) {
+          console.error(`Erro ao enviar lembrete para ${nome}:`, err);
+          erros++;
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: `Lembretes enviados: ${enviados}. Erros: ${erros}`,
+        enviados,
+        erros
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
