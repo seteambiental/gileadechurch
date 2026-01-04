@@ -3080,6 +3080,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_kids_data: { Args: never; Returns: boolean }
       get_next_kids_numero: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -3089,6 +3090,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_kids_leader: { Args: never; Returns: boolean }
       is_master: { Args: never; Returns: boolean }
     }
     Enums: {
