@@ -64,12 +64,12 @@ const Auth = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
-  
+
   // Login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   // Signup fields
   const [signupData, setSignupData] = useState<Partial<SignupData>>({
     full_name: "",
@@ -91,7 +91,7 @@ const Auth = () => {
     perfil_solicitado: "membro",
     ministerio_ids: [],
   });
-  
+
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,6 +101,20 @@ const Auth = () => {
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const getSafeRedirect = () => {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+    if (!redirect) return "/app";
+
+    // Only allow same-site relative paths
+    if (!redirect.startsWith("/")) return "/app";
+    if (redirect.startsWith("//")) return "/app";
+
+    return redirect;
+  };
+
+  const redirectTo = getSafeRedirect();
 
   // Fetch ministries for selection
   const { data: ministries = [] } = useQuery({
@@ -114,7 +128,7 @@ const Auth = () => {
 
   useEffect(() => {
     if (isAuthBypassed()) {
-      navigate("/app");
+      navigate(redirectTo);
       return;
     }
 
@@ -126,7 +140,9 @@ const Auth = () => {
       setIsLogin(true);
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
         setIsRecovery(true);
         setIsForgotPassword(false);
@@ -135,13 +151,14 @@ const Auth = () => {
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
 
   useEffect(() => {
     if (!loading && user && !isRecovery) {
-      navigate("/app");
+      navigate(redirectTo);
     }
-  }, [user, loading, navigate, isRecovery]);
+  }, [user, loading, navigate, isRecovery, redirectTo]);
+
 
   const validateLoginForm = () => {
     try {
@@ -305,7 +322,7 @@ const Auth = () => {
         }
       } else {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-        navigate("/app");
+        navigate(redirectTo);
       }
     } finally {
       setIsLoading(false);
@@ -584,9 +601,13 @@ const Auth = () => {
               <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
             </div>
             <div>
-              <CardTitle className="font-heading text-2xl text-foreground">Entrar no App</CardTitle>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                {redirectTo === "/portal" ? "Portal do Membro" : "Entrar no App"}
+              </CardTitle>
               <CardDescription className="text-muted-foreground mt-2">
-                Acesse os ministérios da Gileade Church
+                {redirectTo === "/portal"
+                  ? "Entre com seu email e senha para acessar sua área."
+                  : "Acesse os ministérios da Gileade Church"}
               </CardDescription>
             </div>
           </CardHeader>
