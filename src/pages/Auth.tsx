@@ -26,8 +26,6 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  confirmPassword: z.string().min(6, "Confirme a senha"),
   genero: z.string().optional(),
   birth_date: z.string().optional(),
   whatsapp: z.string().optional(),
@@ -42,9 +40,6 @@ const signupSchema = z.object({
   rg: z.string().optional(),
   perfil_solicitado: z.enum(["membro", "lider", "ministerial"]),
   ministerio_ids: z.array(z.string()).optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As senhas não conferem",
-  path: ["confirmPassword"],
 });
 
 const newPasswordSchema = z
@@ -74,8 +69,6 @@ const Auth = () => {
   const [signupData, setSignupData] = useState<Partial<SignupData>>({
     full_name: "",
     email: "",
-    password: "",
-    confirmPassword: "",
     genero: "",
     birth_date: "",
     whatsapp: "",
@@ -201,10 +194,6 @@ const Auth = () => {
       if (!signupData.full_name) fieldErrors.full_name = "Nome é obrigatório";
       if (!signupData.email) fieldErrors.email = "Email é obrigatório";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email)) fieldErrors.email = "Email inválido";
-      if (!signupData.password) fieldErrors.password = "Senha é obrigatória";
-      else if (signupData.password.length < 6) fieldErrors.password = "Senha deve ter no mínimo 6 caracteres";
-      if (!signupData.confirmPassword) fieldErrors.confirmPassword = "Confirme a senha";
-      else if (signupData.password !== signupData.confirmPassword) fieldErrors.confirmPassword = "As senhas não conferem";
     }
     
     setErrors(fieldErrors);
@@ -335,18 +324,7 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
-      // 1. Create the auth user
-      const { error: signUpError, data: authData } = await signUp(signupData.email!, signupData.password!);
-      if (signUpError) {
-        if (signUpError.message.includes("User already registered")) {
-          toast({ variant: "destructive", title: "Erro no cadastro", description: "Este email já está cadastrado. Tente fazer login." });
-        } else {
-          toast({ variant: "destructive", title: "Erro no cadastro", description: signUpError.message });
-        }
-        return;
-      }
-
-      const userId = authData?.user?.id || null;
+      // Upload photo first if exists
       let photoUrl: string | null = null;
       if (photoFile) {
         const fileExt = photoFile.name.split(".").pop();
@@ -363,7 +341,7 @@ const Auth = () => {
         }
       }
 
-      // 3. Create member record
+      // Create member record first (without user_id)
       const memberData = {
         full_name: signupData.full_name!,
         genero: signupData.genero || null,
@@ -380,7 +358,6 @@ const Auth = () => {
         photo_url: photoUrl,
         rg: signupData.rg || null,
         cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
-        user_id: userId,
       };
 
       const { data: newMember, error: memberError } = await supabase
@@ -391,7 +368,25 @@ const Auth = () => {
 
       if (memberError) throw memberError;
 
-      // 4. Create access request for approval
+      // Create user via Edge Function with default password
+      const { data: userResult, error: userError } = await supabase.functions.invoke(
+        "criar-usuario-membro",
+        {
+          body: {
+            email: signupData.email,
+            cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
+            member_id: newMember.id,
+            perfil: signupData.perfil_solicitado || "membro",
+          },
+        }
+      );
+
+      if (userError) {
+        console.error("Erro ao criar usuário:", userError);
+        throw new Error("Erro ao criar usuário no sistema");
+      }
+
+      // Create access request for approval
       const { error: accessError } = await supabase
         .from("user_access_requests")
         .insert({
@@ -404,17 +399,19 @@ const Auth = () => {
 
       if (accessError) throw accessError;
 
+      // Get default password info for display
+      const cpfDigits = signupData.cpf ? signupData.cpf.replace(/\D/g, "") : "";
+      const senhaDefault = cpfDigits.length >= 4 ? cpfDigits.substring(0, 4) : "1234";
+
       toast({
         title: "Cadastro realizado!",
-        description: "Sua solicitação foi enviada para aprovação. Você receberá uma notificação quando for aprovado.",
+        description: `Sua senha é: ${senhaDefault}. Sua solicitação foi enviada para aprovação.`,
       });
 
       // Reset form and go to login
       setSignupData({
         full_name: "",
         email: "",
-        password: "",
-        confirmPassword: "",
         genero: "",
         birth_date: "",
         whatsapp: "",
@@ -801,26 +798,16 @@ const Auth = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label>Senha *</Label>
-                      <Input
-                        type="password"
-                        value={signupData.password}
-                        onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                        className={errors.password ? "border-destructive" : ""}
-                      />
-                      {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Confirmar Senha *</Label>
-                      <Input
-                        type="password"
-                        value={signupData.confirmPassword}
-                        onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
-                        className={errors.confirmPassword ? "border-destructive" : ""}
-                      />
-                      {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword}</p>}
+                    <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Sua senha será gerada automaticamente:</strong>
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        • Com CPF: os 4 primeiros dígitos do CPF
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        • Sem CPF: 1234
+                      </p>
                     </div>
 
                     <div className="space-y-2">
