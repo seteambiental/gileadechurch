@@ -25,39 +25,13 @@ export const PortalCandidaturaTab = ({ memberId }: PortalCandidaturaTabProps) =>
   const [selectedMinistry, setSelectedMinistry] = useState<string>("");
   const [mensagem, setMensagem] = useState("");
 
-  // Buscar ministérios que possuem escalas (kids, dança, louvor, etc.)
+  // Buscar todos os ministérios disponíveis
   const { data: ministries = [], isLoading: loadingMinistries } = useQuery({
-    queryKey: ["ministries-for-candidatura-with-escalas"],
+    queryKey: ["ministries-for-candidatura-all"],
     queryFn: async () => {
-      // Buscar ministérios que tem escalas de kids ou dança
-      const { data: kidsMinistry } = await supabase
-        .from("ministries")
-        .select("id")
-        .ilike("name", "%kids%")
-        .single();
-      
-      const { data: dancaMinistry } = await supabase
-        .from("ministries")
-        .select("id")
-        .ilike("name", "%dan%a%")
-        .single();
-      
-      const { data: louvorMinistry } = await supabase
-        .from("ministries")
-        .select("id")
-        .or("name.ilike.%louvor%,name.ilike.%m%sica%,name.ilike.%worship%")
-        .single();
-
-      const ministryIds: string[] = [];
-      if (kidsMinistry) ministryIds.push(kidsMinistry.id);
-      if (dancaMinistry) ministryIds.push(dancaMinistry.id);
-      if (louvorMinistry) ministryIds.push(louvorMinistry.id);
-
-      // Buscar todos os ministérios que têm escalas ou são conhecidos por terem
       const { data, error } = await supabase
         .from("ministries")
         .select("id, name, lider_whatsapp")
-        .or(`id.in.(${ministryIds.join(",")}),name.ilike.%kids%,name.ilike.%dan%a%,name.ilike.%louvor%,name.ilike.%m%sica%,name.ilike.%mídia%,name.ilike.%recep%,name.ilike.%teatro%,name.ilike.%intercess%`)
         .order("name");
       
       if (error) throw error;
