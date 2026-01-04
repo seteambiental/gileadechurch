@@ -120,7 +120,7 @@ const PortalMembro = () => {
   });
 
   // Sempre adicionar candidatura
-  availableTabs.push({ id: "candidatura", label: "Candidatar-se", icon: Send });
+  availableTabs.push({ id: "candidatura", label: "Quero Servir", icon: Send });
 
   return (
     <div className="min-h-screen bg-background">

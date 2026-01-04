@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Send, Clock, CheckCircle, XCircle, MessageCircle } from "lucide-react";
+import { Loader2, Send, Clock, CheckCircle, XCircle, MessageCircle, Heart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface PortalCandidaturaTabProps {
@@ -25,15 +25,43 @@ export const PortalCandidaturaTab = ({ memberId }: PortalCandidaturaTabProps) =>
   const [selectedMinistry, setSelectedMinistry] = useState<string>("");
   const [mensagem, setMensagem] = useState("");
 
+  // Buscar ministérios que possuem escalas (kids, dança, louvor, etc.)
   const { data: ministries = [], isLoading: loadingMinistries } = useQuery({
-    queryKey: ["ministries-for-candidatura"],
+    queryKey: ["ministries-for-candidatura-with-escalas"],
     queryFn: async () => {
+      // Buscar ministérios que tem escalas de kids ou dança
+      const { data: kidsMinistry } = await supabase
+        .from("ministries")
+        .select("id")
+        .ilike("name", "%kids%")
+        .single();
+      
+      const { data: dancaMinistry } = await supabase
+        .from("ministries")
+        .select("id")
+        .ilike("name", "%dan%a%")
+        .single();
+      
+      const { data: louvorMinistry } = await supabase
+        .from("ministries")
+        .select("id")
+        .or("name.ilike.%louvor%,name.ilike.%m%sica%,name.ilike.%worship%")
+        .single();
+
+      const ministryIds: string[] = [];
+      if (kidsMinistry) ministryIds.push(kidsMinistry.id);
+      if (dancaMinistry) ministryIds.push(dancaMinistry.id);
+      if (louvorMinistry) ministryIds.push(louvorMinistry.id);
+
+      // Buscar todos os ministérios que têm escalas ou são conhecidos por terem
       const { data, error } = await supabase
         .from("ministries")
         .select("id, name, lider_whatsapp")
+        .or(`id.in.(${ministryIds.join(",")}),name.ilike.%kids%,name.ilike.%dan%a%,name.ilike.%louvor%,name.ilike.%m%sica%,name.ilike.%mídia%,name.ilike.%recep%,name.ilike.%teatro%,name.ilike.%intercess%`)
         .order("name");
+      
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
@@ -145,16 +173,19 @@ export const PortalCandidaturaTab = ({ memberId }: PortalCandidaturaTabProps) =>
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-heading font-bold text-xl">Candidatar-se a um Ministério</h2>
+        <h2 className="font-heading font-bold text-xl flex items-center gap-2">
+          <Heart className="w-6 h-6 text-secondary" />
+          Quero Servir
+        </h2>
         <p className="text-sm text-muted-foreground">
-          Escolha um ministério e envie sua candidatura
+          Escolha um ministério para servir e faça parte da equipe
         </p>
       </div>
 
       {/* Formulário de Candidatura */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Nova Candidatura</CardTitle>
+          <CardTitle className="text-lg">Escolha onde deseja servir</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
