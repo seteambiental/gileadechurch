@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -11,18 +12,33 @@ import {
   ChevronRight,
   Share2,
   Loader2,
+  Users,
+  Baby,
+  Church,
+  Zap,
+  User,
 } from "lucide-react";
 import {
   format,
   startOfMonth,
   endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+  endOfDay,
+  startOfYear,
+  endOfYear,
   eachDayOfInterval,
   isSameDay,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
+  addDays,
+  subDays,
+  addYears,
+  subYears,
   getDay,
-  startOfWeek,
-  endOfWeek,
   isToday,
   isSameMonth,
   parseISO,
@@ -47,7 +63,31 @@ interface Evento {
   dia_semana: number | null;
   semana_mes: number | null;
   flyer_url: string | null;
+  genero_alvo: string | null;
+  idade_minima: number | null;
+  idade_maxima: number | null;
 }
+
+type PublicoFiltro = "todos" | "homens" | "mulheres" | "kids" | "cultos" | "jovens" | "impactos" | "adolescentes";
+type PeriodoFiltro = "dia" | "semana" | "mes" | "ano";
+
+const publicoOptions: { value: PublicoFiltro; label: string; icon: React.ElementType }[] = [
+  { value: "todos", label: "Todos", icon: Users },
+  { value: "cultos", label: "Cultos", icon: Church },
+  { value: "homens", label: "Homens", icon: User },
+  { value: "mulheres", label: "Mulheres", icon: User },
+  { value: "kids", label: "Kids", icon: Baby },
+  { value: "jovens", label: "Jovens", icon: Zap },
+  { value: "adolescentes", label: "Adolescentes", icon: User },
+  { value: "impactos", label: "Impactos", icon: Zap },
+];
+
+const periodoOptions: { value: PeriodoFiltro; label: string }[] = [
+  { value: "dia", label: "Dia" },
+  { value: "semana", label: "Semana" },
+  { value: "mes", label: "Mês" },
+  { value: "ano", label: "Ano" },
+];
 
 const tipoEventoLabels: Record<string, string> = {
   culto: "Culto",
@@ -61,8 +101,9 @@ const tipoEventoLabels: Record<string, string> = {
 };
 
 export const PortalAgendaTab = () => {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [publicoFiltro, setPublicoFiltro] = useState<PublicoFiltro>("todos");
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("mes");
   const [compartilharEvento, setCompartilharEvento] = useState<{
     id: string;
     titulo: string;
@@ -86,57 +127,117 @@ export const PortalAgendaTab = () => {
     },
   });
 
-  // Gerar eventos recorrentes para o mês atual
-  const getEventosDoMes = () => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
+  // Calcular intervalo baseado no período selecionado
+  const { start, end } = useMemo(() => {
+    switch (periodoFiltro) {
+      case "dia":
+        return { start: startOfDay(currentDate), end: endOfDay(currentDate) };
+      case "semana":
+        return { start: startOfWeek(currentDate, { weekStartsOn: 0 }), end: endOfWeek(currentDate, { weekStartsOn: 0 }) };
+      case "ano":
+        return { start: startOfYear(currentDate), end: endOfYear(currentDate) };
+      case "mes":
+      default:
+        return { start: startOfMonth(currentDate), end: endOfMonth(currentDate) };
+    }
+  }, [currentDate, periodoFiltro]);
+
+  // Navegar para anterior/próximo
+  const navegarAnterior = () => {
+    switch (periodoFiltro) {
+      case "dia":
+        setCurrentDate(subDays(currentDate, 1));
+        break;
+      case "semana":
+        setCurrentDate(subWeeks(currentDate, 1));
+        break;
+      case "ano":
+        setCurrentDate(subYears(currentDate, 1));
+        break;
+      default:
+        setCurrentDate(subMonths(currentDate, 1));
+    }
+  };
+
+  const navegarProximo = () => {
+    switch (periodoFiltro) {
+      case "dia":
+        setCurrentDate(addDays(currentDate, 1));
+        break;
+      case "semana":
+        setCurrentDate(addWeeks(currentDate, 1));
+        break;
+      case "ano":
+        setCurrentDate(addYears(currentDate, 1));
+        break;
+      default:
+        setCurrentDate(addMonths(currentDate, 1));
+    }
+  };
+
+  // Filtrar eventos por público
+  const filtrarPorPublico = (evento: Evento): boolean => {
+    if (publicoFiltro === "todos") return true;
+
+    const titulo = evento.titulo.toLowerCase();
+    const tipo = evento.tipo_evento.toLowerCase();
+    const genero = evento.genero_alvo?.toLowerCase() || "";
+
+    switch (publicoFiltro) {
+      case "homens":
+        return genero === "masculino" || titulo.includes("homens") || titulo.includes("homem");
+      case "mulheres":
+        return genero === "feminino" || titulo.includes("mulheres") || titulo.includes("mulher");
+      case "kids":
+        return titulo.includes("kids") || titulo.includes("criança") || 
+               (evento.idade_maxima !== null && evento.idade_maxima <= 12);
+      case "cultos":
+        return tipo === "culto" || tipo === "ceia" || tipo === "batismo";
+      case "jovens":
+        return titulo.includes("jovem") || titulo.includes("jovens") || titulo.includes("youth") ||
+               (evento.idade_minima !== null && evento.idade_minima >= 18 && evento.idade_maxima !== null && evento.idade_maxima <= 35);
+      case "adolescentes":
+        return titulo.includes("adolescente") || titulo.includes("teens") ||
+               (evento.idade_minima !== null && evento.idade_minima >= 12 && evento.idade_maxima !== null && evento.idade_maxima <= 17);
+      case "impactos":
+        return tipo === "impacto" || tipo === "retiro" || tipo === "conferencia" || 
+               titulo.includes("impacto") || titulo.includes("retiro");
+      default:
+        return true;
+    }
+  };
+
+  // Gerar eventos para o período selecionado
+  const eventosExpandidos = useMemo(() => {
     const days = eachDayOfInterval({ start, end });
+    const result: (Evento & { dataCalculada: Date })[] = [];
 
-    const eventosExpandidos: (Evento & { dataCalculada: Date })[] = [];
-
-    eventos.forEach((evento) => {
+    eventos.filter(filtrarPorPublico).forEach((evento) => {
       if (evento.recorrente) {
         days.forEach((day) => {
           const diaSemana = getDay(day);
 
-          if (
-            evento.tipo_recorrencia === "semanal" &&
-            evento.dia_semana === diaSemana
-          ) {
+          if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
             if (evento.semana_mes) {
               const primeiroDoMes = startOfMonth(day);
               const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
               while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(
-                  primeiroDiaSemanaDoMes.getDate() + 1
-                );
+                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
               }
-              const semanaDoDia =
-                Math.floor(
-                  (day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7
-                ) + 1;
+              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
               if (semanaDoDia !== evento.semana_mes) return;
             }
-
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
-          } else if (
-            evento.tipo_recorrencia === "mensal" &&
-            evento.dia_semana === diaSemana
-          ) {
+            result.push({ ...evento, dataCalculada: day });
+          } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
             if (evento.semana_mes) {
               const primeiroDoMes = startOfMonth(day);
               const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
               while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(
-                  primeiroDiaSemanaDoMes.getDate() + 1
-                );
+                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
               }
-              const semanaDoDia =
-                Math.floor(
-                  (day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7
-                ) + 1;
+              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
               if (semanaDoDia === evento.semana_mes) {
-                eventosExpandidos.push({ ...evento, dataCalculada: day });
+                result.push({ ...evento, dataCalculada: day });
               }
             }
           }
@@ -151,114 +252,39 @@ export const PortalAgendaTab = () => {
             isSameDay(day, dataInicio) ||
             isSameDay(day, dataFim)
           ) {
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
+            result.push({ ...evento, dataCalculada: day });
           }
         });
       }
     });
 
-    return eventosExpandidos;
+    return result.sort((a, b) => a.dataCalculada.getTime() - b.dataCalculada.getTime());
+  }, [eventos, start, end, publicoFiltro]);
+
+  // Agrupar eventos por data
+  const eventosAgrupados = useMemo(() => {
+    const grupos: Record<string, (Evento & { dataCalculada: Date })[]> = {};
+    eventosExpandidos.forEach((evento) => {
+      const key = format(evento.dataCalculada, "yyyy-MM-dd");
+      if (!grupos[key]) grupos[key] = [];
+      grupos[key].push(evento);
+    });
+    return grupos;
+  }, [eventosExpandidos]);
+
+  // Formato do título baseado no período
+  const getTituloNavegacao = () => {
+    switch (periodoFiltro) {
+      case "dia":
+        return format(currentDate, "EEEE, dd 'de' MMMM", { locale: ptBR });
+      case "semana":
+        return `${format(start, "dd/MM")} - ${format(end, "dd/MM/yyyy")}`;
+      case "ano":
+        return format(currentDate, "yyyy");
+      default:
+        return format(currentDate, "MMMM yyyy", { locale: ptBR });
+    }
   };
-
-  const eventosDoMes = getEventosDoMes();
-
-  const getEventosDoDia = (date: Date) => {
-    return eventosDoMes.filter((e) => isSameDay(e.dataCalculada, date));
-  };
-
-  const renderCalendar = () => {
-    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
-    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
-    const days = eachDayOfInterval({ start, end });
-    const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-    return (
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        {/* Header do Calendário */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <h2 className="font-heading font-bold text-lg capitalize">
-            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Dias da Semana */}
-        <div className="grid grid-cols-7 border-b border-border">
-          {weekDays.map((day) => (
-            <div
-              key={day}
-              className="p-2 text-center text-xs font-medium text-muted-foreground"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Dias do Mês */}
-        <div className="grid grid-cols-7">
-          {days.map((day, idx) => {
-            const eventosHoje = getEventosDoDia(day);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
-
-            return (
-              <div
-                key={idx}
-                onClick={() => setSelectedDate(day)}
-                className={`
-                  min-h-[80px] p-1 border-b border-r border-border cursor-pointer transition-colors
-                  ${!isCurrentMonth ? "bg-muted/30" : "hover:bg-muted/50"}
-                  ${isSelected ? "bg-primary/10 ring-1 ring-primary" : ""}
-                  ${isToday(day) ? "bg-primary/5" : ""}
-                `}
-              >
-                <div
-                  className={`
-                  text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                  ${isToday(day) ? "bg-primary text-primary-foreground" : ""}
-                  ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"}
-                `}
-                >
-                  {format(day, "d")}
-                </div>
-                <div className="space-y-0.5">
-                  {eventosHoje.slice(0, 2).map((evento, i) => (
-                    <div
-                      key={`${evento.id}-${i}`}
-                      className="text-[10px] px-1 py-0.5 rounded truncate text-white"
-                      style={{ backgroundColor: evento.cor || "#dc2626" }}
-                    >
-                      {evento.titulo}
-                    </div>
-                  ))}
-                  {eventosHoje.length > 2 && (
-                    <div className="text-[10px] text-muted-foreground pl-1">
-                      +{eventosHoje.length - 2} mais
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const eventosSelecionados = selectedDate ? getEventosDoDia(selectedDate) : [];
 
   if (isLoading) {
     return (
@@ -270,135 +296,159 @@ export const PortalAgendaTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <h2 className="font-heading font-bold text-xl">Agenda da Igreja</h2>
+        <p className="text-sm text-muted-foreground">
+          Veja os eventos e atividades programadas
+        </p>
       </div>
 
-      {renderCalendar()}
-
-      {/* Detalhes do dia selecionado */}
-      {selectedDate && (
-        <Card className="mt-4">
-          <CardContent className="pt-4">
-            <h4 className="font-semibold mb-3">
-              {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-            </h4>
-            {eventosSelecionados.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
-                Nenhum evento neste dia.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {eventosSelecionados.map((evento, i) => (
-                  <div
-                    key={`${evento.id}-${i}`}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                  >
-                    <div
-                      className="w-3 h-3 rounded-full mt-1.5 flex-shrink-0"
-                      style={{ backgroundColor: evento.cor || "#dc2626" }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium">{evento.titulo}</p>
-                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-1">
-                        <span>
-                          {tipoEventoLabels[evento.tipo_evento] ||
-                            evento.tipo_evento}
-                        </span>
-                        {evento.hora_inicio && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {evento.hora_inicio.substring(0, 5)}
-                          </span>
-                        )}
-                        {evento.local && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {evento.local}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="flex-shrink-0"
-                      onClick={() =>
-                        setCompartilharEvento({
-                          id: evento.id,
-                          titulo: evento.titulo,
-                          data_evento: format(evento.dataCalculada, "yyyy-MM-dd"),
-                          hora_inicio: evento.hora_inicio,
-                          local: evento.local,
-                          flyer_url: evento.flyer_url,
-                          cor: evento.cor,
-                        })
-                      }
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Próximos Eventos */}
-      <div>
-        <h3 className="font-semibold mb-3">Próximos Eventos</h3>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {eventos
-            .filter((e) => !e.recorrente && new Date(e.data_evento) >= new Date())
-            .slice(0, 6)
-            .map((evento) => (
-              <Card key={evento.id} className="overflow-hidden">
-                {evento.flyer_url && (
-                  <img
-                    src={evento.flyer_url}
-                    alt={evento.titulo}
-                    className="w-full h-32 object-cover"
-                  />
-                )}
-                <CardContent className="pt-4">
-                  <h4 className="font-semibold">{evento.titulo}</h4>
-                  <div className="flex flex-wrap gap-2 text-sm text-muted-foreground mt-1">
-                    <span className="flex items-center gap-1">
-                      <CalendarIcon className="w-3 h-3" />
-                      {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
-                    </span>
-                    {evento.hora_inicio && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {evento.hora_inicio.substring(0, 5)}
-                      </span>
-                    )}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 w-full"
-                    onClick={() =>
-                      setCompartilharEvento({
-                        id: evento.id,
-                        titulo: evento.titulo,
-                        data_evento: evento.data_evento,
-                        hora_inicio: evento.hora_inicio,
-                        local: evento.local,
-                        flyer_url: evento.flyer_url,
-                        cor: evento.cor,
-                      })
-                    }
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Compartilhar
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+      {/* Filtro de Público */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-foreground">Filtrar por público:</label>
+        <div className="flex flex-wrap gap-2">
+          {publicoOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={publicoFiltro === option.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPublicoFiltro(option.value)}
+              className="gap-1"
+            >
+              <option.icon className="w-4 h-4" />
+              {option.label}
+            </Button>
+          ))}
         </div>
       </div>
+
+      {/* Filtro de Período */}
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-foreground">Visualizar por:</label>
+        <div className="flex gap-2">
+          {periodoOptions.map((option) => (
+            <Button
+              key={option.value}
+              variant={periodoFiltro === option.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPeriodoFiltro(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Navegação */}
+      <Card className="bg-card">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <Button variant="ghost" size="icon" onClick={navegarAnterior}>
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <h3 className="font-heading font-bold text-lg capitalize">
+              {getTituloNavegacao()}
+            </h3>
+            <Button variant="ghost" size="icon" onClick={navegarProximo}>
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de Eventos */}
+      {eventosExpandidos.length === 0 ? (
+        <Card className="bg-muted/30">
+          <CardContent className="py-12 text-center">
+            <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+            <p className="text-muted-foreground">
+              Nenhum evento encontrado para este período
+              {publicoFiltro !== "todos" && ` e filtro "${publicoOptions.find(o => o.value === publicoFiltro)?.label}"`}.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {Object.entries(eventosAgrupados).map(([dateKey, eventosData]) => (
+            <div key={dateKey}>
+              <div className="flex items-center gap-2 mb-3">
+                <Badge
+                  variant={isToday(parseISO(dateKey)) ? "default" : "secondary"}
+                  className="text-xs"
+                >
+                  {isToday(parseISO(dateKey)) ? "Hoje" : format(parseISO(dateKey), "EEEE", { locale: ptBR })}
+                </Badge>
+                <span className="text-sm font-medium text-foreground">
+                  {format(parseISO(dateKey), "dd 'de' MMMM", { locale: ptBR })}
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {eventosData.map((evento, i) => (
+                  <Card key={`${evento.id}-${i}`} className="overflow-hidden">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-1 h-full min-h-[60px] rounded-full flex-shrink-0"
+                          style={{ backgroundColor: evento.cor || "#dc2626" }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-semibold text-foreground">{evento.titulo}</h4>
+                              <Badge variant="outline" className="text-xs mt-1">
+                                {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="flex-shrink-0"
+                              onClick={() =>
+                                setCompartilharEvento({
+                                  id: evento.id,
+                                  titulo: evento.titulo,
+                                  data_evento: format(evento.dataCalculada, "yyyy-MM-dd"),
+                                  hora_inicio: evento.hora_inicio,
+                                  local: evento.local,
+                                  flyer_url: evento.flyer_url,
+                                  cor: evento.cor,
+                                })
+                              }
+                            >
+                              <Share2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                          <div className="flex flex-wrap gap-3 mt-2 text-sm text-muted-foreground">
+                            {evento.hora_inicio && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {evento.hora_inicio.substring(0, 5)}
+                                {evento.hora_fim && ` - ${evento.hora_fim.substring(0, 5)}`}
+                              </span>
+                            )}
+                            {evento.local && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {evento.local}
+                              </span>
+                            )}
+                          </div>
+                          {evento.descricao && (
+                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                              {evento.descricao}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {compartilharEvento && (
         <CompartilharInscricaoDialog
