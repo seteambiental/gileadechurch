@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
@@ -17,11 +18,13 @@ import {
   Trash2,
   Pencil,
   UserRoundCheck,
+  Calendar,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
 import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
 import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
+import { ConsolidacaoAgendaTab } from "@/components/consolidacao/ConsolidacaoAgendaTab";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -56,6 +59,8 @@ const ConsolidacaoPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [convertingId, setConvertingId] = useState<string | null>(null);
   const [isConverting, setIsConverting] = useState(false);
+  const [activeTab, setActiveTab] = useState("convertidos");
+  const [eventoSelecionado, setEventoSelecionado] = useState<{ id: string; titulo: string } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -197,125 +202,151 @@ const ConsolidacaoPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-card border-border">
-            <CardContent className="pt-4 pb-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Users className="w-5 h-5 text-destructive" />
-                <p className="text-2xl font-bold text-foreground">{pendentes.length}</p>
-              </div>
-              <p className="text-xs text-muted-foreground">Em Trilho</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="pt-4 pb-4 text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <UserCheck className="w-5 h-5 text-green-600" />
-                <p className="text-2xl font-bold text-foreground">{membros.length}</p>
-              </div>
-              <p className="text-xs text-muted-foreground">Tornaram-se Membros</p>
-            </CardContent>
-          </Card>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="convertidos" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Novos Convertidos</span>
+              <span className="sm:hidden">Convertidos</span>
+            </TabsTrigger>
+            <TabsTrigger value="eventos" className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span>Eventos</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Button variant="secondary" onClick={() => { setEditingConvertido(null); setShowForm(true); }}>
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Cadastro
-          </Button>
-        </div>
-
-        {/* List */}
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 text-destructive animate-spin" />
-          </div>
-        ) : filteredConvertidos.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            {search ? "Nenhum resultado encontrado" : "Nenhum novo convertido cadastrado"}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredConvertidos.map((convertido) => (
-              <Card key={convertido.id} className="bg-card border-border">
-                <CardContent className="pt-4 pb-4 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">{convertido.full_name}</h3>
-                        {convertido.tornou_membro && (
-                          <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
-                            Membro
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
-                        {convertido.whatsapp && <span>{convertido.whatsapp}</span>}
-                        {convertido.como_chegou && (
-                          <span className="px-2 py-0.5 bg-muted rounded-full">
-                            {comoChegouLabels[convertido.como_chegou] || convertido.como_chegou}
-                          </span>
-                        )}
-                        {convertido.membro_vinculado && (
-                          <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full">
-                            Vínculo: {convertido.membro_vinculado.full_name}
-                          </span>
-                        )}
-                        {convertido.casa_origem && (
-                          <span className="px-2 py-0.5 bg-destructive/10 text-destructive rounded-full">
-                            CR: {convertido.casa_origem.name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-1">
-                      {!convertido.tornou_membro && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => setConvertingId(convertido.id)}
-                          title="Converter para Membro"
-                        >
-                          <UserRoundCheck className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <EnviarMensagemButton convertido={convertido} />
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => { setEditingConvertido(convertido); setShowForm(true); }}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        onClick={() => setDeletingId(convertido.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+          <TabsContent value="convertidos">
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Card className="bg-card border-border">
+                <CardContent className="pt-4 pb-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Users className="w-5 h-5 text-destructive" />
+                    <p className="text-2xl font-bold text-foreground">{pendentes.length}</p>
                   </div>
-
-                  <TrilhoProgress convertido={convertido} />
+                  <p className="text-xs text-muted-foreground">Em Trilho</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+              <Card className="bg-card border-border">
+                <CardContent className="pt-4 pb-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <UserCheck className="w-5 h-5 text-green-600" />
+                    <p className="text-2xl font-bold text-foreground">{membros.length}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Tornaram-se Membros</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Button variant="secondary" onClick={() => { setEditingConvertido(null); setEventoSelecionado(null); setShowForm(true); }}>
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Cadastro
+              </Button>
+            </div>
+
+            {/* List */}
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 text-destructive animate-spin" />
+              </div>
+            ) : filteredConvertidos.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                {search ? "Nenhum resultado encontrado" : "Nenhum novo convertido cadastrado"}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredConvertidos.map((convertido) => (
+                  <Card key={convertido.id} className="bg-card border-border">
+                    <CardContent className="pt-4 pb-4 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-foreground">{convertido.full_name}</h3>
+                            {convertido.tornou_membro && (
+                              <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+                                Membro
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1 text-xs text-muted-foreground">
+                            {convertido.whatsapp && <span>{convertido.whatsapp}</span>}
+                            {convertido.como_chegou && (
+                              <span className="px-2 py-0.5 bg-muted rounded-full">
+                                {comoChegouLabels[convertido.como_chegou] || convertido.como_chegou}
+                              </span>
+                            )}
+                            {convertido.membro_vinculado && (
+                              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                                Vínculo: {convertido.membro_vinculado.full_name}
+                              </span>
+                            )}
+                            {convertido.casa_origem && (
+                              <span className="px-2 py-0.5 bg-destructive/10 text-destructive rounded-full">
+                                CR: {convertido.casa_origem.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {!convertido.tornou_membro && (
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                              onClick={() => setConvertingId(convertido.id)}
+                              title="Converter para Membro"
+                            >
+                              <UserRoundCheck className="w-4 h-4" />
+                            </Button>
+                          )}
+                          <EnviarMensagemButton convertido={convertido} />
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => { setEditingConvertido(convertido); setShowForm(true); }}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeletingId(convertido.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <TrilhoProgress convertido={convertido} />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="eventos">
+            <ConsolidacaoAgendaTab 
+              onEventoSelect={(id, titulo) => {
+                setEventoSelecionado({ id, titulo });
+                setEditingConvertido(null);
+                setShowForm(true);
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Form Dialog */}
@@ -323,6 +354,8 @@ const ConsolidacaoPage = () => {
         open={showForm}
         onOpenChange={setShowForm}
         convertido={editingConvertido}
+        eventoId={eventoSelecionado?.id}
+        eventoTitulo={eventoSelecionado?.titulo}
       />
 
       {/* Delete Confirmation */}

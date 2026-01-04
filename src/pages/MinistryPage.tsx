@@ -50,6 +50,9 @@ import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab"
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
 import { MinisterioAgendaTab } from "@/components/ministerio/MinisterioAgendaTab";
 import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosTab";
+import { ServicoTarefasTab } from "@/components/servico/ServicoTarefasTab";
+import { ServicoMembrosTab } from "@/components/servico/ServicoMembrosTab";
+import { EvangelizacaoAgendaTab } from "@/components/evangelizacao/EvangelizacaoAgendaTab";
 
 interface MinistryInfo {
   title: string;
@@ -68,6 +71,7 @@ interface MinistryInfo {
   isGT?: boolean;
   isHomens?: boolean;
   isMulheres?: boolean;
+  isServico?: boolean;
 }
 
 const ministriesData: Record<string, MinistryInfo> = {
@@ -210,6 +214,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     icon: HandHeart,
     fullDescription:
       "Ministério de serviço dedicado ao suporte prático nas atividades da igreja, incluindo organização de eventos e apoio logístico.",
+    isServico: true,
   },
   teatro: {
     title: "Teatro",
@@ -320,6 +325,7 @@ const MinistryPage = () => {
   const isGT = ministry.isGT;
   const isHomens = ministry.isHomens;
   const isMulheres = ministry.isMulheres;
+  const isServico = ministry.isServico;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
 
   return (
@@ -357,7 +363,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-3' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -404,10 +410,27 @@ const MinistryPage = () => {
                   </TabsTrigger>
                 </>
               ) : isEvangelizacao ? (
-                <TabsTrigger value="frentes" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="hidden sm:inline">Frentes</span>
-                </TabsTrigger>
+                <>
+                  <TabsTrigger value="agenda-evang" className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="hidden sm:inline">Agenda</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="frentes" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Frentes</span>
+                  </TabsTrigger>
+                </>
+              ) : isServico ? (
+                <>
+                  <TabsTrigger value="tarefas" className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tarefas</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="membros-servico" className="flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    <span className="hidden sm:inline">Membros</span>
+                  </TabsTrigger>
+                </>
               ) : isCasais ? (
                 <>
                   <TabsTrigger value="turmas" className="flex items-center gap-2">
@@ -514,9 +537,23 @@ const MinistryPage = () => {
                 </TabsContent>
               </>
             ) : isEvangelizacao ? (
-              <TabsContent value="frentes">
-                <EvangelizacaoFrentesTab />
-              </TabsContent>
+              <>
+                <TabsContent value="agenda-evang">
+                  <EvangelizacaoAgendaTab />
+                </TabsContent>
+                <TabsContent value="frentes">
+                  <EvangelizacaoFrentesTab />
+                </TabsContent>
+              </>
+            ) : isServico ? (
+              <>
+                <TabsContent value="tarefas">
+                  <ServicoTarefasTab />
+                </TabsContent>
+                <TabsContent value="membros-servico">
+                  <ServicoMembrosTab />
+                </TabsContent>
+              </>
             ) : isCasais ? (
               <>
                 <TabsContent value="turmas">
