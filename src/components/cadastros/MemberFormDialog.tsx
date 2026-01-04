@@ -392,6 +392,18 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       // Criar usuário do sistema automaticamente
       if (data.criar_usuario && data.email) {
         try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const session = sessionData.session;
+
+          // Se estiver usando bypass ou o usuário não estiver autenticado, não existe JWT válido
+          if (!session?.access_token) {
+            return {
+              criarUsuario: true,
+              erroUsuario: true,
+              erroUsuarioMsg: "Para criar usuário do sistema, é necessário estar logado.",
+            };
+          }
+
           const { data: result, error: funcError } = await supabase.functions.invoke(
             "criar-usuario-membro",
             {
@@ -406,18 +418,22 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
           if (funcError) {
             console.error("Erro ao criar usuário:", funcError);
-            throw new Error("Erro ao criar usuário no sistema");
+            throw new Error(funcError.message || "Erro ao criar usuário no sistema");
           }
 
-          return { 
-            criarUsuario: true, 
+          return {
+            criarUsuario: true,
             usuarioCriado: !result.was_existing,
             senhaDefault: result.default_password,
           };
         } catch (err) {
           console.error("Erro na criação de usuário:", err);
           // Não impede o cadastro do membro, apenas avisa
-          return { criarUsuario: true, erroUsuario: true };
+          return {
+            criarUsuario: true,
+            erroUsuario: true,
+            erroUsuarioMsg: "Não foi possível criar o usuário do sistema.",
+          };
         }
       }
 
@@ -427,18 +443,19 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       queryClient.invalidateQueries({ queryKey: ["members"] });
       if (result?.criarUsuario) {
         if (result.erroUsuario) {
-          toast({ 
+          toast({
             title: member ? "Membro atualizado!" : "Membro cadastrado!",
-            description: "Porém houve um erro ao criar o usuário do sistema.",
+            description:
+              result.erroUsuarioMsg || "Porém houve um erro ao criar o usuário do sistema.",
             variant: "destructive",
           });
         } else if (result.usuarioCriado) {
-          toast({ 
+          toast({
             title: member ? "Membro atualizado!" : "Membro cadastrado!",
             description: `Usuário criado! Senha padrão: ${result.senhaDefault}`,
           });
         } else {
-          toast({ 
+          toast({
             title: member ? "Membro atualizado!" : "Membro cadastrado!",
             description: "Usuário já existia e foi vinculado.",
           });
