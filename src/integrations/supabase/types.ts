@@ -2654,6 +2654,7 @@ export type Database = {
           data_nascimento: string | null
           datas_impacto: string[] | null
           email: string | null
+          evento_id: string | null
           frequenta_casa_refugio: boolean | null
           full_name: string
           genero: string | null
@@ -2699,6 +2700,7 @@ export type Database = {
           data_nascimento?: string | null
           datas_impacto?: string[] | null
           email?: string | null
+          evento_id?: string | null
           frequenta_casa_refugio?: boolean | null
           full_name: string
           genero?: string | null
@@ -2744,6 +2746,7 @@ export type Database = {
           data_nascimento?: string | null
           datas_impacto?: string[] | null
           email?: string | null
+          evento_id?: string | null
           frequenta_casa_refugio?: boolean | null
           full_name?: string
           genero?: string | null
@@ -2783,6 +2786,13 @@ export type Database = {
             columns: ["casa_refugio_id"]
             isOneToOne: false
             referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novos_convertidos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
             referencedColumns: ["id"]
           },
           {
@@ -2830,6 +2840,98 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      servico_tarefa_voluntarios: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string | null
+          status: string | null
+          tarefa_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          status?: string | null
+          tarefa_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          status?: string | null
+          tarefa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_tarefa_voluntarios_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servico_tarefa_voluntarios_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "servico_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servico_tarefas: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          data_tarefa: string
+          descricao: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string
+          local: string | null
+          status: string | null
+          titulo: string
+          updated_at: string
+          vagas_necessarias: number | null
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          data_tarefa: string
+          descricao?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          local?: string | null
+          status?: string | null
+          titulo: string
+          updated_at?: string
+          vagas_necessarias?: number | null
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          data_tarefa?: string
+          descricao?: string | null
+          hora_fim?: string | null
+          hora_inicio?: string | null
+          id?: string
+          local?: string | null
+          status?: string | null
+          titulo?: string
+          updated_at?: string
+          vagas_necessarias?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_tarefas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       testemunhos: {
         Row: {

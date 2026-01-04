@@ -26,9 +26,11 @@ interface NovoConvertidoFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   convertido?: any;
+  eventoId?: string;
+  eventoTitulo?: string;
 }
 
-const getInitialFormData = (convertido?: any) => ({
+const getInitialFormData = (convertido?: any, eventoId?: string) => ({
   full_name: convertido?.full_name || "",
   whatsapp: convertido?.whatsapp || "",
   email: convertido?.email || "",
@@ -58,26 +60,29 @@ const getInitialFormData = (convertido?: any) => ({
   data_culto_membresia: convertido?.data_culto_membresia || "",
   frequenta_casa_refugio: convertido?.frequenta_casa_refugio || false,
   casa_refugio_frequenta_id: convertido?.casa_refugio_frequenta_id || "",
+  evento_id: convertido?.evento_id || eventoId || "",
 });
 
 export const NovoConvertidoFormDialog = ({
   open,
   onOpenChange,
   convertido,
+  eventoId,
+  eventoTitulo,
 }: NovoConvertidoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
-  const [formData, setFormData] = useState(getInitialFormData(convertido));
+  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId));
 
   // Reset form when dialog opens or convertido changes
   useEffect(() => {
     if (open) {
-      setFormData(getInitialFormData(convertido));
+      setFormData(getInitialFormData(convertido, eventoId));
     }
-  }, [open, convertido]);
+  }, [open, convertido, eventoId]);
 
   const { data: membros = [] } = useQuery({
     queryKey: ["membros-lista"],
@@ -174,6 +179,7 @@ export const NovoConvertidoFormDialog = ({
         data_culto_membresia: formData.participou_culto_membresia ? formData.data_culto_membresia || null : null,
         frequenta_casa_refugio: formData.frequenta_casa_refugio,
         casa_refugio_frequenta_id: formData.frequenta_casa_refugio ? formData.casa_refugio_frequenta_id || null : null,
+        evento_id: formData.evento_id || null,
       };
 
       if (convertido) {
