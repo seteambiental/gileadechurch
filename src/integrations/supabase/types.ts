@@ -85,6 +85,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "acao_social_ajudas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       acao_social_familia_membros: {
@@ -229,6 +236,13 @@ export type Database = {
             columns: ["lider_responsavel_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_familias_lider_responsavel_id_fkey"
+            columns: ["lider_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -444,6 +458,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "candidaturas_ministerio_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "candidaturas_ministerio_ministry_id_fkey"
             columns: ["ministry_id"]
             isOneToOne: false
@@ -516,10 +537,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "casais_inscritos_membro_feminino_id_fkey"
+            columns: ["membro_feminino_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "casais_inscritos_membro_masculino_id_fkey"
             columns: ["membro_masculino_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_inscritos_membro_masculino_id_fkey"
+            columns: ["membro_masculino_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -571,10 +606,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "casais_lideres_membro_feminino_id_fkey"
+            columns: ["membro_feminino_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "casais_lideres_membro_masculino_id_fkey"
             columns: ["membro_masculino_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_lideres_membro_masculino_id_fkey"
+            columns: ["membro_masculino_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -837,6 +886,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "danca_equipe_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       danca_equipes: {
@@ -921,6 +977,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encontro_presencas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1074,6 +1137,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "evangelizacao_frentes_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       evangelizacao_frentes_membros: {
@@ -1111,6 +1181,13 @@ export type Database = {
             columns: ["membro_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evangelizacao_frentes_membros_membro_id_fkey"
+            columns: ["membro_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1272,6 +1349,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "impacto_departamentos_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       impacto_equipe_membros: {
@@ -1312,6 +1396,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_equipe_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1428,6 +1519,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "impacto_inscricoes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       inscricoes_eventos: {
@@ -1525,6 +1623,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "inscricoes_eventos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "inscricoes_eventos_novo_convertido_id_fkey"
             columns: ["novo_convertido_id"]
             isOneToOne: false
@@ -1572,6 +1677,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "kids_escalas_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       kids_escalas_ajudantes: {
@@ -1599,6 +1711,13 @@ export type Database = {
             columns: ["ajudante_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_escalas_ajudantes_ajudante_id_fkey"
+            columns: ["ajudante_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -1644,6 +1763,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_lideres_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1736,6 +1862,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "kids_notificacoes_log_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "kids_notificacoes_log_crianca_novo_convertido_id_fkey"
             columns: ["crianca_novo_convertido_id"]
             isOneToOne: false
@@ -1747,6 +1880,13 @@ export type Database = {
             columns: ["responsavel_member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_notificacoes_log_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1797,6 +1937,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "kids_presencas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "kids_presencas_novo_convertido_id_fkey"
             columns: ["novo_convertido_id"]
             isOneToOne: false
@@ -1808,6 +1955,13 @@ export type Database = {
             columns: ["registrado_por"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_presencas_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1855,6 +2009,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "kids_responsaveis_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "kids_responsaveis_crianca_novo_convertido_id_fkey"
             columns: ["crianca_novo_convertido_id"]
             isOneToOne: false
@@ -1866,6 +2027,13 @@ export type Database = {
             columns: ["responsavel_member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_responsaveis_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -1940,6 +2108,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "member_face_indexes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "member_face_indexes_novo_convertido_id_fkey"
             columns: ["novo_convertido_id"]
             isOneToOne: false
@@ -1999,6 +2174,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_functions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2265,6 +2447,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "ministerio_escalas_compartilhadas_compartilhado_por_fkey"
+            columns: ["compartilhado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "ministerio_escalas_compartilhadas_escala_id_fkey"
             columns: ["escala_id"]
             isOneToOne: false
@@ -2356,6 +2545,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministerio_integrantes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
           {
@@ -2596,6 +2792,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "missoes_mocambique_contribuintes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       missoes_mocambique_fechamentos: {
@@ -2806,10 +3009,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "novos_convertidos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "novos_convertidos_membro_vinculado_id_fkey"
             columns: ["membro_vinculado_id"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "novos_convertidos_membro_vinculado_id_fkey"
+            columns: ["membro_vinculado_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -2875,6 +3092,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "servico_tarefa_voluntarios_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "servico_tarefa_voluntarios_tarefa_id_fkey"
             columns: ["tarefa_id"]
             isOneToOne: false
@@ -2932,6 +3156,13 @@ export type Database = {
             columns: ["criado_por"]
             isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servico_tarefas_criado_por_fkey"
+            columns: ["criado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -3023,6 +3254,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_access_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
         ]
       }
       user_ministries: {
@@ -3077,7 +3315,92 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      members_safe: {
+        Row: {
+          address: string | null
+          birth_date: string | null
+          casa_refugio_id: string | null
+          cep: string | null
+          city: string | null
+          complement: string | null
+          cpf: string | null
+          created_at: string | null
+          email: string | null
+          estado_civil: string | null
+          full_name: string | null
+          genero: string | null
+          id: string | null
+          kids_numero: number | null
+          member_since: string | null
+          neighborhood: string | null
+          number: string | null
+          photo_url: string | null
+          rg: string | null
+          state: string | null
+          updated_at: string | null
+          user_id: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          birth_date?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: never
+          created_at?: string | null
+          email?: string | null
+          estado_civil?: string | null
+          full_name?: string | null
+          genero?: string | null
+          id?: string | null
+          kids_numero?: number | null
+          member_since?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          rg?: never
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          birth_date?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          cpf?: never
+          created_at?: string | null
+          email?: string | null
+          estado_civil?: string | null
+          full_name?: string | null
+          genero?: string | null
+          id?: string | null
+          kids_numero?: number | null
+          member_since?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          photo_url?: string | null
+          rg?: never
+          state?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_access_kids_data: { Args: never; Returns: boolean }
