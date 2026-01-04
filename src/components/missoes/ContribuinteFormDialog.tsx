@@ -35,6 +35,7 @@ const formSchema = z.object({
   member_id: z.string().optional(),
   nome_manual: z.string().optional(),
   valor_mensal: z.string().min(1, "Valor é obrigatório"),
+  dia_vencimento: z.string().min(1, "Dia de vencimento é obrigatório"),
   ativo: z.boolean(),
   data_inicio: z.string().min(1, "Data de início é obrigatória"),
   observacoes: z.string().optional(),
@@ -47,6 +48,7 @@ interface Contribuinte {
   member_id: string | null;
   nome_manual: string | null;
   valor_mensal: number;
+  dia_vencimento: number | null;
   ativo: boolean;
   data_inicio: string;
   observacoes: string | null;
@@ -84,6 +86,7 @@ export function ContribuinteFormDialog({
       member_id: "",
       nome_manual: "",
       valor_mensal: "",
+      dia_vencimento: "10",
       ativo: true,
       data_inicio: new Date().toISOString().split("T")[0],
       observacoes: "",
@@ -96,6 +99,7 @@ export function ContribuinteFormDialog({
         member_id: contribuinte.member_id || "",
         nome_manual: contribuinte.nome_manual || "",
         valor_mensal: String(contribuinte.valor_mensal),
+        dia_vencimento: String(contribuinte.dia_vencimento || 10),
         ativo: contribuinte.ativo,
         data_inicio: contribuinte.data_inicio,
         observacoes: contribuinte.observacoes || "",
@@ -105,6 +109,7 @@ export function ContribuinteFormDialog({
         member_id: "",
         nome_manual: "",
         valor_mensal: "",
+        dia_vencimento: "10",
         ativo: true,
         data_inicio: new Date().toISOString().split("T")[0],
         observacoes: "",
@@ -118,6 +123,7 @@ export function ContribuinteFormDialog({
         member_id: data.member_id || null,
         nome_manual: data.nome_manual || null,
         valor_mensal: parseFloat(data.valor_mensal),
+        dia_vencimento: parseInt(data.dia_vencimento),
         ativo: data.ativo,
         data_inicio: data.data_inicio,
         observacoes: data.observacoes || null,
@@ -217,6 +223,23 @@ export function ContribuinteFormDialog({
                   <FormControl>
                     <Input type="number" step="0.01" placeholder="0,00" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="dia_vencimento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Dia do Compromisso</FormLabel>
+                  <FormControl>
+                    <Input type="number" min="1" max="28" placeholder="10" {...field} />
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Dia do mês em que será enviado o lembrete (1 dia antes)
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
