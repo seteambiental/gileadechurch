@@ -1038,7 +1038,39 @@ const Auth = () => {
                 )}
               </div>
             </form>
-          <div className="mt-4 text-center">
+          <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setIsLogin(true);
+                setStep(1);
+                setErrors({});
+                setSignupData({
+                  full_name: "",
+                  email: "",
+                  genero: "",
+                  birth_date: "",
+                  whatsapp: "",
+                  cep: "",
+                  address: "",
+                  number: "",
+                  complement: "",
+                  neighborhood: "",
+                  city: "",
+                  state: "",
+                  cpf: "",
+                  rg: "",
+                  perfil_solicitado: "membro",
+                  ministerio_ids: [],
+                });
+                setPhotoFile(null);
+                setPhotoPreview(null);
+              }}
+              className="text-sm text-secondary hover:underline font-medium"
+            >
+              Cancelar cadastro
+            </button>
+            <span className="hidden sm:inline text-muted-foreground">•</span>
             <button
               type="button"
               onClick={() => navigate("/")}
