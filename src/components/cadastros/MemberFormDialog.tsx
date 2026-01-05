@@ -196,6 +196,8 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [memberFunctions, setMemberFunctions] = useState<MemberFunction[]>([]);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [selectedMinistryIds, setSelectedMinistryIds] = useState<string[]>([]);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
+  const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -256,6 +258,23 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             perfil_usuario: undefined,
           });
           setPhotoPreview(memberData.photo_url);
+
+          // Buscar o perfil atual do usuário se ele já tem acesso ao sistema
+          if (memberData.user_id) {
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", memberData.user_id)
+              .maybeSingle();
+            
+            if (roleData) {
+              setCurrentUserRole(roleData.role);
+            } else {
+              setCurrentUserRole("membro"); // Default se não tiver role
+            }
+          } else {
+            setCurrentUserRole(null);
+          }
         }
 
         const { data: functionsData } = await supabase
@@ -278,6 +297,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         setPhotoPreview(null);
         setMemberFunctions([]);
         setSelectedMinistryIds([]);
+        setCurrentUserRole(null);
       }
     };
 
@@ -1069,10 +1089,87 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
               )}
 
               {member?.user_id && (
-                <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="flex items-center gap-2 text-green-500">
+                <div className="space-y-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="flex items-center gap-2 text-green-600">
                     <UserCog className="w-5 h-5" />
-                    <span className="font-medium">Este membro já possui acesso ao sistema</span>
+                    <span className="font-medium">Este membro possui acesso ao sistema</span>
+                  </div>
+                  
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <FormLabel>Email de acesso</FormLabel>
+                      <Input 
+                        value={form.watch("email") || ""} 
+                        disabled 
+                        className="bg-muted mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <FormLabel>Perfil de Acesso Atual</FormLabel>
+                      <Select
+                        value={currentUserRole || "membro"}
+                        onValueChange={async (newRole) => {
+                          if (!member?.user_id) return;
+                          
+                          setIsUpdatingRole(true);
+                          try {
+                            // Remove role antigo
+                            await supabase
+                              .from("user_roles")
+                              .delete()
+                              .eq("user_id", member.user_id);
+                            
+                            // Adiciona novo role (exceto se for "membro" que não tem role específico)
+                            if (newRole !== "membro") {
+                              await supabase
+                                .from("user_roles")
+                                .insert({
+                                  user_id: member.user_id,
+                                  role: newRole as any,
+                                });
+                            }
+                            
+                            setCurrentUserRole(newRole);
+                            toast({
+                              title: "Perfil atualizado!",
+                              description: `Perfil alterado para ${ROLE_TYPES.find(r => r.value === newRole)?.label}`,
+                            });
+                          } catch (error) {
+                            console.error("Erro ao atualizar perfil:", error);
+                            toast({
+                              title: "Erro ao atualizar perfil",
+                              description: String(error),
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setIsUpdatingRole(false);
+                          }
+                        }}
+                        disabled={isUpdatingRole}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecione o perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROLE_TYPES.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              <div>
+                                <span>{role.label}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  - {role.description}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {isUpdatingRole && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Atualizando perfil...
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
