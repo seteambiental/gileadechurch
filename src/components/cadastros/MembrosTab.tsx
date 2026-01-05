@@ -460,16 +460,15 @@ const MembrosTab = () => {
         </Card>
       ) : (
         <Card className="bg-card border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableHead className="text-muted-foreground">Membro</TableHead>
-                  <TableHead className="text-muted-foreground">WhatsApp</TableHead>
-                  <TableHead className="text-muted-foreground">Cidade/UF</TableHead>
-                  <TableHead className="text-muted-foreground">Membro Desde</TableHead>
-                  <TableHead className="text-muted-foreground">Funções</TableHead>
-                  <TableHead className="text-muted-foreground w-[100px]">Ações</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="text-muted-foreground min-w-[200px]">Membro</TableHead>
+                <TableHead className="text-muted-foreground hidden md:table-cell">WhatsApp</TableHead>
+                <TableHead className="text-muted-foreground hidden lg:table-cell">Cidade/UF</TableHead>
+                <TableHead className="text-muted-foreground hidden lg:table-cell">Membro Desde</TableHead>
+                <TableHead className="text-muted-foreground hidden xl:table-cell">Funções</TableHead>
+                <TableHead className="text-muted-foreground text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -494,27 +493,27 @@ const MembrosTab = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-foreground">
+                    <TableCell className="text-foreground hidden md:table-cell">
                       {member.whatsapp ? formatPhone(member.whatsapp) : "-"}
                     </TableCell>
-                    <TableCell className="text-foreground">
+                    <TableCell className="text-foreground hidden lg:table-cell">
                       {member.city && member.state 
                         ? `${member.city}/${member.state}` 
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-foreground text-sm">
+                    <TableCell className="text-foreground text-sm hidden lg:table-cell">
                       {formatDateBR(member.member_since)}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                    <TableCell className="hidden xl:table-cell">
+                      <div className="flex flex-wrap gap-1 max-w-[300px]">
                         {member.member_functions && member.member_functions.length > 0 ? (
-                          member.member_functions.map((fn) => {
+                          member.member_functions.slice(0, 2).map((fn) => {
                             const { label, subdivision } = getFunctionDisplay(fn);
                             return (
                               <Badge 
                                 key={fn.id} 
                                 variant="secondary"
-                                className="text-xs whitespace-nowrap"
+                                className="text-xs"
                               >
                                 {label}
                                 {subdivision && (
@@ -526,10 +525,15 @@ const MembrosTab = () => {
                         ) : (
                           <span className="text-muted-foreground text-sm">-</span>
                         )}
+                        {member.member_functions && member.member_functions.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{member.member_functions.length - 2}
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="text-right">
+                      <div className="flex gap-1 justify-end">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -566,7 +570,6 @@ const MembrosTab = () => {
                 ))}
               </TableBody>
             </Table>
-          </div>
           <div className="p-4 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
               Exibindo {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredMembers.length)} de {filteredMembers.length} membro{filteredMembers.length !== 1 ? "s" : ""}
