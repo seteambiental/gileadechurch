@@ -32,9 +32,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF, formatRG } from "@/lib/masks";
+import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
@@ -165,7 +166,6 @@ const formSchema = z.object({
   state: z.string().optional(),
   whatsapp: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
-  rg: z.string().optional(),
   cpf: z.string().optional(),
   // Campos para criar usuário do sistema
   criar_usuario: z.boolean().optional(),
@@ -194,7 +194,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [memberFunctions, setMemberFunctions] = useState<MemberFunction[]>([]);
-  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [selectedMinistryIds, setSelectedMinistryIds] = useState<string[]>([]);
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
@@ -217,7 +216,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       state: "",
       whatsapp: "",
       email: "",
-      rg: "",
       cpf: "",
       criar_usuario: false,
       perfil_usuario: undefined,
@@ -226,6 +224,13 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
   const criarUsuario = form.watch("criar_usuario");
   const perfilUsuario = form.watch("perfil_usuario");
+
+  const { isLoading: isLoadingCep } = useCepLookup(form.watch("cep"), ({ address, neighborhood, city, state }) => {
+    form.setValue("address", address || "");
+    form.setValue("neighborhood", neighborhood || "");
+    form.setValue("city", city || "");
+    form.setValue("state", state || "");
+  });
 
   // Fetch member details if editing
   useEffect(() => {
@@ -252,7 +257,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             state: memberData.state || "",
             whatsapp: memberData.whatsapp ? formatPhone(memberData.whatsapp) : "",
             email: memberData.email || "",
-            rg: (memberData as any).rg || "",
             cpf: (memberData as any).cpf ? formatCPF((memberData as any).cpf) : "",
             criar_usuario: false,
             perfil_usuario: undefined,
@@ -367,7 +371,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,
-        rg: data.rg || null,
         cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
       };
 
@@ -492,32 +495,10 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       setSelectedMinistryIds([]);
     },
     onError: (error) => {
-      toast({ title: "Erro ao salvar membro", description: String(error), variant: "destructive" });
+      toast({ title: "Erro ao salvar membro", description: (error as any)?.message || String(error), variant: "destructive" });
     },
   });
 
-  const handleCepBlur = async () => {
-    const cepValue = form.getValues("cep");
-    const cep = cepValue ? unformatCep(cepValue) : "";
-    if (cep.length !== 8) return;
-
-    setIsLoadingCep(true);
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-      
-      if (!data.erro) {
-        form.setValue("address", data.logradouro || "");
-        form.setValue("neighborhood", data.bairro || "");
-        form.setValue("city", data.localidade || "");
-        form.setValue("state", data.uf || "");
-      }
-    } catch (error) {
-      console.error("Erro ao buscar CEP:", error);
-    } finally {
-      setIsLoadingCep(false);
-    }
-  };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -708,24 +689,6 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="rg"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>RG</FormLabel>
-                      <FormControl>
-                        <Input 
-                          {...field}
-                          placeholder="0000000"
-                          onChange={(e) => field.onChange(formatRG(e.target.value))}
-                          maxLength={15}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <FormField
                   control={form.control}
@@ -759,13 +722,12 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                         <FormLabel>CEP</FormLabel>
                         <FormControl>
                           <div className="relative">
-                            <Input
-                              {...field}
-                              placeholder="00000-000"
-                              onChange={(e) => field.onChange(formatCep(e.target.value))}
-                              onBlur={handleCepBlur}
-                              maxLength={9}
-                            />
+                              <Input
+                                {...field}
+                                placeholder="00000-000"
+                                onChange={(e) => field.onChange(formatCep(e.target.value))}
+                                maxLength={9}
+                              />
                             {isLoadingCep && (
                               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
                             )}

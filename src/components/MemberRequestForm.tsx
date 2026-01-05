@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 const formSchema = z.object({
   full_name: z.string().min(3, "Nome completo é obrigatório"),
@@ -57,7 +58,6 @@ interface MemberRequestFormProps {
 
 export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
   const { toast } = useToast();
-  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const form = useForm<FormData>({
@@ -113,28 +113,12 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     },
   });
 
-  const handleCepBlur = async () => {
-    const cepValue = form.getValues("cep");
-    const cep = cepValue ? unformatCep(cepValue) : "";
-    if (cep.length !== 8) return;
-
-    setIsLoadingCep(true);
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-
-      if (!data.erro) {
-        form.setValue("address", data.logradouro || "");
-        form.setValue("neighborhood", data.bairro || "");
-        form.setValue("city", data.localidade || "");
-        form.setValue("state", data.uf || "");
-      }
-    } catch (error) {
-      console.error("Erro ao buscar CEP:", error);
-    } finally {
-      setIsLoadingCep(false);
-    }
-  };
+  const { isLoading: isLoadingCep } = useCepLookup(form.watch("cep"), ({ address, neighborhood, city, state }) => {
+    form.setValue("address", address || "");
+    form.setValue("neighborhood", neighborhood || "");
+    form.setValue("city", city || "");
+    form.setValue("state", state || "");
+  });
 
   const handleClose = () => {
     setSubmitted(false);
@@ -293,7 +277,6 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                         placeholder="00000-000"
                         {...field}
                         onChange={(e) => field.onChange(formatCep(e.target.value))}
-                        onBlur={handleCepBlur}
                       />
                     </FormControl>
                     <FormMessage />

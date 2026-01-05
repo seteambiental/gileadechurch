@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { formatCep, formatPhone, formatCPF, formatRG } from "@/lib/masks";
+import { formatCep, formatPhone, formatCPF } from "@/lib/masks";
 
 interface NovoConvertidoFormDialogProps {
   open: boolean;
@@ -36,7 +36,6 @@ const getInitialFormData = (convertido?: any, eventoId?: string) => ({
   email: convertido?.email || "",
   genero: convertido?.genero || "",
   data_nascimento: convertido?.data_nascimento || "",
-  rg: convertido?.rg || "",
   cpf: convertido?.cpf ? formatCPF(convertido.cpf) : "",
   cep: convertido?.cep || "",
   address: convertido?.address || "",
@@ -156,7 +155,6 @@ export const NovoConvertidoFormDialog = ({
         email: formData.email || null,
         genero: formData.genero || null,
         data_nascimento: formData.data_nascimento || null,
-        rg: formData.rg || null,
         cpf: formData.cpf ? formData.cpf.replace(/\D/g, "") : null,
         cep: formData.cep || null,
         address: formData.address || null,
@@ -277,16 +275,6 @@ export const NovoConvertidoFormDialog = ({
                 />
               </div>
 
-              <div>
-                <Label htmlFor="rg">RG</Label>
-                <Input
-                  id="rg"
-                  value={formData.rg}
-                  onChange={(e) => setFormData({ ...formData, rg: formatRG(e.target.value) })}
-                  placeholder="0000000"
-                  maxLength={15}
-                />
-              </div>
 
               <div>
                 <Label htmlFor="cpf">CPF</Label>
