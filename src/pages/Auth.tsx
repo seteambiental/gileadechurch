@@ -337,16 +337,12 @@ const Auth = () => {
         state: signupData.state || null,
         cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
         photo_url: photoUrl,
+        status: "pendente",
       };
 
-      console.log("Enviando requisição para member_requests:", requestPayload);
-
-      const { data: insertData, error: requestError } = await supabase.from("member_requests").insert(requestPayload).select();
-      
-      console.log("Resposta do insert:", { insertData, requestError });
+      const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
       
       if (requestError) {
-        console.error("Erro detalhado:", requestError);
         throw requestError;
       }
 
