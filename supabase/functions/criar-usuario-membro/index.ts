@@ -35,9 +35,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Gerar senha padrão: 4 primeiros dígitos do CPF ou 1234
+    // Gerar senha padrão: Cpf@ + 6 primeiros dígitos do CPF ou Cpf@123456
     const cpfDigits = cpf ? cpf.replace(/\D/g, "") : "";
-    const defaultPassword = cpfDigits.length >= 4 ? cpfDigits.substring(0, 4) : "1234";
+    const defaultPassword = cpfDigits.length >= 6 ? `Cpf@${cpfDigits.substring(0, 6)}` : "Cpf@123456";
 
     // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
