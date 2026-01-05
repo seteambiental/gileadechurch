@@ -327,7 +327,7 @@ const Auth = () => {
         email: signupData.email!,
         whatsapp: signupData.whatsapp ? unformatPhone(signupData.whatsapp) : null,
         genero: signupData.genero || null,
-        birth_date: signupData.birth_date || null,
+        birth_date: signupData.birth_date && signupData.birth_date.trim() !== "" ? signupData.birth_date : null,
         cep: signupData.cep ? unformatCep(signupData.cep) : null,
         address: signupData.address || null,
         number: signupData.number || null,
@@ -337,11 +337,18 @@ const Auth = () => {
         state: signupData.state || null,
         cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
         photo_url: photoUrl,
-        status: "pendente",
       };
 
-      const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
-      if (requestError) throw requestError;
+      console.log("Enviando requisição para member_requests:", requestPayload);
+
+      const { data: insertData, error: requestError } = await supabase.from("member_requests").insert(requestPayload).select();
+      
+      console.log("Resposta do insert:", { insertData, requestError });
+      
+      if (requestError) {
+        console.error("Erro detalhado:", requestError);
+        throw requestError;
+      }
 
       toast({
         title: "Solicitação enviada!",
