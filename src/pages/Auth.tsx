@@ -334,16 +334,16 @@ const Auth = () => {
           .upload(fileName, photoFile);
 
         if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from("member-photos")
-            .getPublicUrl(fileName);
+          const { data: urlData } = supabase.storage.from("member-photos").getPublicUrl(fileName);
           photoUrl = urlData.publicUrl;
         }
       }
 
-      // Create member record first (without user_id)
-      const memberData = {
+      // IMPORTANT: Público não deve inserir direto em "members" (PII). Aqui é apenas solicitação.
+      const requestPayload = {
         full_name: signupData.full_name!,
+        email: signupData.email!,
+        whatsapp: signupData.whatsapp ? unformatPhone(signupData.whatsapp) : null,
         genero: signupData.genero || null,
         birth_date: signupData.birth_date || null,
         cep: signupData.cep ? unformatCep(signupData.cep) : null,
@@ -353,59 +353,18 @@ const Auth = () => {
         neighborhood: signupData.neighborhood || null,
         city: signupData.city || null,
         state: signupData.state || null,
-        whatsapp: signupData.whatsapp ? unformatPhone(signupData.whatsapp) : null,
-        email: signupData.email,
-        photo_url: photoUrl,
-        rg: signupData.rg || null,
         cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
+        rg: signupData.rg || null,
+        photo_url: photoUrl,
+        status: "pendente",
       };
 
-      const { data: newMember, error: memberError } = await supabase
-        .from("members")
-        .insert(memberData)
-        .select()
-        .single();
-
-      if (memberError) throw memberError;
-
-      // Create user via Edge Function with default password
-      const { data: userResult, error: userError } = await supabase.functions.invoke(
-        "criar-usuario-membro",
-        {
-          body: {
-            email: signupData.email,
-            cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
-            member_id: newMember.id,
-            perfil: signupData.perfil_solicitado || "membro",
-          },
-        }
-      );
-
-      if (userError) {
-        console.error("Erro ao criar usuário:", userError);
-        throw new Error("Erro ao criar usuário no sistema");
-      }
-
-      // Create access request for approval
-      const { error: accessError } = await supabase
-        .from("user_access_requests")
-        .insert({
-          member_id: newMember.id,
-          email: signupData.email!,
-          requested_role: signupData.perfil_solicitado as "membro" | "lider" | "ministerial",
-          requested_ministry_ids: signupData.ministerio_ids || [],
-          status: "pendente",
-        });
-
-      if (accessError) throw accessError;
-
-      // Get default password info for display
-      const cpfDigits = signupData.cpf ? signupData.cpf.replace(/\D/g, "") : "";
-      const senhaDefault = cpfDigits.length >= 4 ? cpfDigits.substring(0, 4) : "1234";
+      const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
+      if (requestError) throw requestError;
 
       toast({
-        title: "Cadastro realizado!",
-        description: `Sua senha é: ${senhaDefault}. Sua solicitação foi enviada para aprovação.`,
+        title: "Solicitação enviada!",
+        description: "Seu cadastro foi enviado para análise. Um administrador irá aprovar e você receberá as instruções de acesso.",
       });
 
       // Reset form and go to login
