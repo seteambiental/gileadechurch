@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.get-member-sensitive-data]
 verify_jwt = false
+
+[functions.atualizar-senha-usuario]
+verify_jwt = false
