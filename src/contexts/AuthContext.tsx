@@ -61,13 +61,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      // Limpa o estado local PRIMEIRO para garantir que a UI atualize
+      setUser(null);
+      setSession(null);
+      
+      // Limpa o localStorage manualmente para garantir que a sessão seja removida
+      localStorage.removeItem('sb-jwjmseeyjemfwgyizumk-auth-token');
+      
+      // Tenta fazer logout no servidor (pode falhar se a sessão já expirou)
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
-    // Força limpeza do estado local
-    setUser(null);
-    setSession(null);
   };
 
   const resetPassword = async (email: string) => {
