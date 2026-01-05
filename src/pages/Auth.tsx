@@ -17,6 +17,7 @@ import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
@@ -37,7 +38,6 @@ const signupSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   cpf: z.string().optional(),
-  rg: z.string().optional(),
   perfil_solicitado: z.enum(["membro", "lider", "ministerial"]),
   ministerio_ids: z.array(z.string()).optional(),
 });
@@ -80,7 +80,6 @@ const Auth = () => {
     city: "",
     state: "",
     cpf: "",
-    rg: "",
     perfil_solicitado: "membro",
     ministerio_ids: [],
   });
@@ -88,7 +87,6 @@ const Auth = () => {
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
@@ -200,30 +198,15 @@ const Auth = () => {
     return Object.keys(fieldErrors).length === 0;
   };
 
-  const handleCepBlur = async () => {
-    const cep = signupData.cep ? unformatCep(signupData.cep) : "";
-    if (cep.length !== 8) return;
-
-    setIsLoadingCep(true);
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-      
-      if (!data.erro) {
-        setSignupData(prev => ({
-          ...prev,
-          address: data.logradouro || "",
-          neighborhood: data.bairro || "",
-          city: data.localidade || "",
-          state: data.uf || "",
-        }));
-      }
-    } catch (error) {
-      console.error("Erro ao buscar CEP:", error);
-    } finally {
-      setIsLoadingCep(false);
-    }
-  };
+  const { isLoading: isLoadingCep } = useCepLookup(signupData.cep, ({ address, neighborhood, city, state }) => {
+    setSignupData((prev) => ({
+      ...prev,
+      address: address || "",
+      neighborhood: neighborhood || "",
+      city: city || "",
+      state: state || "",
+    }));
+  });
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -339,7 +322,6 @@ const Auth = () => {
         }
       }
 
-      // IMPORTANT: Público não deve inserir direto em "members" (PII). Aqui é apenas solicitação.
       const requestPayload = {
         full_name: signupData.full_name!,
         email: signupData.email!,
@@ -354,7 +336,6 @@ const Auth = () => {
         city: signupData.city || null,
         state: signupData.state || null,
         cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
-        rg: signupData.rg || null,
         photo_url: photoUrl,
         status: "pendente",
       };
@@ -382,7 +363,6 @@ const Auth = () => {
         city: "",
         state: "",
         cpf: "",
-        rg: "",
         perfil_solicitado: "membro",
         ministerio_ids: [],
       });
@@ -390,8 +370,9 @@ const Auth = () => {
       setPhotoPreview(null);
       setStep(1);
       setIsLogin(true);
-    } catch (error) {
-      toast({ variant: "destructive", title: "Erro no cadastro", description: String(error) });
+    } catch (error: any) {
+      const msg = error?.message || error?.error_description || error?.details || String(error);
+      toast({ variant: "destructive", title: "Erro no cadastro", description: msg });
     } finally {
       setIsLoading(false);
     }
@@ -802,14 +783,6 @@ const Auth = () => {
                         maxLength={14}
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label>RG</Label>
-                      <Input
-                        value={signupData.rg}
-                        onChange={(e) => setSignupData({ ...signupData, rg: e.target.value })}
-                      />
-                    </div>
                   </div>
                 </div>
               )}
@@ -824,7 +797,6 @@ const Auth = () => {
                         <Input
                           value={signupData.cep}
                           onChange={(e) => setSignupData({ ...signupData, cep: formatCep(e.target.value) })}
-                          onBlur={handleCepBlur}
                           placeholder="00000-000"
                           maxLength={9}
                         />
@@ -1018,7 +990,6 @@ const Auth = () => {
                   city: "",
                   state: "",
                   cpf: "",
-                  rg: "",
                   perfil_solicitado: "membro",
                   ministerio_ids: [],
                 });

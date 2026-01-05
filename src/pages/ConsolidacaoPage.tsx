@@ -134,7 +134,6 @@ const ConsolidacaoPage = () => {
         state: convertido.state,
         cep: convertido.cep,
         cpf: convertido.cpf,
-        rg: convertido.rg,
         genero: convertido.genero,
         photo_url: convertido.photo_url,
         casa_refugio_id: convertido.casa_refugio_frequenta_id || convertido.casa_refugio_id,

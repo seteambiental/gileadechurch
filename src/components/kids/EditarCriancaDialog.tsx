@@ -210,7 +210,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
       const ncData = dadosCompletos as { 
         full_name: string; data_nascimento: string; genero: string; whatsapp: string;
         email: string; cep: string; address: string; numero: string; complement: string;
-        neighborhood: string; city: string; state: string; cpf: string; rg: string;
+        neighborhood: string; city: string; state: string; cpf: string;
       };
       
       const { data: novoMembro, error: memberError } = await supabase
@@ -229,7 +229,6 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           city: ncData.city,
           state: ncData.state,
           cpf: ncData.cpf,
-          rg: ncData.rg,
           photo_url: photoUrl,
           member_since: new Date().toISOString().split("T")[0],
         })
