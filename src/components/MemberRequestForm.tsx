@@ -98,27 +98,25 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
     try {
       // Verificar na tabela de membros
-      const { data: existingMember } = await supabase
+      const { data: existingMembers } = await supabase
         .from("members")
         .select("id")
-        .eq("cpf", cpfClean)
-        .maybeSingle();
+        .eq("cpf", cpfClean);
 
-      if (existingMember) {
+      if (existingMembers && existingMembers.length > 0) {
         setCpfError("USUÁRIO JÁ CADASTRADO");
         setCpfVerified(false);
         return;
       }
 
       // Verificar na tabela de solicitações pendentes
-      const { data: existingRequest } = await supabase
+      const { data: existingRequests } = await supabase
         .from("member_requests")
         .select("id")
         .eq("cpf", cpfClean)
-        .eq("status", "pendente")
-        .maybeSingle();
+        .eq("status", "pendente");
 
-      if (existingRequest) {
+      if (existingRequests && existingRequests.length > 0) {
         setCpfError("USUÁRIO JÁ CADASTRADO");
         setCpfVerified(false);
         return;
