@@ -81,6 +81,34 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
+      const cpfClean = data.cpf ? data.cpf.replace(/\D/g, "") : null;
+      
+      // Verificar se já existe um membro ou solicitação com o mesmo nome e CPF
+      if (cpfClean) {
+        // Verificar na tabela de membros
+        const { data: existingMember } = await supabase
+          .from("members")
+          .select("id")
+          .eq("cpf", cpfClean)
+          .maybeSingle();
+        
+        if (existingMember) {
+          throw new Error("USUÁRIO JÁ CADASTRADO");
+        }
+        
+        // Verificar na tabela de solicitações pendentes
+        const { data: existingRequest } = await supabase
+          .from("member_requests")
+          .select("id")
+          .eq("cpf", cpfClean)
+          .eq("status", "pendente")
+          .maybeSingle();
+        
+        if (existingRequest) {
+          throw new Error("USUÁRIO JÁ CADASTRADO");
+        }
+      }
+
       const payload = {
         full_name: data.full_name,
         email: data.email || null,
@@ -94,7 +122,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         neighborhood: data.neighborhood || null,
         city: data.city || null,
         state: data.state || null,
-        cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
+        cpf: cpfClean,
         status: "pendente",
       };
 
