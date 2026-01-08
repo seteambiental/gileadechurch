@@ -175,111 +175,12 @@ const MembrosTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Limpar referências (FK) onde faz sentido manter o registro histórico
-      const { error: err1 } = await supabase.from("evangelizacao_frentes").update({ lider_id: null }).eq("lider_id", id);
-      if (err1) throw new Error(`evangelizacao_frentes: ${err1.message}`);
-      
-      const { error: err2 } = await supabase.from("kids_escalas").update({ lider_id: null }).eq("lider_id", id);
-      if (err2) throw new Error(`kids_escalas: ${err2.message}`);
-      
-      const { error: err3 } = await supabase.from("impacto_departamentos").update({ lider_id: null }).eq("lider_id", id);
-      if (err3) throw new Error(`impacto_departamentos: ${err3.message}`);
-      
-      const { error: err4 } = await supabase.from("acao_social_ajudas").update({ registrado_por: null }).eq("registrado_por", id);
-      if (err4) throw new Error(`acao_social_ajudas: ${err4.message}`);
-      
-      const { error: err5 } = await supabase.from("kids_presencas").update({ registrado_por: null }).eq("registrado_por", id);
-      if (err5) throw new Error(`kids_presencas (registrado_por): ${err5.message}`);
-
-      // Deletar registros diretamente vinculados ao membro
-      const { error: err6 } = await supabase.from("member_functions").delete().eq("member_id", id);
-      if (err6) throw new Error(`member_functions: ${err6.message}`);
-      
-      const { error: err7 } = await supabase.from("ministerio_integrantes").delete().eq("member_id", id);
-      if (err7) throw new Error(`ministerio_integrantes: ${err7.message}`);
-      
-      const { error: err8 } = await supabase.from("candidaturas_ministerio").delete().eq("member_id", id);
-      if (err8) throw new Error(`candidaturas_ministerio: ${err8.message}`);
-      
-      const { error: err9 } = await supabase.from("danca_equipe_membros").delete().eq("member_id", id);
-      if (err9) throw new Error(`danca_equipe_membros: ${err9.message}`);
-      
-      const { error: err10 } = await supabase.from("member_face_indexes").delete().eq("member_id", id);
-      if (err10) throw new Error(`member_face_indexes: ${err10.message}`);
-      
-      const { error: err11 } = await supabase.from("encontro_presencas").delete().eq("member_id", id);
-      if (err11) throw new Error(`encontro_presencas: ${err11.message}`);
-      
-      const { error: err12 } = await supabase.from("inscricoes_eventos").delete().eq("member_id", id);
-      if (err12) throw new Error(`inscricoes_eventos: ${err12.message}`);
-      
-      const { error: err13 } = await supabase.from("kids_presencas").delete().eq("member_id", id);
-      if (err13) throw new Error(`kids_presencas: ${err13.message}`);
-      
-      const { error: err14 } = await supabase.from("kids_responsaveis").delete().eq("responsavel_member_id", id);
-      if (err14) throw new Error(`kids_responsaveis: ${err14.message}`);
-      
-      const { error: err15 } = await supabase.from("kids_lideres").delete().eq("member_id", id);
-      if (err15) throw new Error(`kids_lideres: ${err15.message}`);
-      
-      const { error: err16 } = await supabase.from("impacto_inscricoes").delete().eq("member_id", id);
-      if (err16) throw new Error(`impacto_inscricoes: ${err16.message}`);
-      
-      const { error: err17 } = await supabase.from("impacto_equipe_membros").delete().eq("member_id", id);
-      if (err17) throw new Error(`impacto_equipe_membros: ${err17.message}`);
-      
-      const { error: err18 } = await supabase.from("evangelizacao_frentes_membros").delete().eq("membro_id", id);
-      if (err18) throw new Error(`evangelizacao_frentes_membros: ${err18.message}`);
-      
-      const { error: err19 } = await supabase.from("servico_tarefa_voluntarios").delete().eq("member_id", id);
-      if (err19) throw new Error(`servico_tarefa_voluntarios: ${err19.message}`);
-      
-      const { error: err20 } = await supabase.from("missoes_mocambique_contribuintes").delete().eq("member_id", id);
-      if (err20) throw new Error(`missoes_mocambique_contribuintes: ${err20.message}`);
-      
-      const { error: err21 } = await supabase.from("user_access_requests").delete().eq("member_id", id);
-      if (err21) throw new Error(`user_access_requests: ${err21.message}`);
-      
-      const { data: deletedRequests, error: err22 } = await supabase
-        .from("member_requests")
-        .delete()
-        .eq("member_id", id)
-        .select("id");
-      console.log("[delete member] member_requests deleted:", deletedRequests?.length ?? 0);
-      if (err22) throw new Error(`member_requests: ${err22.message}`);
-
-      // Se existir solicitação vinculada e não deletar nada, é falta de permissão (RLS)
-      const { count: requestCount, error: countErr } = await supabase
-        .from("member_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("member_id", id);
-      if (countErr) throw new Error(`member_requests count: ${countErr.message}`);
-      if ((requestCount ?? 0) > 0) {
-        throw new Error("Sem permissão para remover a solicitação vinculada ao membro (member_requests). Verifique o perfil de acesso do seu usuário.");
-      }
-
-      // Relacionamentos de casais (mantém histórico do casal, mas remove o vínculo)
-      const { error: err23 } = await supabase.from("casais_inscritos").update({ membro_feminino_id: null }).eq("membro_feminino_id", id);
-      if (err23) throw new Error(`casais_inscritos (feminino): ${err23.message}`);
-      
-      const { error: err24 } = await supabase.from("casais_inscritos").update({ membro_masculino_id: null }).eq("membro_masculino_id", id);
-      if (err24) throw new Error(`casais_inscritos (masculino): ${err24.message}`);
-      
-      const { error: err25 } = await supabase.from("casais_lideres").update({ membro_feminino_id: null }).eq("membro_feminino_id", id);
-      if (err25) throw new Error(`casais_lideres (feminino): ${err25.message}`);
-      
-      const { error: err26 } = await supabase.from("casais_lideres").update({ membro_masculino_id: null }).eq("membro_masculino_id", id);
-      if (err26) throw new Error(`casais_lideres (masculino): ${err26.message}`);
-
-      const { data: deletedMembers, error } = await supabase
-        .from("members")
-        .delete()
-        .eq("id", id)
-        .select("id");
-      console.log("[delete member] members deleted:", deletedMembers?.length ?? 0);
-      if (error) throw new Error(`members: ${error.message}`);
-      if (!deletedMembers || deletedMembers.length === 0) {
-        throw new Error("Sem permissão para excluir este membro (perfil sem acesso completo). Peça para um administrador/pastor realizar a exclusão.");
+      const { data, error } = await supabase.functions.invoke("excluir-membro", {
+        body: { memberId: id },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.deleted) {
+        throw new Error("O backend não confirmou a exclusão deste membro.");
       }
     },
     onSuccess: () => {
