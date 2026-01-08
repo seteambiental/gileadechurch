@@ -175,7 +175,22 @@ const MembrosTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Deletar registros relacionados em todas as tabelas que referenciam members
       await supabase.from("member_functions").delete().eq("member_id", id);
+      await supabase.from("ministerio_integrantes").delete().eq("member_id", id);
+      await supabase.from("candidaturas_ministerio").delete().eq("member_id", id);
+      await supabase.from("danca_equipe_membros").delete().eq("member_id", id);
+      await supabase.from("member_face_indexes").delete().eq("member_id", id);
+      await supabase.from("encontro_presencas").delete().eq("member_id", id);
+      await supabase.from("inscricoes_eventos").delete().eq("member_id", id);
+      await supabase.from("kids_presencas").delete().eq("member_id", id);
+      await supabase.from("kids_responsaveis").delete().eq("responsavel_member_id", id);
+      await supabase.from("impacto_inscricoes").delete().eq("member_id", id);
+      await supabase.from("impacto_equipe_membros").delete().eq("member_id", id);
+      await supabase.from("evangelizacao_frentes_membros").delete().eq("membro_id", id);
+      await supabase.from("servico_tarefa_voluntarios").delete().eq("member_id", id);
+      await supabase.from("missoes_mocambique_contribuintes").delete().eq("member_id", id);
+      
       const { error } = await supabase.from("members").delete().eq("id", id);
       if (error) throw error;
     },
