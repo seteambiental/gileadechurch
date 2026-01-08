@@ -200,11 +200,16 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         city: data.city || null,
         state: data.state || null,
         cpf: cpfClean,
-        status: "pendente",
       };
 
-      const { error } = await supabase.from("member_requests").insert(payload);
-      if (error) throw error;
+      // Inserção via função backend (contorna RLS do client/anon)
+      const { data: created, error: createError } = await supabase.functions.invoke(
+        "criar-solicitacao-membro",
+        { body: payload },
+      );
+
+      if (createError) throw createError;
+      if (!created?.success) throw new Error("Não foi possível criar a solicitação.");
     },
     onSuccess: () => {
       setSubmitted(true);
