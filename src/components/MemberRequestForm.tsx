@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,16 +30,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
 import { useCepLookup } from "@/hooks/useCepLookup";
+import { cn } from "@/lib/utils";
+import { format, parse, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const formSchema = z.object({
+  first_name: z.string().min(2, "Primeiro nome é obrigatório"),
   full_name: z.string().min(3, "Nome completo é obrigatório"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   whatsapp: z.string().min(10, "WhatsApp é obrigatório"),
   genero: z.string().optional(),
-  birth_date: z.string().optional(),
+  birth_date: z.string().min(1, "Data de nascimento é obrigatória"),
   cep: z.string().optional(),
   address: z.string().optional(),
   number: z.string().optional(),
@@ -57,16 +63,46 @@ interface MemberRequestFormProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Função para formatar data digitada (DD/MM/AAAA)
+const formatDateInput = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 2) return numbers;
+  if (numbers.length <= 4) return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+  return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+};
+
+// Converter DD/MM/AAAA para YYYY-MM-DD
+const convertToISODate = (dateStr: string): string | null => {
+  const parsed = parse(dateStr, "dd/MM/yyyy", new Date());
+  if (isValid(parsed)) {
+    return format(parsed, "yyyy-MM-dd");
+  }
+  return null;
+};
+
+// Converter YYYY-MM-DD para DD/MM/AAAA
+const convertToDisplayDate = (dateStr: string): string => {
+  if (!dateStr) return "";
+  const parsed = parse(dateStr, "yyyy-MM-dd", new Date());
+  if (isValid(parsed)) {
+    return format(parsed, "dd/MM/yyyy");
+  }
+  return dateStr;
+};
+
 export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
-  const [cpfVerified, setCpfVerified] = useState(false);
-  const [cpfError, setCpfError] = useState<string | null>(null);
-  const [isCheckingCpf, setIsCheckingCpf] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [dateInputValue, setDateInputValue] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      first_name: "",
       full_name: "",
       email: "",
       whatsapp: "",
@@ -83,56 +119,75 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     },
   });
 
-  const cpfValue = form.watch("cpf");
+  const firstName = form.watch("first_name");
+  const birthDate = form.watch("birth_date");
 
-  const checkCpf = async () => {
-    const cpfClean = cpfValue?.replace(/\D/g, "");
+  const checkMember = async () => {
+    const firstNameClean = firstName?.trim().toLowerCase();
+    const birthDateValue = birthDate;
     
-    if (!cpfClean || cpfClean.length !== 11) {
-      setCpfError("CPF deve ter 11 dígitos");
+    if (!firstNameClean || firstNameClean.length < 2) {
+      setVerificationError("Informe o primeiro nome");
       return;
     }
 
-    setIsCheckingCpf(true);
-    setCpfError(null);
+    if (!birthDateValue) {
+      setVerificationError("Informe a data de nascimento");
+      return;
+    }
+
+    setIsChecking(true);
+    setVerificationError(null);
 
     try {
-      // Verificar na tabela de membros
+      // Verificar na tabela de membros - buscar por primeiro nome e data de nascimento
       const { data: existingMembers } = await supabase
         .from("members")
-        .select("id")
-        .eq("cpf", cpfClean);
+        .select("id, full_name, birth_date")
+        .eq("birth_date", birthDateValue);
 
-      if (existingMembers && existingMembers.length > 0) {
-        setCpfError("USUÁRIO JÁ CADASTRADO");
-        setCpfVerified(false);
+      // Verificar se algum membro tem o primeiro nome igual
+      const memberMatch = existingMembers?.find(member => {
+        const memberFirstName = member.full_name?.split(" ")[0]?.toLowerCase();
+        return memberFirstName === firstNameClean;
+      });
+
+      if (memberMatch) {
+        setVerificationError("USUÁRIO JÁ CADASTRADO");
+        setVerified(false);
         return;
       }
 
       // Verificar na tabela de solicitações pendentes
       const { data: existingRequests } = await supabase
         .from("member_requests")
-        .select("id")
-        .eq("cpf", cpfClean)
+        .select("id, full_name, birth_date")
+        .eq("birth_date", birthDateValue)
         .eq("status", "pendente");
 
-      if (existingRequests && existingRequests.length > 0) {
-        setCpfError("USUÁRIO JÁ CADASTRADO");
-        setCpfVerified(false);
+      // Verificar se alguma solicitação tem o primeiro nome igual
+      const requestMatch = existingRequests?.find(request => {
+        const requestFirstName = request.full_name?.split(" ")[0]?.toLowerCase();
+        return requestFirstName === firstNameClean;
+      });
+
+      if (requestMatch) {
+        setVerificationError("USUÁRIO JÁ CADASTRADO");
+        setVerified(false);
         return;
       }
 
-      // CPF disponível
-      setCpfVerified(true);
-      setCpfError(null);
+      // Usuário disponível para cadastro
+      setVerified(true);
+      setVerificationError(null);
       toast({
-        title: "CPF disponível",
+        title: "Cadastro liberado",
         description: "Você pode continuar com o cadastro.",
       });
     } catch (error) {
-      setCpfError("Erro ao verificar CPF. Tente novamente.");
+      setVerificationError("Erro ao verificar. Tente novamente.");
     } finally {
-      setIsCheckingCpf(false);
+      setIsChecking(false);
     }
   };
 
@@ -181,18 +236,50 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
   const handleClose = () => {
     setSubmitted(false);
-    setCpfVerified(false);
-    setCpfError(null);
+    setVerified(false);
+    setVerificationError(null);
+    setDateInputValue("");
     form.reset();
     onOpenChange(false);
   };
 
-  // Reset verification when CPF changes
-  const handleCpfChange = (value: string) => {
-    form.setValue("cpf", formatCPF(value));
-    setCpfVerified(false);
-    setCpfError(null);
+  // Reset verification when first name or birth date changes
+  const handleFirstNameChange = (value: string) => {
+    form.setValue("first_name", value);
+    setVerified(false);
+    setVerificationError(null);
   };
+
+  const handleDateInputChange = (value: string) => {
+    const formatted = formatDateInput(value);
+    setDateInputValue(formatted);
+    
+    // Se a data estiver completa (DD/MM/AAAA), converter para ISO
+    if (formatted.length === 10) {
+      const isoDate = convertToISODate(formatted);
+      if (isoDate) {
+        form.setValue("birth_date", isoDate);
+      }
+    } else {
+      form.setValue("birth_date", "");
+    }
+    setVerified(false);
+    setVerificationError(null);
+  };
+
+  const handleCalendarSelect = (date: Date | undefined) => {
+    if (date) {
+      const isoDate = format(date, "yyyy-MM-dd");
+      const displayDate = format(date, "dd/MM/yyyy");
+      form.setValue("birth_date", isoDate);
+      setDateInputValue(displayDate);
+      setCalendarOpen(false);
+      setVerified(false);
+      setVerificationError(null);
+    }
+  };
+
+  const canCheck = firstName?.trim().length >= 2 && birthDate?.length === 10;
 
   if (submitted) {
     return (
@@ -223,66 +310,114 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
             Quero fazer parte da Igreja
           </DialogTitle>
           <DialogDescription>
-            Primeiro, informe seu CPF para verificar se você já está cadastrado.
+            Primeiro, informe seu primeiro nome e data de nascimento para verificar se você já está cadastrado.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            {/* CPF Field - First and with lookup button */}
-            <div className="p-4 border rounded-lg bg-muted/30">
+            {/* Verificação inicial - Primeiro nome e data de nascimento */}
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
               <FormField
                 control={form.control}
-                name="cpf"
+                name="first_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>CPF *</FormLabel>
+                    <FormLabel>Primeiro Nome *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Seu primeiro nome"
+                        value={field.value}
+                        onChange={(e) => handleFirstNameChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="birth_date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data de Nascimento *</FormLabel>
                     <div className="flex gap-2">
                       <FormControl>
                         <Input
-                          placeholder="000.000.000-00"
-                          value={field.value}
-                          onChange={(e) => handleCpfChange(e.target.value)}
+                          placeholder="DD/MM/AAAA"
+                          value={dateInputValue}
+                          onChange={(e) => handleDateInputChange(e.target.value)}
+                          maxLength={10}
+                          className="flex-1"
                         />
                       </FormControl>
-                      <Button
-                        type="button"
-                        onClick={checkCpf}
-                        disabled={isCheckingCpf || !cpfValue || cpfValue.length < 14}
-                        variant={cpfVerified ? "default" : "secondary"}
-                      >
-                        {isCheckingCpf ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Search className="w-4 h-4" />
-                        )}
-                        <span className="ml-2 hidden sm:inline">Consultar</span>
-                      </Button>
+                      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                          >
+                            <CalendarIcon className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                          <Calendar
+                            mode="single"
+                            selected={field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined}
+                            onSelect={handleCalendarSelect}
+                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                            initialFocus
+                            locale={ptBR}
+                            captionLayout="dropdown-buttons"
+                            fromYear={1920}
+                            toYear={new Date().getFullYear()}
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {cpfError && (
-                <Alert variant="destructive" className="mt-3">
+              <Button
+                type="button"
+                onClick={checkMember}
+                disabled={isChecking || !canCheck}
+                variant={verified ? "default" : "secondary"}
+                className="w-full"
+              >
+                {isChecking ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Search className="w-4 h-4 mr-2" />
+                )}
+                Consultar
+              </Button>
+
+              {verificationError && (
+                <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{cpfError}</AlertDescription>
+                  <AlertDescription>{verificationError}</AlertDescription>
                 </Alert>
               )}
 
-              {cpfVerified && (
-                <Alert className="mt-3 border-green-500 bg-green-50 dark:bg-green-950">
+              {verified && (
+                <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <AlertDescription className="text-green-700 dark:text-green-300">
-                    CPF disponível! Preencha os demais dados abaixo.
+                    Cadastro liberado! Preencha os demais dados abaixo.
                   </AlertDescription>
                 </Alert>
               )}
             </div>
 
-            {/* Rest of the form - only shown after CPF verification */}
-            {cpfVerified && (
+            {/* Rest of the form - only shown after verification */}
+            {verified && (
               <>
                 <FormField
                   control={form.control}
@@ -292,6 +427,24 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       <FormLabel>Nome Completo *</FormLabel>
                       <FormControl>
                         <Input placeholder="Seu nome completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="cpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="000.000.000-00"
+                          value={field.value}
+                          onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -332,43 +485,27 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="genero"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gênero</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="masculino">Masculino</SelectItem>
-                            <SelectItem value="feminino">Feminino</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="birth_date"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Data de Nascimento</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="genero"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Gênero</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                        <SelectContent>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="feminino">Feminino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
@@ -481,7 +618,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
             )}
 
             {/* Show cancel button even before verification */}
-            {!cpfVerified && (
+            {!verified && (
               <div className="flex justify-end pt-2">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
