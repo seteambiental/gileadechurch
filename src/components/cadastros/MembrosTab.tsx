@@ -256,8 +256,15 @@ const MembrosTab = () => {
       const { error: err26 } = await supabase.from("casais_lideres").update({ membro_masculino_id: null }).eq("membro_masculino_id", id);
       if (err26) throw new Error(`casais_lideres (masculino): ${err26.message}`);
 
-      const { error } = await supabase.from("members").delete().eq("id", id);
+      const { data: deletedMembers, error } = await supabase
+        .from("members")
+        .delete()
+        .eq("id", id)
+        .select("id");
       if (error) throw new Error(`members: ${error.message}`);
+      if (!deletedMembers || deletedMembers.length === 0) {
+        throw new Error("Sem permissão para excluir este membro (perfil sem acesso completo). Peça para um administrador/pastor realizar a exclusão.");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["members"] });
