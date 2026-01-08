@@ -24,7 +24,11 @@ export interface MemberProfile {
 }
 
 export type PortalRole = 
+  | "admin"
   | "pastor_geral" 
+  | "pastor_auxiliar"
+  | "lider_condominio"
+  | "supervisor_casa_refugio"
   | "sindico_condominio" 
   | "supervisor_condominio" 
   | "lider_casa_refugio"
@@ -89,10 +93,15 @@ export const useMemberPortal = () => {
 
     const functions = memberProfile.member_functions || [];
     
-    // Verificar se é pastor geral (acesso total)
+    // Verificar se é pastor geral ou pastor auxiliar (acesso total)
     const isPastorGeral = functions.some(f => f.function_type === "pastor_geral");
     if (isPastorGeral) {
       return { role: "pastor_geral" };
+    }
+    
+    const isPastorAuxiliar = functions.some(f => f.function_type === "pastor_auxiliar");
+    if (isPastorAuxiliar) {
+      return { role: "pastor_auxiliar" };
     }
 
     // Verificar se é síndico de condomínio

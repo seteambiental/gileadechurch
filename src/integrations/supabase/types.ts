@@ -3498,6 +3498,7 @@ export type Database = {
     Functions: {
       can_access_kids_data: { Args: never; Returns: boolean }
       get_next_kids_numero: { Args: never; Returns: number }
+      has_full_access: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3506,11 +3507,25 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_integrante_ministerio: { Args: never; Returns: boolean }
       is_kids_leader: { Args: never; Returns: boolean }
+      is_lider_casa_refugio: { Args: never; Returns: boolean }
+      is_lider_condominio: { Args: never; Returns: boolean }
+      is_lider_ministerio: { Args: never; Returns: boolean }
       is_master: { Args: never; Returns: boolean }
+      is_supervisor_casa_refugio: { Args: never; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "lider" | "membro" | "master" | "ministerial"
+      app_role:
+        | "admin"
+        | "pastor_geral"
+        | "pastor_auxiliar"
+        | "lider_condominio"
+        | "supervisor_casa_refugio"
+        | "lider_casa_refugio"
+        | "lider_ministerio"
+        | "integrante_ministerio"
+        | "membro"
       arrival_method:
         | "culto_domingo"
         | "culto_quarta"
@@ -3655,7 +3670,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "lider", "membro", "master", "ministerial"],
+      app_role: [
+        "admin",
+        "pastor_geral",
+        "pastor_auxiliar",
+        "lider_condominio",
+        "supervisor_casa_refugio",
+        "lider_casa_refugio",
+        "lider_ministerio",
+        "integrante_ministerio",
+        "membro",
+      ],
       arrival_method: [
         "culto_domingo",
         "culto_quarta",

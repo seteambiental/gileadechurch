@@ -36,7 +36,7 @@ const Cadastros = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .in("role", ["master", "admin"]);
+        .in("role", ["pastor_geral", "pastor_auxiliar", "admin"]);
       return data && data.length > 0;
     },
     enabled: !!user?.id,

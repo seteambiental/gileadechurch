@@ -50,9 +50,14 @@ const FUNCTION_TYPES = [
 
 const ROLE_TYPES = [
   { value: "membro", label: "Membro", description: "Acesso apenas ao portal de membros" },
-  { value: "admin", label: "Administrador", description: "Gerencia todo o sistema" },
-  { value: "master", label: "Master", description: "Gerencia usuários e aprovações" },
-  { value: "ministerial", label: "Ministerial", description: "Acesso ao ministério vinculado" },
+  { value: "integrante_ministerio", label: "Integrante de Ministério", description: "Visualização do ministério (sem edição)" },
+  { value: "lider_ministerio", label: "Líder de Ministério", description: "CRUD completo no ministério" },
+  { value: "lider_casa_refugio", label: "Líder de Casa Refúgio", description: "Acesso à sua casa refúgio" },
+  { value: "supervisor_casa_refugio", label: "Supervisor de Casa Refúgio", description: "Acesso às casas que supervisiona" },
+  { value: "lider_condominio", label: "Líder de Condomínio", description: "Acesso ao condomínio" },
+  { value: "pastor_auxiliar", label: "Pastor Auxiliar", description: "Acesso completo" },
+  { value: "pastor_geral", label: "Pastor Geral", description: "Acesso completo" },
+  { value: "admin", label: "Administrador", description: "Acesso completo + desenvolvimento" },
 ] as const;
 
 // Funções específicas por ministério (baseado no nome do ministério)
@@ -169,7 +174,7 @@ const formSchema = z.object({
   cpf: z.string().optional(),
   // Campos para criar usuário do sistema
   criar_usuario: z.boolean().optional(),
-  perfil_usuario: z.enum(["membro", "admin", "master", "ministerial"]).optional(),
+  perfil_usuario: z.enum(["membro", "integrante_ministerio", "lider_ministerio", "lider_casa_refugio", "supervisor_casa_refugio", "lider_condominio", "pastor_auxiliar", "pastor_geral", "admin"]).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -1013,7 +1018,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                         />
                       </div>
 
-                      {perfilUsuario === "ministerial" && (
+                      {(perfilUsuario === "lider_ministerio" || perfilUsuario === "integrante_ministerio") && (
                         <div className="space-y-2">
                           <FormLabel>Vincular aos Ministérios</FormLabel>
                           <div className="max-h-32 overflow-y-auto space-y-2 p-3 rounded-lg bg-background border border-border">

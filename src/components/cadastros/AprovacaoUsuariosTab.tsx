@@ -29,8 +29,14 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
-  master: "Master",
-  ministerial: "Ministerial",
+  pastor_geral: "Pastor Geral",
+  pastor_auxiliar: "Pastor Auxiliar",
+  lider_condominio: "Líder de Condomínio",
+  supervisor_casa_refugio: "Supervisor de Casa Refúgio",
+  lider_casa_refugio: "Líder de Casa Refúgio",
+  lider_ministerio: "Líder de Ministério",
+  integrante_ministerio: "Integrante de Ministério",
+  membro: "Membro",
 };
 
 const AprovacaoUsuariosTab = () => {
@@ -134,8 +140,8 @@ const AprovacaoUsuariosTab = () => {
           .insert({ user_id: userId, role: request.requested_role });
       }
 
-      // 4. Se ministerial, vincular aos ministérios selecionados
-      if (request.requested_role === "ministerial" && selectedMinistries.length > 0) {
+      // 4. Se lider ou integrante de ministerio, vincular aos ministérios selecionados
+      if ((request.requested_role === "lider_ministerio" || request.requested_role === "integrante_ministerio") && selectedMinistries.length > 0) {
         const ministryInserts = selectedMinistries.map(ministry_id => ({
           user_id: userId,
           ministry_id,
@@ -358,7 +364,7 @@ const AprovacaoUsuariosTab = () => {
                 </p>
               </div>
 
-              {selectedRequest.requested_role === "ministerial" && (
+              {(selectedRequest.requested_role === "lider_ministerio" || selectedRequest.requested_role === "integrante_ministerio") && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Vincular aos Ministérios:</label>
                   <div className="max-h-48 overflow-y-auto space-y-2 p-3 rounded-lg bg-background border border-border">
