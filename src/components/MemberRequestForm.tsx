@@ -35,7 +35,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
 import { useCepLookup } from "@/hooks/useCepLookup";
-import { cn } from "@/lib/utils";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -123,9 +122,9 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const birthDate = form.watch("birth_date");
 
   const checkMember = async () => {
-    const firstNameClean = firstName?.trim().toLowerCase();
+    const firstNameClean = firstName?.trim();
     const birthDateValue = birthDate;
-    
+
     if (!firstNameClean || firstNameClean.length < 2) {
       setVerificationError("Informe o primeiro nome");
       return;
@@ -140,51 +139,28 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setVerificationError(null);
 
     try {
-      // Verificar na tabela de membros - buscar por primeiro nome e data de nascimento
-      const { data: existingMembers } = await supabase
-        .from("members")
-        .select("id, full_name, birth_date")
-        .eq("birth_date", birthDateValue);
-
-      // Verificar se algum membro tem o primeiro nome igual
-      const memberMatch = existingMembers?.find(member => {
-        const memberFirstName = member.full_name?.split(" ")[0]?.toLowerCase();
-        return memberFirstName === firstNameClean;
+      const { data, error } = await supabase.functions.invoke("verificar-membro-existente", {
+        body: {
+          firstName: firstNameClean,
+          birthDate: birthDateValue,
+        },
       });
 
-      if (memberMatch) {
+      if (error) throw error;
+
+      if (data?.exists) {
         setVerificationError("USUÁRIO JÁ CADASTRADO");
         setVerified(false);
         return;
       }
 
-      // Verificar na tabela de solicitações pendentes
-      const { data: existingRequests } = await supabase
-        .from("member_requests")
-        .select("id, full_name, birth_date")
-        .eq("birth_date", birthDateValue)
-        .eq("status", "pendente");
-
-      // Verificar se alguma solicitação tem o primeiro nome igual
-      const requestMatch = existingRequests?.find(request => {
-        const requestFirstName = request.full_name?.split(" ")[0]?.toLowerCase();
-        return requestFirstName === firstNameClean;
-      });
-
-      if (requestMatch) {
-        setVerificationError("USUÁRIO JÁ CADASTRADO");
-        setVerified(false);
-        return;
-      }
-
-      // Usuário disponível para cadastro
       setVerified(true);
       setVerificationError(null);
       toast({
         title: "Cadastro liberado",
         description: "Você pode continuar com o cadastro.",
       });
-    } catch (error) {
+    } catch {
       setVerificationError("Erro ao verificar. Tente novamente.");
     } finally {
       setIsChecking(false);
@@ -194,6 +170,21 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const cpfClean = data.cpf.replace(/\D/g, "");
+
+      // Revalida no backend antes de inserir (evita bypass de UI)
+      const { data: check, error: checkError } = await supabase.functions.invoke(
+        "verificar-membro-existente",
+        {
+          body: {
+            firstName: data.first_name,
+            birthDate: data.birth_date,
+            cpf: cpfClean,
+          },
+        },
+      );
+
+      if (checkError) throw checkError;
+      if (check?.exists) throw new Error("USUÁRIO JÁ CADASTRADO");
 
       const payload = {
         full_name: data.full_name,
@@ -221,7 +212,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     onError: (error) => {
       toast({
         title: "Erro ao enviar solicitação",
-        description: String(error),
+        description: error instanceof Error ? error.message : String(error),
         variant: "destructive",
       });
     },
