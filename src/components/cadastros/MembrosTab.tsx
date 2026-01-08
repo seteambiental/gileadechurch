@@ -240,8 +240,23 @@ const MembrosTab = () => {
       const { error: err21 } = await supabase.from("user_access_requests").delete().eq("member_id", id);
       if (err21) throw new Error(`user_access_requests: ${err21.message}`);
       
-      const { error: err22 } = await supabase.from("member_requests").delete().eq("member_id", id);
+      const { data: deletedRequests, error: err22 } = await supabase
+        .from("member_requests")
+        .delete()
+        .eq("member_id", id)
+        .select("id");
+      console.log("[delete member] member_requests deleted:", deletedRequests?.length ?? 0);
       if (err22) throw new Error(`member_requests: ${err22.message}`);
+
+      // Se existir solicitação vinculada e não deletar nada, é falta de permissão (RLS)
+      const { count: requestCount, error: countErr } = await supabase
+        .from("member_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", id);
+      if (countErr) throw new Error(`member_requests count: ${countErr.message}`);
+      if ((requestCount ?? 0) > 0) {
+        throw new Error("Sem permissão para remover a solicitação vinculada ao membro (member_requests). Verifique o perfil de acesso do seu usuário.");
+      }
 
       // Relacionamentos de casais (mantém histórico do casal, mas remove o vínculo)
       const { error: err23 } = await supabase.from("casais_inscritos").update({ membro_feminino_id: null }).eq("membro_feminino_id", id);
@@ -261,6 +276,7 @@ const MembrosTab = () => {
         .delete()
         .eq("id", id)
         .select("id");
+      console.log("[delete member] members deleted:", deletedMembers?.length ?? 0);
       if (error) throw new Error(`members: ${error.message}`);
       if (!deletedMembers || deletedMembers.length === 0) {
         throw new Error("Sem permissão para excluir este membro (perfil sem acesso completo). Peça para um administrador/pastor realizar a exclusão.");
