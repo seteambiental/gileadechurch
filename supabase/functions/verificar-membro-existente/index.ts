@@ -34,17 +34,45 @@ serve(async (req) => {
       );
     }
 
+    // Função auxiliar para extrair primeiro nome (simples ou composto) do full_name
+    // Considera nomes compostos como "João Paulo", "Maria Izabel", etc.
+    const extractFirstName = (fullName: string): string => {
+      const words = fullName.trim().split(/\s+/);
+      if (words.length <= 1) return fullName.trim().toLowerCase();
+      
+      // Se tem 2 palavras, retorna as duas como primeiro nome composto
+      if (words.length === 2) return words.join(" ").toLowerCase();
+      
+      // Se tem mais de 2 palavras, verifica se as duas primeiras formam um nome composto comum
+      const firstTwo = words.slice(0, 2).join(" ").toLowerCase();
+      return firstTwo;
+    };
+
+    const inputFirstNameLower = normalizedFirstName.toLowerCase();
+    const inputWords = inputFirstNameLower.split(/\s+/);
+    const inputWordCount = inputWords.length;
+
     // 1) Checagem por Primeiro Nome + Data de Nascimento (membros)
     const { data: membersByBirth, error: membersErr } = await supabaseAdmin
       .from("members")
-      .select("id")
-      .eq("birth_date", normalizedBirthDate)
-      .ilike("full_name", `${normalizedFirstName}%`)
-      .limit(1);
+      .select("id, full_name")
+      .eq("birth_date", normalizedBirthDate);
 
     if (membersErr) throw membersErr;
 
-    if (membersByBirth && membersByBirth.length > 0) {
+    // Verificar se algum membro tem o mesmo primeiro nome (simples ou composto)
+    const memberMatch = (membersByBirth ?? []).some((m) => {
+      const memberFirstName = extractFirstName(m.full_name);
+      // Se o input tem 1 palavra, verifica se o primeiro nome do membro começa com ela
+      if (inputWordCount === 1) {
+        const memberFirstWord = memberFirstName.split(/\s+/)[0];
+        return memberFirstWord === inputFirstNameLower;
+      }
+      // Se o input tem 2+ palavras (nome composto), compara exatamente
+      return memberFirstName === inputFirstNameLower;
+    });
+
+    if (memberMatch) {
       return new Response(
         JSON.stringify({ exists: true, reason: "name_birth" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -54,14 +82,22 @@ serve(async (req) => {
     // 2) Checagem por Primeiro Nome + Data de Nascimento (solicitações)
     const { data: reqsByBirth, error: reqsErr } = await supabaseAdmin
       .from("member_requests")
-      .select("id")
-      .eq("birth_date", normalizedBirthDate)
-      .ilike("full_name", `${normalizedFirstName}%`)
-      .limit(1);
+      .select("id, full_name")
+      .eq("birth_date", normalizedBirthDate);
 
     if (reqsErr) throw reqsErr;
 
-    if (reqsByBirth && reqsByBirth.length > 0) {
+    // Verificar se alguma solicitação tem o mesmo primeiro nome (simples ou composto)
+    const reqMatch = (reqsByBirth ?? []).some((r) => {
+      const reqFirstName = extractFirstName(r.full_name);
+      if (inputWordCount === 1) {
+        const reqFirstWord = reqFirstName.split(/\s+/)[0];
+        return reqFirstWord === inputFirstNameLower;
+      }
+      return reqFirstName === inputFirstNameLower;
+    });
+
+    if (reqMatch) {
       return new Response(
         JSON.stringify({ exists: true, reason: "name_birth_request" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
