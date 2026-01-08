@@ -64,19 +64,27 @@ const SolicitacoesMembrosTab = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
-  const { data: requests = [], isLoading } = useQuery({
+  const { data: requests = [], isLoading, error } = useQuery({
     queryKey: ["member-requests", statusFilter],
     queryFn: async () => {
-      // Debug: verificar sessão
-      const { data: session } = await supabase.auth.getSession();
-      console.log("[SolicitacoesMembrosTab] Session:", session?.session?.user?.id);
-      
-      // Debug: verificar roles do usuário
-      const { data: roles } = await supabase
+      const { data: sessionRes } = await supabase.auth.getSession();
+      const userId = sessionRes?.session?.user?.id;
+
+      if (!userId) {
+        throw new Error("Você precisa estar logado para ver solicitações.");
+      }
+
+      // Verifica permissão via roles (mesma regra do has_full_access())
+      const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", session?.session?.user?.id || "");
-      console.log("[SolicitacoesMembrosTab] User roles:", roles);
+        .eq("user_id", userId)
+        .in("role", ["admin", "pastor_geral", "pastor_auxiliar"]);
+
+      if (rolesError) throw rolesError;
+      if (!roles || roles.length === 0) {
+        throw new Error("Seu usuário não tem permissão para ver solicitações.");
+      }
 
       let query = supabase
         .from("member_requests")
@@ -88,7 +96,6 @@ const SolicitacoesMembrosTab = () => {
       }
 
       const { data, error } = await query;
-      console.log("[SolicitacoesMembrosTab] Requests found:", data?.length, "Error:", error);
       if (error) throw error;
       return data as MemberRequest[];
     },
@@ -206,6 +213,21 @@ const SolicitacoesMembrosTab = () => {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
+
+  if (error) {
+    return (
+      <div className="py-12">
+        <Card>
+          <CardHeader>
+            <CardTitle>Não foi possível carregar as solicitações</CardTitle>
+            <CardDescription>
+              {error instanceof Error ? error.message : String(error)}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
