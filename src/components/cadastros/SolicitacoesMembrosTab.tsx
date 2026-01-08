@@ -67,6 +67,17 @@ const SolicitacoesMembrosTab = () => {
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["member-requests", statusFilter],
     queryFn: async () => {
+      // Debug: verificar sessão
+      const { data: session } = await supabase.auth.getSession();
+      console.log("[SolicitacoesMembrosTab] Session:", session?.session?.user?.id);
+      
+      // Debug: verificar roles do usuário
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session?.session?.user?.id || "");
+      console.log("[SolicitacoesMembrosTab] User roles:", roles);
+
       let query = supabase
         .from("member_requests")
         .select("*")
@@ -77,6 +88,7 @@ const SolicitacoesMembrosTab = () => {
       }
 
       const { data, error } = await query;
+      console.log("[SolicitacoesMembrosTab] Requests found:", data?.length, "Error:", error);
       if (error) throw error;
       return data as MemberRequest[];
     },
