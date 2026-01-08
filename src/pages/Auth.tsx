@@ -39,7 +39,7 @@ const signupSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   cpf: z.string().optional(),
-  perfil_solicitado: z.enum(["membro", "lider", "ministerial"]),
+  perfil_solicitado: z.enum(["membro", "lider_ministerio", "integrante_ministerio"]),
   ministerio_ids: z.array(z.string()).optional(),
 });
 
@@ -871,8 +871,8 @@ const Auth = () => {
                     <div className="space-y-3">
                       {[
                         { value: "membro", label: "Membro", description: "Acesso básico para visualização" },
-                        { value: "lider", label: "Líder", description: "Acesso para líderes de célula ou ministério" },
-                        { value: "ministerial", label: "Ministerial", description: "Acesso aos ministérios selecionados" },
+                        { value: "integrante_ministerio", label: "Integrante de Ministério", description: "Visualização do ministério (sem edição)" },
+                        { value: "lider_ministerio", label: "Líder de Ministério", description: "Acesso completo ao ministério" },
                       ].map((perfil) => (
                         <div
                           key={perfil.value}
@@ -881,7 +881,7 @@ const Auth = () => {
                               ? "border-secondary bg-secondary/10"
                               : "border-border hover:border-secondary/50"
                           }`}
-                          onClick={() => setSignupData({ ...signupData, perfil_solicitado: perfil.value as "membro" | "lider" | "ministerial" })}
+                          onClick={() => setSignupData({ ...signupData, perfil_solicitado: perfil.value as "membro" | "lider_ministerio" | "integrante_ministerio" })}
                         >
                           <div className="flex items-center gap-3">
                             <div
@@ -901,7 +901,7 @@ const Auth = () => {
                     </div>
                   </div>
 
-                  {signupData.perfil_solicitado === "ministerial" && ministries.length > 0 && (
+                  {(signupData.perfil_solicitado === "lider_ministerio" || signupData.perfil_solicitado === "integrante_ministerio") && ministries.length > 0 && (
                     <div className="space-y-3">
                       <Label>Ministérios</Label>
                       <p className="text-sm text-muted-foreground">
