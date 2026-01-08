@@ -175,7 +175,14 @@ const MembrosTab = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // Deletar registros relacionados em todas as tabelas que referenciam members
+      // Limpar referências (FK) onde faz sentido manter o registro histórico
+      await supabase.from("evangelizacao_frentes").update({ lider_id: null }).eq("lider_id", id);
+      await supabase.from("kids_escalas").update({ lider_id: null }).eq("lider_id", id);
+      await supabase.from("impacto_departamentos").update({ lider_id: null }).eq("lider_id", id);
+      await supabase.from("acao_social_ajudas").update({ registrado_por: null }).eq("registrado_por", id);
+      await supabase.from("kids_presencas").update({ registrado_por: null }).eq("registrado_por", id);
+
+      // Deletar registros diretamente vinculados ao membro
       await supabase.from("member_functions").delete().eq("member_id", id);
       await supabase.from("ministerio_integrantes").delete().eq("member_id", id);
       await supabase.from("candidaturas_ministerio").delete().eq("member_id", id);
@@ -185,12 +192,21 @@ const MembrosTab = () => {
       await supabase.from("inscricoes_eventos").delete().eq("member_id", id);
       await supabase.from("kids_presencas").delete().eq("member_id", id);
       await supabase.from("kids_responsaveis").delete().eq("responsavel_member_id", id);
+      await supabase.from("kids_lideres").delete().eq("member_id", id);
       await supabase.from("impacto_inscricoes").delete().eq("member_id", id);
       await supabase.from("impacto_equipe_membros").delete().eq("member_id", id);
       await supabase.from("evangelizacao_frentes_membros").delete().eq("membro_id", id);
       await supabase.from("servico_tarefa_voluntarios").delete().eq("member_id", id);
       await supabase.from("missoes_mocambique_contribuintes").delete().eq("member_id", id);
-      
+      await supabase.from("user_access_requests").delete().eq("member_id", id);
+      await supabase.from("member_requests").delete().eq("member_id", id);
+
+      // Relacionamentos de casais (mantém histórico do casal, mas remove o vínculo)
+      await supabase.from("casais_inscritos").update({ membro_feminino_id: null }).eq("membro_feminino_id", id);
+      await supabase.from("casais_inscritos").update({ membro_masculino_id: null }).eq("membro_masculino_id", id);
+      await supabase.from("casais_lideres").update({ membro_feminino_id: null }).eq("membro_feminino_id", id);
+      await supabase.from("casais_lideres").update({ membro_masculino_id: null }).eq("membro_masculino_id", id);
+
       const { error } = await supabase.from("members").delete().eq("id", id);
       if (error) throw error;
     },
@@ -199,8 +215,9 @@ const MembrosTab = () => {
       toast({ title: "Membro excluído com sucesso!" });
       setDeletingMemberId(null);
     },
-    onError: () => {
-      toast({ title: "Erro ao excluir membro", variant: "destructive" });
+    onError: (err: any) => {
+      const message = err?.message || "Erro ao excluir membro";
+      toast({ title: message, variant: "destructive" });
     },
   });
 
