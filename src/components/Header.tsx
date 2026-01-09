@@ -20,7 +20,6 @@ const Header = () => {
     { label: "Avisos", href: "#avisos" },
     { label: "Programação", href: "#programacao" },
     { label: "Casas Refúgio", href: "#casas-refugio" },
-    { label: "App", href: "#app" },
     { label: "Contato", href: "#contato" },
   ];
 
@@ -77,8 +76,9 @@ const Header = () => {
             <Button
               variant="secondary"
               className="font-heading font-semibold shadow-red"
+              onClick={() => window.location.href = '/auth'}
             >
-              Visite-nos
+              Entrar
             </Button>
           </div>
 
@@ -110,8 +110,9 @@ const Header = () => {
               <Button
                 variant="secondary"
                 className="mt-2 font-heading font-semibold shadow-red"
+                onClick={() => window.location.href = '/auth'}
               >
-                Visite-nos
+                Entrar
               </Button>
             </div>
           </nav>

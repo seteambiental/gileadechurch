@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { LogIn, User, UserPlus } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -93,7 +92,6 @@ const scheduleItems = [
 ];
 
 const Index = () => {
-  const navigate = useNavigate();
   const [memberRequestOpen, setMemberRequestOpen] = useState(false);
 
   return (
@@ -142,15 +140,6 @@ const Index = () => {
                 <UserPlus className="w-5 h-5 mr-2" />
                 Quero fazer parte
               </Button>
-              <Button
-                size="lg"
-                variant="hero"
-                className="font-heading font-semibold text-lg px-8 py-6"
-                onClick={() => navigate("/auth")}
-              >
-                <LogIn className="w-5 h-5 mr-2" />
-                Acessar App
-              </Button>
             </div>
           </div>
         </div>
@@ -163,39 +152,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* App Access CTA Section */}
-      <section id="app" className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center">
-            <SectionTitle
-              title="Acesso ao App"
-              subtitle="Área restrita para membros e líderes da Igreja Gilead"
-              centered
-            />
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button
-                size="lg"
-                variant="secondary"
-                className="font-heading font-semibold text-lg px-8 py-6 shadow-gold animate-pulse-gold"
-                onClick={() => navigate("/auth")}
-              >
-                <LogIn className="w-5 h-5 mr-2" />
-                Entrar no App
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="font-heading font-semibold text-lg px-8 py-6"
-                onClick={() => navigate("/portal")}
-              >
-                <User className="w-5 h-5 mr-2" />
-                Portal do Membro
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Announcements Section */}
       <section id="avisos" className="py-20 bg-muted/50">
