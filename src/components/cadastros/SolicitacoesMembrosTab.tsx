@@ -74,30 +74,15 @@ const SolicitacoesMembrosTab = () => {
         throw new Error("Você precisa estar logado para ver solicitações.");
       }
 
-      // Verifica permissão via roles (mesma regra do has_full_access())
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .in("role", ["admin", "pastor_geral", "pastor_auxiliar"]);
+      // Busca via função backend para evitar qualquer bloqueio de visibilidade (RLS)
+      const { data, error } = await supabase.functions.invoke("listar-solicitacoes-membro", {
+        body: { status: statusFilter },
+      });
 
-      if (rolesError) throw rolesError;
-      if (!roles || roles.length === 0) {
-        throw new Error("Seu usuário não tem permissão para ver solicitações.");
-      }
-
-      let query = supabase
-        .from("member_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (statusFilter) {
-        query = query.eq("status", statusFilter);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
-      return data as MemberRequest[];
+      if (!data?.success) throw new Error(data?.error ?? "Não foi possível carregar as solicitações.");
+
+      return (data.data ?? []) as MemberRequest[];
     },
   });
 
