@@ -323,6 +323,13 @@ const Auth = () => {
         }
       }
 
+      const cpfClean = signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null;
+      
+      // Verifica se é membro simples (sem ministérios) = aprovação automática
+      const isMemberOnly = signupData.perfil_solicitado === "membro";
+      const hasMinistries = (signupData.ministerio_ids?.length || 0) > 0;
+      const needsManualApproval = !isMemberOnly || hasMinistries;
+
       const requestPayload = {
         full_name: signupData.full_name!,
         email: signupData.email!,
@@ -336,7 +343,7 @@ const Auth = () => {
         neighborhood: signupData.neighborhood || null,
         city: signupData.city || null,
         state: signupData.state || null,
-        cpf: signupData.cpf ? signupData.cpf.replace(/\D/g, "") : null,
+        cpf: cpfClean,
         photo_url: photoUrl,
         status: "pendente",
       };
@@ -347,10 +354,17 @@ const Auth = () => {
         throw requestError;
       }
 
-      toast({
-        title: "Solicitação enviada!",
-        description: "Seu cadastro foi enviado para análise. Um administrador irá aprovar e você receberá as instruções de acesso.",
-      });
+      if (needsManualApproval) {
+        toast({
+          title: "Solicitação enviada!",
+          description: "Seu cadastro foi enviado para análise. Um administrador irá aprovar e você receberá as instruções de acesso.",
+        });
+      } else {
+        toast({
+          title: "Solicitação enviada!",
+          description: "Seu cadastro de membro foi enviado e será processado em breve.",
+        });
+      }
 
       // Reset form and go to login
       setSignupData({
@@ -382,7 +396,9 @@ const Auth = () => {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     if (validateSignupStep(step)) {
       setStep(step + 1);
       // Scroll to top when changing steps
@@ -958,7 +974,7 @@ const Auth = () => {
                 )}
 
                 {step < 3 ? (
-                  <Button type="button" variant="secondary" onClick={nextStep}>
+                  <Button type="button" variant="secondary" onClick={(e) => nextStep(e)}>
                     Próximo
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
