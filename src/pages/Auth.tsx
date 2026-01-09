@@ -665,25 +665,32 @@ const Auth = () => {
 
       setIsLoading(true);
       try {
-        // Extract first name (can be composite)
-        const firstName = preCheckName.trim().split(" ")[0].toLowerCase();
+        // Extract first name (can be composite) - use full input for matching
+        const searchName = preCheckName.trim().toLowerCase();
         
-        // Check in members table
+        // Check in members table - search by first name matching start of full_name
         const { data: members } = await supabase
           .from("members")
           .select("id, full_name, email, birth_date")
-          .ilike("full_name", `${firstName}%`);
+          .eq("birth_date", preCheckBirthDate);
         
         // Also check in member_requests for pending requests
         const { data: requests } = await supabase
           .from("member_requests")
           .select("id, full_name, email, birth_date")
-          .ilike("full_name", `${firstName}%`)
+          .eq("birth_date", preCheckBirthDate)
           .eq("status", "pendente");
 
-        // Check if any match the birth date
-        const matchingMember = members?.find(m => m.birth_date === preCheckBirthDate);
-        const matchingRequest = requests?.find(r => r.birth_date === preCheckBirthDate);
+        // Check if any match the first name (case-insensitive)
+        const matchingMember = members?.find(m => {
+          const memberFirstName = m.full_name?.split(" ")[0]?.toLowerCase() || "";
+          return memberFirstName === searchName || m.full_name?.toLowerCase().startsWith(searchName);
+        });
+        
+        const matchingRequest = requests?.find(r => {
+          const requestFirstName = r.full_name?.split(" ")[0]?.toLowerCase() || "";
+          return requestFirstName === searchName || r.full_name?.toLowerCase().startsWith(searchName);
+        });
 
         if (matchingMember) {
           // User already exists - offer password recovery
