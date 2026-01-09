@@ -36,21 +36,33 @@ serve(async (req) => {
       });
     }
 
-    // 2) Autoriza: precisa ter acesso completo (mesma regra do painel)
-    const { data: canAccess, error: accessErr } = await userClient.rpc("has_full_access");
-    if (accessErr) throw accessErr;
+    // 2) Usa service-role para checar permissões (evita problemas de contexto RPC)
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
-    if (!canAccess) {
-      return new Response(JSON.stringify({ error: "Sem permissão" }), {
+    const userId = userRes.user.id;
+
+    // Checa se o usuário tem role admin/pastor
+    const { data: roles, error: rolesErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .in("role", ["admin", "pastor_geral", "pastor_auxiliar"])
+      .limit(1);
+
+    if (rolesErr) {
+      console.error("Erro ao verificar roles:", rolesErr);
+      throw rolesErr;
+    }
+
+    if (!roles || roles.length === 0) {
+      console.log("Usuário sem permissão:", userId);
+      return new Response(JSON.stringify({ error: "Sem permissão", userId }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // 3) Usa service-role só para ler os dados (contorna RLS com segurança)
-    const supabaseAdmin = createClient(supabaseUrl, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
     const status = (body.status ?? "pendente") as string;
