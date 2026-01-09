@@ -59,6 +59,10 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [isPreCheck, setIsPreCheck] = useState(false); // New state for pre-registration check
+  const [preCheckName, setPreCheckName] = useState("");
+  const [preCheckBirthDate, setPreCheckBirthDate] = useState("");
+  const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
   const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
 
   // Login fields
@@ -618,7 +622,10 @@ const Auth = () => {
                 type="button"
                 onClick={() => {
                   setIsLogin(false);
-                  setStep(1);
+                  setIsPreCheck(true);
+                  setPreCheckName("");
+                  setPreCheckBirthDate("");
+                  setExistingMemberEmail(null);
                   setErrors({});
                 }}
                 className="text-sm text-secondary hover:underline"
@@ -634,6 +641,201 @@ const Auth = () => {
                 className="text-sm text-muted-foreground hover:text-foreground"
               >
                 ← Voltar para a homepage
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Pre-check form: verify if user already exists before showing full signup form
+  if (isPreCheck) {
+    const handlePreCheck = async (e: React.FormEvent) => {
+      e.preventDefault();
+      
+      const fieldErrors: Record<string, string> = {};
+      if (!preCheckName.trim()) fieldErrors.preCheckName = "Nome é obrigatório";
+      if (!preCheckBirthDate) fieldErrors.preCheckBirthDate = "Data de nascimento é obrigatória";
+      
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        // Extract first name (can be composite)
+        const firstName = preCheckName.trim().split(" ")[0].toLowerCase();
+        
+        // Check in members table
+        const { data: members } = await supabase
+          .from("members")
+          .select("id, full_name, email, birth_date")
+          .ilike("full_name", `${firstName}%`);
+        
+        // Also check in member_requests for pending requests
+        const { data: requests } = await supabase
+          .from("member_requests")
+          .select("id, full_name, email, birth_date")
+          .ilike("full_name", `${firstName}%`)
+          .eq("status", "pendente");
+
+        // Check if any match the birth date
+        const matchingMember = members?.find(m => m.birth_date === preCheckBirthDate);
+        const matchingRequest = requests?.find(r => r.birth_date === preCheckBirthDate);
+
+        if (matchingMember) {
+          // User already exists - offer password recovery
+          setExistingMemberEmail(matchingMember.email || null);
+          toast({
+            title: "Cadastro encontrado!",
+            description: matchingMember.email 
+              ? "Já existe um cadastro com esses dados. Você pode recuperar sua senha."
+              : "Já existe um cadastro com esses dados, mas não há email associado. Entre em contato com a secretaria.",
+          });
+        } else if (matchingRequest) {
+          // User has a pending request
+          toast({
+            variant: "destructive",
+            title: "Solicitação em análise",
+            description: "Já existe uma solicitação de cadastro com esses dados aguardando aprovação.",
+          });
+        } else {
+          // User doesn't exist - proceed to registration form
+          setSignupData({
+            ...signupData,
+            full_name: preCheckName.trim(),
+            birth_date: preCheckBirthDate,
+          });
+          setIsPreCheck(false);
+          setStep(1);
+          toast({
+            title: "Prossiga com o cadastro",
+            description: "Não encontramos cadastro com esses dados. Complete seu cadastro abaixo.",
+          });
+        }
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao verificar",
+          description: error?.message || "Não foi possível verificar o cadastro.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const handleSendPasswordRecovery = async () => {
+      if (!existingMemberEmail) return;
+      
+      setIsLoading(true);
+      try {
+        const { error } = await resetPassword(existingMemberEmail);
+        if (error) {
+          toast({ variant: "destructive", title: "Erro", description: error.message });
+        } else {
+          toast({
+            title: "Email enviado!",
+            description: `Verifique a caixa de entrada de ${existingMemberEmail} para redefinir sua senha.`,
+          });
+          setIsPreCheck(false);
+          setIsLogin(true);
+          setExistingMemberEmail(null);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
+              <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                {existingMemberEmail ? "Cadastro Encontrado" : "Verificar Cadastro"}
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                {existingMemberEmail 
+                  ? "Já existe um cadastro com esses dados."
+                  : "Informe seu nome e data de nascimento para verificarmos se você já possui cadastro."}
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {existingMemberEmail ? (
+              <div className="space-y-4">
+                <p className="text-center text-sm text-muted-foreground">
+                  Email cadastrado: <strong>{existingMemberEmail}</strong>
+                </p>
+                <Button
+                  onClick={handleSendPasswordRecovery}
+                  className="w-full"
+                  variant="secondary"
+                  disabled={isLoading}
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Enviar email para recuperar senha
+                </Button>
+                <Button
+                  onClick={() => {
+                    setExistingMemberEmail(null);
+                    setPreCheckName("");
+                    setPreCheckBirthDate("");
+                  }}
+                  className="w-full"
+                  variant="outline"
+                >
+                  Tentar com outros dados
+                </Button>
+              </div>
+            ) : (
+              <form onSubmit={handlePreCheck} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="preCheckName">Nome (primeiro nome ou nome composto)</Label>
+                  <Input
+                    id="preCheckName"
+                    placeholder="Ex: Maria ou Ana Paula"
+                    value={preCheckName}
+                    onChange={(e) => setPreCheckName(e.target.value)}
+                    className={errors.preCheckName ? "border-destructive" : ""}
+                  />
+                  {errors.preCheckName && <p className="text-sm text-destructive">{errors.preCheckName}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="preCheckBirthDate">Data de Nascimento</Label>
+                  <Input
+                    id="preCheckBirthDate"
+                    type="date"
+                    value={preCheckBirthDate}
+                    onChange={(e) => setPreCheckBirthDate(e.target.value)}
+                    className={errors.preCheckBirthDate ? "border-destructive" : ""}
+                  />
+                  {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
+                </div>
+                <Button type="submit" className="w-full" variant="secondary" disabled={isLoading}>
+                  {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Verificar
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPreCheck(false);
+                  setIsLogin(true);
+                  setExistingMemberEmail(null);
+                  setErrors({});
+                }}
+                className="text-sm text-secondary hover:underline"
+              >
+                ← Voltar para o login
               </button>
             </div>
           </CardContent>
