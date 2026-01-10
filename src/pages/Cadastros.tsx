@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
 import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus } from "lucide-react";
@@ -15,8 +15,11 @@ import AprovacaoUsuariosTab from "@/components/cadastros/AprovacaoUsuariosTab";
 import SolicitacoesMembrosTab from "@/components/cadastros/SolicitacoesMembrosTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+
 const Cadastros = () => {
   const isBypassed = isAuthBypassed();
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
   
   const handleSignOut = async () => {
     setAuthBypassed(false);
@@ -25,7 +28,7 @@ const Cadastros = () => {
   };
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("membros");
+  const [activeTab, setActiveTab] = useState(tabParam || "membros");
 
   // Check if user is master
   const { data: isMaster } = useQuery({

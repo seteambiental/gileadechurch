@@ -52,7 +52,7 @@ const HomepageConfigTab = () => {
             Dados da igreja e horários de culto exibidos no rodapé
           </p>
         </div>
-        <Button variant="outline" onClick={() => navigate("/cadastros")}>
+        <Button variant="outline" onClick={() => navigate("/cadastros?tab=igreja")}>
           <ExternalLink className="w-4 h-4 mr-2" />
           Editar Dados da Igreja
         </Button>
