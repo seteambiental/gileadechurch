@@ -1,7 +1,7 @@
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useEffect, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 
 // Fix for default marker icons in Leaflet with bundlers
 // This needs to be done before any markers are created
@@ -46,7 +46,11 @@ const MapCenterHandler = ({ center }: { center: [number, number] }) => {
   return null;
 };
 
-const LeafletMapComponent = ({ casas, center, onSelectCasa }: LeafletMapComponentProps) => {
+const LeafletMapComponent = memo(function LeafletMapComponent({ 
+  casas, 
+  center, 
+  onSelectCasa 
+}: LeafletMapComponentProps) {
   return (
     <MapContainer
       center={center}
@@ -91,6 +95,6 @@ const LeafletMapComponent = ({ casas, center, onSelectCasa }: LeafletMapComponen
       ))}
     </MapContainer>
   );
-};
+});
 
 export default LeafletMapComponent;

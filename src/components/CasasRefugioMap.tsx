@@ -23,8 +23,10 @@ interface CasaRefugio {
   longitude?: number;
 }
 
-// Lazy load do componente de mapa para evitar problemas de SSR
-const LeafletMapComponent = lazy(() => import("./LeafletMapComponent"));
+// Lazy load do componente de mapa para evitar problemas de SSR e Context
+const LeafletMapComponent = lazy(() => 
+  import("./LeafletMapComponent").then((module) => ({ default: module.default }))
+);
 
 const CasasRefugioMap = () => {
   const [cidadeFilter, setCidadeFilter] = useState<string>("all");
