@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, lazy, Suspense } from "react";
+import React, { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,8 +23,40 @@ interface CasaRefugio {
   longitude?: number;
 }
 
+class MapErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    // Mantém o app funcionando mesmo se o mapa quebrar.
+    console.error("Erro ao renderizar mapa Leaflet:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-96 bg-muted/50 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>Não foi possível carregar o mapa agora.</p>
+            <p className="text-sm mt-1">Use os filtros e a lista abaixo para encontrar uma casa.</p>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 // Lazy load do componente de mapa para evitar problemas de SSR e Context
-const LeafletMapComponent = lazy(() => 
+const LeafletMapComponent = lazy(() =>
   import("./LeafletMapComponent").then((module) => ({ default: module.default }))
 );
 
@@ -163,19 +195,21 @@ const CasasRefugioMap = () => {
       {/* Mapa */}
       <div className="rounded-2xl overflow-hidden shadow-elegant border border-border">
         {casasComCoordenadas.length > 0 ? (
-          <Suspense
-            fallback={
-              <div className="h-96 bg-muted/50 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-secondary" />
-              </div>
-            }
-          >
-            <LeafletMapComponent
-              casas={casasComCoordenadas}
-              center={mapCenter}
-              onSelectCasa={setSelectedCasaId}
-            />
-          </Suspense>
+          <MapErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="h-96 bg-muted/50 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+                </div>
+              }
+            >
+              <LeafletMapComponent
+                casas={casasComCoordenadas}
+                center={mapCenter}
+                onSelectCasa={setSelectedCasaId}
+              />
+            </Suspense>
+          </MapErrorBoundary>
         ) : (
           <div className="h-96 bg-muted/50 flex items-center justify-center">
             <div className="text-center text-muted-foreground">
