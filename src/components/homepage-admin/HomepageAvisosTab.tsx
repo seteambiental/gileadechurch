@@ -1,0 +1,396 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical } from "lucide-react";
+
+interface Aviso {
+  id: string;
+  titulo: string;
+  descricao: string;
+  data?: string;
+  horario?: string;
+  tipo: "event" | "urgent" | "info";
+  ativo: boolean;
+  ordem: number;
+}
+
+interface EventoAgenda {
+  id: string;
+  titulo: string;
+  data_evento: string;
+  hora_inicio?: string;
+  tipo_evento: string;
+  descricao?: string;
+}
+
+const tipoIcons = {
+  event: Calendar,
+  urgent: AlertTriangle,
+  info: Info,
+};
+
+const tipoLabels = {
+  event: "Evento",
+  urgent: "Urgente",
+  info: "Informativo",
+};
+
+const tipoColors = {
+  event: "bg-secondary text-secondary-foreground",
+  urgent: "bg-destructive text-destructive-foreground",
+  info: "bg-primary text-primary-foreground",
+};
+
+const HomepageAvisosTab = () => {
+  const queryClient = useQueryClient();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingAviso, setEditingAviso] = useState<Aviso | null>(null);
+  const [formData, setFormData] = useState({
+    titulo: "",
+    descricao: "",
+    data: "",
+    horario: "",
+    tipo: "info" as "event" | "urgent" | "info",
+  });
+
+  // Buscar avisos avulsos
+  const { data: avisos, isLoading: loadingAvisos } = useQuery({
+    queryKey: ["homepage-avisos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_avisos")
+        .select("*")
+        .order("ordem", { ascending: true });
+      if (error) throw error;
+      return data as Aviso[];
+    },
+  });
+
+  // Buscar eventos da agenda que podem virar avisos
+  const { data: eventosAgenda } = useQuery({
+    queryKey: ["eventos-agenda-avisos"],
+    queryFn: async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, hora_inicio, tipo_evento, descricao")
+        .eq("ativo", true)
+        .gte("data_evento", today)
+        .order("data_evento", { ascending: true })
+        .limit(20);
+      if (error) throw error;
+      return data as EventoAgenda[];
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Omit<Aviso, "id" | "ativo" | "ordem">) => {
+      const maxOrdem = avisos?.reduce((max, a) => Math.max(max, a.ordem), 0) || 0;
+      const { error } = await supabase
+        .from("homepage_avisos")
+        .insert({ ...data, ordem: maxOrdem + 1 });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Aviso criado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+      setFormOpen(false);
+      resetForm();
+    },
+    onError: () => {
+      toast.error("Erro ao criar aviso");
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<Aviso> & { id: string }) => {
+      const { error } = await supabase
+        .from("homepage_avisos")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Aviso atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+      setFormOpen(false);
+      setEditingAviso(null);
+      resetForm();
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar aviso");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("homepage_avisos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Aviso removido!");
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+    },
+    onError: () => {
+      toast.error("Erro ao remover aviso");
+    },
+  });
+
+  const resetForm = () => {
+    setFormData({
+      titulo: "",
+      descricao: "",
+      data: "",
+      horario: "",
+      tipo: "info",
+    });
+  };
+
+  const handleEdit = (aviso: Aviso) => {
+    setEditingAviso(aviso);
+    setFormData({
+      titulo: aviso.titulo,
+      descricao: aviso.descricao,
+      data: aviso.data || "",
+      horario: aviso.horario || "",
+      tipo: aviso.tipo,
+    });
+    setFormOpen(true);
+  };
+
+  const handleAddFromEvento = (evento: EventoAgenda) => {
+    setFormData({
+      titulo: evento.titulo,
+      descricao: evento.descricao || "",
+      data: format(new Date(evento.data_evento), "dd/MM/yyyy"),
+      horario: evento.hora_inicio || "",
+      tipo: "event",
+    });
+    setFormOpen(true);
+  };
+
+  const handleSubmit = () => {
+    if (editingAviso) {
+      updateMutation.mutate({ id: editingAviso.id, ...formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const handleToggleAtivo = (aviso: Aviso) => {
+    updateMutation.mutate({ id: aviso.id, ativo: !aviso.ativo });
+  };
+
+  if (loadingAvisos) {
+    return <div className="text-center py-8">Carregando...</div>;
+  }
+
+  const Icon = tipoIcons[formData.tipo];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-xl font-heading font-bold">Avisos da Homepage</h2>
+          <p className="text-sm text-muted-foreground">
+            Gerencie os avisos exibidos na página inicial
+          </p>
+        </div>
+        <Dialog open={formOpen} onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) {
+            setEditingAviso(null);
+            resetForm();
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Aviso
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingAviso ? "Editar Aviso" : "Novo Aviso"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Tipo do Aviso</Label>
+                <Select
+                  value={formData.tipo}
+                  onValueChange={(value: "event" | "urgent" | "info") =>
+                    setFormData(prev => ({ ...prev, tipo: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="event">📅 Evento</SelectItem>
+                    <SelectItem value="urgent">⚠️ Urgente</SelectItem>
+                    <SelectItem value="info">ℹ️ Informativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Título</Label>
+                <Input
+                  value={formData.titulo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
+                  placeholder="Título do aviso"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Descrição</Label>
+                <Textarea
+                  value={formData.descricao}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
+                  placeholder="Descrição do aviso"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input
+                    value={formData.data}
+                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
+                    placeholder="Ex: 25/12/2024"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Horário</Label>
+                  <Input
+                    value={formData.horario}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
+                    placeholder="Ex: 19h"
+                  />
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleSubmit} 
+                className="w-full"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingAviso ? "Salvar Alterações" : "Criar Aviso"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Eventos da Agenda que podem virar avisos */}
+      {eventosAgenda && eventosAgenda.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Adicionar da Agenda</CardTitle>
+            <CardDescription>
+              Clique em um evento para adicioná-lo como aviso
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2 flex-wrap">
+              {eventosAgenda.slice(0, 6).map((evento) => (
+                <Button
+                  key={evento.id}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleAddFromEvento(evento)}
+                  className="text-xs"
+                >
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {evento.titulo}
+                  <span className="text-muted-foreground ml-1">
+                    ({format(new Date(evento.data_evento), "dd/MM")})
+                  </span>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Lista de Avisos */}
+      <div className="space-y-3">
+        {!avisos || avisos.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              Nenhum aviso cadastrado ainda
+            </CardContent>
+          </Card>
+        ) : (
+          avisos.map((aviso) => {
+            const AvisoIcon = tipoIcons[aviso.tipo];
+            return (
+              <Card key={aviso.id} className={!aviso.ativo ? "opacity-50" : ""}>
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-muted-foreground cursor-grab" />
+                      <div className={`p-2 rounded-lg ${tipoColors[aviso.tipo]}`}>
+                        <AvisoIcon className="w-5 h-5" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold truncate">{aviso.titulo}</h4>
+                        <Badge variant="outline" className="text-xs">
+                          {tipoLabels[aviso.tipo]}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {aviso.descricao}
+                      </p>
+                      {(aviso.data || aviso.horario) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {aviso.data} {aviso.horario && `• ${aviso.horario}`}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={aviso.ativo}
+                        onCheckedChange={() => handleToggleAtivo(aviso)}
+                      />
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(aviso)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => deleteMutation.mutate(aviso.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default HomepageAvisosTab;
