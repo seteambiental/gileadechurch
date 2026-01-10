@@ -421,6 +421,58 @@ export type Database = {
         }
         Relationships: []
       }
+      aniversarios_enviados: {
+        Row: {
+          created_at: string
+          data_envio: string
+          erro_mensagem: string | null
+          id: string
+          member_id: string | null
+          novo_convertido_id: string | null
+          sucesso: boolean
+        }
+        Insert: {
+          created_at?: string
+          data_envio?: string
+          erro_mensagem?: string | null
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          sucesso?: boolean
+        }
+        Update: {
+          created_at?: string
+          data_envio?: string
+          erro_mensagem?: string | null
+          id?: string
+          member_id?: string | null
+          novo_convertido_id?: string | null
+          sucesso?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aniversarios_enviados_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aniversarios_enviados_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aniversarios_enviados_novo_convertido_id_fkey"
+            columns: ["novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidaturas_ministerio: {
         Row: {
           created_at: string

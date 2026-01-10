@@ -14,6 +14,7 @@ import {
   Building2,
   Edit2,
   Church,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -284,12 +285,27 @@ const MemberDetails = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {member.whatsapp && (
-                <div className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">WhatsApp</p>
-                    <p className="text-foreground">{formatPhone(member.whatsapp)}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <Phone className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">WhatsApp</p>
+                      <p className="text-foreground">{formatPhone(member.whatsapp)}</p>
+                    </div>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                    onClick={() => {
+                      const phone = member.whatsapp?.replace(/\D/g, "");
+                      const formattedPhone = phone?.startsWith("55") ? phone : `55${phone}`;
+                      window.open(`https://wa.me/${formattedPhone}`, "_blank");
+                    }}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-1" />
+                    Enviar
+                  </Button>
                 </div>
               )}
               {member.email && (
