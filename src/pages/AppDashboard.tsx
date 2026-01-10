@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
 import {
@@ -78,6 +80,22 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
 
+  // Buscar logo da igreja
+  const { data: igrejaConfig } = useQuery({
+    queryKey: ["igreja-config-app"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("igreja_config")
+        .select("logo_dark_url, nome_fantasia")
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+  });
+
+  const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
+
   useEffect(() => {
     const bypassed = isAuthBypassed();
     setIsBypassed(bypassed);
@@ -106,46 +124,42 @@ const AppDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img 
-              src={logoGileade} 
-              alt="Gileade Church" 
-              className="w-10 h-10 rounded-full object-cover shadow-red"
-            />
-            <div>
-              <h1 className="font-heading font-bold text-lg text-foreground">
-                Gileade Church
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                {user?.email ?? "Acesso temporário (sem login)"}
-              </p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-background pt-56">
+      {/* Header igual à homepage, sem menu de navegação */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surfaceInverse text-primary-foreground">
+        <div className="container mx-auto px-4">
+          <div className="relative h-56 flex flex-col items-center justify-center">
+            {/* Logo centralizada */}
+            <a href="/" className="flex items-center">
+              <img
+                src={logoUrl}
+                alt={igrejaConfig?.nome_fantasia || "Logo"}
+                className="h-44 md:h-48 lg:h-52 object-contain"
+              />
+            </a>
 
-          <div className="flex items-center gap-2">
-            {!user && isBypassed && (
+            {/* Botão Sair no canto direito */}
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              {!user && isBypassed && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/auth")}
+                  className="text-secondary border-secondary hover:bg-secondary/10"
+                >
+                  Fazer Login
+                </Button>
+              )}
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => navigate("/auth")}
-                className="text-secondary border-secondary hover:bg-secondary/10"
+                onClick={handleSignOut}
+                className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
               >
-                Fazer Login
+                <LogOut className="w-4 h-4 mr-2" />
+                {user ? "Sair" : "Encerrar"}
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              {user ? "Sair" : "Encerrar Sessão"}
-            </Button>
+            </div>
           </div>
         </div>
       </header>
