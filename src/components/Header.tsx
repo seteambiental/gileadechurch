@@ -17,7 +17,7 @@ const Header = () => {
         .from("igreja_config")
         .select("logo_dark_url, nome_fantasia")
         .limit(1)
-        .single();
+        .maybeSingle();
       if (error) return null;
       return data;
     },
@@ -39,7 +39,7 @@ const Header = () => {
     { label: "Contato", href: "#contato" },
   ];
 
-  const logoUrl = igrejaConfig?.logo_dark_url || logoGileade;
+  const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
   return (
     <header
