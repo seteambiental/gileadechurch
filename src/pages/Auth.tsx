@@ -665,49 +665,45 @@ const Auth = () => {
 
       setIsLoading(true);
       try {
-        // Extract first name (can be composite) - use full input for matching
-        const searchName = preCheckName.trim().toLowerCase();
-        
-        // Check in members table - search by first name matching start of full_name
-        const { data: members } = await supabase
-          .from("members")
-          .select("id, full_name, email, birth_date")
-          .eq("birth_date", preCheckBirthDate);
-        
-        // Also check in member_requests for pending requests
-        const { data: requests } = await supabase
-          .from("member_requests")
-          .select("id, full_name, email, birth_date")
-          .eq("birth_date", preCheckBirthDate)
-          .eq("status", "pendente");
-
-        // Check if any match the first name (case-insensitive)
-        const matchingMember = members?.find(m => {
-          const memberFirstName = m.full_name?.split(" ")[0]?.toLowerCase() || "";
-          return memberFirstName === searchName || m.full_name?.toLowerCase().startsWith(searchName);
-        });
-        
-        const matchingRequest = requests?.find(r => {
-          const requestFirstName = r.full_name?.split(" ")[0]?.toLowerCase() || "";
-          return requestFirstName === searchName || r.full_name?.toLowerCase().startsWith(searchName);
+        // Use edge function with service role to bypass RLS
+        const { data, error } = await supabase.functions.invoke("verificar-membro-existente", {
+          body: {
+            firstName: preCheckName.trim(),
+            birthDate: preCheckBirthDate,
+          },
         });
 
-        if (matchingMember) {
-          // User already exists - offer password recovery
-          setExistingMemberEmail(matchingMember.email || null);
-          toast({
-            title: "Cadastro encontrado!",
-            description: matchingMember.email 
-              ? "Já existe um cadastro com esses dados. Você pode recuperar sua senha."
-              : "Já existe um cadastro com esses dados, mas não há email associado. Entre em contato com a secretaria.",
-          });
-        } else if (matchingRequest) {
-          // User has a pending request
-          toast({
-            variant: "destructive",
-            title: "Solicitação em análise",
-            description: "Já existe uma solicitação de cadastro com esses dados aguardando aprovação.",
-          });
+        if (error) throw error;
+
+        if (data.exists) {
+          if (data.reason === "name_birth") {
+            // User already exists - offer password recovery
+            setExistingMemberEmail(data.email || null);
+            toast({
+              title: "Cadastro encontrado!",
+              description: data.email 
+                ? "Já existe um cadastro com esses dados. Você pode recuperar sua senha."
+                : "Já existe um cadastro com esses dados, mas não há email associado. Entre em contato com a secretaria.",
+            });
+          } else if (data.reason === "name_birth_request") {
+            // User has a pending request
+            const statusMsg = data.status === "pendente" 
+              ? "Já existe uma solicitação de cadastro com esses dados aguardando aprovação."
+              : data.status === "rejeitada"
+                ? "Sua solicitação anterior foi rejeitada. Entre em contato com a secretaria."
+                : "Já existe uma solicitação de cadastro com esses dados.";
+            toast({
+              variant: "destructive",
+              title: "Solicitação encontrada",
+              description: statusMsg,
+            });
+          } else if (data.reason === "cpf" || data.reason === "cpf_request") {
+            toast({
+              variant: "destructive",
+              title: "CPF já cadastrado",
+              description: "Este CPF já está associado a um cadastro existente.",
+            });
+          }
         } else {
           // User doesn't exist - proceed to registration form
           setSignupData({
@@ -718,15 +714,16 @@ const Auth = () => {
           setIsPreCheck(false);
           setStep(1);
           toast({
-            title: "Prossiga com o cadastro",
-            description: "Não encontramos cadastro com esses dados. Complete seu cadastro abaixo.",
+            title: "Você pode prosseguir!",
+            description: "Complete seu cadastro preenchendo as informações abaixo.",
           });
         }
       } catch (error: any) {
+        console.error("Error checking user:", error);
         toast({
           variant: "destructive",
-          title: "Erro ao verificar",
-          description: error?.message || "Não foi possível verificar o cadastro.",
+          title: "Erro",
+          description: "Ocorreu um erro ao verificar os dados. Tente novamente.",
         });
       } finally {
         setIsLoading(false);

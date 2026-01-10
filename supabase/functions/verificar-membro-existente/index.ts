@@ -55,13 +55,13 @@ serve(async (req) => {
     // 1) Checagem por Primeiro Nome + Data de Nascimento (membros)
     const { data: membersByBirth, error: membersErr } = await supabaseAdmin
       .from("members")
-      .select("id, full_name")
+      .select("id, full_name, email")
       .eq("birth_date", normalizedBirthDate);
 
     if (membersErr) throw membersErr;
 
     // Verificar se algum membro tem o mesmo primeiro nome (simples ou composto)
-    const memberMatch = (membersByBirth ?? []).some((m) => {
+    const memberMatch = (membersByBirth ?? []).find((m) => {
       const memberFirstName = extractFirstName(m.full_name);
       // Se o input tem 1 palavra, verifica se o primeiro nome do membro começa com ela
       if (inputWordCount === 1) {
@@ -74,7 +74,11 @@ serve(async (req) => {
 
     if (memberMatch) {
       return new Response(
-        JSON.stringify({ exists: true, reason: "name_birth" }),
+        JSON.stringify({ 
+          exists: true, 
+          reason: "name_birth",
+          email: memberMatch.email || null
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -82,13 +86,13 @@ serve(async (req) => {
     // 2) Checagem por Primeiro Nome + Data de Nascimento (solicitações)
     const { data: reqsByBirth, error: reqsErr } = await supabaseAdmin
       .from("member_requests")
-      .select("id, full_name")
+      .select("id, full_name, status")
       .eq("birth_date", normalizedBirthDate);
 
     if (reqsErr) throw reqsErr;
 
     // Verificar se alguma solicitação tem o mesmo primeiro nome (simples ou composto)
-    const reqMatch = (reqsByBirth ?? []).some((r) => {
+    const reqMatch = (reqsByBirth ?? []).find((r) => {
       const reqFirstName = extractFirstName(r.full_name);
       if (inputWordCount === 1) {
         const reqFirstWord = reqFirstName.split(/\s+/)[0];
@@ -99,7 +103,11 @@ serve(async (req) => {
 
     if (reqMatch) {
       return new Response(
-        JSON.stringify({ exists: true, reason: "name_birth_request" }),
+        JSON.stringify({ 
+          exists: true, 
+          reason: "name_birth_request",
+          status: reqMatch.status
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -108,26 +116,34 @@ serve(async (req) => {
     if (normalizedCpf.length === 11) {
       const { data: membersCpf, error: mCpfErr } = await supabaseAdmin
         .from("members")
-        .select("id")
+        .select("id, email")
         .eq("cpf", normalizedCpf)
         .limit(1);
       if (mCpfErr) throw mCpfErr;
       if (membersCpf && membersCpf.length > 0) {
         return new Response(
-          JSON.stringify({ exists: true, reason: "cpf" }),
+          JSON.stringify({ 
+            exists: true, 
+            reason: "cpf",
+            email: membersCpf[0].email || null
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
       const { data: reqCpf, error: rCpfErr } = await supabaseAdmin
         .from("member_requests")
-        .select("id")
+        .select("id, status")
         .eq("cpf", normalizedCpf)
         .limit(1);
       if (rCpfErr) throw rCpfErr;
       if (reqCpf && reqCpf.length > 0) {
         return new Response(
-          JSON.stringify({ exists: true, reason: "cpf_request" }),
+          JSON.stringify({ 
+            exists: true, 
+            reason: "cpf_request",
+            status: reqCpf[0].status
+          }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
