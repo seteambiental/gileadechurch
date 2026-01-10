@@ -33,10 +33,12 @@ import {
   ClipboardList,
   DoorOpen,
   Globe,
+  Cake,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 // Ministérios (ícones vermelhos) - ordenados alfabeticamente
@@ -79,6 +81,29 @@ const AppDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
+  const [enviandoAniversarios, setEnviandoAniversarios] = useState(false);
+
+  const handleEnviarAniversarios = async () => {
+    setEnviandoAniversarios(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("feliz-aniversario");
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data?.enviados > 0) {
+        toast.success(`${data.enviados} mensagem(ns) de aniversário enviada(s)!`);
+      } else {
+        toast.info("Nenhum aniversariante hoje.");
+      }
+    } catch (error: any) {
+      console.error("Erro ao enviar aniversários:", error);
+      toast.error("Erro ao enviar mensagens de aniversário");
+    } finally {
+      setEnviandoAniversarios(false);
+    }
+  };
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -186,6 +211,23 @@ const AppDashboard = () => {
               onClick={module.path ? () => navigate(module.path) : undefined}
             />
           ))}
+        </div>
+
+        {/* Ações Rápidas */}
+        <div className="mt-6 flex flex-wrap gap-3 justify-center">
+          <Button
+            variant="outline"
+            onClick={handleEnviarAniversarios}
+            disabled={enviandoAniversarios}
+            className="gap-2"
+          >
+            {enviandoAniversarios ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Cake className="w-4 h-4" />
+            )}
+            Enviar Aniversários de Hoje
+          </Button>
         </div>
 
         {/* Separador */}
