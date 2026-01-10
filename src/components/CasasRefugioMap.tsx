@@ -1,21 +1,10 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Calendar, Filter, Home } from "lucide-react";
-import "leaflet/dist/leaflet.css";
-
-// Fix for default marker icons in Leaflet with bundlers
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
+import { MapPin, Users, Calendar, Filter, Home, Loader2 } from "lucide-react";
 
 interface CasaRefugio {
   id: string;
@@ -33,6 +22,9 @@ interface CasaRefugio {
   latitude?: number;
   longitude?: number;
 }
+
+// Lazy load do componente de mapa para evitar problemas de SSR
+const LeafletMapComponent = lazy(() => import("./LeafletMapComponent"));
 
 const CasasRefugioMap = () => {
   const [cidadeFilter, setCidadeFilter] = useState<string>("all");
@@ -169,47 +161,19 @@ const CasasRefugioMap = () => {
       {/* Mapa */}
       <div className="rounded-2xl overflow-hidden shadow-elegant border border-border">
         {casasComCoordenadas.length > 0 ? (
-          <MapContainer
-            center={mapCenter}
-            zoom={12}
-            style={{ height: "400px", width: "100%" }}
-            className="z-0"
+          <Suspense
+            fallback={
+              <div className="h-96 bg-muted/50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-secondary" />
+              </div>
+            }
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            <LeafletMapComponent
+              casas={casasComCoordenadas}
+              center={mapCenter}
+              onSelectCasa={setSelectedCasaId}
             />
-            {casasComCoordenadas.map((casa) => (
-              <Marker
-                key={casa.id}
-                position={[casa.latitude!, casa.longitude!]}
-                eventHandlers={{
-                  click: () => setSelectedCasaId(casa.id),
-                }}
-              >
-                <Popup>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-sm">{casa.name}</h4>
-                    {casa.lideres && (
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Líderes:</strong> {casa.lideres}
-                      </p>
-                    )}
-                    {casa.dias && (
-                      <p className="text-xs text-muted-foreground">
-                        <strong>Dia:</strong> {casa.dias} ({casa.frequencia?.toLowerCase()})
-                      </p>
-                    )}
-                    {casa.address && (
-                      <p className="text-xs text-muted-foreground">
-                        {casa.address}, {casa.numero}
-                      </p>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+          </Suspense>
         ) : (
           <div className="h-96 bg-muted/50 flex items-center justify-center">
             <div className="text-center text-muted-foreground">
