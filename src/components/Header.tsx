@@ -48,11 +48,11 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="relative h-56 flex flex-col items-center justify-center">
+        <div className="relative h-24 md:h-32 lg:h-40 flex flex-col items-center justify-center">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden absolute top-6 right-2 p-2 rounded-lg transition-colors text-primary-foreground"
+            className="lg:hidden absolute top-1/2 -translate-y-1/2 right-2 p-2 rounded-lg transition-colors text-primary-foreground"
             aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -63,7 +63,7 @@ const Header = () => {
             <img
               src={logoUrl}
               alt={igrejaConfig?.nome_fantasia || "Logo"}
-              className="h-44 md:h-48 lg:h-52 object-contain"
+              className="h-16 md:h-24 lg:h-32 object-contain"
             />
           </a>
 
