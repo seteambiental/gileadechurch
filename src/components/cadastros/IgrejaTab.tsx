@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, Upload, Building2, MapPin, Navigation, Check, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -163,6 +164,8 @@ const IgrejaTab = () => {
         city: data.city || null,
         state: data.state || null,
         logo_url: logoUrl,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
       };
 
       if (igrejaConfig?.id) {
@@ -682,15 +685,9 @@ const IgrejaTab = () => {
                         </Badge>
                       )}
                     </div>
-                    {coordinates.lat && coordinates.lng ? (
-                      <p className="text-xs text-muted-foreground">
-                        Lat: {coordinates.lat.toFixed(6)}, Lng: {coordinates.lng.toFixed(6)}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        Clique no botão para obter as coordenadas do endereço e exibir no mapa da homepage.
-                      </p>
-                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Configure as coordenadas automaticamente ou insira manualmente.
+                    </p>
                   </div>
                   <Button
                     type="button"
@@ -703,9 +700,48 @@ const IgrejaTab = () => {
                     ) : (
                       <Navigation className="w-4 h-4 mr-2" />
                     )}
-                    {coordinates.lat ? "Atualizar Coordenadas" : "Obter Coordenadas"}
+                    {coordinates.lat ? "Atualizar" : "Obter"} Automático
                   </Button>
                 </div>
+
+                {/* Campos de coordenadas editáveis */}
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="latitude" className="text-sm text-muted-foreground">
+                      Latitude
+                    </Label>
+                    <Input
+                      id="latitude"
+                      type="number"
+                      step="any"
+                      placeholder="-25.451234"
+                      value={coordinates.lat ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseFloat(e.target.value) : null;
+                        setCoordinates((prev) => ({ ...prev, lat: val }));
+                      }}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="longitude" className="text-sm text-muted-foreground">
+                      Longitude
+                    </Label>
+                    <Input
+                      id="longitude"
+                      type="number"
+                      step="any"
+                      placeholder="-49.270123"
+                      value={coordinates.lng ?? ""}
+                      onChange={(e) => {
+                        const val = e.target.value ? parseFloat(e.target.value) : null;
+                        setCoordinates((prev) => ({ ...prev, lng: val }));
+                      }}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Dica: Você pode encontrar as coordenadas no Google Maps clicando com o botão direito no local desejado.
+                </p>
               </div>
             </div>
 
