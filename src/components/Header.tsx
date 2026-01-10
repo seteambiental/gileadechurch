@@ -48,13 +48,13 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="relative h-16 md:h-20 lg:h-24 flex items-center justify-between">
+        <div className="relative h-20 md:h-24 lg:h-28 flex items-center justify-between">
           {/* Logo à esquerda */}
           <a href="#inicio" className="flex items-center">
             <img
               src={logoUrl}
               alt={igrejaConfig?.nome_fantasia || "Logo"}
-              className="h-10 md:h-14 lg:h-18 object-contain"
+              className="h-12 md:h-16 lg:h-20 object-contain"
             />
           </a>
 
