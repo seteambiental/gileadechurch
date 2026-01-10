@@ -304,19 +304,34 @@ const Index = () => {
             centered
           />
 
-          <div className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-elegant">
-            <div className="aspect-video bg-muted flex items-center justify-center">
-              <div className="text-center p-8">
-                <p className="text-muted-foreground mb-4">
-                  Mapa em breve
-                </p>
-                <p className="font-heading font-semibold text-foreground">
-                  Rua Araçás, 103 - Bairro Uberaba
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Curitiba - PR, CEP 81540-510
-                </p>
-              </div>
+          <div className="max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-elegant border border-border bg-card">
+            <div className="aspect-video">
+              {/*
+                Mapa leve via embed (não depende do Leaflet).
+                Endereço: Rua Araçás, 103 - Bairro Uberaba, Curitiba - PR, 81540-510
+              */}
+              <iframe
+                title="Mapa - Gileade Church"
+                className="w-full h-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-49.3100%2C-25.4800%2C-49.2300%2C-25.4200&layer=mapnik&marker=-25.4510%2C-49.2700"
+              />
+            </div>
+
+            <div className="p-6">
+              <p className="font-heading font-semibold text-foreground">
+                Rua Araçás, 103 - Bairro Uberaba
+              </p>
+              <p className="text-sm text-muted-foreground">Curitiba - PR, CEP 81540-510</p>
+              <a
+                className="mt-3 inline-block text-sm text-secondary hover:underline"
+                href="https://www.openstreetmap.org/?mlat=-25.4510&mlon=-49.2700#map=16/-25.4510/-49.2700"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Abrir no mapa
+              </a>
             </div>
           </div>
         </div>
