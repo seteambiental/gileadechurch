@@ -54,7 +54,7 @@ const Header = () => {
             <img
               src={logoUrl}
               alt={igrejaConfig?.nome_fantasia || "Logo"}
-              className="h-14 md:h-18 lg:h-22 object-contain"
+              className="h-16 md:h-20 lg:h-24 object-contain"
             />
           </a>
 
