@@ -7,84 +7,103 @@ const corsHeaders = {
 };
 
 // Função para buscar coordenadas usando Nominatim (OpenStreetMap)
-async function geocodeAddress(address: string, city: string, state: string, cep?: string): Promise<{ lat: number; lng: number } | null> {
-  try {
-    // Montar query de busca
-    const searchParts = [address, city, state, "Brasil"].filter(Boolean);
-    const query = encodeURIComponent(searchParts.join(", "));
-    
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=br`,
-      {
-        headers: {
-          "User-Agent": "IgrejaApp/1.0",
-        },
-      }
-    );
+async function geocodeAddress(
+  address: string, 
+  city: string, 
+  state: string, 
+  cep?: string,
+  neighborhood?: string
+): Promise<{ lat: number; lng: number } | null> {
+  const headers = {
+    "User-Agent": "IgrejaGileadeApp/1.0 (contact@igreja.com)",
+    "Accept-Language": "pt-BR,pt;q=0.9",
+  };
 
-    if (!response.ok) {
-      console.error("Nominatim error:", response.status);
-      return null;
-    }
+  // Lista de tentativas de busca em ordem de especificidade
+  const searchQueries = [
+    // 1. Endereço completo com bairro
+    [address, neighborhood, city, state, "Brasil"].filter(Boolean).join(", "),
+    // 2. Endereço com cidade e estado
+    [address, city, state, "Brasil"].filter(Boolean).join(", "),
+    // 3. CEP direto
+    cep ? `${cep}, Brasil` : null,
+    // 4. Bairro + cidade + estado
+    [neighborhood, city, state, "Brasil"].filter(Boolean).join(", "),
+    // 5. Cidade + estado
+    [city, state, "Brasil"].filter(Boolean).join(", "),
+  ].filter(Boolean) as string[];
 
-    const data = await response.json();
-    
-    if (data && data.length > 0) {
-      return {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
-      };
-    }
+  console.log("Tentando geocodificar com as seguintes queries:", searchQueries);
 
-    // Tentar busca alternativa só com CEP
-    if (cep) {
-      const cepQuery = encodeURIComponent(`${cep}, Brasil`);
-      const cepResponse = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${cepQuery}&format=json&limit=1&countrycodes=br`,
-        {
-          headers: {
-            "User-Agent": "IgrejaApp/1.0",
-          },
-        }
+  for (const query of searchQueries) {
+    try {
+      console.log(`Buscando: ${query}`);
+      
+      const encodedQuery = encodeURIComponent(query);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodedQuery}&format=json&limit=1&countrycodes=br&addressdetails=1`,
+        { headers }
       );
 
-      if (cepResponse.ok) {
-        const cepData = await cepResponse.json();
-        if (cepData && cepData.length > 0) {
-          return {
-            lat: parseFloat(cepData[0].lat),
-            lng: parseFloat(cepData[0].lon),
-          };
-        }
+      if (!response.ok) {
+        console.error("Nominatim error:", response.status);
+        continue;
       }
-    }
 
-    // Tentar busca só com bairro e cidade
-    const simplifiedQuery = encodeURIComponent(`${city}, ${state}, Brasil`);
-    const simplifiedResponse = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${simplifiedQuery}&format=json&limit=1&countrycodes=br`,
-      {
-        headers: {
-          "User-Agent": "IgrejaApp/1.0",
-        },
-      }
-    );
-
-    if (simplifiedResponse.ok) {
-      const simplifiedData = await simplifiedResponse.json();
-      if (simplifiedData && simplifiedData.length > 0) {
+      const data = await response.json();
+      console.log(`Resultado para "${query}":`, data.length > 0 ? "Encontrado" : "Não encontrado");
+      
+      if (data && data.length > 0) {
         return {
-          lat: parseFloat(simplifiedData[0].lat),
-          lng: parseFloat(simplifiedData[0].lon),
+          lat: parseFloat(data[0].lat),
+          lng: parseFloat(data[0].lon),
         };
       }
-    }
 
-    return null;
-  } catch (error) {
-    console.error("Geocoding error:", error);
-    return null;
+      // Rate limiting - Nominatim pede 1 request por segundo
+      await new Promise((resolve) => setTimeout(resolve, 1100));
+    } catch (error) {
+      console.error(`Erro na busca "${query}":`, error);
+    }
   }
+
+  // Fallback: usar API do ViaCEP para obter mais dados do CEP e tentar novamente
+  if (cep) {
+    try {
+      console.log("Tentando via CEP API...");
+      const cepClean = cep.replace(/\D/g, "");
+      const viaCepResponse = await fetch(`https://viacep.com.br/ws/${cepClean}/json/`);
+      
+      if (viaCepResponse.ok) {
+        const viaCepData = await viaCepResponse.json();
+        if (!viaCepData.erro) {
+          const viaCepQuery = `${viaCepData.logradouro}, ${viaCepData.bairro}, ${viaCepData.localidade}, ${viaCepData.uf}, Brasil`;
+          console.log(`Buscando via ViaCEP: ${viaCepQuery}`);
+          
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+          
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(viaCepQuery)}&format=json&limit=1&countrycodes=br`,
+            { headers }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.length > 0) {
+              return {
+                lat: parseFloat(data[0].lat),
+                lng: parseFloat(data[0].lon),
+              };
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro no fallback ViaCEP:", error);
+    }
+  }
+
+  return null;
 }
 
 serve(async (req) => {
@@ -119,7 +138,8 @@ serve(async (req) => {
         fullAddress,
         casa.city || "",
         casa.state || "",
-        casa.cep
+        casa.cep,
+        casa.neighborhood
       );
 
       if (coords) {
@@ -136,6 +156,32 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: false, error: "Não foi possível encontrar coordenadas" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "geocode_igreja") {
+      // Geocodificar endereço da igreja
+      const { address, number, neighborhood, city, state, cep } = await req.json();
+      
+      const fullAddress = [address, number].filter(Boolean).join(", ");
+      const coords = await geocodeAddress(
+        fullAddress,
+        city || "",
+        state || "",
+        cep,
+        neighborhood
+      );
+
+      if (coords) {
+        return new Response(
+          JSON.stringify({ success: true, coordinates: coords }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: false, error: "Não foi possível encontrar coordenadas para este endereço" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -167,7 +213,8 @@ serve(async (req) => {
           fullAddress,
           casa.city || "",
           casa.state || "",
-          casa.cep
+          casa.cep,
+          casa.neighborhood
         );
 
         if (coords) {

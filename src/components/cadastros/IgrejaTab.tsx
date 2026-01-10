@@ -230,6 +230,7 @@ const IgrejaTab = () => {
   const handleGeocode = async () => {
     const address = form.getValues("address");
     const number = form.getValues("number");
+    const neighborhood = form.getValues("neighborhood");
     const city = form.getValues("city");
     const state = form.getValues("state");
     const cep = form.getValues("cep");
@@ -247,41 +248,40 @@ const IgrejaTab = () => {
     try {
       const { data, error } = await supabase.functions.invoke("geocoding", {
         body: {
-          action: "geocode_single",
-          address: {
-            address,
-            numero: number,
-            city,
-            state,
-            cep: cep ? unformatCep(cep) : undefined,
-          },
+          action: "geocode_igreja",
+          address,
+          number,
+          neighborhood,
+          city,
+          state,
+          cep: cep ? unformatCep(cep) : undefined,
         },
       });
 
       if (error) throw error;
 
-      if (data?.latitude && data?.longitude) {
+      if (data?.success && data?.coordinates) {
         // Salvar as coordenadas no banco
         if (igrejaConfig?.id) {
           const { error: updateError } = await supabase
             .from("igreja_config")
-            .update({ latitude: data.latitude, longitude: data.longitude })
+            .update({ latitude: data.coordinates.lat, longitude: data.coordinates.lng })
             .eq("id", igrejaConfig.id);
 
           if (updateError) throw updateError;
         }
 
-        setCoordinates({ lat: data.latitude, lng: data.longitude });
+        setCoordinates({ lat: data.coordinates.lat, lng: data.coordinates.lng });
         queryClient.invalidateQueries({ queryKey: ["igreja_config"] });
         
         toast({
           title: "Coordenadas encontradas!",
-          description: `Latitude: ${data.latitude.toFixed(6)}, Longitude: ${data.longitude.toFixed(6)}`,
+          description: `Latitude: ${data.coordinates.lat.toFixed(6)}, Longitude: ${data.coordinates.lng.toFixed(6)}`,
         });
       } else {
         toast({
           title: "Endereço não encontrado",
-          description: "Verifique o endereço e tente novamente.",
+          description: data?.error || "Verifique o endereço e tente novamente.",
           variant: "destructive",
         });
       }
