@@ -37,6 +37,7 @@ interface CasaRefugio {
 const CasasRefugioMap = () => {
   const [cidadeFilter, setCidadeFilter] = useState<string>("all");
   const [bairroFilter, setBairroFilter] = useState<string>("all");
+  const [selectedCasaId, setSelectedCasaId] = useState<string | null>(null);
 
   const { data: casas, isLoading } = useQuery({
     queryKey: ["casas-refugio-map"],
@@ -83,7 +84,26 @@ const CasasRefugioMap = () => {
   // Reset bairro filter when cidade changes
   useEffect(() => {
     setBairroFilter("all");
+    setSelectedCasaId(null);
   }, [cidadeFilter]);
+
+  // Reset selected casa when bairro changes
+  useEffect(() => {
+    setSelectedCasaId(null);
+  }, [bairroFilter]);
+
+  // Verificar se deve mostrar a lista (filtro aplicado ou casa selecionada)
+  const shouldShowList = useMemo(() => {
+    return cidadeFilter !== "all" || bairroFilter !== "all" || selectedCasaId !== null;
+  }, [cidadeFilter, bairroFilter, selectedCasaId]);
+
+  // Lista a exibir (casa selecionada ou todas filtradas)
+  const casasParaExibir = useMemo(() => {
+    if (selectedCasaId) {
+      return casasFiltradas.filter(c => c.id === selectedCasaId);
+    }
+    return casasFiltradas;
+  }, [casasFiltradas, selectedCasaId]);
 
   // Centro do mapa baseado nas casas ou Curitiba como padrão
   const mapCenter = useMemo(() => {
@@ -163,6 +183,9 @@ const CasasRefugioMap = () => {
               <Marker
                 key={casa.id}
                 position={[casa.latitude!, casa.longitude!]}
+                eventHandlers={{
+                  click: () => setSelectedCasaId(casa.id),
+                }}
               >
                 <Popup>
                   <div className="space-y-1">
@@ -198,55 +221,80 @@ const CasasRefugioMap = () => {
         )}
       </div>
 
-      {/* Lista de Casas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {casasFiltradas.map((casa) => (
-          <Card key={casa.id} className="hover:border-secondary transition-all">
-            <CardContent className="pt-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-secondary/10 text-secondary flex-shrink-0">
-                  <Home className="w-5 h-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-heading font-semibold text-sm truncate">{casa.name}</h4>
-                  {casa.lideres && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <Users className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{casa.lideres}</span>
-                    </p>
-                  )}
-                  {casa.neighborhood && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <MapPin className="w-3 h-3 flex-shrink-0" />
-                      <span>{casa.neighborhood}</span>
-                      {casa.city && <span className="text-muted-foreground/70">- {casa.city}</span>}
-                    </p>
-                  )}
-                  {casa.dias && (
-                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                      <Calendar className="w-3 h-3 flex-shrink-0" />
-                      <span>{casa.dias}</span>
-                      {casa.frequencia && (
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
-                          {casa.frequencia.toLowerCase()}
-                        </Badge>
+      {/* Lista de Casas - só aparece quando há filtro ou casa selecionada */}
+      {shouldShowList && (
+        <>
+          {selectedCasaId && (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="h-8 px-3">
+                Casa selecionada no mapa
+              </Badge>
+              <button 
+                onClick={() => setSelectedCasaId(null)}
+                className="text-xs text-secondary hover:underline"
+              >
+                Limpar seleção
+              </button>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {casasParaExibir.map((casa) => (
+              <Card key={casa.id} className="hover:border-secondary transition-all">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-secondary/10 text-secondary flex-shrink-0">
+                      <Home className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-heading font-semibold text-sm truncate">{casa.name}</h4>
+                      {casa.lideres && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Users className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{casa.lideres}</span>
+                        </p>
                       )}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                      {casa.neighborhood && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="w-3 h-3 flex-shrink-0" />
+                          <span>{casa.neighborhood}</span>
+                          {casa.city && <span className="text-muted-foreground/70">- {casa.city}</span>}
+                        </p>
+                      )}
+                      {casa.dias && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>{casa.dias}</span>
+                          {casa.frequencia && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                              {casa.frequencia.toLowerCase()}
+                            </Badge>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-      {casasFiltradas.length === 0 && (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <Home className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma casa refúgio encontrada com os filtros selecionados</p>
-          </CardContent>
-        </Card>
+          {casasParaExibir.length === 0 && (
+            <Card>
+              <CardContent className="py-12 text-center text-muted-foreground">
+                <Home className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhuma casa refúgio encontrada com os filtros selecionados</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Mensagem quando lista está escondida */}
+      {!shouldShowList && (
+        <p className="text-center text-sm text-muted-foreground">
+          Clique em uma marcação no mapa ou utilize os filtros acima para visualizar as casas refúgio
+        </p>
       )}
     </div>
   );
