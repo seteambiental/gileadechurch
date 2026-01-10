@@ -24,9 +24,11 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
+  // Usar a mesma URL que funciona no enviar-whatsapp
   const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
   
   console.log(`Enviando mensagem de aniversário para: ${phoneFormatted}`);
+  console.log(`URL: ${url}`);
   
   const response = await fetch(url, {
     method: 'POST',
@@ -41,10 +43,11 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   });
   
   const result = await response.json();
-  console.log('Resposta Z-API:', result);
+  console.log('Resposta Z-API:', JSON.stringify(result));
   
-  if (!response.ok) {
-    throw new Error(result.message || 'Erro ao enviar mensagem');
+  // Verificar se houve erro na resposta
+  if (result.error || !response.ok) {
+    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
   }
   
   return result;
