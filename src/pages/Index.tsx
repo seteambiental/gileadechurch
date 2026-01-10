@@ -178,11 +178,11 @@ const Index = () => {
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto space-y-6">
-            <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 opacity-0 animate-fade-in">
+            <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 animate-fade-in">
               Bem-vindo à Gileade Church
             </div>
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight opacity-0 animate-fade-in stagger-1">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in stagger-1">
               {heroTitulo.includes("Cura") ? (
                 <>
                   Um Lugar de{" "}
@@ -193,14 +193,14 @@ const Index = () => {
               )}
             </h1>
             
-            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in stagger-2">
+            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in stagger-2">
               {heroSubtitulo}
             </p>
           </div>
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 animate-fade-in stagger-4">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in stagger-4">
           <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
             <div className="w-1.5 h-3 rounded-full bg-secondary animate-bounce" />
           </div>
@@ -241,7 +241,7 @@ const Index = () => {
                 {scheduleItems.slice(0, 6).map((item, index) => (
                   <div
                     key={`${item.day}-${item.time}-${index}`}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-secondary transition-all opacity-0 animate-fade-in"
+                    className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-secondary transition-all animate-fade-in"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-dark flex flex-col items-center justify-center text-primary-foreground overflow-hidden">
