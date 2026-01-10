@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Twitter, Globe } from "lucide-react";
+import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Twitter, Globe, MessageCircle } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -76,6 +76,17 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
     }, [cultosRecorrentes]);
 
     const lema = homepageConfig?.lema || "Um lugar de cura e restauração";
+    const logoUrl = (igrejaConfig as any)?.logo_dark_url_2 || igrejaConfig?.logo_url || logoGileade;
+
+    // Formatar número para WhatsApp
+    const formatWhatsAppLink = (phone: string | null | undefined) => {
+      if (!phone) return null;
+      const cleanNumber = phone.replace(/\D/g, "");
+      const fullNumber = cleanNumber.startsWith("55") ? cleanNumber : `55${cleanNumber}`;
+      return `https://wa.me/${fullNumber}`;
+    };
+
+    const whatsappLink = formatWhatsAppLink(igrejaConfig?.celular || igrejaConfig?.telefone);
 
     return (
       <footer
@@ -90,7 +101,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <img
-                  src={igrejaConfig?.logo_url || logoGileade}
+                  src={logoUrl}
                   alt="Gileade Church"
                   className="w-14 h-14 rounded-full object-cover shadow-red"
                   loading="lazy"
@@ -103,7 +114,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
                 </div>
               </div>
               <p className="text-primary-foreground/80 text-sm leading-relaxed">
-                {lema}. Venha fazer parte da nossa família!
+                {lema}
               </p>
             </div>
 
@@ -111,7 +122,18 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
             <div className="space-y-4">
               <h4 className="font-heading font-bold text-lg text-secondary">Contato</h4>
               <div className="space-y-3 text-sm">
-                {(igrejaConfig?.telefone || igrejaConfig?.celular) && (
+                {whatsappLink && (
+                  <a
+                    href={whatsappLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 text-primary-foreground/80 hover:text-secondary transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{igrejaConfig?.celular || igrejaConfig?.telefone}</span>
+                  </a>
+                )}
+                {!whatsappLink && (igrejaConfig?.telefone || igrejaConfig?.celular) && (
                   <a
                     href={`tel:+55${(igrejaConfig.celular || igrejaConfig.telefone)?.replace(/\D/g, "")}`}
                     className="flex items-center gap-3 text-primary-foreground/80 hover:text-secondary transition-colors"
