@@ -8,8 +8,9 @@ import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Upload, Building2 } from "lucide-react";
+import { Loader2, Save, Upload, Building2, MapPin, Navigation, Check, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Form,
   FormControl,
@@ -48,6 +49,8 @@ const IgrejaTab = () => {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ lat: number | null; lng: number | null }>({ lat: null, lng: null });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -114,6 +117,8 @@ const IgrejaTab = () => {
         state: igrejaConfig.state || "",
       });
       setLogoPreview(igrejaConfig.logo_url);
+      // @ts-ignore - latitude e longitude são campos novos
+      setCoordinates({ lat: igrejaConfig.latitude || null, lng: igrejaConfig.longitude || null });
     }
   }, [igrejaConfig, form]);
 
@@ -219,6 +224,76 @@ const IgrejaTab = () => {
         setLogoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGeocode = async () => {
+    const address = form.getValues("address");
+    const number = form.getValues("number");
+    const city = form.getValues("city");
+    const state = form.getValues("state");
+    const cep = form.getValues("cep");
+
+    if (!address || !city) {
+      toast({
+        title: "Endereço incompleto",
+        description: "Preencha pelo menos o logradouro e a cidade para geocodificar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeocoding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("geocoding", {
+        body: {
+          action: "geocode_single",
+          address: {
+            address,
+            numero: number,
+            city,
+            state,
+            cep: cep ? unformatCep(cep) : undefined,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.latitude && data?.longitude) {
+        // Salvar as coordenadas no banco
+        if (igrejaConfig?.id) {
+          const { error: updateError } = await supabase
+            .from("igreja_config")
+            .update({ latitude: data.latitude, longitude: data.longitude })
+            .eq("id", igrejaConfig.id);
+
+          if (updateError) throw updateError;
+        }
+
+        setCoordinates({ lat: data.latitude, lng: data.longitude });
+        queryClient.invalidateQueries({ queryKey: ["igreja_config"] });
+        
+        toast({
+          title: "Coordenadas encontradas!",
+          description: `Latitude: ${data.latitude.toFixed(6)}, Longitude: ${data.longitude.toFixed(6)}`,
+        });
+      } else {
+        toast({
+          title: "Endereço não encontrado",
+          description: "Verifique o endereço e tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao geocodificar:", error);
+      toast({
+        title: "Erro ao geocodificar",
+        description: String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeocoding(false);
     }
   };
 
@@ -586,6 +661,51 @@ const IgrejaTab = () => {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Geolocalização */}
+              <div className="pt-4 border-t border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPin className="w-4 h-4 text-secondary" />
+                      <span className="font-medium text-sm">Geolocalização</span>
+                      {coordinates.lat && coordinates.lng ? (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/30">
+                          <Check className="w-3 h-3 mr-1" />
+                          Configurado
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30">
+                          <X className="w-3 h-3 mr-1" />
+                          Não configurado
+                        </Badge>
+                      )}
+                    </div>
+                    {coordinates.lat && coordinates.lng ? (
+                      <p className="text-xs text-muted-foreground">
+                        Lat: {coordinates.lat.toFixed(6)}, Lng: {coordinates.lng.toFixed(6)}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Clique no botão para obter as coordenadas do endereço e exibir no mapa da homepage.
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGeocode}
+                    disabled={isGeocoding}
+                  >
+                    {isGeocoding ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Navigation className="w-4 h-4 mr-2" />
+                    )}
+                    {coordinates.lat ? "Atualizar Coordenadas" : "Obter Coordenadas"}
+                  </Button>
+                </div>
               </div>
             </div>
 
