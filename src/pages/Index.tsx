@@ -10,7 +10,7 @@ import TestimonyCard from "@/components/TestimonyCard";
 import PrayerRequestForm from "@/components/PrayerRequestForm";
 import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
-import heroImage from "@/assets/hero-church.jpg";
+import heroImage from "@/assets/hero-grapes.jpg";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
