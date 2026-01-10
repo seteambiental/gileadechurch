@@ -230,9 +230,9 @@ const Index = () => {
                     className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-secondary transition-all opacity-0 animate-fade-in"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-dark flex flex-col items-center justify-center text-primary-foreground">
+                    <div className="flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-dark flex flex-col items-center justify-center text-primary-foreground overflow-hidden">
                       <span className="text-xs font-medium opacity-80">{item.day}</span>
-                      <span className="font-heading font-bold text-xl">{item.time}</span>
+                      <span className="font-heading font-bold text-base">{item.time}</span>
                     </div>
                     <div>
                       <h4 className="font-heading font-semibold text-foreground">
