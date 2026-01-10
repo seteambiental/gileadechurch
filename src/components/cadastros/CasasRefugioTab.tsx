@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -25,6 +25,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface CasaRefugio {
   id: string;
@@ -41,6 +47,14 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+interface GeocodingResult {
+  id: string;
+  name: string;
+  success: boolean;
 }
 
 const CasasRefugioTab = () => {
@@ -50,6 +64,8 @@ const CasasRefugioTab = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CasaRefugio | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodingResults, setGeocodingResults] = useState<GeocodingResult[] | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -119,10 +135,42 @@ const CasasRefugioTab = () => {
 
   const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all";
 
+  // Contar casas sem coordenadas
+  const casasSemCoordenadas = useMemo(() => {
+    return items.filter((item) => !item.latitude || !item.longitude).length;
+  }, [items]);
+
   const clearFilters = () => {
     setCondominioFilter("all");
     setSupervisorFilter("all");
     setSearchTerm("");
+  };
+
+  const handleGeocodingAll = async () => {
+    setIsGeocoding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("geocoding", {
+        body: { action: "geocode_all" },
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setGeocodingResults(data.results);
+        toast({
+          title: "Geocodificação concluída!",
+          description: `${data.successCount} casas encontradas, ${data.failCount} não encontradas`,
+        });
+        queryClient.invalidateQueries({ queryKey: ["casas_refugio"] });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Erro desconhecido";
+      toast({ title: "Erro ao geocodificar", description: message, variant: "destructive" });
+    } finally {
+      setIsGeocoding(false);
+    }
   };
 
   return (
@@ -139,10 +187,31 @@ const CasasRefugioTab = () => {
               className="pl-10"
             />
           </div>
-          <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Casa Refúgio
-          </Button>
+          <div className="flex gap-2">
+            {casasSemCoordenadas > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleGeocodingAll}
+                disabled={isGeocoding}
+              >
+                {isGeocoding ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-4 h-4 mr-2" />
+                    Geocodificar ({casasSemCoordenadas})
+                  </>
+                )}
+              </Button>
+            )}
+            <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Casa Refúgio
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -217,7 +286,18 @@ const CasasRefugioTab = () => {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                      {item.latitude && item.longitude ? (
+                        <span title="Coordenadas cadastradas">
+                          <Navigation className="w-3 h-3 text-green-500 shrink-0" />
+                        </span>
+                      ) : (
+                        <span title="Sem coordenadas">
+                          <Navigation className="w-3 h-3 text-muted-foreground/40 shrink-0" />
+                        </span>
+                      )}
+                    </div>
                     {item.condominio && (
                       <Badge variant="outline" className="mt-1 text-xs">
                         {item.condominio}
@@ -305,6 +385,32 @@ const CasasRefugioTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Geocoding Results Dialog */}
+      <Dialog open={!!geocodingResults} onOpenChange={() => setGeocodingResults(null)}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Resultado da Geocodificação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {geocodingResults?.map((result) => (
+              <div
+                key={result.id}
+                className={`flex items-center gap-2 p-2 rounded-lg ${
+                  result.success ? "bg-green-500/10" : "bg-destructive/10"
+                }`}
+              >
+                {result.success ? (
+                  <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-destructive shrink-0" />
+                )}
+                <span className="text-sm truncate">{result.name}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
