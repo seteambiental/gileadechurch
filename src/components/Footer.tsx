@@ -92,7 +92,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
       <footer
         ref={ref}
         id="contato"
-        className={`bg-gradient-dark text-primary-foreground ${className ?? ""}`}
+        className={`bg-surfaceInverse text-primary-foreground ${className ?? ""}`}
         {...props}
       >
         <div className="container mx-auto px-4 py-16">
@@ -103,7 +103,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
                 <img
                   src={logoUrl}
                   alt={igrejaConfig?.nome_fantasia || "Logo"}
-                  className="h-16 object-contain"
+                  className="h-32 md:h-36 object-contain"
                   loading="lazy"
                 />
               </div>
