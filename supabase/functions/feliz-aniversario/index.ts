@@ -128,24 +128,44 @@ serve(async (req) => {
 
       console.log(`Encontrados ${aniversariantesConvertidos.length} novos convertidos aniversariantes`);
 
+      // Verificar quais já receberam mensagem hoje
+      const dataHoje = hoje.toISOString().split('T')[0];
+      const { data: jaEnviados } = await supabase
+        .from('aniversarios_enviados')
+        .select('member_id, novo_convertido_id')
+        .eq('data_envio', dataHoje)
+        .eq('sucesso', true);
+
+      const membrosJaEnviados = new Set(jaEnviados?.filter(e => e.member_id).map(e => e.member_id) || []);
+      const convertidosJaEnviados = new Set(jaEnviados?.filter(e => e.novo_convertido_id).map(e => e.novo_convertido_id) || []);
+
+      console.log(`Já enviados hoje: ${membrosJaEnviados.size} membros, ${convertidosJaEnviados.size} convertidos`);
+
       let enviados = 0;
       let erros = 0;
-      const resultados: { nome: string; sucesso: boolean; erro?: string }[] = [];
+      let ignorados = 0;
+      const resultados: { nome: string; sucesso: boolean; erro?: string; ignorado?: boolean }[] = [];
 
-      // Enviar para membros
+      // Enviar para membros (que ainda não receberam hoje)
       for (const membro of aniversariantes) {
+        // Verificar se já enviou hoje
+        if (membrosJaEnviados.has(membro.id)) {
+          console.log(`⏭️ ${membro.full_name} já recebeu mensagem hoje, ignorando`);
+          ignorados++;
+          resultados.push({ nome: membro.full_name, sucesso: true, ignorado: true });
+          continue;
+        }
+
         try {
           const mensagem = gerarMensagemAniversario(membro.full_name);
           await enviarMensagemZAPI(membro.whatsapp, mensagem);
           
-          // Registrar log de envio (opcional)
-          try {
-            await supabase.from('aniversarios_enviados').insert({
-              member_id: membro.id,
-              data_envio: hoje.toISOString().split('T')[0],
-              sucesso: true,
-            });
-          } catch {} // Ignorar erro se tabela não existir
+          // Registrar log de envio
+          await supabase.from('aniversarios_enviados').insert({
+            member_id: membro.id,
+            data_envio: dataHoje,
+            sucesso: true,
+          });
           
           enviados++;
           resultados.push({ nome: membro.full_name, sucesso: true });
@@ -156,24 +176,41 @@ serve(async (req) => {
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+          
+          // Registrar erro
+          try {
+            await supabase.from('aniversarios_enviados').insert({
+              member_id: membro.id,
+              data_envio: dataHoje,
+              sucesso: false,
+              erro_mensagem: errorMsg,
+            });
+          } catch {}
+          
           resultados.push({ nome: membro.full_name, sucesso: false, erro: errorMsg });
           console.error(`❌ Erro ao enviar para ${membro.full_name}:`, err);
         }
       }
 
-      // Enviar para novos convertidos
+      // Enviar para novos convertidos (que ainda não receberam hoje)
       for (const convertido of aniversariantesConvertidos) {
+        // Verificar se já enviou hoje
+        if (convertidosJaEnviados.has(convertido.id)) {
+          console.log(`⏭️ ${convertido.full_name} já recebeu mensagem hoje, ignorando`);
+          ignorados++;
+          resultados.push({ nome: convertido.full_name, sucesso: true, ignorado: true });
+          continue;
+        }
+
         try {
           const mensagem = gerarMensagemAniversario(convertido.full_name);
           await enviarMensagemZAPI(convertido.whatsapp, mensagem);
           
-          try {
-            await supabase.from('aniversarios_enviados').insert({
-              novo_convertido_id: convertido.id,
-              data_envio: hoje.toISOString().split('T')[0],
-              sucesso: true,
-            });
-          } catch {}
+          await supabase.from('aniversarios_enviados').insert({
+            novo_convertido_id: convertido.id,
+            data_envio: dataHoje,
+            sucesso: true,
+          });
           
           enviados++;
           resultados.push({ nome: convertido.full_name, sucesso: true });
@@ -183,6 +220,16 @@ serve(async (req) => {
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+          
+          try {
+            await supabase.from('aniversarios_enviados').insert({
+              novo_convertido_id: convertido.id,
+              data_envio: dataHoje,
+              sucesso: false,
+              erro_mensagem: errorMsg,
+            });
+          } catch {}
+          
           resultados.push({ nome: convertido.full_name, sucesso: false, erro: errorMsg });
           console.error(`❌ Erro ao enviar para ${convertido.full_name}:`, err);
         }
@@ -190,9 +237,10 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Mensagens de aniversário enviadas: ${enviados} sucesso, ${erros} falhas`,
-        data: hoje.toISOString().split('T')[0],
+        message: `Mensagens de aniversário: ${enviados} enviadas, ${ignorados} já enviadas antes, ${erros} falhas`,
+        data: dataHoje,
         enviados,
+        ignorados,
         erros,
         total: aniversariantes.length + aniversariantesConvertidos.length,
         resultados,
