@@ -48,27 +48,27 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="relative h-24 md:h-32 lg:h-40 flex flex-col items-center justify-center">
+        <div className="relative h-16 md:h-20 lg:h-24 flex items-center justify-between">
+          {/* Logo à esquerda */}
+          <a href="#inicio" className="flex items-center">
+            <img
+              src={logoUrl}
+              alt={igrejaConfig?.nome_fantasia || "Logo"}
+              className="h-10 md:h-14 lg:h-18 object-contain"
+            />
+          </a>
+
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden absolute top-1/2 -translate-y-1/2 right-2 p-2 rounded-lg transition-colors text-primary-foreground"
+            className="lg:hidden p-2 rounded-lg transition-colors text-primary-foreground"
             aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
 
-          {/* Logo centralizada */}
-          <a href="#inicio" className="flex items-center">
-            <img
-              src={logoUrl}
-              alt={igrejaConfig?.nome_fantasia || "Logo"}
-              className="h-16 md:h-24 lg:h-32 object-contain"
-            />
-          </a>
-
-          {/* Desktop Navigation (abaixo da logo) */}
-          <nav className="hidden lg:flex items-center justify-center gap-8 -mt-2">
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center gap-6">
             {navItems.map((item) => (
               <a
                 key={item.label}
@@ -78,18 +78,14 @@ const Header = () => {
                 {item.label}
               </a>
             ))}
-          </nav>
-
-          {/* Botão Entrar no canto direito */}
-          <div className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2">
             <Button
               variant="secondary"
-              className="font-heading font-semibold shadow-red"
+              className="font-heading font-semibold shadow-red ml-4"
               onClick={() => (window.location.href = "/auth")}
             >
               Entrar
             </Button>
-          </div>
+          </nav>
         </div>
 
         {/* Mobile Menu (abaixo do header) */}
