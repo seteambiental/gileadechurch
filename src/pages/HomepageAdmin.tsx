@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings } from "lucide-react";
+import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings, ImageIcon } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import HomepageHeroTab from "@/components/homepage-admin/HomepageHeroTab";
 import HomepageAvisosTab from "@/components/homepage-admin/HomepageAvisosTab";
@@ -12,6 +12,7 @@ import HomepageProgramacaoTab from "@/components/homepage-admin/HomepagePrograma
 import HomepageTestemunhosTab from "@/components/homepage-admin/HomepageTestemunhosTab";
 import HomepageCasasRefugioTab from "@/components/homepage-admin/HomepageCasasRefugioTab";
 import HomepageConfigTab from "@/components/homepage-admin/HomepageConfigTab";
+import HomepageLogosTab from "@/components/homepage-admin/HomepageLogosTab";
 
 const HomepageAdmin = () => {
   const { user, loading } = useAuth();
@@ -69,6 +70,10 @@ const HomepageAdmin = () => {
               <Image className="w-4 h-4" />
               Hero & Redes Sociais
             </TabsTrigger>
+            <TabsTrigger value="logos" className="gap-2">
+              <ImageIcon className="w-4 h-4" />
+              Logos
+            </TabsTrigger>
             <TabsTrigger value="avisos" className="gap-2">
               <Bell className="w-4 h-4" />
               Avisos
@@ -93,6 +98,9 @@ const HomepageAdmin = () => {
 
           <TabsContent value="hero">
             <HomepageHeroTab />
+          </TabsContent>
+          <TabsContent value="logos">
+            <HomepageLogosTab />
           </TabsContent>
           <TabsContent value="avisos">
             <HomepageAvisosTab />
