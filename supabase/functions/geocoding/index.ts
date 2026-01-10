@@ -116,7 +116,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, casaId } = await req.json();
+    const body = await req.json();
+    const { action, casaId, address, number, neighborhood, city, state, cep } = body;
 
     if (action === "geocode_single") {
       // Geocodificar uma casa específica
@@ -162,7 +163,6 @@ serve(async (req) => {
 
     if (action === "geocode_igreja") {
       // Geocodificar endereço da igreja
-      const { address, number, neighborhood, city, state, cep } = await req.json();
       
       const fullAddress = [address, number].filter(Boolean).join(", ");
       const coords = await geocodeAddress(
