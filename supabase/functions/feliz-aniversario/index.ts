@@ -50,10 +50,19 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   return result;
 }
 
-function gerarMensagemAniversario(nome: string) {
+function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null) {
   const primeiroNome = nome.split(' ')[0];
   const versiculo = versiculosAniversario[Math.floor(Math.random() * versiculosAniversario.length)];
   
+  // Se tiver mensagem personalizada, usar ela
+  if (mensagemTemplate) {
+    return mensagemTemplate
+      .replace(/{NOME}/g, primeiroNome)
+      .replace(/{VERSICULO}/g, versiculo.texto)
+      .replace(/{REFERENCIA}/g, versiculo.referencia);
+  }
+  
+  // Mensagem padrão
   return `🎂🎉 *FELIZ ANIVERSÁRIO, ${primeiroNome.toUpperCase()}!* 🎉🎂
 
 Que o Senhor continue abençoando sua vida abundantemente neste novo ciclo que se inicia!
@@ -88,6 +97,16 @@ serve(async (req) => {
     console.log(`Verificando aniversariantes para: ${mesAtual}-${diaAtual}`);
 
     if (action === 'enviar_aniversarios' || !action) {
+      // Buscar mensagem personalizada
+      const { data: homepageConfig } = await supabase
+        .from('homepage_config')
+        .select('mensagem_aniversario')
+        .limit(1)
+        .maybeSingle();
+      
+      const mensagemTemplate = homepageConfig?.mensagem_aniversario || null;
+      console.log(`Mensagem personalizada: ${mensagemTemplate ? 'Sim' : 'Não (usando padrão)'}`);
+
       // Buscar membros que fazem aniversário hoje
       // birth_date está no formato YYYY-MM-DD
       const { data: membros, error: membrosError } = await supabase
@@ -157,7 +176,7 @@ serve(async (req) => {
         }
 
         try {
-          const mensagem = gerarMensagemAniversario(membro.full_name);
+          const mensagem = gerarMensagemAniversario(membro.full_name, mensagemTemplate);
           await enviarMensagemZAPI(membro.whatsapp, mensagem);
           
           // Registrar log de envio
@@ -203,7 +222,7 @@ serve(async (req) => {
         }
 
         try {
-          const mensagem = gerarMensagemAniversario(convertido.full_name);
+          const mensagem = gerarMensagemAniversario(convertido.full_name, mensagemTemplate);
           await enviarMensagemZAPI(convertido.whatsapp, mensagem);
           
           await supabase.from('aniversarios_enviados').insert({

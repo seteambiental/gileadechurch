@@ -1299,6 +1299,7 @@ export type Database = {
           id: string
           instagram: string | null
           lema: string
+          mensagem_aniversario: string | null
           tiktok: string | null
           twitter: string | null
           updated_at: string
@@ -1313,6 +1314,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           lema?: string
+          mensagem_aniversario?: string | null
           tiktok?: string | null
           twitter?: string | null
           updated_at?: string
@@ -1327,6 +1329,7 @@ export type Database = {
           id?: string
           instagram?: string | null
           lema?: string
+          mensagem_aniversario?: string | null
           tiktok?: string | null
           twitter?: string | null
           updated_at?: string

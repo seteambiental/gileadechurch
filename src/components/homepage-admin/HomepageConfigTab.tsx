@@ -1,13 +1,37 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const HomepageConfigTab = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [mensagemAniversario, setMensagemAniversario] = useState("");
+  const [mensagemCarregada, setMensagemCarregada] = useState(false);
+
+  const { data: homepageConfig, isLoading: loadingHomepage } = useQuery({
+    queryKey: ["homepage-config-mensagem"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_config")
+        .select("id, mensagem_aniversario")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      if (data && !mensagemCarregada) {
+        setMensagemAniversario(data.mensagem_aniversario || "");
+        setMensagemCarregada(true);
+      }
+      return data;
+    },
+  });
 
   const { data: igrejaConfig, isLoading: loadingIgreja } = useQuery({
     queryKey: ["igreja-config"],
@@ -37,7 +61,36 @@ const HomepageConfigTab = () => {
     },
   });
 
-  if (loadingIgreja || loadingEventos) {
+  const salvarMensagem = useMutation({
+    mutationFn: async () => {
+      if (homepageConfig?.id) {
+        const { error } = await supabase
+          .from("homepage_config")
+          .update({ mensagem_aniversario: mensagemAniversario })
+          .eq("id", homepageConfig.id);
+        if (error) throw error;
+      } else {
+        // Criar registro se não existir
+        const { error } = await supabase
+          .from("homepage_config")
+          .insert({ 
+            hero_titulo: "Bem-vindo",
+            lema: "",
+            mensagem_aniversario: mensagemAniversario 
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["homepage-config-mensagem"] });
+      toast.success("Mensagem de aniversário salva com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao salvar mensagem: " + error.message);
+    },
+  });
+
+  if (loadingIgreja || loadingEventos || loadingHomepage) {
     return <div className="text-center py-8">Carregando...</div>;
   }
 
@@ -175,6 +228,50 @@ const HomepageConfigTab = () => {
               </Button>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Mensagem de Aniversário */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Cake className="w-5 h-5" />
+            Mensagem de Aniversário (WhatsApp)
+          </CardTitle>
+          <CardDescription>
+            Configure a mensagem que será enviada automaticamente às 08:00 para os aniversariantes do dia.
+            <br />
+            <span className="font-medium">Variáveis disponíveis:</span> {"{NOME}"} = primeiro nome, {"{VERSICULO}"} = versículo aleatório, {"{REFERENCIA}"} = referência bíblica
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="mensagem-aniversario">Mensagem</Label>
+            <Textarea
+              id="mensagem-aniversario"
+              value={mensagemAniversario}
+              onChange={(e) => setMensagemAniversario(e.target.value)}
+              placeholder="Digite a mensagem de aniversário..."
+              rows={12}
+              className="font-mono text-sm"
+            />
+          </div>
+          <div className="flex justify-between items-center">
+            <p className="text-xs text-muted-foreground">
+              Use *texto* para <strong>negrito</strong> e _texto_ para <em>itálico</em> no WhatsApp
+            </p>
+            <Button 
+              onClick={() => salvarMensagem.mutate()}
+              disabled={salvarMensagem.isPending}
+            >
+              {salvarMensagem.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Salvar Mensagem
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
