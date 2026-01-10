@@ -1,94 +1,147 @@
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { format, differenceInDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
 import TestimonyCard from "@/components/TestimonyCard";
 import PrayerRequestForm from "@/components/PrayerRequestForm";
-import CellGroupCard from "@/components/CellGroupCard";
+import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
-import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-church.jpg";
 
-const announcements = [
-  {
-    title: "Culto de Natal",
-    description: "Celebração especial de Natal com toda a família. Venha adorar conosco e celebrar o nascimento de Jesus!",
-    date: "25/12/2024",
-    time: "19h",
-    type: "event" as const,
-  },
-  {
-    title: "Jejum e Oração",
-    description: "Semana de consagração para buscar a Deus em oração e jejum. Participe conosco!",
-    date: "06/01 a 12/01",
-    time: "06h - 18h",
-    type: "urgent" as const,
-  },
-  {
-    title: "Batismo nas Águas",
-    description: "Inscrições abertas para o próximo batismo. Fale com seu líder de célula.",
-    date: "19/01/2025",
-    type: "info" as const,
-  },
-];
-
-const testimonies = [
-  {
-    content: "Encontrei paz e propósito na Gileade Church. A comunhão e o amor que recebi aqui mudaram minha vida completamente.",
-    author: "Maria Silva",
-    role: "Membro há 3 anos",
-  },
-  {
-    content: "Minha família foi restaurada através das orações e do acompanhamento pastoral. Somos eternamente gratos!",
-    author: "João Santos",
-    role: "Líder de Casa Refúgio",
-  },
-  {
-    content: "Deus me curou de uma enfermidade através da oração dos irmãos. Ele é fiel e todo poderoso!",
-    author: "Ana Costa",
-    role: "Membro",
-  },
-];
-
-const cellGroups = [
-  {
-    name: "Casa Refúgio Graça",
-    leader: "Pr. Carlos e Márcia",
-    location: "Centro, próximo à praça principal",
-    dayTime: "Terça-feira às 19h30",
-    members: 15,
-  },
-  {
-    name: "Casa Refúgio Esperança",
-    leader: "Diácono Paulo e Rosa",
-    location: "Bairro Jardim das Flores",
-    dayTime: "Quarta-feira às 20h",
-    members: 12,
-  },
-  {
-    name: "Casa Refúgio Vitória",
-    leader: "Ricardo e Fernanda",
-    location: "Bairro Nova Vida",
-    dayTime: "Quinta-feira às 19h30",
-    members: 18,
-  },
-  {
-    name: "Casa Refúgio Alegria",
-    leader: "Marcos e Juliana",
-    location: "Bairro Boa Vista",
-    dayTime: "Sexta-feira às 20h",
-    members: 10,
-  },
-];
-
-const scheduleItems = [
-  { day: "Domingo", time: "09h", event: "Culto da Família" },
-  { day: "Domingo", time: "19h", event: "Culto de Celebração" },
-  { day: "Quarta", time: "19h30", event: "Culto de Ensino" },
-  { day: "Sexta", time: "20h", event: "Arena Jovem (Flow)" },
-  { day: "Sábado", time: "16h", event: "GT - Encontro de Adolescentes" },
-];
+const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 const Index = () => {
+  // Buscar configuração do hero
+  const { data: homepageConfig } = useQuery({
+    queryKey: ["homepage-config-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_config")
+        .select("*")
+        .limit(1)
+        .single();
+      if (error) return null;
+      return data;
+    },
+  });
+
+  // Buscar avisos ativos
+  const { data: avisosDb } = useQuery({
+    queryKey: ["homepage-avisos-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_avisos")
+        .select("*")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Buscar eventos recorrentes (programação)
+  const { data: eventosRecorrentes } = useQuery({
+    queryKey: ["eventos-recorrentes-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("*")
+        .eq("ativo", true)
+        .eq("recorrente", true)
+        .order("dia_semana", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Buscar testemunhos aprovados (ativos por 15 dias)
+  const { data: testemunhosDb } = useQuery({
+    queryKey: ["testemunhos-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("testemunhos")
+        .select("*")
+        .eq("aprovado", true)
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Filtrar testemunhos ativos (15 dias)
+  const testemunhosAtivos = useMemo(() => {
+    if (!testemunhosDb) return [];
+    const now = new Date();
+    return testemunhosDb.filter((t) => {
+      if (t.arquivado) return false;
+      const daysSinceCreated = differenceInDays(now, new Date(t.created_at));
+      return daysSinceCreated <= 15;
+    }).slice(0, 6);
+  }, [testemunhosDb]);
+
+  // Formatar avisos para o componente
+  const announcements = useMemo(() => {
+    if (!avisosDb || avisosDb.length === 0) {
+      return [
+        {
+          title: "Bem-vindo à Gileade",
+          description: "Venha nos visitar e conhecer nossa comunidade!",
+          type: "info" as const,
+        },
+      ];
+    }
+    return avisosDb.map((aviso) => ({
+      title: aviso.titulo,
+      description: aviso.descricao,
+      date: aviso.data || undefined,
+      time: aviso.horario || undefined,
+      type: aviso.tipo as "event" | "urgent" | "info",
+    }));
+  }, [avisosDb]);
+
+  // Formatar programação
+  const scheduleItems = useMemo(() => {
+    if (!eventosRecorrentes || eventosRecorrentes.length === 0) {
+      return [
+        { day: "Domingo", time: "09h", event: "Culto da Família" },
+        { day: "Domingo", time: "19h", event: "Culto de Celebração" },
+        { day: "Quarta", time: "19h30", event: "Culto de Ensino" },
+      ];
+    }
+    return eventosRecorrentes.map((evento) => ({
+      day: diasSemana[evento.dia_semana ?? 0],
+      time: evento.hora_inicio || "—",
+      event: evento.titulo,
+    }));
+  }, [eventosRecorrentes]);
+
+  // Formatar testemunhos
+  const testimonies = useMemo(() => {
+    if (testemunhosAtivos.length === 0) {
+      return [
+        {
+          content: "Encontrei paz e propósito na Gileade Church. A comunhão e o amor que recebi aqui mudaram minha vida completamente.",
+          author: "Membro da Igreja",
+          role: "Membro",
+        },
+      ];
+    }
+    return testemunhosAtivos.map((t) => ({
+      content: t.testemunho,
+      author: t.anonimo ? "Anônimo" : t.nome || "Membro",
+      role: "Membro",
+      photoUrl: t.anonimo ? undefined : t.foto_url,
+    }));
+  }, [testemunhosAtivos]);
+
+  // Título do hero
+  const heroTitulo = homepageConfig?.hero_titulo || "Um Lugar de Cura e Restauração";
+  const heroSubtitulo = homepageConfig?.hero_subtitulo || "Venha fazer parte de uma comunidade que vive o amor de Cristo. Aqui você encontra acolhimento, crescimento espiritual e propósito.";
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -101,7 +154,7 @@ const Index = () => {
         {/* Background Image */}
         <div className="absolute inset-0">
           <img
-            src={heroImage}
+            src={homepageConfig?.hero_image_url || heroImage}
             alt="Gileade Church - Um lugar de cura e restauração"
             className="w-full h-full object-cover"
           />
@@ -116,15 +169,19 @@ const Index = () => {
             </div>
             
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight opacity-0 animate-fade-in stagger-1">
-              Um Lugar de{" "}
-              <span className="text-secondary">Cura e Restauração</span>
+              {heroTitulo.includes("Cura") ? (
+                <>
+                  Um Lugar de{" "}
+                  <span className="text-secondary">Cura e Restauração</span>
+                </>
+              ) : (
+                heroTitulo
+              )}
             </h1>
             
             <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in stagger-2">
-              Venha fazer parte de uma comunidade que vive o amor de Cristo. 
-              Aqui você encontra acolhimento, crescimento espiritual e propósito.
+              {heroSubtitulo}
             </p>
-            
           </div>
         </div>
 
@@ -135,7 +192,6 @@ const Index = () => {
           </div>
         </div>
       </section>
-
 
       {/* Announcements Section */}
       <section id="avisos" className="py-20 bg-muted/50">
@@ -148,7 +204,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {announcements.map((announcement, index) => (
               <AnnouncementCard
-                key={announcement.title}
+                key={`${announcement.title}-${index}`}
                 {...announcement}
                 delay={index * 100}
               />
@@ -168,9 +224,9 @@ const Index = () => {
               />
 
               <div className="space-y-4">
-                {scheduleItems.map((item, index) => (
+                {scheduleItems.slice(0, 6).map((item, index) => (
                   <div
-                    key={`${item.day}-${item.time}`}
+                    key={`${item.day}-${item.time}-${index}`}
                     className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border hover:border-secondary transition-all opacity-0 animate-fade-in"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
@@ -203,28 +259,30 @@ const Index = () => {
       </section>
 
       {/* Testimonies Section */}
-      <section className="py-20 bg-gradient-dark">
-        <div className="container mx-auto px-4">
-          <SectionTitle
-            title="Testemunhos"
-            subtitle="Vidas transformadas pelo poder de Deus"
-            centered
-            light
-          />
+      {testimonies.length > 0 && (
+        <section className="py-20 bg-gradient-dark">
+          <div className="container mx-auto px-4">
+            <SectionTitle
+              title="Testemunhos"
+              subtitle="Vidas transformadas pelo poder de Deus"
+              centered
+              light
+            />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonies.map((testimony, index) => (
-              <TestimonyCard
-                key={testimony.author}
-                {...testimony}
-                delay={index * 100}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {testimonies.map((testimony, index) => (
+                <TestimonyCard
+                  key={`${testimony.author}-${index}`}
+                  {...testimony}
+                  delay={index * 100}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Cell Groups Section */}
+      {/* Cell Groups / Casas Refúgio Section */}
       <section id="casas-refugio" className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <SectionTitle
@@ -233,25 +291,7 @@ const Index = () => {
             centered
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {cellGroups.map((group, index) => (
-              <CellGroupCard
-                key={group.name}
-                {...group}
-                delay={index * 100}
-              />
-            ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <Button
-              variant="outline"
-              size="lg"
-              className="font-heading font-semibold"
-            >
-              Ver Todas as Casas Refúgio
-            </Button>
-          </div>
+          <CasasRefugioMap />
         </div>
       </section>
 
@@ -271,10 +311,10 @@ const Index = () => {
                   Mapa em breve
                 </p>
                 <p className="font-heading font-semibold text-foreground">
-                  Rua Exemplo, 123 - Bairro Centro
+                  Rua Araçás, 103 - Bairro Uberaba
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Cidade - Estado, CEP 00000-000
+                  Curitiba - PR, CEP 81540-510
                 </p>
               </div>
             </div>
@@ -283,7 +323,6 @@ const Index = () => {
       </section>
 
       <Footer />
-
     </div>
   );
 };

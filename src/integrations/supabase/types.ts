@@ -770,7 +770,9 @@ export type Database = {
           dias: string | null
           frequencia: string | null
           id: string
+          latitude: number | null
           lideres: string | null
+          longitude: number | null
           name: string
           neighborhood: string | null
           numero: string | null
@@ -788,7 +790,9 @@ export type Database = {
           dias?: string | null
           frequencia?: string | null
           id?: string
+          latitude?: number | null
           lideres?: string | null
+          longitude?: number | null
           name: string
           neighborhood?: string | null
           numero?: string | null
@@ -806,7 +810,9 @@ export type Database = {
           dias?: string | null
           frequencia?: string | null
           id?: string
+          latitude?: number | null
           lideres?: string | null
+          longitude?: number | null
           name?: string
           neighborhood?: string | null
           numero?: string | null
