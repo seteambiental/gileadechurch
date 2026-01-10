@@ -52,20 +52,12 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="#inicio" className="flex items-center gap-3 group">
+          <a href="#inicio" className="flex items-center group">
             <img 
               src={logoUrl} 
-              alt="Gileade Church" 
-              className="w-12 h-12 rounded-full object-cover shadow-red"
+              alt={igrejaConfig?.nome_fantasia || "Logo"} 
+              className="h-12 object-contain"
             />
-            <div className="flex flex-col">
-              <span className="font-heading font-bold text-xl tracking-tight text-primary-foreground">
-                {igrejaConfig?.nome_fantasia || "Gileade"}
-              </span>
-              <span className="text-xs font-medium -mt-1 text-orange">
-                Church
-              </span>
-            </div>
           </a>
 
           {/* Desktop Navigation */}
