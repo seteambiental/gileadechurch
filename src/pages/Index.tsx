@@ -157,7 +157,7 @@ const Index = () => {
   const heroSubtitulo = homepageConfig?.hero_subtitulo || "Venha fazer parte de uma comunidade que vive o amor de Cristo. Aqui você encontra acolhimento, crescimento espiritual e propósito.";
 
   return (
-    <div className="min-h-screen bg-background pt-56">
+    <div className="min-h-screen bg-background pt-24 md:pt-32 lg:pt-40">
       <Header />
 
       {/* Hero Section */}
