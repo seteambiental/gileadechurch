@@ -128,7 +128,7 @@ const Index = () => {
     }
     return eventosRecorrentes.map((evento) => ({
       day: diasSemana[evento.dia_semana ?? 0],
-      time: evento.hora_inicio || "—",
+      time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
       event: evento.titulo,
     }));
   }, [eventosRecorrentes]);
