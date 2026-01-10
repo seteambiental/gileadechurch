@@ -68,19 +68,19 @@ const Header = () => {
           </a>
 
           {/* Desktop Navigation (abaixo da logo) */}
-          <nav className="hidden lg:flex items-center gap-2 mt-4">
+          <nav className="hidden lg:flex items-center justify-center gap-8 mt-1">
             {navItems.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
-                className="px-4 py-2 rounded-lg font-medium text-sm transition-all hover:bg-primary-foreground/10 text-primary-foreground/90 hover:text-primary-foreground"
+                className="px-3 py-2 rounded-lg font-medium text-sm transition-all hover:bg-primary-foreground/10 text-primary-foreground/90 hover:text-primary-foreground"
               >
                 {item.label}
               </a>
             ))}
             <Button
               variant="secondary"
-              className="ml-2 font-heading font-semibold shadow-red"
+              className="font-heading font-semibold shadow-red"
               onClick={() => (window.location.href = "/auth")}
             >
               Entrar
