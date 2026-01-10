@@ -68,7 +68,7 @@ const Header = () => {
           </a>
 
           {/* Desktop Navigation (abaixo da logo) */}
-          <nav className="hidden lg:flex items-center justify-center gap-8 mt-1">
+          <nav className="hidden lg:flex items-center justify-center gap-8 -mt-2">
             {navItems.map((item) => (
               <a
                 key={item.label}
@@ -78,6 +78,10 @@ const Header = () => {
                 {item.label}
               </a>
             ))}
+          </nav>
+
+          {/* Botão Entrar no canto direito */}
+          <div className="hidden lg:block absolute right-4 top-1/2 -translate-y-1/2">
             <Button
               variant="secondary"
               className="font-heading font-semibold shadow-red"
@@ -85,7 +89,7 @@ const Header = () => {
             >
               Entrar
             </Button>
-          </nav>
+          </div>
         </div>
 
         {/* Mobile Menu (abaixo do header) */}
