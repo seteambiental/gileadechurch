@@ -1192,6 +1192,90 @@ export type Database = {
           },
         ]
       }
+      homepage_avisos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data: string | null
+          descricao: string
+          horario: string | null
+          id: string
+          ordem: number
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data?: string | null
+          descricao: string
+          horario?: string | null
+          id?: string
+          ordem?: number
+          tipo?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data?: string | null
+          descricao?: string
+          horario?: string | null
+          id?: string
+          ordem?: number
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      homepage_config: {
+        Row: {
+          created_at: string
+          facebook: string | null
+          hero_image_url: string | null
+          hero_subtitulo: string | null
+          hero_titulo: string
+          id: string
+          instagram: string | null
+          lema: string
+          tiktok: string | null
+          twitter: string | null
+          updated_at: string
+          youtube: string | null
+        }
+        Insert: {
+          created_at?: string
+          facebook?: string | null
+          hero_image_url?: string | null
+          hero_subtitulo?: string | null
+          hero_titulo?: string
+          id?: string
+          instagram?: string | null
+          lema?: string
+          tiktok?: string | null
+          twitter?: string | null
+          updated_at?: string
+          youtube?: string | null
+        }
+        Update: {
+          created_at?: string
+          facebook?: string | null
+          hero_image_url?: string | null
+          hero_subtitulo?: string | null
+          hero_titulo?: string
+          id?: string
+          instagram?: string | null
+          lema?: string
+          tiktok?: string | null
+          twitter?: string | null
+          updated_at?: string
+          youtube?: string | null
+        }
+        Relationships: []
+      }
       igreja_config: {
         Row: {
           address: string | null
