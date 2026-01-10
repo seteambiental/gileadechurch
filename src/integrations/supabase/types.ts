@@ -1298,8 +1298,10 @@ export type Database = {
           inscricao_estadual: string | null
           inscricao_municipal: string | null
           logo_dark_url: string | null
+          logo_dark_url_2: string | null
           logo_icon_url: string | null
           logo_light_url: string | null
+          logo_light_url_2: string | null
           logo_url: string | null
           neighborhood: string | null
           nome_fantasia: string
@@ -1326,8 +1328,10 @@ export type Database = {
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           logo_dark_url?: string | null
+          logo_dark_url_2?: string | null
           logo_icon_url?: string | null
           logo_light_url?: string | null
+          logo_light_url_2?: string | null
           logo_url?: string | null
           neighborhood?: string | null
           nome_fantasia: string
@@ -1354,8 +1358,10 @@ export type Database = {
           inscricao_estadual?: string | null
           inscricao_municipal?: string | null
           logo_dark_url?: string | null
+          logo_dark_url_2?: string | null
           logo_icon_url?: string | null
           logo_light_url?: string | null
+          logo_light_url_2?: string | null
           logo_url?: string | null
           neighborhood?: string | null
           nome_fantasia?: string

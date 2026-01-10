@@ -121,7 +121,7 @@ const HomepageLogosTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("igreja_config")
-        .select("id, logo_url, logo_dark_url, logo_light_url, logo_icon_url")
+        .select("id, logo_url, logo_dark_url, logo_dark_url_2, logo_light_url, logo_light_url_2, logo_icon_url")
         .limit(1)
         .single();
       if (error && error.code !== "PGRST116") throw error;
@@ -214,17 +214,31 @@ const HomepageLogosTab = () => {
     },
     {
       field: "logo_light_url",
-      title: "Logo para Fundo Escuro",
+      title: "Logo Clara (Versão 1)",
       description: "Versão clara da logo para uso em fundos escuros",
       icon: <Moon className="w-5 h-5" />,
       currentUrl: igrejaConfig.logo_light_url,
     },
     {
+      field: "logo_light_url_2",
+      title: "Logo Clara (Versão 2)",
+      description: "Segunda versão clara da logo",
+      icon: <Moon className="w-5 h-5" />,
+      currentUrl: igrejaConfig.logo_light_url_2,
+    },
+    {
       field: "logo_dark_url",
-      title: "Logo para Fundo Claro",
+      title: "Logo Escura (Versão 1)",
       description: "Versão escura da logo para uso em fundos claros",
       icon: <Sun className="w-5 h-5" />,
       currentUrl: igrejaConfig.logo_dark_url,
+    },
+    {
+      field: "logo_dark_url_2",
+      title: "Logo Escura (Versão 2)",
+      description: "Segunda versão escura da logo",
+      icon: <Sun className="w-5 h-5" />,
+      currentUrl: igrejaConfig.logo_dark_url_2,
     },
     {
       field: "logo_icon_url",
