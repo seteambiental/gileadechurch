@@ -99,19 +99,13 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             {/* Logo & About */}
             <div className="space-y-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center">
                 <img
                   src={logoUrl}
-                  alt="Gileade Church"
-                  className="w-14 h-14 rounded-full object-cover shadow-red"
+                  alt={igrejaConfig?.nome_fantasia || "Logo"}
+                  className="h-16 object-contain"
                   loading="lazy"
                 />
-                <div>
-                  <h3 className="font-heading font-bold text-xl">
-                    {igrejaConfig?.nome_fantasia || "Gileade"}
-                  </h3>
-                  <span className="text-orange text-sm font-medium">Church</span>
-                </div>
               </div>
               <p className="text-primary-foreground/80 text-sm leading-relaxed">
                 {lema}
