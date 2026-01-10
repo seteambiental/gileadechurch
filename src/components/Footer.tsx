@@ -16,7 +16,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
           .from("igreja_config")
           .select("*")
           .limit(1)
-          .single();
+          .maybeSingle();
         if (error) return null;
         return data;
       },
@@ -76,7 +76,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
     }, [cultosRecorrentes]);
 
     const lema = homepageConfig?.lema || "Um lugar de cura e restauração";
-    const logoUrl = (igrejaConfig as any)?.logo_dark_url_2 || igrejaConfig?.logo_url || logoGileade;
+    const logoUrl = igrejaConfig?.logo_dark_url_2 ?? igrejaConfig?.logo_url ?? logoGileade;
 
     // Formatar número para WhatsApp
     const formatWhatsAppLink = (phone: string | null | undefined) => {
