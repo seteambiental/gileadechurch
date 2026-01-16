@@ -13,6 +13,7 @@ import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
 import heroImage from "@/assets/hero-grapes.jpg";
 import rumoAos1000Banner from "@/assets/rumo-aos-1000.png";
+import anoDasRomasBanner from "@/assets/ano-das-romas.jpg";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -264,12 +265,34 @@ const Index = () => {
                 </div>
               </div>
             </div>
+
+            {/* Slide 3 - Ano das Romãs */}
+            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
+              <div className="absolute inset-0">
+                <img
+                  src={anoDasRomasBanner}
+                  alt="2027 Ano das Romãs"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/40" />
+              </div>
+              <div className="relative z-10 container mx-auto px-4 text-center">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-white leading-tight">
+                    2027
+                  </h1>
+                  <p className="text-2xl md:text-4xl font-heading font-bold text-white">
+                    Ano das Romãs
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Indicadores do carrossel */}
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {[0, 1].map((index) => (
+          {[0, 1, 2].map((index) => (
             <button
               key={index}
               onClick={() => scrollTo(index)}
