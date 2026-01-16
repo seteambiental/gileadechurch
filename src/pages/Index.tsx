@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, differenceInDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { differenceInDays } from "date-fns";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -11,6 +10,7 @@ import PrayerRequestForm from "@/components/PrayerRequestForm";
 import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
 import heroImage from "@/assets/hero-grapes.jpg";
+import rumoAos1000Banner from "@/assets/rumo-aos-1000.png";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -85,6 +85,24 @@ const Index = () => {
       return data;
     },
   });
+
+  // Buscar contagem de membros para o contador "Rumo aos 1000"
+  const { data: membrosCount } = useQuery({
+    queryKey: ["membros-count-public"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("members")
+        .select("*", { count: "exact", head: true });
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
+  // Calcular quantos faltam para 1000
+  const faltamPara1000 = useMemo(() => {
+    const atual = membrosCount || 0;
+    return Math.max(0, 1000 - atual);
+  }, [membrosCount]);
 
   // Filtrar testemunhos ativos (15 dias)
   const testemunhosAtivos = useMemo(() => {
@@ -223,6 +241,30 @@ const Index = () => {
                 delay={index * 100}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Rumo aos 1000 Banner */}
+      <section className="relative py-16 md:py-24 overflow-hidden">
+        <div className="absolute inset-0">
+          <img
+            src={rumoAos1000Banner}
+            alt="Rumo aos 1000 Cadastros no App"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <div className="max-w-2xl mx-auto space-y-4">
+            <p className="text-lg md:text-xl text-amber-400/90 font-medium">
+              Faltam
+            </p>
+            <div className="text-6xl md:text-8xl font-heading font-bold text-destructive animate-pulse">
+              {faltamPara1000}
+            </div>
+            <p className="text-base md:text-lg text-amber-400/80">
+              cadastros para atingirmos a meta!
+            </p>
           </div>
         </div>
       </section>
