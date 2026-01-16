@@ -245,7 +245,7 @@ const Index = () => {
             </div>
 
             {/* Slide 2 - Rumo aos 1000 */}
-            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-end justify-center pb-40">
+            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-end justify-center pb-24">
               <div className="absolute inset-0">
                 <img
                   src={rumoAos1000Banner}
@@ -255,10 +255,10 @@ const Index = () => {
               </div>
               <div className="relative z-10 container mx-auto px-4 text-center">
                 <div className="max-w-2xl mx-auto">
-                  <p className="text-base md:text-lg text-white font-medium mb-1">
+                  <p className="text-lg md:text-xl text-white font-medium mb-1">
                     Faltam
                   </p>
-                  <div className="text-4xl md:text-5xl font-heading font-bold text-white">
+                  <div className="text-5xl md:text-6xl font-heading font-bold text-white">
                     {faltamPara1000}
                   </div>
                 </div>
