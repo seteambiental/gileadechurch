@@ -13,7 +13,7 @@ import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
 import heroImage from "@/assets/hero-grapes.jpg";
 import rumoAos1000Banner from "@/assets/rumo-aos-1000.png";
-import anoDasRomasBanner from "@/assets/ano-das-romas.jpg";
+import anoDasRomasBanner from "@/assets/ano-das-romas-enhanced.jpg";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -277,11 +277,11 @@ const Index = () => {
                 <div className="absolute inset-0 bg-black/40" />
               </div>
               <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="max-w-4xl mx-auto space-y-6">
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-white leading-tight">
+                <div className="max-w-4xl mx-auto space-y-4">
+                  <h1 className="text-6xl md:text-8xl lg:text-9xl font-heading font-bold text-white leading-tight">
                     2027
                   </h1>
-                  <p className="text-2xl md:text-4xl font-heading font-bold text-white">
+                  <p className="text-3xl md:text-5xl lg:text-6xl font-heading font-bold text-white">
                     Ano das Romãs
                   </p>
                 </div>
