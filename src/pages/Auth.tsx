@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,6 +19,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCepLookup } from "@/hooks/useCepLookup";
+import { DateInput } from "@/components/ui/date-input";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
@@ -213,8 +215,7 @@ const Auth = () => {
     }));
   });
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = (file: File | null) => {
     if (file) {
       setPhotoFile(file);
       const reader = new FileReader();
@@ -222,6 +223,9 @@ const Auth = () => {
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
   };
 
@@ -240,12 +244,30 @@ const Auth = () => {
 
     setIsLoading(true);
     try {
+      // First, ensure we have an active session from the recovery link
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !sessionData.session) {
+        toast({ 
+          variant: "destructive", 
+          title: "Sessão expirada", 
+          description: "O link de recuperação expirou. Solicite um novo link." 
+        });
+        window.history.replaceState({}, document.title, "/auth");
+        setIsRecovery(false);
+        setIsForgotPassword(true);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
         toast({ variant: "destructive", title: "Erro", description: error.message });
         return;
       }
 
+      // Sign out to force re-login with new password
+      await supabase.auth.signOut();
+      
       toast({ title: "Senha atualizada!", description: "Agora você já pode entrar com a nova senha." });
       window.history.replaceState({}, document.title, "/auth");
       setIsRecovery(false);
@@ -812,12 +834,11 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="preCheckBirthDate">Data de Nascimento</Label>
-                  <Input
+                  <DateInput
                     id="preCheckBirthDate"
-                    type="date"
                     value={preCheckBirthDate}
-                    onChange={(e) => setPreCheckBirthDate(e.target.value)}
-                    className={errors.preCheckBirthDate ? "border-destructive" : ""}
+                    onChange={(value) => setPreCheckBirthDate(value)}
+                    className={errors.preCheckBirthDate ? "[&>input]:border-destructive" : ""}
                   />
                   {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
                 </div>
@@ -909,22 +930,11 @@ const Auth = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                        className="hidden"
-                        id="photo-upload"
+                      <CameraPhotoInput
+                        onPhotoCapture={handlePhotoChange}
+                        photoPreview={photoPreview}
+                        buttonLabel="Foto (opcional)"
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById("photo-upload")?.click()}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Foto (opcional)
-                      </Button>
                     </div>
                   </div>
 
@@ -990,10 +1000,9 @@ const Auth = () => {
 
                     <div className="space-y-2">
                       <Label>Data de Nascimento</Label>
-                      <Input
-                        type="date"
+                      <DateInput
                         value={signupData.birth_date}
-                        onChange={(e) => setSignupData({ ...signupData, birth_date: e.target.value })}
+                        onChange={(value) => setSignupData({ ...signupData, birth_date: value })}
                       />
                     </div>
 
