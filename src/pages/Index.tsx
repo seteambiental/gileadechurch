@@ -1,7 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
+import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from "embla-carousel-autoplay";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -174,51 +176,118 @@ const Index = () => {
   const heroTitulo = homepageConfig?.hero_titulo || "Um Lugar de Cura e Restauração";
   const heroSubtitulo = homepageConfig?.hero_subtitulo || "Venha fazer parte de uma comunidade que vive o amor de Cristo. Aqui você encontra acolhimento, crescimento espiritual e propósito.";
 
+  // Carrossel do hero
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
+    Autoplay({ delay: 4000, stopOnInteraction: false })
+  ]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setSelectedIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    onSelect();
+    emblaApi.on("select", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect);
+    };
+  }, [emblaApi, onSelect]);
+
+  const scrollTo = useCallback(
+    (index: number) => emblaApi && emblaApi.scrollTo(index),
+    [emblaApi]
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
+      {/* Hero Carousel Section */}
       <section
         id="inicio"
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        className="relative min-h-screen overflow-hidden"
       >
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <img
-            src={homepageConfig?.hero_image_url || heroImage}
-            alt="Gileade Church - Um lugar de cura e restauração"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-primary/70" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 animate-fade-in">
-              Bem-vindo à Gileade Church
+        <div className="absolute inset-0" ref={emblaRef}>
+          <div className="flex h-full">
+            {/* Slide 1 - Hero principal */}
+            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
+              <div className="absolute inset-0">
+                <img
+                  src={homepageConfig?.hero_image_url || heroImage}
+                  alt="Gileade Church - Um lugar de cura e restauração"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-primary/70" />
+              </div>
+              <div className="relative z-10 container mx-auto px-4 text-center">
+                <div className="max-w-4xl mx-auto space-y-6">
+                  <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4">
+                    Bem-vindo à Gileade Church
+                  </div>
+                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight">
+                    {heroTitulo.includes("Cura") ? (
+                      <>
+                        Um Lugar de{" "}
+                        <span className="text-secondary">Cura e Restauração</span>
+                      </>
+                    ) : (
+                      heroTitulo
+                    )}
+                  </h1>
+                  <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
+                    {heroSubtitulo}
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in stagger-1">
-              {heroTitulo.includes("Cura") ? (
-                <>
-                  Um Lugar de{" "}
-                  <span className="text-secondary">Cura e Restauração</span>
-                </>
-              ) : (
-                heroTitulo
-              )}
-            </h1>
-            
-            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in stagger-2">
-              {heroSubtitulo}
-            </p>
+
+            {/* Slide 2 - Rumo aos 1000 */}
+            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
+              <div className="absolute inset-0">
+                <img
+                  src={rumoAos1000Banner}
+                  alt="Rumo aos 1000 Cadastros no App"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="relative z-10 container mx-auto px-4 text-center">
+                <div className="max-w-2xl mx-auto space-y-4">
+                  <p className="text-lg md:text-xl text-amber-400 font-medium">
+                    Faltam
+                  </p>
+                  <div className="text-7xl md:text-9xl font-heading font-bold text-destructive">
+                    {faltamPara1000}
+                  </div>
+                  <p className="text-base md:text-lg text-amber-400">
+                    cadastros para atingirmos a meta!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Indicadores do carrossel */}
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          {[0, 1].map((index) => (
+            <button
+              key={index}
+              onClick={() => scrollTo(index)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                selectedIndex === index
+                  ? "bg-secondary w-8"
+                  : "bg-primary-foreground/40 hover:bg-primary-foreground/60"
+              }`}
+              aria-label={`Ir para slide ${index + 1}`}
+            />
+          ))}
+        </div>
+
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in stagger-4">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
           <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
             <div className="w-1.5 h-3 rounded-full bg-secondary animate-bounce" />
           </div>
@@ -241,30 +310,6 @@ const Index = () => {
                 delay={index * 100}
               />
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Rumo aos 1000 Banner */}
-      <section className="relative py-16 md:py-24 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src={rumoAos1000Banner}
-            alt="Rumo aos 1000 Cadastros no App"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <p className="text-lg md:text-xl text-amber-400/90 font-medium">
-              Faltam
-            </p>
-            <div className="text-6xl md:text-8xl font-heading font-bold text-destructive animate-pulse">
-              {faltamPara1000}
-            </div>
-            <p className="text-base md:text-lg text-amber-400/80">
-              cadastros para atingirmos a meta!
-            </p>
           </div>
         </div>
       </section>
