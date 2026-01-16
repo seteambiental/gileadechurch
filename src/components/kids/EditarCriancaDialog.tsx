@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, UserCheck, Camera } from "lucide-react";
+import { Loader2, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 interface EditarCriancaDialogProps {
   open: boolean;
@@ -28,7 +29,6 @@ interface EditarCriancaDialogProps {
 
 export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCriancaDialogProps) {
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
@@ -99,8 +99,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
     }
   }, [open]);
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = (file: File | null) => {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast.error("A foto deve ter no máximo 5MB");
@@ -112,6 +111,9 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
   };
 
@@ -300,31 +302,16 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Upload de foto */}
             <div className="flex flex-col items-center gap-3">
-              <div className="relative">
-                <Avatar className="h-24 w-24 border-4 border-muted">
-                  <AvatarImage src={photoPreview || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
-                    {crianca.nome.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="secondary"
-                  className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoChange}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">Clique no ícone para adicionar foto</p>
+              <Avatar className="h-24 w-24 border-4 border-muted">
+                <AvatarImage src={photoPreview || undefined} />
+                <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
+                  {crianca.nome.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <CameraPhotoInput
+                onPhotoCapture={handlePhotoChange}
+                photoPreview={photoPreview}
+              />
             </div>
 
             <div className="space-y-2">
