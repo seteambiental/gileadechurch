@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserPlus, Loader2, Camera } from "lucide-react";
+import { UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 interface CriancaVisitanteFormDialogProps {
   children?: React.ReactNode;
@@ -19,7 +20,6 @@ interface CriancaVisitanteFormDialogProps {
 export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
@@ -45,8 +45,7 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
     setPhotoPreview(null);
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = (file: File | null) => {
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         toast.error("A foto deve ter no máximo 5MB");
@@ -58,6 +57,9 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(null);
     }
   };
 
@@ -185,31 +187,16 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Upload de foto */}
           <div className="flex flex-col items-center gap-3">
-            <div className="relative">
-              <Avatar className="h-24 w-24 border-4 border-muted">
-                <AvatarImage src={photoPreview || undefined} />
-                <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
-                  {formData.nome.charAt(0) || "?"}
-                </AvatarFallback>
-              </Avatar>
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-md"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">Clique no ícone para adicionar foto</p>
+            <Avatar className="h-24 w-24 border-4 border-muted">
+              <AvatarImage src={photoPreview || undefined} />
+              <AvatarFallback className="bg-gradient-to-br from-pink-200 to-purple-200 text-2xl">
+                {formData.nome.charAt(0) || "?"}
+              </AvatarFallback>
+            </Avatar>
+            <CameraPhotoInput
+              onPhotoCapture={handlePhotoChange}
+              photoPreview={photoPreview}
+            />
           </div>
 
           <div className="space-y-2">
