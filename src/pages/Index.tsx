@@ -245,7 +245,7 @@ const Index = () => {
             </div>
 
             {/* Slide 2 - Rumo aos 1000 */}
-            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
+            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-end justify-center pb-32">
               <div className="absolute inset-0">
                 <img
                   src={rumoAos1000Banner}
@@ -254,16 +254,13 @@ const Index = () => {
                 />
               </div>
               <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="max-w-2xl mx-auto space-y-4">
-                  <p className="text-lg md:text-xl text-amber-400 font-medium">
+                <div className="max-w-2xl mx-auto">
+                  <p className="text-xl md:text-2xl text-white font-medium mb-2">
                     Faltam
                   </p>
-                  <div className="text-7xl md:text-9xl font-heading font-bold text-destructive">
+                  <div className="text-7xl md:text-9xl font-heading font-bold text-white">
                     {faltamPara1000}
                   </div>
-                  <p className="text-base md:text-lg text-amber-400">
-                    cadastros para atingirmos a meta!
-                  </p>
                 </div>
               </div>
             </div>
