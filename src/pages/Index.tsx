@@ -1,9 +1,7 @@
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
-import useEmblaCarousel from "embla-carousel-react";
-import Autoplay from "embla-carousel-autoplay";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -12,8 +10,6 @@ import PrayerRequestForm from "@/components/PrayerRequestForm";
 import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
 import heroImage from "@/assets/hero-grapes.jpg";
-import rumoAos1000Banner from "@/assets/rumo-aos-1000.png";
-import anoDasRomasBanner from "@/assets/ano-das-romas-enhanced.jpg";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -89,24 +85,6 @@ const Index = () => {
     },
   });
 
-  // Buscar contagem de membros para o contador "Rumo aos 1000"
-  const { data: membrosCount } = useQuery({
-    queryKey: ["membros-count-public"],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from("members")
-        .select("*", { count: "exact", head: true });
-      if (error) return 0;
-      return count || 0;
-    },
-  });
-
-  // Calcular quantos faltam para 1000
-  const faltamPara1000 = useMemo(() => {
-    const atual = membrosCount || 0;
-    return Math.max(0, 1000 - atual);
-  }, [membrosCount]);
-
   // Filtrar testemunhos ativos (15 dias)
   const testemunhosAtivos = useMemo(() => {
     if (!testemunhosDb) return [];
@@ -177,137 +155,51 @@ const Index = () => {
   const heroTitulo = homepageConfig?.hero_titulo || "Um Lugar de Cura e Restauração";
   const heroSubtitulo = homepageConfig?.hero_subtitulo || "Venha fazer parte de uma comunidade que vive o amor de Cristo. Aqui você encontra acolhimento, crescimento espiritual e propósito.";
 
-  // Carrossel do hero
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 4000, stopOnInteraction: false })
-  ]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-
-  const onSelect = useCallback(() => {
-    if (!emblaApi) return;
-    setSelectedIndex(emblaApi.selectedScrollSnap());
-  }, [emblaApi]);
-
-  useEffect(() => {
-    if (!emblaApi) return;
-    onSelect();
-    emblaApi.on("select", onSelect);
-    return () => {
-      emblaApi.off("select", onSelect);
-    };
-  }, [emblaApi, onSelect]);
-
-  const scrollTo = useCallback(
-    (index: number) => emblaApi && emblaApi.scrollTo(index),
-    [emblaApi]
-  );
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Carousel Section */}
+      {/* Hero Section */}
       <section
         id="inicio"
-        className="relative min-h-screen overflow-hidden"
+        className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        <div className="absolute inset-0" ref={emblaRef}>
-          <div className="flex h-full">
-            {/* Slide 1 - Hero principal */}
-            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
-              <div className="absolute inset-0">
-                <img
-                  src={homepageConfig?.hero_image_url || heroImage}
-                  alt="Gileade Church - Um lugar de cura e restauração"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-primary/70" />
-              </div>
-              <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="max-w-4xl mx-auto space-y-6">
-                  <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4">
-                    Bem-vindo à Gileade Church
-                  </div>
-                  <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight">
-                    {heroTitulo.includes("Cura") ? (
-                      <>
-                        Um Lugar de{" "}
-                        <span className="text-secondary">Cura e Restauração</span>
-                      </>
-                    ) : (
-                      heroTitulo
-                    )}
-                  </h1>
-                  <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed">
-                    {heroSubtitulo}
-                  </p>
-                </div>
-              </div>
-            </div>
+        {/* Background Image */}
+        <div className="absolute inset-0">
+          <img
+            src={homepageConfig?.hero_image_url || heroImage}
+            alt="Gileade Church - Um lugar de cura e restauração"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-primary/70" />
+        </div>
 
-            {/* Slide 2 - Rumo aos 1000 */}
-            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-end justify-center pb-24">
-              <div className="absolute inset-0">
-                <img
-                  src={rumoAos1000Banner}
-                  alt="Rumo aos 1000 Cadastros no App"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="max-w-2xl mx-auto">
-                  <p className="text-lg md:text-xl text-white font-medium mb-1">
-                    Faltam
-                  </p>
-                  <div className="text-5xl md:text-6xl font-heading font-bold text-white">
-                    {faltamPara1000}
-                  </div>
-                </div>
-              </div>
+        {/* Content */}
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 animate-fade-in">
+              Bem-vindo à Gileade Church
             </div>
-
-            {/* Slide 3 - Ano das Romãs */}
-            <div className="flex-[0_0_100%] min-w-0 relative min-h-screen flex items-center justify-center">
-              <div className="absolute inset-0">
-                <img
-                  src={anoDasRomasBanner}
-                  alt="2027 Ano das Romãs"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/40" />
-              </div>
-              <div className="relative z-10 container mx-auto px-4 text-center">
-                <div className="max-w-4xl mx-auto space-y-4">
-                  <h1 className="text-6xl md:text-8xl lg:text-9xl font-heading font-bold text-white leading-tight">
-                    2027
-                  </h1>
-                  <p className="text-3xl md:text-5xl lg:text-6xl font-heading font-bold text-white">
-                    Ano das Romãs
-                  </p>
-                </div>
-              </div>
-            </div>
+            
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in">
+              {heroTitulo.includes("Cura") ? (
+                <>
+                  Um Lugar de{" "}
+                  <span className="text-secondary">Cura e Restauração</span>
+                </>
+              ) : (
+                heroTitulo
+              )}
+            </h1>
+            
+            <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in">
+              {heroSubtitulo}
+            </p>
           </div>
         </div>
 
-        {/* Indicadores do carrossel */}
-        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {[0, 1, 2].map((index) => (
-            <button
-              key={index}
-              onClick={() => scrollTo(index)}
-              className={`w-3 h-3 rounded-full transition-all ${
-                selectedIndex === index
-                  ? "bg-secondary w-8"
-                  : "bg-primary-foreground/40 hover:bg-primary-foreground/60"
-              }`}
-              aria-label={`Ir para slide ${index + 1}`}
-            />
-          ))}
-        </div>
-
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in">
           <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
             <div className="w-1.5 h-3 rounded-full bg-secondary animate-bounce" />
           </div>
