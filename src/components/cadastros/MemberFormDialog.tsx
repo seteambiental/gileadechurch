@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Upload, Loader2, UserCog } from "lucide-react";
+import { Plus, X, Loader2, UserCog } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,8 @@ import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCepLookup } from "@/hooks/useCepLookup";
+import { DateInput } from "@/components/ui/date-input";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
@@ -505,8 +507,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   });
 
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handlePhotoChange = (file: File | null) => {
     if (file) {
       setPhotoFile(file);
       const reader = new FileReader();
@@ -514,6 +515,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         setPhotoPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else {
+      setPhotoFile(null);
+      setPhotoPreview(member?.photo_url || null);
     }
   };
 
@@ -583,21 +587,10 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="hidden"
-                    id="photo-upload"
+                  <CameraPhotoInput
+                    onPhotoCapture={handlePhotoChange}
+                    photoPreview={photoPreview}
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById("photo-upload")?.click()}
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Foto
-                  </Button>
                 </div>
               </div>
 
@@ -640,7 +633,10 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     <FormItem>
                       <FormLabel>Data de Nascimento</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput 
+                          value={field.value} 
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -654,7 +650,10 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     <FormItem>
                       <FormLabel>Membro Desde</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DateInput 
+                          value={field.value} 
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
