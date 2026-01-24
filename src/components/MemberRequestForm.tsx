@@ -440,6 +440,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                           placeholder="000.000.000-00"
                           value={field.value}
                           onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                          inputMode="numeric"
                         />
                       </FormControl>
                       <FormMessage />
@@ -459,6 +460,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                             placeholder="(00) 00000-0000"
                             {...field}
                             onChange={(e) => field.onChange(formatPhone(e.target.value))}
+                            inputMode="tel"
                           />
                         </FormControl>
                         <FormMessage />
@@ -515,6 +517,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                             placeholder="00000-000"
                             {...field}
                             onChange={(e) => field.onChange(formatCep(e.target.value))}
+                            inputMode="numeric"
                           />
                         </FormControl>
                         <FormMessage />
@@ -549,7 +552,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       <FormItem>
                         <FormLabel>Número</FormLabel>
                         <FormControl>
-                          <Input placeholder="123" {...field} />
+                          <Input placeholder="123" {...field} inputMode="numeric" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
