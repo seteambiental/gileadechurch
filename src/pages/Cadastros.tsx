@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus } from "lucide-react";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -13,6 +13,7 @@ import CondominiosTab from "@/components/cadastros/CondominiosTab";
 import IgrejaTab from "@/components/cadastros/IgrejaTab";
 import AprovacaoUsuariosTab from "@/components/cadastros/AprovacaoUsuariosTab";
 import SolicitacoesMembrosTab from "@/components/cadastros/SolicitacoesMembrosTab";
+import VisitantesTab from "@/components/cadastros/VisitantesTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -116,13 +117,20 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-7">
+          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-8">
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
               <Users className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Membros</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="visitantes" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+            >
+              <UserRound className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Visitantes</span>
             </TabsTrigger>
             <TabsTrigger 
               value="solicitacoes" 
@@ -170,6 +178,10 @@ const Cadastros = () => {
 
           <TabsContent value="membros">
             <MembrosTab />
+          </TabsContent>
+
+          <TabsContent value="visitantes">
+            <VisitantesTab />
           </TabsContent>
 
           <TabsContent value="solicitacoes">
