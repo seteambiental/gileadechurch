@@ -320,6 +320,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                               {...field}
                               placeholder="00000-000"
                               onBlur={handleCepBlur}
+                              inputMode="numeric"
                             />
                             {isLoadingCep && (
                               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
@@ -354,7 +355,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                       <FormItem>
                         <FormLabel>Número</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="Nº" />
+                          <Input {...field} placeholder="Nº" inputMode="numeric" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -672,6 +672,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                           {...field}
                           onChange={(e) => field.onChange(formatPhone(e.target.value))}
                           maxLength={16}
+                          inputMode="tel"
                         />
                       </FormControl>
                       <FormMessage />
@@ -706,6 +707,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                           placeholder="000.000.000-00"
                           onChange={(e) => field.onChange(formatCPF(e.target.value))}
                           maxLength={14}
+                          inputMode="numeric"
                         />
                       </FormControl>
                       <FormMessage />
@@ -731,6 +733,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                                 placeholder="00000-000"
                                 onChange={(e) => field.onChange(formatCep(e.target.value))}
                                 maxLength={9}
+                                inputMode="numeric"
                               />
                             {isLoadingCep && (
                               <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
@@ -761,11 +764,11 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     name="number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      <FormLabel>Número</FormLabel>
+                      <FormControl>
+                        <Input {...field} inputMode="numeric" />
+                      </FormControl>
+                      <FormMessage />
                       </FormItem>
                     )}
                   />

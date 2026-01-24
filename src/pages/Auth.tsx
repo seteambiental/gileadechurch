@@ -66,6 +66,16 @@ const Auth = () => {
   const [preCheckBirthDate, setPreCheckBirthDate] = useState("");
   const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
   const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
+  
+  // Tipo de cadastro: membro ou visitante
+  const [tipocadastro, setTipoCadastro] = useState<"membro" | "visitante" | null>(null);
+  
+  // Visitante fields (simplified form)
+  const [visitanteData, setVisitanteData] = useState({
+    nome: "",
+    sobrenome: "",
+    whatsapp: "",
+  });
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -727,17 +737,23 @@ const Auth = () => {
             });
           }
         } else {
-          // User doesn't exist - proceed to registration form
+          // User doesn't exist - show tipo cadastro selection
           setSignupData({
             ...signupData,
             full_name: preCheckName.trim(),
             birth_date: preCheckBirthDate,
           });
-          setIsPreCheck(false);
-          setStep(1);
+          // Pre-fill visitante data as well
+          const nameParts = preCheckName.trim().split(" ");
+          setVisitanteData({
+            nome: nameParts[0] || "",
+            sobrenome: nameParts.slice(1).join(" ") || "",
+            whatsapp: "",
+          });
+          setTipoCadastro(null); // Show type selection
           toast({
             title: "Você pode prosseguir!",
-            description: "Complete seu cadastro preenchendo as informações abaixo.",
+            description: "Selecione o tipo de cadastro abaixo.",
           });
         }
       } catch (error: any) {
@@ -849,6 +865,163 @@ const Auth = () => {
               </form>
             )}
 
+            {/* Type Selection after verification */}
+            {tipocadastro === null && !existingMemberEmail && (
+              <div className="space-y-4 mt-6 border-t border-border pt-6">
+                <Label>Tipo de Cadastro</Label>
+                <p className="text-sm text-muted-foreground">
+                  Selecione como deseja se cadastrar:
+                </p>
+                <div className="space-y-3">
+                  <div
+                    className="p-4 border rounded-lg cursor-pointer transition-colors border-border hover:border-secondary/50"
+                    onClick={() => {
+                      setTipoCadastro("membro");
+                      setIsPreCheck(false);
+                      setStep(1);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Membro</p>
+                        <p className="text-sm text-muted-foreground">Cadastro completo para membros da igreja</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="p-4 border rounded-lg cursor-pointer transition-colors border-border hover:border-secondary/50"
+                    onClick={() => {
+                      setTipoCadastro("visitante");
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 rounded-full border-2 border-muted-foreground" />
+                      <div>
+                        <p className="font-medium">Visitante</p>
+                        <p className="text-sm text-muted-foreground">Cadastro simplificado para visitantes</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Visitante Form */}
+            {tipocadastro === "visitante" && (
+              <div className="space-y-4 mt-6 border-t border-border pt-6">
+                <Label className="text-lg font-semibold">Cadastro de Visitante</Label>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="visitanteNome">Nome *</Label>
+                    <Input
+                      id="visitanteNome"
+                      value={visitanteData.nome}
+                      onChange={(e) => setVisitanteData({ ...visitanteData, nome: e.target.value })}
+                      placeholder="Primeiro nome"
+                      className={errors.visitanteNome ? "border-destructive" : ""}
+                    />
+                    {errors.visitanteNome && <p className="text-sm text-destructive">{errors.visitanteNome}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="visitanteSobrenome">Sobrenome *</Label>
+                    <Input
+                      id="visitanteSobrenome"
+                      value={visitanteData.sobrenome}
+                      onChange={(e) => setVisitanteData({ ...visitanteData, sobrenome: e.target.value })}
+                      placeholder="Sobrenome"
+                      className={errors.visitanteSobrenome ? "border-destructive" : ""}
+                    />
+                    {errors.visitanteSobrenome && <p className="text-sm text-destructive">{errors.visitanteSobrenome}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="visitanteWhatsapp">WhatsApp *</Label>
+                    <Input
+                      id="visitanteWhatsapp"
+                      value={visitanteData.whatsapp}
+                      onChange={(e) => setVisitanteData({ ...visitanteData, whatsapp: formatPhone(e.target.value) })}
+                      placeholder="(00) 00000-0000"
+                      maxLength={16}
+                      inputMode="tel"
+                      className={errors.visitanteWhatsapp ? "border-destructive" : ""}
+                    />
+                    {errors.visitanteWhatsapp && <p className="text-sm text-destructive">{errors.visitanteWhatsapp}</p>}
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setTipoCadastro(null);
+                        setErrors({});
+                      }}
+                      className="flex-1"
+                    >
+                      Voltar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={isLoading}
+                      className="flex-1"
+                      onClick={async () => {
+                        // Validate visitante form
+                        const fieldErrors: Record<string, string> = {};
+                        if (!visitanteData.nome.trim()) fieldErrors.visitanteNome = "Nome é obrigatório";
+                        if (!visitanteData.sobrenome.trim()) fieldErrors.visitanteSobrenome = "Sobrenome é obrigatório";
+                        if (!visitanteData.whatsapp.trim()) fieldErrors.visitanteWhatsapp = "WhatsApp é obrigatório";
+                        
+                        if (Object.keys(fieldErrors).length > 0) {
+                          setErrors(fieldErrors);
+                          return;
+                        }
+
+                        setIsLoading(true);
+                        try {
+                          const fullName = `${visitanteData.nome.trim()} ${visitanteData.sobrenome.trim()}`;
+                          const whatsappClean = unformatPhone(visitanteData.whatsapp);
+                          
+                          const { error } = await supabase.from("novos_convertidos").insert({
+                            full_name: fullName,
+                            whatsapp: whatsappClean,
+                            data_nascimento: preCheckBirthDate || null,
+                            observacoes: "Visitante (cadastro via site)",
+                          });
+
+                          if (error) throw error;
+
+                          toast({
+                            title: "Cadastro realizado!",
+                            description: "Seu cadastro de visitante foi concluído com sucesso.",
+                          });
+
+                          // Reset and go to login
+                          setVisitanteData({ nome: "", sobrenome: "", whatsapp: "" });
+                          setTipoCadastro(null);
+                          setPreCheckName("");
+                          setPreCheckBirthDate("");
+                          setIsPreCheck(false);
+                          setIsLogin(true);
+                        } catch (error: any) {
+                          console.error("Erro ao cadastrar visitante:", error);
+                          toast({
+                            variant: "destructive",
+                            title: "Erro",
+                            description: "Não foi possível concluir o cadastro. Tente novamente.",
+                          });
+                        } finally {
+                          setIsLoading(false);
+                        }
+                      }}
+                    >
+                      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Cadastrar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="mt-6 text-center">
               <button
                 type="button"
@@ -856,6 +1029,7 @@ const Auth = () => {
                   setIsPreCheck(false);
                   setIsLogin(true);
                   setExistingMemberEmail(null);
+                  setTipoCadastro(null);
                   setErrors({});
                 }}
                 className="text-sm text-secondary hover:underline"
@@ -967,6 +1141,7 @@ const Auth = () => {
                         onChange={(e) => setSignupData({ ...signupData, whatsapp: formatPhone(e.target.value) })}
                         placeholder="(00) 00000-0000"
                         maxLength={16}
+                        inputMode="tel"
                       />
                     </div>
 
@@ -1013,6 +1188,7 @@ const Auth = () => {
                         onChange={(e) => setSignupData({ ...signupData, cpf: formatCPF(e.target.value) })}
                         placeholder="000.000.000-00"
                         maxLength={14}
+                        inputMode="numeric"
                       />
                     </div>
                   </div>
@@ -1031,6 +1207,7 @@ const Auth = () => {
                           onChange={(e) => setSignupData({ ...signupData, cep: formatCep(e.target.value) })}
                           placeholder="00000-000"
                           maxLength={9}
+                          inputMode="numeric"
                         />
                         {isLoadingCep && (
                           <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-muted-foreground" />
