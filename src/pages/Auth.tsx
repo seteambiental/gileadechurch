@@ -30,17 +30,17 @@ const loginSchema = z.object({
 const signupSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
-  genero: z.string().optional(),
-  birth_date: z.string().optional(),
-  whatsapp: z.string().optional(),
-  cep: z.string().optional(),
-  address: z.string().optional(),
-  number: z.string().optional(),
+  genero: z.string().min(1, "Gênero é obrigatório"),
+  birth_date: z.string().min(1, "Data de nascimento é obrigatória"),
+  whatsapp: z.string().min(1, "WhatsApp é obrigatório"),
+  cep: z.string().min(1, "CEP é obrigatório"),
+  address: z.string().min(1, "Logradouro é obrigatório"),
+  number: z.string().min(1, "Número é obrigatório"),
   complement: z.string().optional(),
-  neighborhood: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
-  cpf: z.string().optional(),
+  neighborhood: z.string().min(1, "Bairro é obrigatório"),
+  city: z.string().min(1, "Cidade é obrigatória"),
+  state: z.string().min(1, "Estado é obrigatório"),
+  cpf: z.string().min(1, "CPF é obrigatório"),
   perfil_solicitado: z.enum(["membro", "lider_ministerio", "integrante_ministerio"]),
   ministerio_ids: z.array(z.string()).optional(),
 });
@@ -209,6 +209,19 @@ const Auth = () => {
       if (!signupData.full_name) fieldErrors.full_name = "Nome é obrigatório";
       if (!signupData.email) fieldErrors.email = "Email é obrigatório";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email)) fieldErrors.email = "Email inválido";
+      if (!signupData.whatsapp) fieldErrors.whatsapp = "WhatsApp é obrigatório";
+      if (!signupData.genero) fieldErrors.genero = "Gênero é obrigatório";
+      if (!signupData.birth_date) fieldErrors.birth_date = "Data de nascimento é obrigatória";
+      if (!signupData.cpf) fieldErrors.cpf = "CPF é obrigatório";
+    }
+    
+    if (currentStep === 2) {
+      if (!signupData.cep) fieldErrors.cep = "CEP é obrigatório";
+      if (!signupData.address) fieldErrors.address = "Logradouro é obrigatório";
+      if (!signupData.number) fieldErrors.number = "Número é obrigatório";
+      if (!signupData.neighborhood) fieldErrors.neighborhood = "Bairro é obrigatório";
+      if (!signupData.city) fieldErrors.city = "Cidade é obrigatória";
+      if (!signupData.state) fieldErrors.state = "Estado é obrigatório";
     }
     
     setErrors(fieldErrors);
@@ -1135,14 +1148,16 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>WhatsApp</Label>
+                      <Label>WhatsApp *</Label>
                       <Input
                         value={signupData.whatsapp}
                         onChange={(e) => setSignupData({ ...signupData, whatsapp: formatPhone(e.target.value) })}
                         placeholder="(00) 00000-0000"
                         maxLength={16}
                         inputMode="tel"
+                        className={errors.whatsapp ? "border-destructive" : ""}
                       />
+                      {errors.whatsapp && <p className="text-sm text-destructive">{errors.whatsapp}</p>}
                     </div>
 
                     <div className="p-3 bg-muted/50 rounded-lg border border-border">
@@ -1150,20 +1165,20 @@ const Auth = () => {
                         <strong>Sua senha será gerada automaticamente:</strong>
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        • Com CPF: os 4 primeiros dígitos do CPF
+                        Cpf@ + 6 primeiros dígitos do CPF
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        • Sem CPF: 1234
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Ex: CPF 123.456.789-00 → Senha: Cpf@123456
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Gênero</Label>
+                      <Label>Gênero *</Label>
                       <Select
                         value={signupData.genero}
                         onValueChange={(v) => setSignupData({ ...signupData, genero: v })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className={errors.genero ? "border-destructive" : ""}>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1171,25 +1186,30 @@ const Auth = () => {
                           <SelectItem value="feminino">Feminino</SelectItem>
                         </SelectContent>
                       </Select>
+                      {errors.genero && <p className="text-sm text-destructive">{errors.genero}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Data de Nascimento</Label>
+                      <Label>Data de Nascimento *</Label>
                       <DateInput
                         value={signupData.birth_date}
                         onChange={(value) => setSignupData({ ...signupData, birth_date: value })}
+                        className={errors.birth_date ? "[&>input]:border-destructive" : ""}
                       />
+                      {errors.birth_date && <p className="text-sm text-destructive">{errors.birth_date}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>CPF</Label>
+                      <Label>CPF *</Label>
                       <Input
                         value={signupData.cpf}
                         onChange={(e) => setSignupData({ ...signupData, cpf: formatCPF(e.target.value) })}
                         placeholder="000.000.000-00"
                         maxLength={14}
                         inputMode="numeric"
+                        className={errors.cpf ? "border-destructive" : ""}
                       />
+                      {errors.cpf && <p className="text-sm text-destructive">{errors.cpf}</p>}
                     </div>
                   </div>
                 </div>
@@ -1200,7 +1220,7 @@ const Auth = () => {
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div className="space-y-2">
-                      <Label>CEP</Label>
+                      <Label>CEP *</Label>
                       <div className="relative">
                         <Input
                           value={signupData.cep}
@@ -1208,27 +1228,33 @@ const Auth = () => {
                           placeholder="00000-000"
                           maxLength={9}
                           inputMode="numeric"
+                          className={errors.cep ? "border-destructive" : ""}
                         />
                         {isLoadingCep && (
                           <Loader2 className="absolute right-3 top-3 w-4 h-4 animate-spin text-muted-foreground" />
                         )}
                       </div>
+                      {errors.cep && <p className="text-sm text-destructive">{errors.cep}</p>}
                     </div>
 
                     <div className="space-y-2 sm:col-span-2">
-                      <Label>Logradouro</Label>
+                      <Label>Logradouro *</Label>
                       <Input
                         value={signupData.address}
                         onChange={(e) => setSignupData({ ...signupData, address: e.target.value })}
+                        className={errors.address ? "border-destructive" : ""}
                       />
+                      {errors.address && <p className="text-sm text-destructive">{errors.address}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Número</Label>
+                      <Label>Número *</Label>
                       <Input
                         value={signupData.number}
                         onChange={(e) => setSignupData({ ...signupData, number: e.target.value })}
+                        className={errors.number ? "border-destructive" : ""}
                       />
+                      {errors.number && <p className="text-sm text-destructive">{errors.number}</p>}
                     </div>
 
                     <div className="space-y-2 sm:col-span-2">
@@ -1240,107 +1266,64 @@ const Auth = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Bairro</Label>
+                      <Label>Bairro *</Label>
                       <Input
                         value={signupData.neighborhood}
                         onChange={(e) => setSignupData({ ...signupData, neighborhood: e.target.value })}
+                        className={errors.neighborhood ? "border-destructive" : ""}
                       />
+                      {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Cidade</Label>
+                      <Label>Cidade *</Label>
                       <Input
                         value={signupData.city}
                         onChange={(e) => setSignupData({ ...signupData, city: e.target.value })}
+                        className={errors.city ? "border-destructive" : ""}
                       />
+                      {errors.city && <p className="text-sm text-destructive">{errors.city}</p>}
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Estado</Label>
+                      <Label>Estado *</Label>
                       <Input
                         value={signupData.state}
                         onChange={(e) => setSignupData({ ...signupData, state: e.target.value })}
                         maxLength={2}
+                        className={errors.state ? "border-destructive" : ""}
                       />
+                      {errors.state && <p className="text-sm text-destructive">{errors.state}</p>}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Step 3: Access Profile */}
+              {/* Step 3: Confirmation */}
               {step === 3 && (
                 <div className="space-y-6">
-                  <div className="space-y-4">
-                    <Label>Perfil de Acesso Solicitado</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Selecione o tipo de acesso que você precisa. Um administrador irá aprovar sua solicitação.
-                    </p>
-
-                    <div className="space-y-3">
-                      {[
-                        { value: "membro", label: "Membro", description: "Acesso básico para visualização" },
-                        { value: "integrante_ministerio", label: "Integrante de Ministério", description: "Visualização do ministério (sem edição)" },
-                        { value: "lider_ministerio", label: "Líder de Ministério", description: "Acesso completo ao ministério" },
-                      ].map((perfil) => (
-                        <div
-                          key={perfil.value}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            signupData.perfil_solicitado === perfil.value
-                              ? "border-secondary bg-secondary/10"
-                              : "border-border hover:border-secondary/50"
-                          }`}
-                          onClick={() => setSignupData({ ...signupData, perfil_solicitado: perfil.value as "membro" | "lider_ministerio" | "integrante_ministerio" })}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-4 h-4 rounded-full border-2 ${
-                                signupData.perfil_solicitado === perfil.value
-                                  ? "border-secondary bg-secondary"
-                                  : "border-muted-foreground"
-                              }`}
-                            />
-                            <div>
-                              <p className="font-medium">{perfil.label}</p>
-                              <p className="text-sm text-muted-foreground">{perfil.description}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                  <div className="p-4 bg-muted/50 rounded-lg border border-border">
+                    <h3 className="font-semibold mb-3">Confirme seus dados</h3>
+                    <div className="space-y-2 text-sm">
+                      <p><strong>Nome:</strong> {signupData.full_name}</p>
+                      <p><strong>Email:</strong> {signupData.email}</p>
+                      <p><strong>WhatsApp:</strong> {signupData.whatsapp}</p>
+                      <p><strong>CPF:</strong> {signupData.cpf}</p>
+                      <p><strong>Endereço:</strong> {signupData.address}, {signupData.number}{signupData.complement ? ` - ${signupData.complement}` : ""}</p>
+                      <p><strong>Bairro:</strong> {signupData.neighborhood}</p>
+                      <p><strong>Cidade/Estado:</strong> {signupData.city}/{signupData.state}</p>
                     </div>
                   </div>
-
-                  {(signupData.perfil_solicitado === "lider_ministerio" || signupData.perfil_solicitado === "integrante_ministerio") && ministries.length > 0 && (
-                    <div className="space-y-3">
-                      <Label>Ministérios</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Selecione os ministérios que você participa
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-2">
-                        {ministries.map((ministry) => (
-                          <div
-                            key={ministry.id}
-                            className="flex items-center space-x-2"
-                          >
-                            <Checkbox
-                              id={ministry.id}
-                              checked={signupData.ministerio_ids?.includes(ministry.id)}
-                              onCheckedChange={(checked) => {
-                                const current = signupData.ministerio_ids || [];
-                                if (checked) {
-                                  setSignupData({ ...signupData, ministerio_ids: [...current, ministry.id] });
-                                } else {
-                                  setSignupData({ ...signupData, ministerio_ids: current.filter((id) => id !== ministry.id) });
-                                }
-                              }}
-                            />
-                            <label htmlFor={ministry.id} className="text-sm cursor-pointer">
-                              {ministry.name}
-                            </label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  
+                  <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/30">
+                    <p className="text-sm text-muted-foreground">
+                      Ao enviar sua solicitação, ela será analisada pela secretaria. 
+                      Você receberá suas credenciais de acesso via WhatsApp após a aprovação.
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      <strong>Sua senha será:</strong> Cpf@ + 6 primeiros dígitos do seu CPF
+                    </p>
+                  </div>
                 </div>
               )}
 
