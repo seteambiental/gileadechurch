@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -191,6 +191,33 @@ const MembrosTab = () => {
     onError: (err: any) => {
       const message = err?.message || "Erro ao excluir membro";
       toast({ title: message, variant: "destructive" });
+    },
+  });
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async (member: Member) => {
+      if (!member.email) throw new Error("Membro não possui email cadastrado");
+      
+      const { data, error } = await supabase.functions.invoke("enviar-email-boas-vindas", {
+        body: { 
+          email: member.email,
+          nome: member.full_name,
+        },
+      });
+      
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Erro ao enviar email");
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Email enviado com sucesso!" });
+    },
+    onError: (err: any) => {
+      toast({ 
+        title: "Erro ao enviar email", 
+        description: err?.message || "Erro desconhecido",
+        variant: "destructive" 
+      });
     },
   });
 
@@ -548,6 +575,22 @@ const MembrosTab = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+                        {member.email && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700"
+                            onClick={() => sendEmailMutation.mutate(member)}
+                            disabled={sendEmailMutation.isPending}
+                            title="Enviar email de boas-vindas"
+                          >
+                            {sendEmailMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Mail className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"
