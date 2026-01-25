@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "https://esm.sh/resend@2.0.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +8,6 @@ const corsHeaders = {
 const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
 const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
 const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 interface RequestBody {
   email: string;
@@ -46,60 +44,6 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   }
   
   return result;
-}
-
-async function enviarEmailBoasVindas(email: string, nome: string, senha: string) {
-  if (!RESEND_API_KEY) {
-    console.log("RESEND_API_KEY não configurada, email não enviado");
-    return null;
-  }
-
-  const resend = new Resend(RESEND_API_KEY);
-  const primeiroNome = nome.split(' ')[0];
-
-  const emailResponse = await resend.emails.send({
-    from: "Igreja Gileade <noreply@gileadechurch.com.br>",
-    to: [email],
-    subject: "Bem-vindo(a) à Igreja Gileade! 🙏",
-    html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #1e40af;">🎉 Bem-vindo(a), ${primeiroNome}!</h1>
-        </div>
-        
-        <p style="font-size: 16px; color: #333;">Seu cadastro foi realizado com sucesso!</p>
-        
-        <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <h3 style="color: #1e40af; margin-top: 0;">📱 Acesse nosso sistema:</h3>
-          <p style="margin: 10px 0;">
-            <a href="https://gileadechurch.lovable.app" style="color: #2563eb; font-weight: bold;">
-              https://gileadechurch.lovable.app
-            </a>
-          </p>
-          
-          <h3 style="color: #1e40af;">🔐 Seus dados de acesso:</h3>
-          <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-          <p style="margin: 5px 0;"><strong>Senha:</strong> ${senha}</p>
-        </div>
-        
-        <p style="font-size: 14px; color: #666; background-color: #fef3c7; padding: 10px; border-radius: 4px;">
-          ⚠️ <strong>Importante:</strong> Recomendamos que você altere sua senha no primeiro acesso.
-        </p>
-        
-        <p style="font-size: 16px; color: #333; margin-top: 20px;">
-          Estamos muito felizes em ter você conosco!
-        </p>
-        
-        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-          <p style="color: #1e40af; font-weight: bold;">Igreja Gileade 💙</p>
-          <p style="font-size: 12px; color: #666;">Um lugar de cura e restauração</p>
-        </div>
-      </div>
-    `,
-  });
-
-  console.log("Email de boas-vindas enviado com sucesso:", emailResponse);
-  return emailResponse;
 }
 
 function gerarMensagemBoasVindasMembro(nome: string, email: string, senha: string) {
@@ -222,7 +166,7 @@ Deno.serve(async (req) => {
       // Não retornar erro pois o usuário foi criado com sucesso
     }
 
-    // Buscar dados do membro para enviar WhatsApp e Email
+    // Buscar dados do membro para enviar WhatsApp
     const { data: memberData, error: memberError } = await supabaseAdmin
       .from("members")
       .select("full_name, whatsapp")
@@ -230,15 +174,6 @@ Deno.serve(async (req) => {
       .single();
 
     const nomeCompleto = memberData?.full_name || "Novo Membro";
-
-    // Enviar email de boas-vindas
-    try {
-      await enviarEmailBoasVindas(email, nomeCompleto, defaultPassword);
-      console.log("Email de boas-vindas enviado com sucesso para:", email);
-    } catch (emailError) {
-      console.error("Erro ao enviar email de boas-vindas:", emailError);
-      // Não retornar erro pois o usuário foi criado com sucesso
-    }
 
     // Enviar WhatsApp de boas-vindas
     if (!memberError && memberData?.whatsapp) {

@@ -122,12 +122,28 @@ const SolicitacoesMembrosTab = () => {
 
       if (updateError) throw updateError;
 
+      // Enviar email de boas-vindas após aprovação
+      if (request.email) {
+        try {
+          await supabase.functions.invoke("enviar-email-boas-vindas", {
+            body: {
+              email: request.email,
+              nome: request.full_name,
+            },
+          });
+          console.log("Email de boas-vindas enviado para:", request.email);
+        } catch (emailError) {
+          console.error("Erro ao enviar email de boas-vindas:", emailError);
+          // Não falhar a aprovação se o email não for enviado
+        }
+      }
+
       return newMember;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["member-requests"] });
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast({ title: "Solicitação aprovada!", description: "Membro cadastrado com sucesso." });
+      toast({ title: "Solicitação aprovada!", description: "Membro cadastrado e email de boas-vindas enviado." });
       setSelectedRequest(null);
     },
     onError: (error) => {
