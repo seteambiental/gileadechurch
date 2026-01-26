@@ -21,6 +21,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { DateInput } from "@/components/ui/date-input";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
+import { TermsCheckbox } from "@/components/TermsCheckbox";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
@@ -69,6 +70,10 @@ const Auth = () => {
   
   // Tipo de cadastro: membro ou visitante
   const [tipocadastro, setTipoCadastro] = useState<"membro" | "visitante" | null>(null);
+  
+  // Terms acceptance
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedTermsVisitante, setAcceptedTermsVisitante] = useState(false);
   
   // Visitante fields (simplified form)
   const [visitanteData, setVisitanteData] = useState({
@@ -355,6 +360,12 @@ const Auth = () => {
     e.preventDefault();
     if (!validateSignupStep(3)) return;
 
+    // Validate terms acceptance
+    if (!acceptedTerms) {
+      setErrors({ ...errors, acceptedTerms: "Você deve aceitar os termos para continuar" });
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Upload photo first if exists
@@ -435,6 +446,7 @@ const Auth = () => {
       });
       setPhotoFile(null);
       setPhotoPreview(null);
+      setAcceptedTerms(false);
       setStep(1);
       setIsLogin(true);
     } catch (error: any) {
@@ -960,6 +972,12 @@ const Auth = () => {
                     />
                     {errors.visitanteWhatsapp && <p className="text-sm text-destructive">{errors.visitanteWhatsapp}</p>}
                   </div>
+                  <TermsCheckbox
+                    checked={acceptedTermsVisitante}
+                    onCheckedChange={setAcceptedTermsVisitante}
+                    error={errors.acceptedTermsVisitante}
+                  />
+
                   <div className="flex gap-2 pt-2">
                     <Button
                       type="button"
@@ -967,6 +985,7 @@ const Auth = () => {
                       onClick={() => {
                         setTipoCadastro(null);
                         setErrors({});
+                        setAcceptedTermsVisitante(false);
                       }}
                       className="flex-1"
                     >
@@ -983,6 +1002,7 @@ const Auth = () => {
                         if (!visitanteData.nome.trim()) fieldErrors.visitanteNome = "Nome é obrigatório";
                         if (!visitanteData.sobrenome.trim()) fieldErrors.visitanteSobrenome = "Sobrenome é obrigatório";
                         if (!visitanteData.whatsapp.trim()) fieldErrors.visitanteWhatsapp = "WhatsApp é obrigatório";
+                        if (!acceptedTermsVisitante) fieldErrors.acceptedTermsVisitante = "Você deve aceitar os termos para continuar";
                         
                         if (Object.keys(fieldErrors).length > 0) {
                           setErrors(fieldErrors);
@@ -1014,6 +1034,7 @@ const Auth = () => {
                           setPreCheckName("");
                           setPreCheckBirthDate("");
                           setIsPreCheck(false);
+                          setAcceptedTermsVisitante(false);
                           setIsLogin(true);
                         } catch (error: any) {
                           console.error("Erro ao cadastrar visitante:", error);
@@ -1314,6 +1335,12 @@ const Auth = () => {
                       <p><strong>Cidade/Estado:</strong> {signupData.city}/{signupData.state}</p>
                     </div>
                   </div>
+
+                  <TermsCheckbox
+                    checked={acceptedTerms}
+                    onCheckedChange={setAcceptedTerms}
+                    error={errors.acceptedTerms}
+                  />
                   
                   <div className="p-4 bg-secondary/10 rounded-lg border border-secondary/30">
                     <p className="text-sm text-muted-foreground">
