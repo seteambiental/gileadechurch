@@ -37,6 +37,7 @@ import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { TermsCheckbox } from "./TermsCheckbox";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
@@ -97,6 +98,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [isChecking, setIsChecking] = useState(false);
   const [dateInputValue, setDateInputValue] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -235,6 +238,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setVerified(false);
     setVerificationError(null);
     setDateInputValue("");
+    setAcceptedTerms(false);
+    setTermsError(null);
     form.reset();
     onOpenChange(false);
   };
@@ -604,11 +609,29 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   />
                 </div>
 
+                <TermsCheckbox
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => {
+                    setAcceptedTerms(checked);
+                    if (checked) setTermsError(null);
+                  }}
+                  error={termsError || undefined}
+                />
+
                 <div className="flex justify-end gap-2 pt-4">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={mutation.isPending}>
+                  <Button 
+                    type="submit" 
+                    disabled={mutation.isPending}
+                    onClick={(e) => {
+                      if (!acceptedTerms) {
+                        e.preventDefault();
+                        setTermsError("Você deve aceitar os termos para continuar");
+                      }
+                    }}
+                  >
                     {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Enviar Solicitação
                   </Button>
