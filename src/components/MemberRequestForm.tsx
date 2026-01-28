@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Camera } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ import { useCepLookup } from "@/hooks/useCepLookup";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TermsCheckbox } from "./TermsCheckbox";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
@@ -100,6 +101,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -189,6 +192,24 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       if (checkError) throw checkError;
       if (check?.exists) throw new Error("USUÁRIO JÁ CADASTRADO");
 
+      // Upload da foto se existir
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        const fileExt = photoFile.name.split(".").pop();
+        const fileName = `solicitacao_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("member-photos")
+          .upload(fileName, photoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("member-photos")
+          .getPublicUrl(fileName);
+
+        photoUrl = urlData.publicUrl;
+      }
+
       const payload = {
         full_name: data.full_name,
         email: data.email || null,
@@ -203,6 +224,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         city: data.city || null,
         state: data.state || null,
         cpf: cpfClean,
+        photo_url: photoUrl,
       };
 
       // Inserção via função backend (contorna RLS do client/anon)
@@ -240,6 +262,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setDateInputValue("");
     setAcceptedTerms(false);
     setTermsError(null);
+    setPhotoFile(null);
+    setPhotoPreview(null);
     form.reset();
     onOpenChange(false);
   };
@@ -420,6 +444,28 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
             {/* Rest of the form - only shown after verification */}
             {verified && (
               <>
+                {/* Campo de Foto */}
+                <div className="flex flex-col items-center gap-3 py-4 border-b">
+                  <CameraPhotoInput
+                    photoPreview={photoPreview}
+                    onPhotoCapture={(file) => {
+                      setPhotoFile(file);
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setPhotoPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      } else {
+                        setPhotoPreview(null);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Tire uma foto ou selecione uma imagem
+                  </p>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="full_name"
