@@ -2237,6 +2237,60 @@ export type Database = {
         }
         Relationships: []
       }
+      louvor_musicas: {
+        Row: {
+          artista: string | null
+          audio_url: string | null
+          bpm: number | null
+          categoria: string | null
+          cifra: string | null
+          created_at: string
+          criado_por: string | null
+          id: string
+          letra: string | null
+          observacoes: string | null
+          tags: string[] | null
+          titulo: string
+          tom: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          artista?: string | null
+          audio_url?: string | null
+          bpm?: number | null
+          categoria?: string | null
+          cifra?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          letra?: string | null
+          observacoes?: string | null
+          tags?: string[] | null
+          titulo: string
+          tom?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          artista?: string | null
+          audio_url?: string | null
+          bpm?: number | null
+          categoria?: string | null
+          cifra?: string | null
+          created_at?: string
+          criado_por?: string | null
+          id?: string
+          letra?: string | null
+          observacoes?: string | null
+          tags?: string[] | null
+          titulo?: string
+          tom?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       member_face_indexes: {
         Row: {
           created_at: string

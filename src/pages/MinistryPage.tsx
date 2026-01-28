@@ -32,6 +32,7 @@ import { MinisterioEquipeTab } from "@/components/ministerio/MinisterioEquipeTab
 import { MinisterioEscalasTab } from "@/components/ministerio/MinisterioEscalasTab";
 import { MinisterioEstatisticasTab } from "@/components/ministerio/MinisterioEstatisticasTab";
 import { MinisterioRepertorioTab } from "@/components/ministerio/MinisterioRepertorioTab";
+import { LouvorMusicasTab } from "@/components/ministerio/LouvorMusicasTab";
 import { DancaRepertorioTab } from "@/components/ministerio/DancaRepertorioTab";
 import { DancaEquipesTab } from "@/components/ministerio/DancaEquipesTab";
 import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
@@ -363,7 +364,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -471,6 +472,12 @@ const MinistryPage = () => {
                     <TabsTrigger value="repertorio" className="flex items-center gap-2">
                       <ListMusic className="w-4 h-4" />
                       <span className="hidden sm:inline">Repertório</span>
+                    </TabsTrigger>
+                  )}
+                  {hasRepertorio && (
+                    <TabsTrigger value="musicas" className="flex items-center gap-2">
+                      <Music className="w-4 h-4" />
+                      <span className="hidden sm:inline">Músicas</span>
                     </TabsTrigger>
                   )}
                   <TabsTrigger value="estatisticas" className="flex items-center gap-2">
@@ -606,6 +613,12 @@ const MinistryPage = () => {
                 {hasRepertorio && (
                   <TabsContent value="repertorio">
                     <MinisterioRepertorioTab ministryId={ministryFromDb!.id} />
+                  </TabsContent>
+                )}
+
+                {hasRepertorio && (
+                  <TabsContent value="musicas">
+                    <LouvorMusicasTab ministryId={ministryFromDb!.id} />
                   </TabsContent>
                 )}
 
