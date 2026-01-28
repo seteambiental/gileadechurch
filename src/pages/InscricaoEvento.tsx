@@ -134,12 +134,12 @@ const InscricaoEvento = () => {
     : null;
   const esgotado = vagasDisponiveis !== null && vagasDisponiveis <= 0;
 
-  // Fetch members
+  // Fetch members - usando view pública members_safe para permitir acesso sem autenticação
   const { data: members = [] } = useQuery({
     queryKey: ["members-inscricao"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe")
         .select("id, full_name, whatsapp, genero")
         .order("full_name");
       if (error) throw error;
