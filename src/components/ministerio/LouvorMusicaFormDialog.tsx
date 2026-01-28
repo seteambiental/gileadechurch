@@ -20,9 +20,9 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Loader2, Search } from "lucide-react";
+import { X, Plus, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { VagalumeBuscaDialog } from "./VagalumeBuscaDialog";
+
 interface Musica {
   id: string;
   titulo: string;
@@ -93,7 +93,6 @@ export const LouvorMusicaFormDialog = ({
   const [form, setForm] = useState<FormData>(initialForm);
   const [newTag, setNewTag] = useState("");
   const [activeTab, setActiveTab] = useState("info");
-  const [showVagalumeDialog, setShowVagalumeDialog] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -187,15 +186,6 @@ export const LouvorMusicaFormDialog = ({
     setForm({ ...form, tags: form.tags.filter(t => t !== tagToRemove) });
   };
 
-  const handleVagalumeSelect = (data: { titulo: string; artista: string; letra: string }) => {
-    setForm({
-      ...form,
-      titulo: form.titulo || data.titulo,
-      artista: form.artista || data.artista,
-      letra: data.letra,
-    });
-    setActiveTab("letra");
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -351,18 +341,6 @@ export const LouvorMusicaFormDialog = ({
             </TabsContent>
 
             <TabsContent value="letra" className="space-y-4 mt-4">
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowVagalumeDialog(true)}
-                  className="gap-2"
-                >
-                  <Search className="w-4 h-4" />
-                  Buscar no Vagalume
-                </Button>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="letra">Letra da Música</Label>
                 <Textarea
@@ -402,12 +380,6 @@ export const LouvorMusicaFormDialog = ({
           </div>
         </form>
 
-        {/* Dialog de busca no Vagalume */}
-        <VagalumeBuscaDialog
-          open={showVagalumeDialog}
-          onOpenChange={setShowVagalumeDialog}
-          onSelect={handleVagalumeSelect}
-        />
       </DialogContent>
     </Dialog>
   );
