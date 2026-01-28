@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,9 +9,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Check, Share2, Download } from "lucide-react";
+import { Copy, Check, Share2, Download, ExternalLink } from "lucide-react";
 import html2canvas from "html2canvas";
-import { useRef } from "react";
+import heroImage from "@/assets/hero-grapes.jpg";
 
 interface CompartilharCadastroDialogProps {
   trigger?: React.ReactNode;
@@ -44,8 +44,9 @@ export const CompartilharCadastroDialog = ({
 
     try {
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#ffffff",
+        backgroundColor: null,
         scale: 2,
+        useCORS: true,
       });
       
       const link = document.createElement("a");
@@ -66,6 +67,10 @@ export const CompartilharCadastroDialog = ({
     }
   };
 
+  const handleOpenLink = () => {
+    window.open(linkCadastro, "_blank");
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -76,85 +81,112 @@ export const CompartilharCadastroDialog = ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md p-0 overflow-hidden">
+        <DialogHeader className="p-4 pb-0">
           <DialogTitle className="text-center">Compartilhar Cadastro</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Card para Download */}
+        <div className="space-y-4 p-4">
+          {/* Card para Download - com imagem de fundo */}
           <div
             ref={cardRef}
-            className="p-6 bg-white rounded-xl space-y-4"
+            className="relative rounded-xl overflow-hidden"
+            style={{ minHeight: 420 }}
           >
-            {/* Header */}
-            <div className="text-center space-y-2">
-              <h3 className="font-heading font-bold text-xl text-gray-900">
-                Gileade Church
-              </h3>
-              <p className="text-sm text-gray-600">
-                Um Lugar de Cura e Restauração
-              </p>
-            </div>
-
-            {/* QR Code */}
-            <div className="flex justify-center py-4">
-              <div className="p-4 bg-gray-50 rounded-xl">
-                <QRCodeSVG
-                  value={linkCadastro}
-                  size={160}
-                  level="H"
-                  includeMargin={false}
-                  fgColor="#dc2626"
-                />
+            {/* Background Image */}
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${heroImage})` }}
+            />
+            {/* Overlay escuro */}
+            <div className="absolute inset-0 bg-primary/80" />
+            
+            {/* Content */}
+            <div className="relative z-10 p-6 space-y-4">
+              {/* Header */}
+              <div className="text-center space-y-2">
+                <h3 className="font-heading font-bold text-2xl text-primary-foreground">
+                  Gileade Church
+                </h3>
+                <p className="text-sm text-primary-foreground/80">
+                  Um Lugar de Cura e Restauração
+                </p>
               </div>
-            </div>
 
-            {/* Call to Action */}
-            <div className="text-center space-y-2">
-              <p className="text-lg font-semibold text-gray-900">
-                Faça parte da nossa família!
-              </p>
-              <p className="text-sm text-gray-600">
-                Escaneie o QR Code ou acesse o link abaixo para se cadastrar
-              </p>
-            </div>
+              {/* QR Code */}
+              <div className="flex justify-center py-4">
+                <div className="p-4 bg-white rounded-xl shadow-lg">
+                  <QRCodeSVG
+                    value={linkCadastro}
+                    size={140}
+                    level="H"
+                    includeMargin={false}
+                    fgColor="#dc2626"
+                  />
+                </div>
+              </div>
 
-            {/* Link Display */}
-            <div className="p-3 bg-gray-100 rounded-lg text-center">
-              <p className="text-xs text-gray-500 mb-1">Link de cadastro:</p>
-              <p className="text-sm font-mono text-red-600 break-all">
-                {linkCadastro}
-              </p>
+              {/* Call to Action */}
+              <div className="text-center space-y-2">
+                <p className="text-lg font-semibold text-primary-foreground">
+                  Faça parte da nossa família!
+                </p>
+                <p className="text-sm text-primary-foreground/80">
+                  Escaneie o QR Code ou clique no link abaixo
+                </p>
+              </div>
+
+              {/* Link Display - Clicável */}
+              <button
+                onClick={handleOpenLink}
+                className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-center hover:bg-white/20 transition-colors group"
+              >
+                <p className="text-xs text-primary-foreground/70 mb-1">Acesse:</p>
+                <p className="text-sm font-medium text-secondary break-all group-hover:underline flex items-center justify-center gap-2">
+                  {linkCadastro}
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </p>
+              </button>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               variant="outline"
-              className="flex-1"
+              size="sm"
+              onClick={handleOpenLink}
+              className="gap-1"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Abrir
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleCopyLink}
+              className="gap-1"
             >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Copiado!
+                  <Check className="w-4 h-4" />
+                  Copiado
                 </>
               ) : (
                 <>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Link
+                  <Copy className="w-4 h-4" />
+                  Copiar
                 </>
               )}
             </Button>
             <Button
               variant="default"
-              className="flex-1"
+              size="sm"
               onClick={handleDownloadImage}
+              className="gap-1"
             >
-              <Download className="w-4 h-4 mr-2" />
-              Baixar Imagem
+              <Download className="w-4 h-4" />
+              Baixar
             </Button>
           </div>
         </div>
