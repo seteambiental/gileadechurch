@@ -20,6 +20,7 @@ type Body = {
   city?: string | null;
   state?: string | null;
   cpf: string; // only digits
+  photo_url?: string | null;
 };
 
 serve(async (req) => {
@@ -82,6 +83,7 @@ serve(async (req) => {
       city: body.city ?? null,
       state: body.state ?? null,
       cpf,
+      photo_url: body.photo_url ?? null,
       status: "pendente" as const,
     };
 

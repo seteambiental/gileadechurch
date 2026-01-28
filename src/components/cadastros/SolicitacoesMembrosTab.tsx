@@ -50,6 +50,7 @@ interface MemberRequest {
   city: string | null;
   state: string | null;
   cpf: string | null;
+  photo_url: string | null;
   status: string;
   motivo_rejeicao: string | null;
   created_at: string;
@@ -104,6 +105,7 @@ const SolicitacoesMembrosTab = () => {
           city: request.city,
           state: request.state,
           cpf: request.cpf,
+          photo_url: request.photo_url,
         })
         .select()
         .single();
