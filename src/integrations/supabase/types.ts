@@ -3628,6 +3628,16 @@ export type Database = {
       }
     }
     Views: {
+      inscricao_pessoas_busca: {
+        Row: {
+          full_name: string | null
+          genero: string | null
+          id: string | null
+          tipo_pessoa: string | null
+          whatsapp: string | null
+        }
+        Relationships: []
+      }
       members_safe: {
         Row: {
           address: string | null

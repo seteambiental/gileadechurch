@@ -34,18 +34,12 @@ interface Evento {
   limite_vagas: number | null;
 }
 
-interface Member {
+interface PessoaBusca {
   id: string;
   full_name: string;
   whatsapp: string | null;
   genero: string | null;
-}
-
-interface NovoConvertido {
-  id: string;
-  full_name: string;
-  whatsapp: string | null;
-  genero: string | null;
+  tipo_pessoa: "member" | "convertido";
 }
 
 const InscricaoEvento = () => {
@@ -134,41 +128,27 @@ const InscricaoEvento = () => {
     : null;
   const esgotado = vagasDisponiveis !== null && vagasDisponiveis <= 0;
 
-  // Fetch members - usando view pública members_safe para permitir acesso sem autenticação
-  const { data: members = [] } = useQuery({
-    queryKey: ["members-inscricao"],
+  // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
+  const { data: pessoas = [] } = useQuery({
+    queryKey: ["pessoas-inscricao"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members_safe")
-        .select("id, full_name, whatsapp, genero")
+        .from("inscricao_pessoas_busca" as any)
+        .select("id, full_name, whatsapp, genero, tipo_pessoa")
         .order("full_name");
       if (error) throw error;
-      return data as Member[];
-    },
-  });
-
-  // Fetch novos convertidos
-  const { data: convertidos = [] } = useQuery({
-    queryKey: ["convertidos-inscricao"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("novos_convertidos")
-        .select("id, full_name, whatsapp, genero")
-        .order("full_name");
-      if (error) throw error;
-      return data as NovoConvertido[];
+      return (data as unknown) as PessoaBusca[];
     },
   });
 
   // Filter search results
-  const searchResults = searchTerm.length >= 2 ? [
-    ...members.filter(m => m.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map(m => ({ ...m, type: "member" as const })),
-    ...convertidos.filter(c => c.full_name.toLowerCase().includes(searchTerm.toLowerCase())).map(c => ({ ...c, type: "convertido" as const })),
-  ] : [];
+  const searchResults = searchTerm.length >= 2 
+    ? pessoas.filter(p => p.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : [];
 
   // Handle person selection
-  const handleSelectPerson = (person: { id: string; full_name: string; whatsapp: string | null; genero: string | null; type: "member" | "convertido" }) => {
-    setSelectedPerson({ type: person.type, id: person.id });
+  const handleSelectPerson = (person: PessoaBusca) => {
+    setSelectedPerson({ type: person.tipo_pessoa, id: person.id });
     setNomeParticipante(person.full_name);
     setTelefoneContato(person.whatsapp || "");
     setGenero(person.genero || "");
@@ -467,14 +447,14 @@ const InscricaoEvento = () => {
                       <div className="border rounded-lg divide-y max-h-48 md:max-h-64 overflow-y-auto">
                         {searchResults.map((person) => (
                           <button
-                            key={`${person.type}-${person.id}`}
+                            key={`${person.tipo_pessoa}-${person.id}`}
                             type="button"
                             className="w-full px-3 md:px-4 py-2 md:py-4 text-left hover:bg-muted/50 flex items-center justify-between text-base md:text-lg"
                             onClick={() => handleSelectPerson(person)}
                           >
                             <span>{person.full_name}</span>
                             <span className="text-xs md:text-sm text-muted-foreground">
-                              {person.type === "member" ? "Membro" : "Consolidação"}
+                              {person.tipo_pessoa === "member" ? "Membro" : "Consolidação"}
                             </span>
                           </button>
                         ))}
