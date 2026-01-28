@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
@@ -10,10 +10,15 @@ import PrayerRequestForm from "@/components/PrayerRequestForm";
 import CasasRefugioMap from "@/components/CasasRefugioMap";
 import SectionTitle from "@/components/SectionTitle";
 import heroImage from "@/assets/hero-grapes.jpg";
+import { MemberRequestForm } from "@/components/MemberRequestForm";
+import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
+import { Button } from "@/components/ui/button";
+import { UserPlus, Share2 } from "lucide-react";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 const Index = () => {
+  const [memberFormOpen, setMemberFormOpen] = useState(false);
   // Buscar configuração do hero
   const { data: homepageConfig } = useQuery({
     queryKey: ["homepage-config-public"],
@@ -295,6 +300,44 @@ const Index = () => {
         </section>
       )}
 
+      {/* Cadastro Section */}
+      <section id="cadastro" className="py-20 bg-secondary/10">
+        <div className="container mx-auto px-4">
+          <SectionTitle
+            title="Faça Parte da Nossa Família"
+            subtitle="Cadastre-se e participe ativamente da nossa comunidade"
+            centered
+          />
+
+          <div className="max-w-md mx-auto text-center space-y-6">
+            <p className="text-muted-foreground">
+              Preencha o formulário de cadastro e faça parte da família Gileade Church. 
+              Você receberá informações sobre nossos eventos, cultos e muito mais!
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button
+                size="lg"
+                onClick={() => setMemberFormOpen(true)}
+                className="gap-2"
+              >
+                <UserPlus className="w-5 h-5" />
+                Quero me Cadastrar
+              </Button>
+              
+              <CompartilharCadastroDialog
+                trigger={
+                  <Button variant="outline" size="lg" className="gap-2">
+                    <Share2 className="w-5 h-5" />
+                    Compartilhar
+                  </Button>
+                }
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Cell Groups / Casas Refúgio Section */}
       <section id="casas-refugio" className="py-20 bg-background">
         <div className="container mx-auto px-4">
@@ -377,6 +420,9 @@ const Index = () => {
       </section>
 
       <Footer />
+
+      {/* Member Request Form Dialog */}
+      <MemberRequestForm open={memberFormOpen} onOpenChange={setMemberFormOpen} />
     </div>
   );
 };
