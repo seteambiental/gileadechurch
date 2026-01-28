@@ -21,6 +21,7 @@ import AgendaPage from "./pages/AgendaPage";
 import InscricaoEvento from "./pages/InscricaoEvento";
 import KidsPage from "./pages/KidsPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
+import CadastroPublico from "./pages/CadastroPublico";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/cadastro" element={<CadastroPublico />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/app" element={<AppDashboard />} />
             <Route path="/app/homepage" element={<HomepageAdmin />} />

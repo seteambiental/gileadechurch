@@ -26,7 +26,7 @@ export const CompartilharCadastroDialog = ({
   const cardRef = useRef<HTMLDivElement>(null);
 
   const baseUrl = window.location.origin;
-  const linkCadastro = `${baseUrl}/#cadastro`;
+  const linkCadastro = `${baseUrl}/cadastro`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(linkCadastro).then(() => {
