@@ -43,17 +43,17 @@ import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
   full_name: z.string().min(3, "Nome completo é obrigatório"),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   whatsapp: z.string().min(10, "WhatsApp é obrigatório"),
-  genero: z.string().optional(),
+  genero: z.string().min(1, "Gênero é obrigatório"),
   birth_date: z.string().min(1, "Data de nascimento é obrigatória"),
-  cep: z.string().optional(),
-  address: z.string().optional(),
-  number: z.string().optional(),
+  cep: z.string().min(9, "CEP é obrigatório"),
+  address: z.string().min(3, "Endereço é obrigatório"),
+  number: z.string().min(1, "Número é obrigatório"),
   complement: z.string().optional(),
-  neighborhood: z.string().optional(),
-  city: z.string().optional(),
-  state: z.string().optional(),
+  neighborhood: z.string().min(2, "Bairro é obrigatório"),
+  city: z.string().min(2, "Cidade é obrigatória"),
+  state: z.string().min(2, "Estado é obrigatório"),
   cpf: z.string().min(14, "CPF é obrigatório"),
 });
 
@@ -462,8 +462,11 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     }}
                   />
                   <p className="text-xs text-muted-foreground text-center">
-                    Tire uma foto ou selecione uma imagem
+                    Tire uma foto ou selecione uma imagem *
                   </p>
+                  {!photoPreview && (
+                    <p className="text-xs text-destructive">Foto é obrigatória</p>
+                  )}
                 </div>
 
                 <FormField
@@ -524,7 +527,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>Email *</FormLabel>
                         <FormControl>
                           <Input type="email" placeholder="seu@email.com" {...field} />
                         </FormControl>
@@ -539,7 +542,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   name="genero"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Gênero</FormLabel>
+                      <FormLabel>Gênero *</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -562,7 +565,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="cep"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>CEP</FormLabel>
+                        <FormLabel>CEP *</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="00000-000"
@@ -581,7 +584,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="address"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
-                        <FormLabel>Endereço</FormLabel>
+                        <FormLabel>Endereço *</FormLabel>
                         <FormControl>
                           <Input
                             placeholder={isLoadingCep ? "Buscando..." : "Rua, Avenida..."}
@@ -601,7 +604,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Número</FormLabel>
+                        <FormLabel>Número *</FormLabel>
                         <FormControl>
                           <Input placeholder="123" {...field} inputMode="numeric" />
                         </FormControl>
@@ -615,7 +618,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="neighborhood"
                     render={({ field }) => (
                       <FormItem className="col-span-2">
-                        <FormLabel>Bairro</FormLabel>
+                        <FormLabel>Bairro *</FormLabel>
                         <FormControl>
                           <Input placeholder="Bairro" {...field} disabled={isLoadingCep} />
                         </FormControl>
@@ -631,7 +634,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cidade</FormLabel>
+                        <FormLabel>Cidade *</FormLabel>
                         <FormControl>
                           <Input placeholder="Cidade" {...field} disabled={isLoadingCep} />
                         </FormControl>
@@ -645,7 +648,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     name="state"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estado</FormLabel>
+                        <FormLabel>Estado *</FormLabel>
                         <FormControl>
                           <Input placeholder="UF" maxLength={2} {...field} disabled={isLoadingCep} />
                         </FormControl>
@@ -672,6 +675,15 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     type="submit" 
                     disabled={mutation.isPending}
                     onClick={(e) => {
+                      if (!photoFile) {
+                        e.preventDefault();
+                        toast({
+                          title: "Foto obrigatória",
+                          description: "Por favor, tire uma foto ou selecione uma imagem.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
                       if (!acceptedTerms) {
                         e.preventDefault();
                         setTermsError("Você deve aceitar os termos para continuar");

@@ -141,6 +141,26 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
       toast.error("Nome é obrigatório");
       return;
     }
+    if (!formData.dataNascimento) {
+      toast.error("Data de nascimento é obrigatória");
+      return;
+    }
+    if (!formData.genero) {
+      toast.error("Gênero é obrigatório");
+      return;
+    }
+    if (!formData.whatsapp || formData.whatsapp.replace(/\D/g, "").length < 10) {
+      toast.error("WhatsApp é obrigatório");
+      return;
+    }
+    if (!formData.email || !formData.email.includes("@")) {
+      toast.error("Email é obrigatório");
+      return;
+    }
+    if (!photoFile) {
+      toast.error("Foto é obrigatória");
+      return;
+    }
     createMutation.mutate();
   };
 
@@ -185,6 +205,7 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
               onPhotoCapture={handlePhotoChange}
               photoPreview={photoPreview}
             />
+            <p className="text-xs text-muted-foreground">Foto *</p>
           </div>
 
           <div className="space-y-2">
@@ -200,9 +221,10 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dataNascimento">Data de Nascimento</Label>
+              <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
               <Input
                 id="dataNascimento"
+                required
                 type="date"
                 value={formData.dataNascimento}
                 onChange={(e) => setFormData((prev) => ({ ...prev, dataNascimento: e.target.value }))}
@@ -210,7 +232,7 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="genero">Gênero</Label>
+              <Label htmlFor="genero">Gênero *</Label>
               <Select
                 value={formData.genero}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, genero: value }))}
@@ -227,7 +249,7 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="whatsapp">WhatsApp</Label>
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
             <Input
               id="whatsapp"
               value={formData.whatsapp}
@@ -241,7 +263,7 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
+            <Label htmlFor="email">E-mail *</Label>
             <Input
               id="email"
               type="email"
