@@ -1186,10 +1186,10 @@ const Auth = () => {
                         <strong>Sua senha será gerada automaticamente:</strong>
                       </p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Cpf@ + 6 primeiros dígitos do CPF
+                        6 primeiros dígitos do CPF
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Ex: CPF 123.456.789-00 → Senha: Cpf@123456
+                        Ex: CPF 123.456.789-00 → Senha: 123456
                       </p>
                     </div>
 
@@ -1348,7 +1348,7 @@ const Auth = () => {
                       Você receberá suas credenciais de acesso via WhatsApp após a aprovação.
                     </p>
                     <p className="text-sm text-muted-foreground mt-2">
-                      <strong>Sua senha será:</strong> Cpf@ + 6 primeiros dígitos do seu CPF
+                      <strong>Sua senha será:</strong> Os 6 primeiros dígitos do seu CPF
                     </p>
                   </div>
                 </div>
