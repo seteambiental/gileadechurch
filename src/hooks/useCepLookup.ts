@@ -23,7 +23,11 @@ export function useCepLookup(
 
   useEffect(() => {
     const cep = cepFormatted ? unformatCep(cepFormatted) : "";
-    if (cep.length !== 8) return;
+    // Se o CEP estiver incompleto, garanta que não ficamos presos em loading
+    if (cep.length !== 8) {
+      setIsLoading(false);
+      return;
+    }
 
     const controller = new AbortController();
     const t = window.setTimeout(async () => {
@@ -52,6 +56,9 @@ export function useCepLookup(
     return () => {
       controller.abort();
       window.clearTimeout(t);
+
+      // Abort também não pode deixar o formulário travado em loading
+      setIsLoading(false);
     };
   }, [cepFormatted, debounceMs]);
 
