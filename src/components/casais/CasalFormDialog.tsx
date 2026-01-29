@@ -23,6 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { formatPhone } from "@/lib/masks";
 import { differenceInYears, differenceInMonths } from "date-fns";
+import { DateInput } from "@/components/ui/date-input";
 
 interface CasalFormDialogProps {
   open: boolean;
@@ -234,11 +235,11 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dataCasamento">Data do Casamento</Label>
-              <Input
+              <DateInput
                 id="dataCasamento"
-                type="date"
                 value={dataCasamento}
-                onChange={(e) => setDataCasamento(e.target.value)}
+                onChange={(value) => setDataCasamento(value)}
+                maxDate={undefined}
               />
             </div>
             <div className="space-y-2">

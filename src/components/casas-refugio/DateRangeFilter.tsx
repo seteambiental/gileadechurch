@@ -1,6 +1,6 @@
 import { Calendar } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DateInput } from "@/components/ui/date-input";
 
 interface DateRangeFilterProps {
   startDate: string;
@@ -30,20 +30,20 @@ export const DateRangeFilter = ({
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">De:</span>
-          <Input
-            type="date"
+          <DateInput
             value={startDate}
-            onChange={(e) => onStartDateChange(e.target.value)}
+            onChange={(value) => onStartDateChange(value)}
             className="w-[140px] h-9"
+            maxDate={undefined}
           />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Até:</span>
-          <Input
-            type="date"
+          <DateInput
             value={endDate}
-            onChange={(e) => onEndDateChange(e.target.value)}
+            onChange={(value) => onEndDateChange(value)}
             className="w-[140px] h-9"
+            maxDate={undefined}
           />
         </div>
         <Button variant="secondary" size="sm" onClick={onApply}>

@@ -21,6 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { formatCep, formatPhone, formatCPF } from "@/lib/masks";
+import { DateInput } from "@/components/ui/date-input";
 
 interface NovoConvertidoFormDialogProps {
   open: boolean;
@@ -267,11 +268,10 @@ export const NovoConvertidoFormDialog = ({
 
               <div>
                 <Label htmlFor="data_nascimento">Data de Nascimento</Label>
-                <Input
+                <DateInput
                   id="data_nascimento"
-                  type="date"
                   value={formData.data_nascimento}
-                  onChange={(e) => setFormData({ ...formData, data_nascimento: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, data_nascimento: value })}
                 />
               </div>
 
@@ -451,11 +451,11 @@ export const NovoConvertidoFormDialog = ({
               
               <div>
                 <Label htmlFor="data_decisao">Data da Decisão</Label>
-                <Input
+                <DateInput
                   id="data_decisao"
-                  type="date"
                   value={formData.data_decisao}
-                  onChange={(e) => setFormData({ ...formData, data_decisao: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, data_decisao: value })}
+                  maxDate={undefined}
                 />
               </div>
             </div>
@@ -476,11 +476,10 @@ export const NovoConvertidoFormDialog = ({
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="batizado" className="cursor-pointer">Batizado</Label>
                   {formData.batizado && (
-                    <Input
-                      type="date"
+                    <DateInput
                       value={formData.data_batismo}
-                      onChange={(e) => setFormData({ ...formData, data_batismo: e.target.value })}
-                      placeholder="Data do batismo"
+                      onChange={(value) => setFormData({ ...formData, data_batismo: value })}
+                      maxDate={undefined}
                     />
                   )}
                 </div>
@@ -493,18 +492,18 @@ export const NovoConvertidoFormDialog = ({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">1º Impacto</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={formData.impacto_data_1}
-                      onChange={(e) => setFormData({ ...formData, impacto_data_1: e.target.value })}
+                      onChange={(value) => setFormData({ ...formData, impacto_data_1: value })}
+                      maxDate={undefined}
                     />
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">2º Impacto</Label>
-                    <Input
-                      type="date"
+                    <DateInput
                       value={formData.impacto_data_2}
-                      onChange={(e) => setFormData({ ...formData, impacto_data_2: e.target.value })}
+                      onChange={(value) => setFormData({ ...formData, impacto_data_2: value })}
+                      maxDate={undefined}
                     />
                   </div>
                 </div>
@@ -520,10 +519,10 @@ export const NovoConvertidoFormDialog = ({
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="participou_manaim" className="cursor-pointer">Participou do Manaim</Label>
                   {formData.participou_manaim && (
-                    <Input
-                      type="date"
+                    <DateInput
                       value={formData.data_manaim}
-                      onChange={(e) => setFormData({ ...formData, data_manaim: e.target.value })}
+                      onChange={(value) => setFormData({ ...formData, data_manaim: value })}
+                      maxDate={undefined}
                     />
                   )}
                 </div>
@@ -539,10 +538,10 @@ export const NovoConvertidoFormDialog = ({
                 <div className="flex-1 space-y-2">
                   <Label htmlFor="participou_culto_membresia" className="cursor-pointer">Participou do Culto de Membresia</Label>
                   {formData.participou_culto_membresia && (
-                    <Input
-                      type="date"
+                    <DateInput
                       value={formData.data_culto_membresia}
-                      onChange={(e) => setFormData({ ...formData, data_culto_membresia: e.target.value })}
+                      onChange={(value) => setFormData({ ...formData, data_culto_membresia: value })}
+                      maxDate={undefined}
                     />
                   )}
                 </div>

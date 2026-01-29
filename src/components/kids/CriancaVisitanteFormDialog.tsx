@@ -12,6 +12,7 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
+import { DateInput } from "@/components/ui/date-input";
 
 interface CriancaVisitanteFormDialogProps {
   children?: React.ReactNode;
@@ -213,11 +214,10 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="dataNascimento">Data de Nascimento *</Label>
-              <Input
+              <DateInput
                 id="dataNascimento"
-                type="date"
                 value={formData.dataNascimento}
-                onChange={(e) => setFormData((prev) => ({ ...prev, dataNascimento: e.target.value }))}
+                onChange={(value) => setFormData((prev) => ({ ...prev, dataNascimento: value }))}
                 required
               />
             </div>

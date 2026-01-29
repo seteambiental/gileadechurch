@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { DateInput } from "@/components/ui/date-input";
 
 interface MembroFamiliaFormDialogProps {
   open: boolean;
@@ -172,7 +173,10 @@ export function MembroFamiliaFormDialog({
                   <FormItem>
                     <FormLabel>Data de Nascimento</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <DateInput 
+                        value={field.value} 
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                   </FormItem>
                 )}

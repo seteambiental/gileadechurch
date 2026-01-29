@@ -39,6 +39,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DateInput } from "@/components/ui/date-input";
 import {
   Select,
   SelectContent,
@@ -883,10 +884,10 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Data da Escala *</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={novaEscalaForm.data_culto}
-                    onChange={(e) => setNovaEscalaForm({ ...novaEscalaForm, data_culto: e.target.value })}
+                    onChange={(value) => setNovaEscalaForm({ ...novaEscalaForm, data_culto: value })}
+                    maxDate={undefined}
                   />
                 </div>
                 <div>

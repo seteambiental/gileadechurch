@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Users, Package, DollarSign, Calendar, Camera, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
+import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
   data_encontro: z.string().min(1, "Data é obrigatória"),
@@ -495,7 +496,11 @@ export const EncontroFormDialog = ({
                     Data do Encontro
                   </FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DateInput 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      maxDate={undefined}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

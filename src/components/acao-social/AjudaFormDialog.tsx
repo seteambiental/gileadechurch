@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { DateInput } from "@/components/ui/date-input";
 
 interface AjudaFormDialogProps {
   open: boolean;
@@ -198,7 +199,11 @@ export function AjudaFormDialog({ open, onOpenChange }: AjudaFormDialogProps) {
                   <FormItem>
                     <FormLabel>Data *</FormLabel>
                     <FormControl>
-                      <Input {...field} type="date" />
+                      <DateInput 
+                        value={field.value} 
+                        onChange={field.onChange}
+                        maxDate={undefined}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
