@@ -25,8 +25,9 @@ export const CompartilharCadastroDialog = ({
   const [open, setOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const baseUrl = window.location.origin;
-  const linkCadastro = `${baseUrl}/cadastro`;
+  // Usa a URL publicada para compartilhamento (mais limpa)
+  const publishedUrl = "https://gileadechurch.lovable.app";
+  const linkCadastro = `${publishedUrl}/cadastro`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(linkCadastro).then(() => {
