@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import SimpleFormDialog from "./SimpleFormDialog";
+import CondominioFormDialog from "./CondominioFormDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,11 @@ interface Condominio {
   id: string;
   name: string;
   description: string | null;
+  sindico_id: string | null;
+  sindico?: {
+    id: string;
+    full_name: string;
+  } | null;
 }
 
 const CondominiosTab = () => {
@@ -37,7 +42,10 @@ const CondominiosTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("condominios")
-        .select("*")
+        .select(`
+          *,
+          sindico:members!condominios_sindico_id_fkey(id, full_name)
+        `)
         .order("name");
       if (error) throw error;
       return data as Condominio[];
@@ -60,7 +68,7 @@ const CondominiosTab = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string }) => {
+    mutationFn: async (data: { name: string; description: string; sindico_id: string | null }) => {
       if (editingItem) {
         const { error } = await supabase
           .from("condominios")
@@ -84,7 +92,8 @@ const CondominiosTab = () => {
   });
 
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.sindico?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -94,7 +103,7 @@ const CondominiosTab = () => {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar condomínios..."
+            placeholder="Buscar condomínios ou síndicos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -125,6 +134,18 @@ const CondominiosTab = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground">{item.name}</h3>
+                    {item.sindico && (
+                      <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        <span>Síndico: {item.sindico.full_name}</span>
+                      </p>
+                    )}
+                    {!item.sindico && (
+                      <p className="text-sm text-muted-foreground/60 mt-1 flex items-center gap-1 italic">
+                        <User className="w-3 h-3" />
+                        <span>Sem síndico definido</span>
+                      </p>
+                    )}
                     {item.description && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {item.description}
@@ -159,7 +180,7 @@ const CondominiosTab = () => {
       )}
 
       {/* Form Dialog */}
-      <SimpleFormDialog
+      <CondominioFormDialog
         open={isFormOpen}
         onOpenChange={(open) => {
           setIsFormOpen(open);

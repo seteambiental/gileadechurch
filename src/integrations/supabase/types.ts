@@ -880,6 +880,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          sindico_id: string | null
           updated_at: string
         }
         Insert: {
@@ -887,6 +888,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          sindico_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -894,9 +896,25 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          sindico_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "condominios_sindico_id_fkey"
+            columns: ["sindico_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "condominios_sindico_id_fkey"
+            columns: ["sindico_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       danca_equipe_membros: {
         Row: {
