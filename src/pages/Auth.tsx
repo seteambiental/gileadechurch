@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -74,6 +74,8 @@ const Auth = () => {
   // Terms acceptance
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedTermsVisitante, setAcceptedTermsVisitante] = useState(false);
+  const [naoPretendeServir, setNaoPretendeServir] = useState(false);
+
   
   // Visitante fields (simplified form)
   const [visitanteData, setVisitanteData] = useState({
@@ -1334,6 +1336,64 @@ const Auth = () => {
                       <p><strong>Bairro:</strong> {signupData.neighborhood}</p>
                       <p><strong>Cidade/Estado:</strong> {signupData.city}/{signupData.state}</p>
                     </div>
+                  </div>
+
+                  {/* Seção de Ministérios - ENTRE o resumo e os termos */}
+                  <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Church className="w-5 h-5 text-secondary" />
+                      <h3 className="font-semibold">Gostaria de servir em algum ministério?</h3>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id="nao-pretende-servir"
+                        checked={naoPretendeServir}
+                        onCheckedChange={(checked) => {
+                          setNaoPretendeServir(checked === true);
+                          if (checked) {
+                            setSignupData({ ...signupData, ministerio_ids: [] });
+                          }
+                        }}
+                      />
+                      <Label htmlFor="nao-pretende-servir" className="text-sm font-normal cursor-pointer">
+                        Ainda não pretendo servir
+                      </Label>
+                    </div>
+
+                    {!naoPretendeServir && (
+                      <div className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
+                          Selecione os ministérios de seu interesse:
+                        </Label>
+                        <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
+                          <div className="space-y-2">
+                            {ministries.map((ministry) => (
+                              <div key={ministry.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`ministry-auth-${ministry.id}`}
+                                  checked={signupData.ministerio_ids?.includes(ministry.id) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentIds = signupData.ministerio_ids || [];
+                                    if (checked) {
+                                      setSignupData({ ...signupData, ministerio_ids: [...currentIds, ministry.id] });
+                                    } else {
+                                      setSignupData({ ...signupData, ministerio_ids: currentIds.filter((id) => id !== ministry.id) });
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`ministry-auth-${ministry.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {ministry.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </div>
 
                   <TermsCheckbox
