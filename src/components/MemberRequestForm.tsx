@@ -367,25 +367,20 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     // Evita pular etapas por duplo clique/toque (especialmente no mobile)
     if (isAdvancingStep) return;
     setIsAdvancingStep(true);
-    
-    console.log("[CADASTRO] Tentando avançar da etapa", currentStep);
+
     const isValid = await validateStep(currentStep);
-    console.log("[CADASTRO] Validação da etapa", currentStep, "resultado:", isValid);
-    
+
     if (isValid) {
       setCurrentStep((prev) => {
-        const next = Math.min(prev + 1, TOTAL_STEPS);
-        console.log("[CADASTRO] Avançando de", prev, "para", next);
-        return next;
+        // Sequência obrigatória: 2 → 3 → 4 → 5 (não pode pular a etapa 4)
+        if (prev === 2) return 3;
+        if (prev === 3) return 4;
+        if (prev === 4) return 5;
+        return Math.min(prev + 1, TOTAL_STEPS);
       });
     }
     setIsAdvancingStep(false);
   };
-
-  // Log quando currentStep muda
-  useEffect(() => {
-    console.log("[CADASTRO] Etapa atual mudou para:", currentStep);
-  }, [currentStep]);
 
   const handlePrevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 2)); // Não volta para step 1 após verificação
