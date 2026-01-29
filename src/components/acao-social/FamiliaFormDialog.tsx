@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatPhone, formatCep } from "@/lib/masks";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 
 interface FamiliaFormDialogProps {
   open: boolean;
@@ -136,6 +137,11 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
     mutationFn: async (values: any) => {
       const payload = {
         ...values,
+        nome_familia: formatNameField(values.nome_familia),
+        endereco: values.endereco ? toTitleCase(values.endereco) : values.endereco,
+        bairro: values.bairro ? toTitleCase(values.bairro) : values.bairro,
+        cidade: values.cidade ? toTitleCase(values.cidade) : values.cidade,
+        estado: values.estado?.toUpperCase() || values.estado,
         casa_refugio_id: values.casa_refugio_id || null,
         lider_responsavel_id: values.lider_responsavel_id || null,
       };

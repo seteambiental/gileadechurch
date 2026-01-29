@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { formatNameField } from "@/lib/text-utils";
 
 interface Frente {
   id: string;
@@ -96,7 +97,7 @@ export function FrenteFormDialog({ open, onOpenChange, frente }: FrenteFormDialo
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const payload = {
-        nome: data.nome,
+        nome: formatNameField(data.nome),
         descricao: data.descricao || null,
         lider_id: data.lider_id || null,
         ativo: data.ativo,

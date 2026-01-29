@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2 } from "lucide-react";
+import { formatNameField } from "@/lib/text-utils";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +72,7 @@ const SimpleFormDialog = ({
 
   const handleSubmit = (data: FormData) => {
     onSave({
-      name: data.name,
+      name: formatNameField(data.name),
       description: data.description || "",
     });
   };

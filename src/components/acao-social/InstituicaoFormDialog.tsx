@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatPhone, formatCep, formatCNPJ } from "@/lib/masks";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 
 interface InstituicaoFormDialogProps {
   open: boolean;
@@ -132,6 +133,12 @@ export function InstituicaoFormDialog({ open, onOpenChange, instituicao }: Insti
     mutationFn: async (values: any) => {
       const payload = {
         ...values,
+        nome: formatNameField(values.nome),
+        endereco: values.endereco ? toTitleCase(values.endereco) : values.endereco,
+        bairro: values.bairro ? toTitleCase(values.bairro) : values.bairro,
+        cidade: values.cidade ? toTitleCase(values.cidade) : values.cidade,
+        estado: values.estado?.toUpperCase() || values.estado,
+        responsavel_nome: values.responsavel_nome ? formatNameField(values.responsavel_nome) : values.responsavel_nome,
         quantidade_atendidos: values.quantidade_atendidos
           ? parseInt(values.quantidade_atendidos)
           : 0,

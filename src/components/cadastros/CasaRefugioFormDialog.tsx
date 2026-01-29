@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import {
   Dialog,
   DialogContent,
@@ -148,22 +149,22 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
   const mutation = useMutation({
     mutationFn: async (data: FormData) => {
       const payload = {
-        name: data.name,
+        name: formatNameField(data.name),
         lider_id: data.lider_id || null,
         lider_esposa_id: data.lider_esposa_id || null,
         anfitriao_id: data.anfitriao_id || null,
         anfitriao_esposa_id: data.anfitriao_esposa_id || null,
-        condominio: data.condominio || null,
-        supervisores: data.supervisores || null,
+        condominio: data.condominio ? toTitleCase(data.condominio) : null,
+        supervisores: data.supervisores ? toTitleCase(data.supervisores) : null,
         dias: data.dias || null,
         frequencia: data.frequencia || null,
         cep: data.cep || null,
-        address: data.address || null,
+        address: data.address ? toTitleCase(data.address) : null,
         numero: data.numero || null,
         complement: data.complement || null,
-        neighborhood: data.neighborhood || null,
-        city: data.city || null,
-        state: data.state || null,
+        neighborhood: data.neighborhood ? toTitleCase(data.neighborhood) : null,
+        city: data.city ? toTitleCase(data.city) : null,
+        state: data.state?.toUpperCase() || null,
         // Keep legacy fields updated for backward compatibility
         lideres: null,
         anfitrioes: null,

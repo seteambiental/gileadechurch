@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { DateInput } from "@/components/ui/date-input";
+import { formatNameField } from "@/lib/text-utils";
 
 interface VisitanteFormDialogProps {
   ministerioSlug: string;
@@ -93,7 +94,7 @@ export function VisitanteFormDialog({ ministerioSlug, ministerioTitle, children 
     mutationFn: async () => {
       // Criar novo convertido como visitante do ministério
       const insertData = {
-        full_name: formData.nome.trim(),
+        full_name: formatNameField(formData.nome),
         data_nascimento: formData.dataNascimento || null,
         genero: formData.genero || null,
         whatsapp: formData.whatsapp.replace(/\D/g, "") || null,

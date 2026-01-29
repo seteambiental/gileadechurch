@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatNameField } from "@/lib/text-utils";
 import {
   Dialog,
   DialogContent,
@@ -104,7 +105,7 @@ const CondominioFormDialog = ({
 
   const handleSubmit = (data: FormData) => {
     onSave({
-      name: data.name,
+      name: formatNameField(data.name),
       description: data.description || "",
       sindico_id: data.sindico_id && data.sindico_id !== "none" ? data.sindico_id : null,
     });

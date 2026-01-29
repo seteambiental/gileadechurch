@@ -24,6 +24,7 @@ import { Switch } from "@/components/ui/switch";
 import { formatPhone } from "@/lib/masks";
 import { differenceInYears, differenceInMonths } from "date-fns";
 import { DateInput } from "@/components/ui/date-input";
+import { formatNameField } from "@/lib/text-utils";
 
 interface CasalFormDialogProps {
   open: boolean;
@@ -92,8 +93,8 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
       turma_id: turmaId,
       membro_masculino_id: usarMembros && membroMasculinoId ? membroMasculinoId : null,
       membro_feminino_id: usarMembros && membroFemininoId ? membroFemininoId : null,
-      nome_masculino: !usarMembros ? nomeMasculino : null,
-      nome_feminino: !usarMembros ? nomeFeminino : null,
+      nome_masculino: !usarMembros && nomeMasculino ? formatNameField(nomeMasculino) : null,
+      nome_feminino: !usarMembros && nomeFeminino ? formatNameField(nomeFeminino) : null,
       whatsapp_masculino: !usarMembros ? whatsappMasculino : null,
       whatsapp_feminino: !usarMembros ? whatsappFeminino : null,
       data_casamento: dataCasamento || null,

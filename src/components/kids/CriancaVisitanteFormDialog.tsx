@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { formatPhone } from "@/lib/masks";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { DateInput } from "@/components/ui/date-input";
+import { formatNameField } from "@/lib/text-utils";
 
 interface CriancaVisitanteFormDialogProps {
   children?: React.ReactNode;
@@ -106,13 +107,13 @@ export function CriancaVisitanteFormDialog({ children }: CriancaVisitanteFormDia
       const { data: novoConvertido, error: ncError } = await supabase
         .from("novos_convertidos")
         .insert({
-          full_name: formData.nome.trim(),
+          full_name: formatNameField(formData.nome),
           data_nascimento: formData.dataNascimento || null,
           genero: formData.genero || null,
           como_chegou: "culto_domingo" as const,
           tipo_conversao: null,
           membro_vinculado_id: membroResponsavelId,
-          responsavel_nome: formData.nomeResponsavel.trim() || null,
+          responsavel_nome: formData.nomeResponsavel.trim() ? formatNameField(formData.nomeResponsavel) : null,
           responsavel_whatsapp: formData.whatsappResponsavel.replace(/\D/g, "") || null,
         })
         .select()
