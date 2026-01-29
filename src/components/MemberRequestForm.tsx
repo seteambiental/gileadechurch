@@ -714,7 +714,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                           <Input
                             placeholder={isLoadingCep ? "Buscando..." : "Rua, Avenida..."}
                             {...field}
-                            disabled={isLoadingCep}
+                            // Mesmo durante a busca do CEP, permitir preenchimento manual
                           />
                         </FormControl>
                         <FormMessage />
@@ -760,7 +760,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     <FormItem>
                       <FormLabel>Bairro *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Bairro" {...field} disabled={isLoadingCep} />
+                        <Input placeholder="Bairro" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -775,7 +775,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       <FormItem>
                         <FormLabel>Cidade *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Cidade" {...field} disabled={isLoadingCep} />
+                          <Input placeholder="Cidade" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -789,7 +789,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       <FormItem>
                         <FormLabel>Estado *</FormLabel>
                         <FormControl>
-                          <Input placeholder="UF" maxLength={2} {...field} disabled={isLoadingCep} />
+                          <Input placeholder="UF" maxLength={2} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
