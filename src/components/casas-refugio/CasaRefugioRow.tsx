@@ -17,6 +17,8 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
 
 interface CasaRefugioRowProps {
@@ -52,6 +54,12 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
     onOpenEncontro();
   };
 
+  // Monta o nome do líder e esposa para exibição
+  const liderNomes = [
+    casa.lider?.full_name,
+    casa.lider_esposa?.full_name
+  ].filter(Boolean).join(" e ");
+
   return (
     <div 
       className="bg-card border border-border rounded-lg p-4 hover:border-destructive/50 transition-colors cursor-pointer"
@@ -66,7 +74,7 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-foreground truncate">{casa.name}</h3>
             <p className="text-xs text-muted-foreground truncate">
-              {casa.lideres || "Sem líder definido"}
+              {liderNomes || casa.lideres || "Sem líder definido"}
             </p>
           </div>
         </div>

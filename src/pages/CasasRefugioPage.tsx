@@ -33,6 +33,8 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
 
 const CasasRefugioPage = () => {
@@ -77,7 +79,11 @@ const CasasRefugioPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casas_refugio")
-        .select("*")
+        .select(`
+          *,
+          lider:members!casas_refugio_lider_id_fkey(full_name),
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
+        `)
         .order("name");
       if (error) throw error;
       return data as CasaRefugio[];
