@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -87,16 +87,6 @@ const convertToISODate = (dateStr: string): string | null => {
   return null;
 };
 
-// Converter YYYY-MM-DD para DD/MM/AAAA
-const convertToDisplayDate = (dateStr: string): string => {
-  if (!dateStr) return "";
-  const parsed = parse(dateStr, "yyyy-MM-dd", new Date());
-  if (isValid(parsed)) {
-    return format(parsed, "dd/MM/yyyy");
-  }
-  return dateStr;
-};
-
 export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -109,6 +99,10 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [termsError, setTermsError] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // Steps: 1=Verificação, 2=Dados Pessoais, 3=Endereço, 4=Ministérios, 5=Termos
+  const TOTAL_STEPS = 5;
 
   // Buscar lista de ministérios
   const { data: ministries = [] } = useQuery({
@@ -183,6 +177,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
       setVerified(true);
       setVerificationError(null);
+      setCurrentStep(2);
       toast({
         title: "Cadastro liberado",
         description: "Você pode continuar com o cadastro.",
@@ -287,6 +282,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setTermsError(null);
     setPhotoFile(null);
     setPhotoPreview(null);
+    setCurrentStep(1);
     form.reset();
     onOpenChange(false);
   };
@@ -329,6 +325,65 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
   const canCheck = firstName?.trim().length >= 2 && birthDate?.length === 10;
 
+  // Validação por step
+  const validateStep = async (step: number): Promise<boolean> => {
+    switch (step) {
+      case 2: {
+        // Dados pessoais
+        const result = await form.trigger(["full_name", "cpf", "whatsapp", "email", "genero"]);
+        if (!photoFile) {
+          toast({
+            title: "Foto obrigatória",
+            description: "Por favor, tire uma foto ou selecione uma imagem.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        return result;
+      }
+      case 3: {
+        // Endereço
+        return await form.trigger(["cep", "address", "number", "neighborhood", "city", "state"]);
+      }
+      case 4: {
+        // Ministérios - sempre válido
+        return true;
+      }
+      default:
+        return true;
+    }
+  };
+
+  const handleNextStep = async () => {
+    const isValid = await validateStep(currentStep);
+    if (isValid) {
+      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
+    }
+  };
+
+  const handlePrevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 2)); // Não volta para step 1 após verificação
+  };
+
+  const handleSubmit = (data: FormData) => {
+    if (!acceptedTerms) {
+      setTermsError("Você deve aceitar os termos para continuar");
+      return;
+    }
+    mutation.mutate(data);
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return "Verificação";
+      case 2: return "Dados Pessoais";
+      case 3: return "Endereço";
+      case 4: return "Ministérios";
+      case 5: return "Termos e Confirmação";
+      default: return "";
+    }
+  };
+
   if (submitted) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
@@ -358,85 +413,102 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
             Quero fazer parte da Igreja
           </DialogTitle>
           <DialogDescription>
-            Primeiro, informe seu primeiro nome e data de nascimento para verificar se você já está cadastrado.
+            {currentStep === 1 
+              ? "Primeiro, informe seu primeiro nome e data de nascimento para verificar se você já está cadastrado."
+              : `Etapa ${currentStep} de ${TOTAL_STEPS}: ${getStepTitle()}`
+            }
           </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-            {/* Verificação inicial - Primeiro nome e data de nascimento */}
-            <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-              <FormField
-                control={form.control}
-                name="first_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Primeiro Nome *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Seu primeiro nome"
-                        value={field.value}
-                        onChange={(e) => handleFirstNameChange(e.target.value)}
-                        disabled={verified}
-                        className={verified ? "bg-muted" : ""}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+        {/* Progress indicator */}
+        {verified && (
+          <div className="flex gap-1 mb-4">
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+              <div
+                key={i}
+                className={`h-2 flex-1 rounded-full transition-colors ${
+                  i + 1 <= currentStep ? "bg-secondary" : "bg-muted"
+                }`}
               />
+            ))}
+          </div>
+        )}
 
-              <FormField
-                control={form.control}
-                name="birth_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data de Nascimento *</FormLabel>
-                    <div className="flex gap-2">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {/* STEP 1: Verificação */}
+            {currentStep === 1 && (
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                <FormField
+                  control={form.control}
+                  name="first_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Primeiro Nome *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="DD/MM/AAAA"
-                          value={dateInputValue}
-                          onChange={(e) => handleDateInputChange(e.target.value)}
-                          maxLength={10}
-                          className={`flex-1 ${verified ? "bg-muted" : ""}`}
+                          placeholder="Seu primeiro nome"
+                          value={field.value}
+                          onChange={(e) => handleFirstNameChange(e.target.value)}
                           disabled={verified}
+                          className={verified ? "bg-muted" : ""}
                         />
                       </FormControl>
-                      <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                        <PopoverTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="shrink-0"
-                            disabled={verified}
-                          >
-                            <CalendarIcon className="h-4 w-4" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                          <Calendar
-                            mode="single"
-                            selected={field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined}
-                            onSelect={handleCalendarSelect}
-                            disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
-                            initialFocus
-                            locale={ptBR}
-                            captionLayout="dropdown-buttons"
-                            fromYear={1920}
-                            toYear={new Date().getFullYear()}
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {!verified ? (
+                <FormField
+                  control={form.control}
+                  name="birth_date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Nascimento *</FormLabel>
+                      <div className="flex gap-2">
+                        <FormControl>
+                          <Input
+                            placeholder="DD/MM/AAAA"
+                            value={dateInputValue}
+                            onChange={(e) => handleDateInputChange(e.target.value)}
+                            maxLength={10}
+                            className={`flex-1 ${verified ? "bg-muted" : ""}`}
+                            disabled={verified}
+                          />
+                        </FormControl>
+                        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="shrink-0"
+                              disabled={verified}
+                            >
+                              <CalendarIcon className="h-4 w-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                              mode="single"
+                              selected={field.value ? parse(field.value, "yyyy-MM-dd", new Date()) : undefined}
+                              onSelect={handleCalendarSelect}
+                              disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                              initialFocus
+                              locale={ptBR}
+                              captionLayout="dropdown-buttons"
+                              fromYear={1920}
+                              toYear={new Date().getFullYear()}
+                              className="pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <Button
                   type="button"
                   onClick={checkMember}
@@ -451,45 +523,27 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   )}
                   Consultar
                 </Button>
-              ) : (
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setVerified(false);
-                    setVerificationError(null);
-                    form.setValue("first_name", "");
-                    form.setValue("birth_date", "");
-                    setDateInputValue("");
-                  }}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Limpar e tentar outro nome
-                </Button>
-              )}
 
-              {verificationError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{verificationError}</AlertDescription>
-                </Alert>
-              )}
+                {verificationError && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{verificationError}</AlertDescription>
+                  </Alert>
+                )}
 
-              {verified && (
-                <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  <AlertDescription className="text-green-700 dark:text-green-300">
-                    Cadastro liberado! Preencha os demais dados abaixo.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+                <div className="flex justify-end pt-2">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
 
-            {/* Rest of the form - only shown after verification */}
-            {verified && (
-              <>
+            {/* STEP 2: Dados Pessoais */}
+            {currentStep === 2 && (
+              <div className="space-y-4">
                 {/* Campo de Foto */}
-                <div className="flex flex-col items-center gap-3 py-4 border-b">
+                <div className="flex flex-col items-center gap-3 py-4 border rounded-lg bg-muted/30">
                   <CameraPhotoInput
                     photoPreview={photoPreview}
                     onPhotoCapture={(file) => {
@@ -602,7 +656,12 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     </FormItem>
                   )}
                 />
+              </div>
+            )}
 
+            {/* STEP 3: Endereço */}
+            {currentStep === 3 && (
+              <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
@@ -715,79 +774,106 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     )}
                   />
                 </div>
+              </div>
+            )}
 
-                {/* Seção de Interesse em Ministérios */}
-                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Church className="w-5 h-5 text-secondary" />
-                    <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
-                  </div>
+            {/* STEP 4: Ministérios */}
+            {currentStep === 4 && (
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Church className="w-5 h-5 text-secondary" />
+                  <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
+                </div>
 
+                <FormField
+                  control={form.control}
+                  name="nao_pretende_servir"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            if (checked) {
+                              form.setValue("ministerios_interesse", []);
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel className="text-sm font-normal">
+                          Ainda não pretendo servir
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {!form.watch("nao_pretende_servir") && (
                   <FormField
                     control={form.control}
-                    name="nao_pretende_servir"
+                    name="ministerios_interesse"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={(checked) => {
-                              field.onChange(checked);
-                              if (checked) {
-                                form.setValue("ministerios_interesse", []);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-normal">
-                            Ainda não pretendo servir
-                          </FormLabel>
-                        </div>
+                      <FormItem>
+                        <FormLabel className="text-sm text-muted-foreground">
+                          Selecione os ministérios de seu interesse:
+                        </FormLabel>
+                        <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
+                          <div className="space-y-2">
+                            {ministries.map((ministry) => (
+                              <div key={ministry.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`ministry-${ministry.id}`}
+                                  checked={field.value?.includes(ministry.id) || false}
+                                  onCheckedChange={(checked) => {
+                                    const currentValue = field.value || [];
+                                    if (checked) {
+                                      field.onChange([...currentValue, ministry.id]);
+                                    } else {
+                                      field.onChange(currentValue.filter((id) => id !== ministry.id));
+                                    }
+                                  }}
+                                />
+                                <label
+                                  htmlFor={`ministry-${ministry.id}`}
+                                  className="text-sm font-normal cursor-pointer"
+                                >
+                                  {ministry.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
+                )}
+              </div>
+            )}
 
-                  {!form.watch("nao_pretende_servir") && (
-                    <FormField
-                      control={form.control}
-                      name="ministerios_interesse"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm text-muted-foreground">
-                            Selecione os ministérios de seu interesse:
-                          </FormLabel>
-                          <ScrollArea className="h-40 rounded-md border border-border p-3 bg-background">
-                            <div className="space-y-2">
-                              {ministries.map((ministry) => (
-                                <div key={ministry.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`ministry-${ministry.id}`}
-                                    checked={field.value?.includes(ministry.id) || false}
-                                    onCheckedChange={(checked) => {
-                                      const currentValue = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentValue, ministry.id]);
-                                      } else {
-                                        field.onChange(currentValue.filter((id) => id !== ministry.id));
-                                      }
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor={`ministry-${ministry.id}`}
-                                    className="text-sm font-normal cursor-pointer"
-                                  >
-                                    {ministry.name}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+            {/* STEP 5: Termos e Confirmação */}
+            {currentStep === 5 && (
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg bg-muted/30">
+                  <h3 className="font-semibold mb-2">Resumo do Cadastro</h3>
+                  <div className="text-sm space-y-1 text-muted-foreground">
+                    <p><strong>Nome:</strong> {form.watch("full_name")}</p>
+                    <p><strong>Email:</strong> {form.watch("email")}</p>
+                    <p><strong>WhatsApp:</strong> {form.watch("whatsapp")}</p>
+                    <p><strong>Endereço:</strong> {form.watch("address")}, {form.watch("number")} - {form.watch("neighborhood")}</p>
+                    <p><strong>Cidade:</strong> {form.watch("city")} - {form.watch("state")}</p>
+                    {form.watch("nao_pretende_servir") ? (
+                      <p><strong>Ministérios:</strong> Ainda não pretende servir</p>
+                    ) : (
+                      <p><strong>Ministérios de interesse:</strong> {
+                        form.watch("ministerios_interesse")?.length 
+                          ? ministries.filter(m => form.watch("ministerios_interesse")?.includes(m.id)).map(m => m.name).join(", ")
+                          : "Nenhum selecionado"
+                      }</p>
+                    )}
+                  </div>
                 </div>
 
                 <TermsCheckbox
@@ -798,43 +884,33 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   }}
                   error={termsError || undefined}
                 />
+              </div>
+            )}
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancelar
+            {/* Navigation buttons */}
+            {currentStep > 1 && (
+              <div className="flex justify-between gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handlePrevStep}
+                  disabled={currentStep === 2}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Voltar
+                </Button>
+
+                {currentStep < TOTAL_STEPS ? (
+                  <Button type="button" onClick={handleNextStep}>
+                    Próximo
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={mutation.isPending}
-                    onClick={(e) => {
-                      if (!photoFile) {
-                        e.preventDefault();
-                        toast({
-                          title: "Foto obrigatória",
-                          description: "Por favor, tire uma foto ou selecione uma imagem.",
-                          variant: "destructive",
-                        });
-                        return;
-                      }
-                      if (!acceptedTerms) {
-                        e.preventDefault();
-                        setTermsError("Você deve aceitar os termos para continuar");
-                      }
-                    }}
-                  >
+                ) : (
+                  <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Enviar Solicitação
                   </Button>
-                </div>
-              </>
-            )}
-
-            {/* Show cancel button even before verification */}
-            {!verified && (
-              <div className="flex justify-end pt-2">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
-                </Button>
+                )}
               </div>
             )}
           </form>
