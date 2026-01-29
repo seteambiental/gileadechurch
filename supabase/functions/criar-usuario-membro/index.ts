@@ -60,7 +60,7 @@ Seu cadastro foi realizado com sucesso! 🙏
 📧 Email: ${email}
 🔑 Senha: ${senha}
 
-⚠️ *Importante:* Recomendamos que você altere sua senha no primeiro acesso.
+⚠️ *Importante:* Sua senha são os 6 primeiros dígitos do seu CPF. Recomendamos que você altere sua senha no primeiro acesso.
 
 Estamos muito felizes em ter você conosco!
 
@@ -90,9 +90,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Gerar senha padrão: Cpf@ + 6 primeiros dígitos do CPF ou Cpf@123456
+    // Gerar senha padrão: 6 primeiros dígitos do CPF ou 123456
     const cpfDigits = cpf ? cpf.replace(/\D/g, "") : "";
-    const defaultPassword = cpfDigits.length >= 6 ? `Cpf@${cpfDigits.substring(0, 6)}` : "Cpf@123456";
+    const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.substring(0, 6) : "123456";
 
     // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
