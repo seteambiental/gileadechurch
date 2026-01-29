@@ -54,6 +54,8 @@ interface MemberRequest {
   status: string;
   motivo_rejeicao: string | null;
   created_at: string;
+  ministerios_interesse: string[] | null;
+  nao_pretende_servir: boolean | null;
 }
 
 const SolicitacoesMembrosTab = () => {
@@ -106,6 +108,8 @@ const SolicitacoesMembrosTab = () => {
           state: request.state,
           cpf: request.cpf,
           photo_url: request.photo_url,
+          ministerios_interesse: request.ministerios_interesse || [],
+          nao_pretende_servir: request.nao_pretende_servir || false,
         })
         .select()
         .single();

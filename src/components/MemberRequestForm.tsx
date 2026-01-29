@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Camera } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,9 @@ import { ptBR } from "date-fns/locale";
 import { TermsCheckbox } from "./TermsCheckbox";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
@@ -56,6 +59,8 @@ const formSchema = z.object({
   city: z.string().min(2, "Cidade é obrigatória"),
   state: z.string().min(2, "Estado é obrigatório"),
   cpf: z.string().min(14, "CPF é obrigatório"),
+  ministerios_interesse: z.array(z.string()).optional(),
+  nao_pretende_servir: z.boolean().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -105,6 +110,19 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
+  // Buscar lista de ministérios
+  const { data: ministries = [] } = useQuery({
+    queryKey: ["ministries-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministries")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -122,6 +140,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       city: "",
       state: "",
       cpf: "",
+      ministerios_interesse: [],
+      nao_pretende_servir: false,
     },
   });
 
@@ -226,6 +246,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         state: data.state?.toUpperCase() || null,
         cpf: cpfClean,
         photo_url: photoUrl,
+        ministerios_interesse: data.nao_pretende_servir ? [] : (data.ministerios_interesse || []),
+        nao_pretende_servir: data.nao_pretende_servir || false,
       };
 
       // Inserção via função backend (contorna RLS do client/anon)
@@ -692,6 +714,80 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Seção de Interesse em Ministérios */}
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Church className="w-5 h-5 text-secondary" />
+                    <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="nao_pretende_servir"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              if (checked) {
+                                form.setValue("ministerios_interesse", []);
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal">
+                            Ainda não pretendo servir
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  {!form.watch("nao_pretende_servir") && (
+                    <FormField
+                      control={form.control}
+                      name="ministerios_interesse"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm text-muted-foreground">
+                            Selecione os ministérios de seu interesse:
+                          </FormLabel>
+                          <ScrollArea className="h-40 rounded-md border border-border p-3 bg-background">
+                            <div className="space-y-2">
+                              {ministries.map((ministry) => (
+                                <div key={ministry.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`ministry-${ministry.id}`}
+                                    checked={field.value?.includes(ministry.id) || false}
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentValue, ministry.id]);
+                                      } else {
+                                        field.onChange(currentValue.filter((id) => id !== ministry.id));
+                                      }
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`ministry-${ministry.id}`}
+                                    className="text-sm font-normal cursor-pointer"
+                                  >
+                                    {ministry.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
 
                 <TermsCheckbox
