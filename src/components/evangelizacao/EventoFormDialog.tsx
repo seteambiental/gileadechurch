@@ -21,6 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { DateInput } from "@/components/ui/date-input";
 
 interface Evento {
   id: string;
@@ -165,7 +166,11 @@ export function EventoFormDialog({ open, onOpenChange, frenteId, evento }: Event
                   <FormItem>
                     <FormLabel>Data</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput 
+                        value={field.value} 
+                        onChange={field.onChange}
+                        maxDate={undefined}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

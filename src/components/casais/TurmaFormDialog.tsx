@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DateInput } from "@/components/ui/date-input";
 
 interface TurmaFormDialogProps {
   open: boolean;
@@ -101,11 +102,21 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="data_inicio">Data Início</Label>
-              <Input id="data_inicio" type="date" {...register("data_inicio")} />
+              <DateInput 
+                id="data_inicio" 
+                value={watch("data_inicio") || ""} 
+                onChange={(v) => setValue("data_inicio", v)}
+                maxDate={undefined}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_fim">Data Fim</Label>
-              <Input id="data_fim" type="date" {...register("data_fim")} />
+              <DateInput 
+                id="data_fim" 
+                value={watch("data_fim") || ""} 
+                onChange={(v) => setValue("data_fim", v)}
+                maxDate={undefined}
+              />
             </div>
           </div>
 

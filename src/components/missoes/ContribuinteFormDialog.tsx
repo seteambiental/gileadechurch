@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
@@ -252,7 +253,11 @@ export function ContribuinteFormDialog({
                 <FormItem>
                   <FormLabel>Data de Início</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <DateInput 
+                      value={field.value} 
+                      onChange={field.onChange}
+                      maxDate={undefined}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

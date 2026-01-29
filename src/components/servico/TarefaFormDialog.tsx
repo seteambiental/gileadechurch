@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { DateInput } from "@/components/ui/date-input";
 
 interface TarefaFormDialogProps {
   open: boolean;
@@ -150,12 +151,12 @@ export function TarefaFormDialog({ open, onOpenChange, tarefa }: TarefaFormDialo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="data_tarefa">Data *</Label>
-              <Input
+              <DateInput
                 id="data_tarefa"
-                type="date"
                 value={formData.data_tarefa}
-                onChange={(e) => setFormData((prev) => ({ ...prev, data_tarefa: e.target.value }))}
+                onChange={(value) => setFormData((prev) => ({ ...prev, data_tarefa: value }))}
                 required
+                maxDate={undefined}
               />
             </div>
             <div className="space-y-2">
