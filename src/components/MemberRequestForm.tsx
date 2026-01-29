@@ -354,6 +354,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                         placeholder="Seu primeiro nome"
                         value={field.value}
                         onChange={(e) => handleFirstNameChange(e.target.value)}
+                        disabled={verified}
+                        className={verified ? "bg-muted" : ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -374,7 +376,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                           value={dateInputValue}
                           onChange={(e) => handleDateInputChange(e.target.value)}
                           maxLength={10}
-                          className="flex-1"
+                          className={`flex-1 ${verified ? "bg-muted" : ""}`}
+                          disabled={verified}
                         />
                       </FormControl>
                       <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
@@ -384,6 +387,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                             variant="outline"
                             size="icon"
                             className="shrink-0"
+                            disabled={verified}
                           >
                             <CalendarIcon className="h-4 w-4" />
                           </Button>
@@ -409,20 +413,37 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                 )}
               />
 
-              <Button
-                type="button"
-                onClick={checkMember}
-                disabled={isChecking || !canCheck}
-                variant={verified ? "default" : "secondary"}
-                className="w-full"
-              >
-                {isChecking ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Search className="w-4 h-4 mr-2" />
-                )}
-                Consultar
-              </Button>
+              {!verified ? (
+                <Button
+                  type="button"
+                  onClick={checkMember}
+                  disabled={isChecking || !canCheck}
+                  variant="secondary"
+                  className="w-full"
+                >
+                  {isChecking ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  Consultar
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setVerified(false);
+                    setVerificationError(null);
+                    form.setValue("first_name", "");
+                    form.setValue("birth_date", "");
+                    setDateInputValue("");
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Limpar e tentar outro nome
+                </Button>
+              )}
 
               {verificationError && (
                 <Alert variant="destructive">
