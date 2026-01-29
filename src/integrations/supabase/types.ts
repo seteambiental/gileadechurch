@@ -834,6 +834,8 @@ export type Database = {
           neighborhood: string | null
           numero: string | null
           state: string | null
+          supervisor_esposa_id: string | null
+          supervisor_id: string | null
           supervisores: string | null
           updated_at: string
         }
@@ -859,6 +861,8 @@ export type Database = {
           neighborhood?: string | null
           numero?: string | null
           state?: string | null
+          supervisor_esposa_id?: string | null
+          supervisor_id?: string | null
           supervisores?: string | null
           updated_at?: string
         }
@@ -884,6 +888,8 @@ export type Database = {
           neighborhood?: string | null
           numero?: string | null
           state?: string | null
+          supervisor_esposa_id?: string | null
+          supervisor_id?: string | null
           supervisores?: string | null
           updated_at?: string
         }
@@ -940,6 +946,34 @@ export type Database = {
           {
             foreignKeyName: "casas_refugio_lider_id_fkey"
             columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_supervisor_esposa_id_fkey"
+            columns: ["supervisor_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_supervisor_esposa_id_fkey"
+            columns: ["supervisor_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_supervisor_id_fkey"
+            columns: ["supervisor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_supervisor_id_fkey"
+            columns: ["supervisor_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
             referencedColumns: ["id"]

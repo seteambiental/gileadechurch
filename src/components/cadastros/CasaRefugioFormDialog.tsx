@@ -32,8 +32,9 @@ const formSchema = z.object({
   lider_esposa_id: z.string().nullable().optional(),
   anfitriao_id: z.string().nullable().optional(),
   anfitriao_esposa_id: z.string().nullable().optional(),
+  supervisor_id: z.string().nullable().optional(),
+  supervisor_esposa_id: z.string().nullable().optional(),
   condominio: z.string().optional(),
-  supervisores: z.string().optional(),
   dias: z.string().optional(),
   frequencia: z.string().optional(),
   cep: z.string().optional(),
@@ -67,6 +68,8 @@ interface CasaRefugio {
   lider_esposa_id?: string | null;
   anfitriao_id?: string | null;
   anfitriao_esposa_id?: string | null;
+  supervisor_id?: string | null;
+  supervisor_esposa_id?: string | null;
 }
 
 interface CasaRefugioFormDialogProps {
@@ -88,8 +91,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
       lider_esposa_id: null,
       anfitriao_id: null,
       anfitriao_esposa_id: null,
+      supervisor_id: null,
+      supervisor_esposa_id: null,
       condominio: "",
-      supervisores: "",
       dias: "",
       frequencia: "",
       cep: "",
@@ -111,8 +115,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           lider_esposa_id: item.lider_esposa_id || null,
           anfitriao_id: item.anfitriao_id || null,
           anfitriao_esposa_id: item.anfitriao_esposa_id || null,
+          supervisor_id: item.supervisor_id || null,
+          supervisor_esposa_id: item.supervisor_esposa_id || null,
           condominio: item.condominio || "",
-          supervisores: item.supervisores || "",
           dias: item.dias || "",
           frequencia: item.frequencia || "",
           cep: item.cep || "",
@@ -130,8 +135,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           lider_esposa_id: null,
           anfitriao_id: null,
           anfitriao_esposa_id: null,
+          supervisor_id: null,
+          supervisor_esposa_id: null,
           condominio: "",
-          supervisores: "",
           dias: "",
           frequencia: "",
           cep: "",
@@ -154,8 +160,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         lider_esposa_id: data.lider_esposa_id || null,
         anfitriao_id: data.anfitriao_id || null,
         anfitriao_esposa_id: data.anfitriao_esposa_id || null,
+        supervisor_id: data.supervisor_id || null,
+        supervisor_esposa_id: data.supervisor_esposa_id || null,
         condominio: data.condominio ? toTitleCase(data.condominio) : null,
-        supervisores: data.supervisores ? toTitleCase(data.supervisores) : null,
         dias: data.dias || null,
         frequencia: data.frequencia || null,
         cep: data.cep || null,
@@ -165,9 +172,10 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         neighborhood: data.neighborhood ? toTitleCase(data.neighborhood) : null,
         city: data.city ? toTitleCase(data.city) : null,
         state: data.state?.toUpperCase() || null,
-        // Keep legacy fields updated for backward compatibility
+        // Keep legacy field updated for backward compatibility
         lideres: null,
         anfitrioes: null,
+        supervisores: null,
       };
 
       if (item) {
@@ -336,20 +344,46 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                 )}
               />
 
-              {/* 5. Supervisores */}
-              <FormField
-                control={form.control}
-                name="supervisores"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supervisores</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome dos supervisores" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Supervisores Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <p className="text-sm font-medium text-muted-foreground">Supervisores</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="supervisor_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supervisor</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar supervisor..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="supervisor_esposa_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Esposa do Supervisor</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar esposa..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
               {/* 6. Dias da Casa Refúgio */}
               <FormField
