@@ -819,6 +819,7 @@ export type Database = {
           anfitrioes: string | null
           cep: string | null
           city: string | null
+          complement: string | null
           condominio: string | null
           created_at: string
           dias: string | null
@@ -843,6 +844,7 @@ export type Database = {
           anfitrioes?: string | null
           cep?: string | null
           city?: string | null
+          complement?: string | null
           condominio?: string | null
           created_at?: string
           dias?: string | null
@@ -867,6 +869,7 @@ export type Database = {
           anfitrioes?: string | null
           cep?: string | null
           city?: string | null
+          complement?: string | null
           condominio?: string | null
           created_at?: string
           dias?: string | null
