@@ -814,6 +814,8 @@ export type Database = {
       casas_refugio: {
         Row: {
           address: string | null
+          anfitriao_esposa_id: string | null
+          anfitriao_id: string | null
           anfitrioes: string | null
           cep: string | null
           city: string | null
@@ -823,6 +825,8 @@ export type Database = {
           frequencia: string | null
           id: string
           latitude: number | null
+          lider_esposa_id: string | null
+          lider_id: string | null
           lideres: string | null
           longitude: number | null
           name: string
@@ -834,6 +838,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          anfitriao_esposa_id?: string | null
+          anfitriao_id?: string | null
           anfitrioes?: string | null
           cep?: string | null
           city?: string | null
@@ -843,6 +849,8 @@ export type Database = {
           frequencia?: string | null
           id?: string
           latitude?: number | null
+          lider_esposa_id?: string | null
+          lider_id?: string | null
           lideres?: string | null
           longitude?: number | null
           name: string
@@ -854,6 +862,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          anfitriao_esposa_id?: string | null
+          anfitriao_id?: string | null
           anfitrioes?: string | null
           cep?: string | null
           city?: string | null
@@ -863,6 +873,8 @@ export type Database = {
           frequencia?: string | null
           id?: string
           latitude?: number | null
+          lider_esposa_id?: string | null
+          lider_id?: string | null
           lideres?: string | null
           longitude?: number | null
           name?: string
@@ -872,7 +884,64 @@ export type Database = {
           supervisores?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "casas_refugio_anfitriao_esposa_id_fkey"
+            columns: ["anfitriao_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_anfitriao_esposa_id_fkey"
+            columns: ["anfitriao_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_anfitriao_id_fkey"
+            columns: ["anfitriao_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_anfitriao_id_fkey"
+            columns: ["anfitriao_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_lider_esposa_id_fkey"
+            columns: ["lider_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_lider_esposa_id_fkey"
+            columns: ["lider_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casas_refugio_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       condominios: {
         Row: {

@@ -17,11 +17,13 @@ interface CasaRefugio {
   state?: string;
   cep?: string;
   numero?: string;
-  lideres?: string;
-  anfitrioes?: string;
   dias?: string;
   frequencia?: string;
   condominio?: string;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
+  anfitriao?: { full_name: string } | null;
+  anfitriao_esposa?: { full_name: string } | null;
 }
 
 const HomepageCasasRefugioTab = () => {
@@ -33,7 +35,13 @@ const HomepageCasasRefugioTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casas_refugio")
-        .select("*")
+        .select(`
+          *,
+          lider:members!casas_refugio_lider_id_fkey(full_name),
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
+          anfitriao:members!casas_refugio_anfitriao_id_fkey(full_name),
+          anfitriao_esposa:members!casas_refugio_anfitriao_esposa_id_fkey(full_name)
+        `)
         .order("name", { ascending: true });
       if (error) throw error;
       return data as CasaRefugio[];
@@ -122,10 +130,10 @@ const HomepageCasasRefugioTab = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-semibold truncate">{casa.name}</h4>
-                  {casa.lideres && (
+                  {(casa.lider || casa.lider_esposa) && (
                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                       <Users className="w-3 h-3" />
-                      {casa.lideres}
+                      {[casa.lider?.full_name, casa.lider_esposa?.full_name].filter(Boolean).join(" e ")}
                     </p>
                   )}
                   {casa.neighborhood && (

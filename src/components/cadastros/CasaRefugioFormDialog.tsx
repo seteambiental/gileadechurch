@@ -23,12 +23,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { MemberSelect } from "@/components/ui/member-select";
 
 const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
-  anfitrioes: z.string().optional(),
+  lider_id: z.string().nullable().optional(),
+  lider_esposa_id: z.string().nullable().optional(),
+  anfitriao_id: z.string().nullable().optional(),
+  anfitriao_esposa_id: z.string().nullable().optional(),
   condominio: z.string().optional(),
-  lideres: z.string().optional(),
   supervisores: z.string().optional(),
   dias: z.string().optional(),
   frequencia: z.string().optional(),
@@ -57,6 +60,10 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  lider_id?: string | null;
+  lider_esposa_id?: string | null;
+  anfitriao_id?: string | null;
+  anfitriao_esposa_id?: string | null;
 }
 
 interface CasaRefugioFormDialogProps {
@@ -74,9 +81,11 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      anfitrioes: "",
+      lider_id: null,
+      lider_esposa_id: null,
+      anfitriao_id: null,
+      anfitriao_esposa_id: null,
       condominio: "",
-      lideres: "",
       supervisores: "",
       dias: "",
       frequencia: "",
@@ -94,9 +103,11 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
       if (item) {
         form.reset({
           name: item.name,
-          anfitrioes: item.anfitrioes || "",
+          lider_id: item.lider_id || null,
+          lider_esposa_id: item.lider_esposa_id || null,
+          anfitriao_id: item.anfitriao_id || null,
+          anfitriao_esposa_id: item.anfitriao_esposa_id || null,
           condominio: item.condominio || "",
-          lideres: item.lideres || "",
           supervisores: item.supervisores || "",
           dias: item.dias || "",
           frequencia: item.frequencia || "",
@@ -110,9 +121,11 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
       } else {
         form.reset({
           name: "",
-          anfitrioes: "",
+          lider_id: null,
+          lider_esposa_id: null,
+          anfitriao_id: null,
+          anfitriao_esposa_id: null,
           condominio: "",
-          lideres: "",
           supervisores: "",
           dias: "",
           frequencia: "",
@@ -131,9 +144,11 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     mutationFn: async (data: FormData) => {
       const payload = {
         name: data.name,
-        anfitrioes: data.anfitrioes || null,
+        lider_id: data.lider_id || null,
+        lider_esposa_id: data.lider_esposa_id || null,
+        anfitriao_id: data.anfitriao_id || null,
+        anfitriao_esposa_id: data.anfitriao_esposa_id || null,
         condominio: data.condominio || null,
-        lideres: data.lideres || null,
         supervisores: data.supervisores || null,
         dias: data.dias || null,
         frequencia: data.frequencia || null,
@@ -143,6 +158,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         neighborhood: data.neighborhood || null,
         city: data.city || null,
         state: data.state || null,
+        // Keep legacy fields updated for backward compatibility
+        lideres: null,
+        anfitrioes: null,
       };
 
       if (item) {
@@ -158,6 +176,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["casas_refugio"] });
+      queryClient.invalidateQueries({ queryKey: ["casas-refugio-homepage"] });
       toast({ title: item ? "Casa Refúgio atualizada!" : "Casa Refúgio cadastrada!" });
       onOpenChange(false);
     },
@@ -190,7 +209,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-h-[90vh]">
+      <DialogContent className="bg-card border-border max-h-[90vh] max-w-2xl">
         <DialogHeader>
           <DialogTitle>{item ? "Editar Casa Refúgio" : "Nova Casa Refúgio"}</DialogTitle>
         </DialogHeader>
@@ -213,20 +232,87 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                 )}
               />
 
-              {/* 2. Anfitriões */}
-              <FormField
-                control={form.control}
-                name="anfitrioes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Anfitriões</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome dos anfitriões" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Líderes Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <p className="text-sm font-medium text-muted-foreground">Líderes</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="lider_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Líder</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar líder..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lider_esposa_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Esposa do Líder</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar esposa..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Anfitriões Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <p className="text-sm font-medium text-muted-foreground">Anfitriões</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="anfitriao_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Anfitrião</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar anfitrião..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="anfitriao_esposa_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Esposa do Anfitrião</FormLabel>
+                        <FormControl>
+                          <MemberSelect
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Selecionar esposa..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
               {/* 3. Condomínio */}
               <FormField
@@ -237,21 +323,6 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                     <FormLabel>Condomínio</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Nome do condomínio" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 4. Líderes */}
-              <FormField
-                control={form.control}
-                name="lideres"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Líderes</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome dos líderes" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
