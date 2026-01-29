@@ -125,8 +125,8 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
         </div>
       </div>
 
-      {/* Mobile extra info */}
-      <div className="mt-3 pt-3 border-t border-border sm:hidden">
+      {/* Mobile extra info - hidden when md:flex shows the desktop version */}
+      <div className="mt-3 pt-3 border-t border-border md:hidden">
         <div className="flex items-center justify-between text-xs">
           <button
             onClick={handleCondominioClick}
