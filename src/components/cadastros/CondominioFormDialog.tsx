@@ -35,6 +35,7 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   description: z.string().optional(),
   sindico_id: z.string().optional(),
+  sindico_esposa_id: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -44,6 +45,7 @@ interface Condominio {
   name: string;
   description: string | null;
   sindico_id: string | null;
+  sindico_esposa_id: string | null;
 }
 
 interface CondominioFormDialogProps {
@@ -51,7 +53,7 @@ interface CondominioFormDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   item?: Condominio | null;
-  onSave: (data: { name: string; description: string; sindico_id: string | null }) => void;
+  onSave: (data: { name: string; description: string; sindico_id: string | null; sindico_esposa_id: string | null }) => void;
   isSaving: boolean;
 }
 
@@ -69,6 +71,7 @@ const CondominioFormDialog = ({
       name: "",
       description: "",
       sindico_id: "",
+      sindico_esposa_id: "",
     },
   });
 
@@ -92,12 +95,14 @@ const CondominioFormDialog = ({
           name: item.name,
           description: item.description || "",
           sindico_id: item.sindico_id || "",
+          sindico_esposa_id: item.sindico_esposa_id || "",
         });
       } else {
         form.reset({
           name: "",
           description: "",
           sindico_id: "",
+          sindico_esposa_id: "",
         });
       }
     }
@@ -108,6 +113,7 @@ const CondominioFormDialog = ({
       name: formatNameField(data.name),
       description: data.description || "",
       sindico_id: data.sindico_id && data.sindico_id !== "none" ? data.sindico_id : null,
+      sindico_esposa_id: data.sindico_esposa_id && data.sindico_esposa_id !== "none" ? data.sindico_esposa_id : null,
     });
   };
 
@@ -144,6 +150,32 @@ const CondominioFormDialog = ({
                     <FormControl>
                       <SelectTrigger className="bg-background">
                         <SelectValue placeholder="Selecione o síndico" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-popover border-border z-50">
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {members.map((member) => (
+                        <SelectItem key={member.id} value={member.id}>
+                          {member.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="sindico_esposa_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Esposa do Síndico</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="Selecione a esposa" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-popover border-border z-50">
