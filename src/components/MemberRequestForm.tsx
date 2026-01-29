@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
@@ -101,6 +101,14 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [isAdvancingStep, setIsAdvancingStep] = useState(false);
+
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Quando muda de etapa, volta para o topo do modal para não “sumir” o conteúdo
+  // (ex.: usuário está no fim da etapa 3 e a etapa 4 é curta)
+  useEffect(() => {
+    scrollContainerRef.current?.scrollTo({ top: 0 });
+  }, [currentStep]);
 
   // Steps: 1=Verificação, 2=Dados Pessoais, 3=Endereço, 4=Ministérios, 5=Termos
   const TOTAL_STEPS = 5;
@@ -415,36 +423,37 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5" />
-            Quero fazer parte da Igreja
-          </DialogTitle>
-          <DialogDescription>
-            {currentStep === 1 
-              ? "Primeiro, informe seu primeiro nome e data de nascimento para verificar se você já está cadastrado."
-              : `Etapa ${currentStep} de ${TOTAL_STEPS}: ${getStepTitle()}`
-            }
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-lg">
+        <div ref={scrollContainerRef} className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5" />
+              Quero fazer parte da Igreja
+            </DialogTitle>
+            <DialogDescription>
+              {currentStep === 1 
+                ? "Primeiro, informe seu primeiro nome e data de nascimento para verificar se você já está cadastrado."
+                : `Etapa ${currentStep} de ${TOTAL_STEPS}: ${getStepTitle()}`
+              }
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Progress indicator */}
-        {verified && (
-          <div className="flex gap-1 mb-4">
-            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-              <div
-                key={i}
-                className={`h-2 flex-1 rounded-full transition-colors ${
-                  i + 1 <= currentStep ? "bg-secondary" : "bg-muted"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+          {/* Progress indicator */}
+          {verified && (
+            <div className="flex gap-1 mb-4">
+              {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+                <div
+                  key={i}
+                  className={`h-2 flex-1 rounded-full transition-colors ${
+                    i + 1 <= currentStep ? "bg-secondary" : "bg-muted"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             {/* STEP 1: Verificação */}
             {currentStep === 1 && (
               <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
@@ -922,8 +931,9 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                 )}
               </div>
             )}
-          </form>
-        </Form>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );
