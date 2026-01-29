@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { formatNameField } from "@/lib/text-utils";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
@@ -94,6 +95,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId }: ImpactoIns
           email = member.email || values.email;
           genero = member.genero || values.genero;
         }
+      } else if (values.is_manual && nome) {
+        nome = formatNameField(nome);
       }
 
       if (!nome) {

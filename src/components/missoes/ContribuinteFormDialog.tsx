@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DateInput } from "@/components/ui/date-input";
+import { formatNameField } from "@/lib/text-utils";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
@@ -122,7 +123,7 @@ export function ContribuinteFormDialog({
     mutationFn: async (data: FormData) => {
       const payload = {
         member_id: data.member_id || null,
-        nome_manual: data.nome_manual || null,
+        nome_manual: data.nome_manual ? formatNameField(data.nome_manual) : null,
         valor_mensal: parseFloat(data.valor_mensal),
         dia_vencimento: parseInt(data.dia_vencimento),
         ativo: data.ativo,

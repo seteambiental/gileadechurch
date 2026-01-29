@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, X, Loader2, UserCog } from "lucide-react";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import {
   Dialog,
   DialogContent,
@@ -364,17 +365,17 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       }
 
       const memberData = {
-        full_name: data.full_name,
+        full_name: formatNameField(data.full_name),
         genero: data.genero || null,
         birth_date: data.birth_date || null,
         member_since: data.member_since || null,
         cep: data.cep ? unformatCep(data.cep) : null,
-        address: data.address || null,
+        address: data.address ? toTitleCase(data.address) : null,
         number: data.number || null,
         complement: data.complement || null,
-        neighborhood: data.neighborhood || null,
-        city: data.city || null,
-        state: data.state || null,
+        neighborhood: data.neighborhood ? toTitleCase(data.neighborhood) : null,
+        city: data.city ? toTitleCase(data.city) : null,
+        state: data.state?.toUpperCase() || null,
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,

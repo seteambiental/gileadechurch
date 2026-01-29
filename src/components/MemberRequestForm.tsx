@@ -39,6 +39,7 @@ import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { TermsCheckbox } from "./TermsCheckbox";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
@@ -211,18 +212,18 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       }
 
       const payload = {
-        full_name: data.full_name,
+        full_name: formatNameField(data.full_name),
         email: data.email || null,
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         genero: data.genero || null,
         birth_date: data.birth_date || null,
         cep: data.cep ? unformatCep(data.cep) : null,
-        address: data.address || null,
+        address: data.address ? toTitleCase(data.address) : null,
         number: data.number || null,
         complement: data.complement || null,
-        neighborhood: data.neighborhood || null,
-        city: data.city || null,
-        state: data.state || null,
+        neighborhood: data.neighborhood ? toTitleCase(data.neighborhood) : null,
+        city: data.city ? toTitleCase(data.city) : null,
+        state: data.state?.toUpperCase() || null,
         cpf: cpfClean,
         photo_url: photoUrl,
       };

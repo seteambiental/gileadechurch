@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { formatCep, formatPhone, formatCPF } from "@/lib/masks";
 import { DateInput } from "@/components/ui/date-input";
+import { formatNameField, toTitleCase } from "@/lib/text-utils";
 
 interface NovoConvertidoFormDialogProps {
   open: boolean;
@@ -151,19 +152,19 @@ export const NovoConvertidoFormDialog = ({
     setIsLoading(true);
     try {
       const payload = {
-        full_name: formData.full_name.trim(),
+        full_name: formatNameField(formData.full_name),
         whatsapp: formData.whatsapp || null,
         email: formData.email || null,
         genero: formData.genero || null,
         data_nascimento: formData.data_nascimento || null,
         cpf: formData.cpf ? formData.cpf.replace(/\D/g, "") : null,
         cep: formData.cep || null,
-        address: formData.address || null,
+        address: formData.address ? toTitleCase(formData.address) : null,
         numero: formData.numero || null,
         complement: formData.complement || null,
-        neighborhood: formData.neighborhood || null,
-        city: formData.city || null,
-        state: formData.state || null,
+        neighborhood: formData.neighborhood ? toTitleCase(formData.neighborhood) : null,
+        city: formData.city ? toTitleCase(formData.city) : null,
+        state: formData.state?.toUpperCase() || null,
         membro_vinculado_id: formData.membro_vinculado_id || null,
         casa_refugio_id: formData.casa_refugio_id || null,
         tipo_conversao: formData.tipo_conversao || null,
