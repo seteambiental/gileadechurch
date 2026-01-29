@@ -96,6 +96,13 @@ const CondominiosTab = () => {
     item.sindico?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const shouldShowDescription = (item: Condominio) => {
+    const desc = (item.description ?? "").trim();
+    if (!desc) return false;
+    // Avoid showing a duplicate line when description equals the name
+    return desc.localeCompare(item.name.trim(), undefined, { sensitivity: "accent" }) !== 0;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -146,7 +153,7 @@ const CondominiosTab = () => {
                         <span>Sem síndico definido</span>
                       </p>
                     )}
-                    {item.description && (
+                    {shouldShowDescription(item) && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {item.description}
                       </p>
