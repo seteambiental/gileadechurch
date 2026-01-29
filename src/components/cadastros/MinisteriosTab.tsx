@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import SimpleFormDialog from "./SimpleFormDialog";
+import MinisterioFormDialog from "./MinisterioFormDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +22,10 @@ interface Ministry {
   id: string;
   name: string;
   description: string | null;
+  lider_id: string | null;
+  lider_esposa_id: string | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
 
 const MinisteriosTab = () => {
@@ -37,7 +41,11 @@ const MinisteriosTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ministries")
-        .select("*")
+        .select(`
+          *,
+          lider:members!ministries_lider_id_fkey(full_name),
+          lider_esposa:members!ministries_lider_esposa_id_fkey(full_name)
+        `)
         .order("name");
       if (error) throw error;
       return data as Ministry[];
@@ -60,7 +68,7 @@ const MinisteriosTab = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string }) => {
+    mutationFn: async (data: { name: string; description: string; lider_id: string | null; lider_esposa_id: string | null }) => {
       if (editingItem) {
         const { error } = await supabase
           .from("ministries")
@@ -84,8 +92,18 @@ const MinisteriosTab = () => {
   });
 
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.lider?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Monta o nome do líder e esposa para exibição
+  const getLiderNomes = (item: Ministry) => {
+    const nomes = [
+      item.lider?.full_name,
+      item.lider_esposa?.full_name
+    ].filter(Boolean);
+    return nomes.length > 0 ? nomes.join(" e ") : null;
+  };
 
   return (
     <div className="space-y-6">
@@ -119,47 +137,61 @@ const MinisteriosTab = () => {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground">{item.name}</h3>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {item.description}
-                      </p>
-                    )}
+          {filteredItems.map((item) => {
+            const liderNomes = getLiderNomes(item);
+            return (
+              <Card key={item.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-foreground">{item.name}</h3>
+                      {liderNomes ? (
+                        <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                          <User className="w-3 h-3 shrink-0" />
+                          <span className="truncate">{liderNomes}</span>
+                        </p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground/60 mt-1 flex items-center gap-1 italic">
+                          <User className="w-3 h-3 shrink-0" />
+                          <span>Sem líder definido</span>
+                        </p>
+                      )}
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingItem(item);
+                          setIsFormOpen(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeletingId(item.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingItem(item);
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeletingId(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* Form Dialog */}
-      <SimpleFormDialog
+      <MinisterioFormDialog
         open={isFormOpen}
         onOpenChange={(open) => {
           setIsFormOpen(open);

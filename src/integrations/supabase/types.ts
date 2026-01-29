@@ -986,6 +986,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          sindico_esposa_id: string | null
           sindico_id: string | null
           updated_at: string
         }
@@ -994,6 +995,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          sindico_esposa_id?: string | null
           sindico_id?: string | null
           updated_at?: string
         }
@@ -1002,10 +1004,25 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          sindico_esposa_id?: string | null
           sindico_id?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "condominios_sindico_esposa_id_fkey"
+            columns: ["sindico_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "condominios_sindico_esposa_id_fkey"
+            columns: ["sindico_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "condominios_sindico_id_fkey"
             columns: ["sindico_id"]
@@ -3109,6 +3126,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          lider_esposa_id: string | null
+          lider_id: string | null
           lider_whatsapp: string | null
           name: string
           updated_at: string
@@ -3117,6 +3136,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lider_esposa_id?: string | null
+          lider_id?: string | null
           lider_whatsapp?: string | null
           name: string
           updated_at?: string
@@ -3125,11 +3146,42 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          lider_esposa_id?: string | null
+          lider_id?: string | null
           lider_whatsapp?: string | null
           name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ministries_lider_esposa_id_fkey"
+            columns: ["lider_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministries_lider_esposa_id_fkey"
+            columns: ["lider_esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministries_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministries_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       missoes_mocambique_contribuicoes: {
         Row: {

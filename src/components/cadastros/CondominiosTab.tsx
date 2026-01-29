@@ -23,8 +23,12 @@ interface Condominio {
   name: string;
   description: string | null;
   sindico_id: string | null;
+  sindico_esposa_id: string | null;
   sindico?: {
     id: string;
+    full_name: string;
+  } | null;
+  sindico_esposa?: {
     full_name: string;
   } | null;
 }
@@ -44,7 +48,8 @@ const CondominiosTab = () => {
         .from("condominios")
         .select(`
           *,
-          sindico:members!condominios_sindico_id_fkey(id, full_name)
+          sindico:members!condominios_sindico_id_fkey(id, full_name),
+          sindico_esposa:members!condominios_sindico_esposa_id_fkey(full_name)
         `)
         .order("name");
       if (error) throw error;
@@ -68,7 +73,7 @@ const CondominiosTab = () => {
   });
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string; sindico_id: string | null }) => {
+    mutationFn: async (data: { name: string; description: string; sindico_id: string | null; sindico_esposa_id: string | null }) => {
       if (editingItem) {
         const { error } = await supabase
           .from("condominios")
@@ -144,7 +149,10 @@ const CondominiosTab = () => {
                     {item.sindico && (
                       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
                         <User className="w-3 h-3" />
-                        <span>Síndico: {item.sindico.full_name}</span>
+                        <span>
+                          Síndico: {item.sindico.full_name}
+                          {item.sindico_esposa && ` e ${item.sindico_esposa.full_name}`}
+                        </span>
                       </p>
                     )}
                     {!item.sindico && (
