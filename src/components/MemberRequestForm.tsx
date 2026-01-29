@@ -619,7 +619,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   />
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="number"
@@ -636,18 +636,32 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
                   <FormField
                     control={form.control}
-                    name="neighborhood"
+                    name="complement"
                     render={({ field }) => (
-                      <FormItem className="col-span-2">
-                        <FormLabel>Bairro *</FormLabel>
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
                         <FormControl>
-                          <Input placeholder="Bairro" {...field} disabled={isLoadingCep} />
+                          <Input placeholder="Apto, Bloco..." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="neighborhood"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bairro *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Bairro" {...field} disabled={isLoadingCep} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <FormField

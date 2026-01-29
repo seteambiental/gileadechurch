@@ -38,6 +38,7 @@ const formSchema = z.object({
   cep: z.string().optional(),
   address: z.string().optional(),
   numero: z.string().optional(),
+  complement: z.string().optional(),
   neighborhood: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
@@ -57,6 +58,7 @@ interface CasaRefugio {
   cep: string | null;
   address: string | null;
   numero: string | null;
+  complement: string | null;
   neighborhood: string | null;
   city: string | null;
   state: string | null;
@@ -92,6 +94,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
       cep: "",
       address: "",
       numero: "",
+      complement: "",
       neighborhood: "",
       city: "",
       state: "",
@@ -114,6 +117,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           cep: item.cep || "",
           address: item.address || "",
           numero: item.numero || "",
+          complement: item.complement || "",
           neighborhood: item.neighborhood || "",
           city: item.city || "",
           state: item.state || "",
@@ -132,6 +136,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           cep: "",
           address: "",
           numero: "",
+          complement: "",
           neighborhood: "",
           city: "",
           state: "",
@@ -155,6 +160,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         cep: data.cep || null,
         address: data.address || null,
         numero: data.numero || null,
+        complement: data.complement || null,
         neighborhood: data.neighborhood || null,
         city: data.city || null,
         state: data.state || null,
@@ -427,6 +433,21 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                         <FormLabel>Número</FormLabel>
                         <FormControl>
                           <Input {...field} placeholder="Nº" inputMode="numeric" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 10b. Complemento */}
+                  <FormField
+                    control={form.control}
+                    name="complement"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Complemento</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Apto, Bloco..." />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

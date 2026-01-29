@@ -44,6 +44,7 @@ interface CasaRefugio {
   cep: string | null;
   address: string | null;
   numero: string | null;
+  complement: string | null;
   neighborhood: string | null;
   city: string | null;
   state: string | null;
