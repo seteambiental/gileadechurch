@@ -2663,6 +2663,8 @@ export type Database = {
           id: string
           kids_numero: number | null
           member_since: string | null
+          ministerios_interesse: string[] | null
+          nao_pretende_servir: boolean | null
           neighborhood: string | null
           number: string | null
           photo_url: string | null
@@ -2688,6 +2690,8 @@ export type Database = {
           id?: string
           kids_numero?: number | null
           member_since?: string | null
+          ministerios_interesse?: string[] | null
+          nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
@@ -2713,6 +2717,8 @@ export type Database = {
           id?: string
           kids_numero?: number | null
           member_since?: string | null
+          ministerios_interesse?: string[] | null
+          nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
