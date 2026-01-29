@@ -878,6 +878,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
             {/* STEP 5: Termos e Confirmação */}
             {currentStep === 5 && (
               <div className="space-y-4">
+                {/* Resumo do Cadastro */}
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <h3 className="font-semibold mb-2">Resumo do Cadastro</h3>
                   <div className="text-sm space-y-1 text-muted-foreground">
@@ -886,18 +887,84 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     <p><strong>WhatsApp:</strong> {form.watch("whatsapp")}</p>
                     <p><strong>Endereço:</strong> {form.watch("address")}, {form.watch("number")} - {form.watch("neighborhood")}</p>
                     <p><strong>Cidade:</strong> {form.watch("city")} - {form.watch("state")}</p>
-                    {form.watch("nao_pretende_servir") ? (
-                      <p><strong>Ministérios:</strong> Ainda não pretende servir</p>
-                    ) : (
-                      <p><strong>Ministérios de interesse:</strong> {
-                        form.watch("ministerios_interesse")?.length 
-                          ? ministries.filter(m => form.watch("ministerios_interesse")?.includes(m.id)).map(m => m.name).join(", ")
-                          : "Nenhum selecionado"
-                      }</p>
-                    )}
                   </div>
                 </div>
 
+                {/* Ministérios - ENTRE o resumo e os termos */}
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Church className="w-5 h-5 text-secondary" />
+                    <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="nao_pretende_servir"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={(checked) => {
+                              field.onChange(checked);
+                              if (checked) {
+                                form.setValue("ministerios_interesse", []);
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-normal">
+                            Ainda não pretendo servir
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  {!form.watch("nao_pretende_servir") && (
+                    <FormField
+                      control={form.control}
+                      name="ministerios_interesse"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm text-muted-foreground">
+                            Selecione os ministérios de seu interesse:
+                          </FormLabel>
+                          <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
+                            <div className="space-y-2">
+                              {ministries.map((ministry) => (
+                                <div key={ministry.id} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`ministry-final-${ministry.id}`}
+                                    checked={field.value?.includes(ministry.id) || false}
+                                    onCheckedChange={(checked) => {
+                                      const currentValue = field.value || [];
+                                      if (checked) {
+                                        field.onChange([...currentValue, ministry.id]);
+                                      } else {
+                                        field.onChange(currentValue.filter((id) => id !== ministry.id));
+                                      }
+                                    }}
+                                  />
+                                  <label
+                                    htmlFor={`ministry-final-${ministry.id}`}
+                                    className="text-sm font-normal cursor-pointer"
+                                  >
+                                    {ministry.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </ScrollArea>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Termos */}
                 <TermsCheckbox
                   checked={acceptedTerms}
                   onCheckedChange={(checked) => {
