@@ -21,6 +21,8 @@ type Body = {
   state?: string | null;
   cpf: string; // only digits
   photo_url?: string | null;
+  ministerios_interesse?: string[] | null;
+  nao_pretende_servir?: boolean | null;
 };
 
 serve(async (req) => {
@@ -84,6 +86,8 @@ serve(async (req) => {
       state: body.state ?? null,
       cpf,
       photo_url: body.photo_url ?? null,
+      ministerios_interesse: body.ministerios_interesse ?? [],
+      nao_pretende_servir: body.nao_pretende_servir ?? false,
       status: "pendente" as const,
     };
 

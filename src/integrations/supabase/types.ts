@@ -2569,7 +2569,9 @@ export type Database = {
           genero: string | null
           id: string
           member_id: string | null
+          ministerios_interesse: string[] | null
           motivo_rejeicao: string | null
+          nao_pretende_servir: boolean | null
           neighborhood: string | null
           number: string | null
           photo_url: string | null
@@ -2594,7 +2596,9 @@ export type Database = {
           genero?: string | null
           id?: string
           member_id?: string | null
+          ministerios_interesse?: string[] | null
           motivo_rejeicao?: string | null
+          nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
@@ -2619,7 +2623,9 @@ export type Database = {
           genero?: string | null
           id?: string
           member_id?: string | null
+          ministerios_interesse?: string[] | null
           motivo_rejeicao?: string | null
+          nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
