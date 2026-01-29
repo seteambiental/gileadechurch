@@ -100,6 +100,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
+  const [isAdvancingStep, setIsAdvancingStep] = useState(false);
 
   // Steps: 1=Verificação, 2=Dados Pessoais, 3=Endereço, 4=Ministérios, 5=Termos
   const TOTAL_STEPS = 5;
@@ -355,10 +356,18 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   };
 
   const handleNextStep = async () => {
+    // Evita pular etapas por duplo clique/toque (especialmente no mobile)
+    if (isAdvancingStep) return;
+    setIsAdvancingStep(true);
     const isValid = await validateStep(currentStep);
     if (isValid) {
-      setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
+      setCurrentStep((prev) => {
+        // Garante que Endereço (3) sempre vai para Ministérios (4)
+        if (prev === 3) return 4;
+        return Math.min(prev + 1, TOTAL_STEPS);
+      });
     }
+    setIsAdvancingStep(false);
   };
 
   const handlePrevStep = () => {
@@ -901,7 +910,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                 </Button>
 
                 {currentStep < TOTAL_STEPS ? (
-                  <Button type="button" onClick={handleNextStep}>
+                  <Button type="button" onClick={handleNextStep} disabled={isAdvancingStep}>
                     Próximo
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
