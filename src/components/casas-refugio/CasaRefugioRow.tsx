@@ -82,8 +82,8 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
           </button>
         </div>
 
-        {/* Condomínio Badge - clickable */}
-        <div className="hidden sm:flex items-center gap-2">
+        {/* Condomínio Badge - clickable (hidden on mobile, shown on sm+) */}
+        <div className="hidden md:flex items-center gap-2">
           <button
             onClick={handleCondominioClick}
             className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
