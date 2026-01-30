@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Calendar, Users, ChevronRight, UserCheck, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatLeaderNames } from "@/lib/text-utils";
 
 interface CasaRefugio {
   id: string;
@@ -54,11 +55,11 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
     onOpenEncontro();
   };
 
-  // Monta o nome do líder e esposa para exibição
-  const liderNomes = [
+  // Monta o nome dos líderes para exibição usando primeiro nome
+  const liderNomes = formatLeaderNames(
     casa.lider?.full_name,
     casa.lider_esposa?.full_name
-  ].filter(Boolean).join(" e ");
+  );
 
   return (
     <div 

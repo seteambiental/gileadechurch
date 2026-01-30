@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, User } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { formatLeaderNames } from "@/lib/text-utils";
 import MinisterioFormDialog from "./MinisterioFormDialog";
 import {
   AlertDialog,
@@ -96,13 +97,12 @@ const MinisteriosTab = () => {
     item.lider?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Monta o nome do líder e esposa para exibição
+  // Formata o nome dos líderes para exibição nos cards
   const getLiderNomes = (item: Ministry) => {
-    const nomes = [
+    return formatLeaderNames(
       item.lider?.full_name,
       item.lider_esposa?.full_name
-    ].filter(Boolean);
-    return nomes.length > 0 ? nomes.join(" e ") : null;
+    );
   };
 
   return (
@@ -147,12 +147,12 @@ const MinisteriosTab = () => {
                       <h3 className="font-semibold text-foreground">{item.name}</h3>
                       {liderNomes ? (
                         <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                          <User className="w-3 h-3 shrink-0" />
+                          <Users className="w-3 h-3 shrink-0" />
                           <span className="truncate">{liderNomes}</span>
                         </p>
                       ) : (
                         <p className="text-sm text-muted-foreground/60 mt-1 flex items-center gap-1 italic">
-                          <User className="w-3 h-3 shrink-0" />
+                          <Users className="w-3 h-3 shrink-0" />
                           <span>Sem líder definido</span>
                         </p>
                       )}

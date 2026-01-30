@@ -148,12 +148,12 @@ const MinisterioFormDialog = ({
                 name="lider_esposa_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Esposa do Líder</FormLabel>
+                    <FormLabel>Líder</FormLabel>
                     <FormControl>
                       <MemberSelect
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder="Selecionar esposa..."
+                        placeholder="Selecionar líder..."
                       />
                     </FormControl>
                     <FormMessage />

@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, User } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { formatLeaderNames } from "@/lib/text-utils";
 import CondominioFormDialog from "./CondominioFormDialog";
 import {
   AlertDialog,
@@ -104,8 +105,16 @@ const CondominiosTab = () => {
   const shouldShowDescription = (item: Condominio) => {
     const desc = (item.description ?? "").trim();
     if (!desc) return false;
-    // Avoid showing a duplicate line when description equals the name
     return desc.localeCompare(item.name.trim(), undefined, { sensitivity: "accent" }) !== 0;
+  };
+
+  // Formata o nome dos síndicos para exibição nos cards
+  const getSindicoNomes = (item: Condominio) => {
+    return formatLeaderNames(
+      item.sindico?.full_name,
+      item.sindico_esposa?.full_name,
+      "Síndico"
+    );
   };
 
   return (
@@ -146,18 +155,14 @@ const CondominiosTab = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground">{item.name}</h3>
-                    {item.sindico && (
+                    {getSindicoNomes(item) ? (
                       <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        <span>
-                          Síndico: {item.sindico.full_name}
-                          {item.sindico_esposa && ` e ${item.sindico_esposa.full_name}`}
-                        </span>
+                        <Users className="w-3 h-3" />
+                        <span>{getSindicoNomes(item)}</span>
                       </p>
-                    )}
-                    {!item.sindico && (
+                    ) : (
                       <p className="text-sm text-muted-foreground/60 mt-1 flex items-center gap-1 italic">
-                        <User className="w-3 h-3" />
+                        <Users className="w-3 h-3" />
                         <span>Sem síndico definido</span>
                       </p>
                     )}

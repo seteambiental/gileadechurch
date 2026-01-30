@@ -32,3 +32,34 @@ export const toTitleCase = (text: string): string => {
 export const formatNameField = (value: string): string => {
   return toTitleCase(value.trim());
 };
+
+/**
+ * Extrai o primeiro nome de um nome completo
+ * Exemplo: "Marcius Gilson da Silva" -> "Marcius"
+ */
+export const getFirstName = (fullName: string | null | undefined): string => {
+  if (!fullName) return "";
+  return fullName.trim().split(" ")[0];
+};
+
+/**
+ * Formata nomes de líderes para exibição em cards
+ * Exemplo: ("José Ademir Silva", "Gerusa Santos") -> "Líderes José e Gerusa"
+ * Exemplo: ("José Ademir Silva", null) -> "Líder José"
+ */
+export const formatLeaderNames = (
+  leaderName: string | null | undefined,
+  spouseName: string | null | undefined,
+  title: string = "Líder"
+): string | null => {
+  const firstName = getFirstName(leaderName);
+  const spouseFirstName = getFirstName(spouseName);
+
+  if (firstName && spouseFirstName) {
+    return `${title}es ${firstName} e ${spouseFirstName}`;
+  }
+  if (firstName) {
+    return `${title} ${firstName}`;
+  }
+  return null;
+};

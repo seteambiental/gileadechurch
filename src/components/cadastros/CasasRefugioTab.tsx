@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle } from "lucide-react";
+import { formatLeaderNames } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,8 @@ interface CasaRefugio {
   state: string | null;
   latitude: number | null;
   longitude: number | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
 
 interface GeocodingResult {
@@ -75,7 +78,11 @@ const CasasRefugioTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casas_refugio")
-        .select("*")
+        .select(`
+          *,
+          lider:members!casas_refugio_lider_id_fkey(full_name),
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
+        `)
         .order("name");
       if (error) throw error;
       return data as CasaRefugio[];
@@ -328,10 +335,12 @@ const CasasRefugioTab = () => {
                 </div>
 
                 <div className="space-y-1.5 text-sm text-muted-foreground">
-                  {item.lideres && (
+                  {(item.lider || item.lider_esposa || item.lideres) && (
                     <p className="flex items-center gap-1.5 truncate">
                       <Users className="w-3 h-3 shrink-0" />
-                      <span className="truncate">Líderes: {item.lideres}</span>
+                      <span className="truncate">
+                        {formatLeaderNames(item.lider?.full_name, item.lider_esposa?.full_name) || `Líderes: ${item.lideres}`}
+                      </span>
                     </p>
                   )}
                   {item.dias && item.frequencia && (
