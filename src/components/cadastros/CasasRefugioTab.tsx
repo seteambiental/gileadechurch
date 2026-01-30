@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Search, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle } from "lucide-react";
-import { formatLeaderNames } from "@/lib/text-utils";
+import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -125,9 +125,9 @@ const CasasRefugioTab = () => {
       // Text search
       const matchesSearch =
         searchTerm === "" ||
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.condominio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.lideres?.toLowerCase().includes(searchTerm.toLowerCase());
+        includesNormalized(item.name, searchTerm) ||
+        includesNormalized(item.condominio || "", searchTerm) ||
+        includesNormalized(item.lideres || "", searchTerm);
 
       // Condomínio filter
       const matchesCondominio =

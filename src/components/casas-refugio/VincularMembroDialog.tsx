@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Search, UserPlus, User } from "lucide-react";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface VincularMembroDialogProps {
   open: boolean;

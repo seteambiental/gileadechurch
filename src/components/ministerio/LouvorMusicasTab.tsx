@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,13 +97,12 @@ export const LouvorMusicasTab = ({ ministryId }: LouvorMusicasTabProps) => {
     },
   });
 
-  // Filtrar músicas
   const filteredMusicas = useMemo(() => {
     return musicas.filter(m => {
       const matchesSearch = !searchQuery || 
-        m.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.artista?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        m.tags?.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        includesNormalized(m.titulo, searchQuery) ||
+        includesNormalized(m.artista || "", searchQuery) ||
+        m.tags?.some(t => includesNormalized(t, searchQuery));
       
       const matchesCategoria = categoriaFilter === "todas" || m.categoria === categoriaFilter;
       

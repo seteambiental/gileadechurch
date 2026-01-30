@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { CasaRefugioRow } from "@/components/casas-refugio/CasaRefugioRow";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface CasaRefugio {
   id: string;
@@ -103,9 +104,9 @@ const CasasRefugioPage = () => {
   const filteredCasas = useMemo(() => {
     return casas.filter((casa) => {
       const matchesSearch =
-        casa.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        casa.lideres?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        casa.anfitrioes?.toLowerCase().includes(searchTerm.toLowerCase());
+        includesNormalized(casa.name, searchTerm) ||
+        includesNormalized(casa.lideres || "", searchTerm) ||
+        includesNormalized(casa.anfitrioes || "", searchTerm);
 
       const matchesCondominio =
         condominioFilter === "all" || casa.condominio === condominioFilter;

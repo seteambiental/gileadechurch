@@ -10,6 +10,7 @@ import { Plus, Search, Building2, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { InstituicaoFormDialog } from "./InstituicaoFormDialog";
 import { InstituicaoDetalhesDialog } from "./InstituicaoDetalhesDialog";
+import { includesNormalized } from "@/lib/text-utils";
 
 const tiposInstituicao: Record<string, string> = {
   idosos: "Idosos",
@@ -54,7 +55,7 @@ export function AcaoSocialInstituicoesTab() {
   });
 
   const filteredInstituicoes = instituicoes?.filter((i) =>
-    i.nome.toLowerCase().includes(search.toLowerCase())
+    includesNormalized(i.nome, search)
   );
 
   const handleEdit = (instituicao: any) => {

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { formatLeaderNames } from "@/lib/text-utils";
+import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import MinisterioFormDialog from "./MinisterioFormDialog";
 import {
   AlertDialog,
@@ -93,8 +93,8 @@ const MinisteriosTab = () => {
   });
 
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.lider?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    includesNormalized(item.name, searchTerm) ||
+    includesNormalized(item.lider?.full_name || "", searchTerm)
   );
 
   // Formata o nome dos líderes para exibição nos cards

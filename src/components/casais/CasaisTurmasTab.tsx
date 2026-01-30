@@ -19,6 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { includesNormalized } from "@/lib/text-utils";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Users, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,7 +76,7 @@ export function CasaisTurmasTab() {
   };
 
   const filteredTurmas = turmas?.filter((t) =>
-    t.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    includesNormalized(t.nome, searchTerm)
   );
 
   return (

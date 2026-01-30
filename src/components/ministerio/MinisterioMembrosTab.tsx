@@ -21,6 +21,7 @@ import {
 import { differenceInYears, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { VisitanteFormDialog } from "./VisitanteFormDialog";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface MinisterioMembrosTabProps {
   ministerioSlug: string;
@@ -183,7 +184,7 @@ export const MinisterioMembrosTab = ({
     
     return todos
       .filter((m) => {
-        const matchSearch = m.full_name.toLowerCase().includes(search.toLowerCase());
+        const matchSearch = includesNormalized(m.full_name, search);
         const matchTipo = filtroTipo === "todos" || m.tipo === filtroTipo;
         return matchSearch && matchTipo;
       })

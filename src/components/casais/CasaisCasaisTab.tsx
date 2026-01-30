@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, Award, Heart } from "lucide-react";
 import { format } from "date-fns";
+import { includesNormalized } from "@/lib/text-utils";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { CasalFormDialog } from "./CasalFormDialog";
@@ -106,8 +107,7 @@ export function CasaisCasaisTab() {
   const filteredCasais = casais?.filter((c) => {
     const nomeM = c.membro_masculino?.full_name || c.nome_masculino || "";
     const nomeF = c.membro_feminino?.full_name || c.nome_feminino || "";
-    const searchLower = searchTerm.toLowerCase();
-    return nomeM.toLowerCase().includes(searchLower) || nomeF.toLowerCase().includes(searchLower);
+    return includesNormalized(nomeM, searchTerm) || includesNormalized(nomeF, searchTerm);
   });
 
   const turmasAtivas = turmas?.filter((t) => !!t?.id && !!t?.ativo) || [];

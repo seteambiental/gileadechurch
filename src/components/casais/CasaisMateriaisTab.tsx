@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Search, MoreHorizontal, Pencil, Trash2, FileText, Video, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { includesNormalized } from "@/lib/text-utils";
 import { MaterialFormDialog } from "./MaterialFormDialog";
 
 const tipoIcons: Record<string, any> = {
@@ -90,7 +91,7 @@ export function CasaisMateriaisTab() {
   };
 
   const filteredMateriais = materiais?.filter((m) =>
-    m.titulo.toLowerCase().includes(searchTerm.toLowerCase())
+    includesNormalized(m.titulo, searchTerm)
   );
 
   return (

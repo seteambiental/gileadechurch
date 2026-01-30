@@ -14,6 +14,7 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
+import { includesNormalized } from "@/lib/text-utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -211,7 +212,7 @@ const SolicitacoesMembrosTab = () => {
   });
 
   const filteredRequests = requests.filter((req) =>
-    req.full_name.toLowerCase().includes(search.toLowerCase())
+    includesNormalized(req.full_name, search)
   );
 
   const getStatusBadge = (status: string) => {

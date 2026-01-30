@@ -1,4 +1,24 @@
 /**
+ * Remove acentos e caracteres especiais de uma string para busca
+ * Exemplo: "João" -> "joao", "Érica" -> "erica"
+ */
+export const normalizeText = (text: string): string => {
+  if (!text) return "";
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+};
+
+/**
+ * Verifica se um texto contém outro, ignorando acentos e maiúsculas/minúsculas
+ * Exemplo: includesNormalized("João", "joao") -> true
+ */
+export const includesNormalized = (text: string, search: string): boolean => {
+  return normalizeText(text).includes(normalizeText(search));
+};
+
+/**
  * Converte texto para Title Case (primeira letra de cada palavra em maiúsculo)
  * Exemplo: "JOÃO DA SILVA" -> "João da Silva"
  */
