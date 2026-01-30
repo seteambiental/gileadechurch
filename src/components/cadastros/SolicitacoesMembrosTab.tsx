@@ -116,6 +116,25 @@ const SolicitacoesMembrosTab = () => {
 
       if (memberError) throw memberError;
 
+      // Criar candidaturas para os ministérios de interesse
+      if (request.ministerios_interesse && request.ministerios_interesse.length > 0 && !request.nao_pretende_servir) {
+        const candidaturas = request.ministerios_interesse.map((ministryId) => ({
+          member_id: newMember.id,
+          ministry_id: ministryId,
+          mensagem: "Interesse manifestado durante o cadastro",
+          status: "pendente",
+        }));
+
+        const { error: candidaturaError } = await supabase
+          .from("candidaturas_ministerio")
+          .insert(candidaturas);
+
+        if (candidaturaError) {
+          console.error("Erro ao criar candidaturas:", candidaturaError);
+          // Não falhar a aprovação se a candidatura não for criada
+        }
+      }
+
       // Atualizar a solicitação como aprovada
       const { error: updateError } = await supabase
         .from("member_requests")
@@ -149,7 +168,9 @@ const SolicitacoesMembrosTab = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["member-requests"] });
       queryClient.invalidateQueries({ queryKey: ["members"] });
-      toast({ title: "Solicitação aprovada!", description: "Membro cadastrado e email de boas-vindas enviado." });
+      queryClient.invalidateQueries({ queryKey: ["candidaturas-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["minhas-candidaturas"] });
+      toast({ title: "Solicitação aprovada!", description: "Membro cadastrado e candidaturas aos ministérios criadas." });
       setSelectedRequest(null);
     },
     onError: (error) => {
