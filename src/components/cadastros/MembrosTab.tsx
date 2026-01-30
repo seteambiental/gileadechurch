@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhone, formatDateBR } from "@/lib/masks";
 import { exportToExcel, exportToPDF } from "@/lib/export";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -223,7 +224,7 @@ const MembrosTab = () => {
 
   const filteredMembers = members.filter((member) => {
     // Filter by name search
-    const matchesSearch = member.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = includesNormalized(member.full_name, searchTerm);
     
     // Filter by function type
     const matchesFunction = !filterFunction || 

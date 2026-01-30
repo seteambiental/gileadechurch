@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { formatLeaderNames } from "@/lib/text-utils";
+import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import CondominioFormDialog from "./CondominioFormDialog";
 import {
   AlertDialog,
@@ -98,8 +98,8 @@ const CondominiosTab = () => {
   });
 
   const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.sindico?.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    includesNormalized(item.name, searchTerm) ||
+    includesNormalized(item.sindico?.full_name || "", searchTerm)
   );
 
   const shouldShowDescription = (item: Condominio) => {

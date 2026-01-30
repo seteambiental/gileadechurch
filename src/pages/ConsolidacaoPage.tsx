@@ -26,6 +26,7 @@ import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
 import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
 import { ConsolidacaoAgendaTab } from "@/components/consolidacao/ConsolidacaoAgendaTab";
 import { useToast } from "@/hooks/use-toast";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,7 +86,7 @@ const ConsolidacaoPage = () => {
   });
 
   const filteredConvertidos = convertidos.filter((c) =>
-    c.full_name.toLowerCase().includes(search.toLowerCase())
+    includesNormalized(c.full_name, search)
   );
 
   const pendentes = filteredConvertidos.filter((c) => !c.tornou_membro);

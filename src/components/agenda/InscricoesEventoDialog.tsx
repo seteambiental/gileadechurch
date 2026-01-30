@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -142,7 +143,7 @@ export const InscricoesEventoDialog = ({
 
   // Filtered inscriptions
   const inscricoesFiltradas = inscricoes.filter((i) => {
-    const matchSearch = i.nome_participante.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = includesNormalized(i.nome_participante, searchTerm);
     const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
     const matchGenero = filterGenero === "todos" || i.genero === filterGenero;
     const matchMenor = filterMenor === "todos" || 

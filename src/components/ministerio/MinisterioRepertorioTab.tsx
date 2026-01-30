@@ -26,6 +26,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -246,11 +247,10 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
   // Filtrar músicas para autocomplete
   const filteredMusicasBanco = useMemo(() => {
     if (!searchQuery) return musicasBanco.slice(0, 10);
-    const query = searchQuery.toLowerCase();
     return musicasBanco
       .filter(m => 
-        m.titulo.toLowerCase().includes(query) || 
-        m.artista?.toLowerCase().includes(query)
+        includesNormalized(m.titulo, searchQuery) || 
+        includesNormalized(m.artista || "", searchQuery)
       )
       .slice(0, 10);
   }, [musicasBanco, searchQuery]);

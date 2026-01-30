@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AjudaFormDialog } from "./AjudaFormDialog";
+import { includesNormalized } from "@/lib/text-utils";
 
 export function AcaoSocialAjudasTab() {
   const [search, setSearch] = useState("");
@@ -50,8 +51,8 @@ export function AcaoSocialAjudasTab() {
 
   const filteredAjudas = ajudas?.filter((a) => {
     const beneficiario = a.familia?.nome_familia || a.instituicao?.nome || "";
-    return beneficiario.toLowerCase().includes(search.toLowerCase()) ||
-      a.tipo_ajuda.toLowerCase().includes(search.toLowerCase());
+    return includesNormalized(beneficiario, search) ||
+      includesNormalized(a.tipo_ajuda, search);
   });
 
   const formatCurrency = (value: number | null) => {

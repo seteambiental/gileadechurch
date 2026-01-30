@@ -16,6 +16,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { formatPhone, formatCPF } from "@/lib/masks";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface Evento {
   id: string;
@@ -143,7 +144,7 @@ const InscricaoEvento = () => {
 
   // Filter search results
   const searchResults = searchTerm.length >= 2 
-    ? pessoas.filter(p => p.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
+    ? pessoas.filter(p => includesNormalized(p.full_name, searchTerm))
     : [];
 
   // Handle person selection

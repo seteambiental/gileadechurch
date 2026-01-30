@@ -24,6 +24,7 @@ import { Search, Users, UserRound, Pencil, Trash2, IdCard } from "lucide-react";
 import { EditarCriancaDialog } from "./EditarCriancaDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
 import { toast } from "sonner";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface TurmaConfig {
   id: string;
@@ -120,7 +121,7 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
   });
 
   const criancasFiltradas = criancas.filter((c) =>
-    c.nome.toLowerCase().includes(search.toLowerCase())
+    includesNormalized(c.nome, search)
   );
 
   const meninos = criancas.filter((c) => c.genero === "masculino").length;

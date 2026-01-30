@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Clock,
 } from "lucide-react";
+import { includesNormalized } from "@/lib/text-utils";
 
 export function ServicoMembrosTab() {
   const [search, setSearch] = useState("");
@@ -105,7 +106,7 @@ export function ServicoMembrosTab() {
     });
     
     return Array.from(membrosSet.values())
-      .filter((m) => m.member.full_name.toLowerCase().includes(search.toLowerCase()))
+      .filter((m) => includesNormalized(m.member.full_name, search))
       .sort((a, b) => {
         if (a.isMinisterio && !b.isMinisterio) return -1;
         if (!a.isMinisterio && b.isMinisterio) return 1;

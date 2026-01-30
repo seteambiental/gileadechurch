@@ -10,6 +10,7 @@ import { Plus, Search, Users, Pencil, Trash2, Eye, DollarSign } from "lucide-rea
 import { toast } from "sonner";
 import { FamiliaFormDialog } from "./FamiliaFormDialog";
 import { FamiliaDetalhesDialog } from "./FamiliaDetalhesDialog";
+import { includesNormalized } from "@/lib/text-utils";
 
 export function AcaoSocialFamiliasTab() {
   const [search, setSearch] = useState("");
@@ -74,7 +75,7 @@ export function AcaoSocialFamiliasTab() {
   });
 
   const filteredFamilias = familias?.filter((f) =>
-    f.nome_familia.toLowerCase().includes(search.toLowerCase())
+    includesNormalized(f.nome_familia, search)
   );
 
   const handleEdit = (familia: any) => {

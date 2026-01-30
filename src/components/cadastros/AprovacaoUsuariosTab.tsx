@@ -26,6 +26,7 @@ import { Loader2, Check, X, UserPlus, Clock, Search } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/contexts/AuthContext";
+import { includesNormalized } from "@/lib/text-utils";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrador",
@@ -213,10 +214,9 @@ const AprovacaoUsuariosTab = () => {
 
   const filteredRequests = requests.filter(req => {
     if (!search) return true;
-    const searchLower = search.toLowerCase();
     return (
-      req.member?.full_name?.toLowerCase().includes(searchLower) ||
-      req.email?.toLowerCase().includes(searchLower)
+      includesNormalized(req.member?.full_name || "", search) ||
+      includesNormalized(req.email || "", search)
     );
   });
 

@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface Visitante {
   id: string;
@@ -51,7 +52,7 @@ const VisitantesTab = () => {
   });
 
   const filteredVisitantes = visitantes?.filter((v) =>
-    v.full_name.toLowerCase().includes(searchTerm.toLowerCase())
+    includesNormalized(v.full_name, searchTerm)
   );
 
   const openMessageDialog = (visitante: Visitante) => {
