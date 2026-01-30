@@ -171,11 +171,11 @@ const CondominioFormDialog = ({
               name="sindico_esposa_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Esposa do Síndico</FormLabel>
+                  <FormLabel>Síndico</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="Selecione a esposa" />
+                        <SelectValue placeholder="Selecione o síndico" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-popover border-border z-50">

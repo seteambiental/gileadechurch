@@ -273,12 +273,12 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                     name="lider_esposa_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Esposa do Líder</FormLabel>
+                        <FormLabel>Líder</FormLabel>
                         <FormControl>
                           <MemberSelect
                             value={field.value}
                             onChange={field.onChange}
-                            placeholder="Selecionar esposa..."
+                            placeholder="Selecionar líder..."
                           />
                         </FormControl>
                         <FormMessage />
@@ -314,12 +314,12 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                     name="anfitriao_esposa_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Esposa do Anfitrião</FormLabel>
+                        <FormLabel>Anfitrião</FormLabel>
                         <FormControl>
                           <MemberSelect
                             value={field.value}
                             onChange={field.onChange}
-                            placeholder="Selecionar esposa..."
+                            placeholder="Selecionar anfitrião..."
                           />
                         </FormControl>
                         <FormMessage />
@@ -370,12 +370,12 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                     name="supervisor_esposa_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Esposa do Supervisor</FormLabel>
+                        <FormLabel>Supervisor</FormLabel>
                         <FormControl>
                           <MemberSelect
                             value={field.value}
                             onChange={field.onChange}
-                            placeholder="Selecionar esposa..."
+                            placeholder="Selecionar supervisor..."
                           />
                         </FormControl>
                         <FormMessage />
