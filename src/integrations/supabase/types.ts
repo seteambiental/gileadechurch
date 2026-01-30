@@ -3932,6 +3932,7 @@ export type Database = {
       is_lider_condominio: { Args: never; Returns: boolean }
       is_lider_ministerio: { Args: never; Returns: boolean }
       is_master: { Args: never; Returns: boolean }
+      is_ministry_leader: { Args: { ministry_uuid: string }; Returns: boolean }
       is_supervisor_casa_refugio: { Args: never; Returns: boolean }
     }
     Enums: {
