@@ -841,69 +841,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                 </div>
               </div>
 
-              {/* Interesse em Servir - Ministérios */}
-              <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <h4 className="font-medium text-foreground">Gostaria de servir nesse ministério?</h4>
-                
-                <FormField
-                  control={form.control}
-                  name="nao_pretende_servir"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center space-x-2 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal cursor-pointer">
-                        Ainda não pretendo servir
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-
-                {!form.watch("nao_pretende_servir") && (
-                  <FormField
-                    control={form.control}
-                    name="ministerios_interesse"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormDescription className="text-xs mb-2">
-                          Selecione os ministérios em que gostaria de servir:
-                        </FormDescription>
-                        <ScrollArea className="h-40 rounded-md border border-border p-3 bg-background">
-                          <div className="space-y-2">
-                            {ministries.map((ministry) => (
-                              <div key={ministry.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`interesse-${ministry.id}`}
-                                  checked={field.value?.includes(ministry.id) || false}
-                                  onCheckedChange={(checked) => {
-                                    const currentValues = field.value || [];
-                                    if (checked) {
-                                      field.onChange([...currentValues, ministry.id]);
-                                    } else {
-                                      field.onChange(currentValues.filter((id: string) => id !== ministry.id));
-                                    }
-                                  }}
-                                />
-                                <label 
-                                  htmlFor={`interesse-${ministry.id}`} 
-                                  className="text-sm cursor-pointer flex-1"
-                                >
-                                  {ministry.name}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </div>
+              {/* Seção de interesse em ministérios foi removida - agora gerenciada via candidaturas_ministerio */}
 
               {/* Functions */}
               <div className="space-y-4">
