@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.atualizar-senha-usuario]
 verify_jwt = false
+
+[functions.notificar-mudanca-pendente]
+verify_jwt = false
+
+[functions.processar-aprovacao-mudanca]
+verify_jwt = false
