@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Building2, Pencil, Trash2, Eye } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { InstituicaoFormDialog } from "./InstituicaoFormDialog";
 import { InstituicaoDetalhesDialog } from "./InstituicaoDetalhesDialog";
@@ -76,15 +76,12 @@ export function AcaoSocialInstituicoesTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar instituição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar instituição..."
+          value={search}
+          onChange={setSearch}
+          className="flex-1 max-w-sm"
+        />
         <Button onClick={handleNew} className="bg-destructive hover:bg-destructive/90">
           <Plus className="w-4 h-4 mr-2" />
           Nova Instituição

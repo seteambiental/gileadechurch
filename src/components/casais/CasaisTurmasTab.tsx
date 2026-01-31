@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { includesNormalized } from "@/lib/text-utils";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Users, Eye } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Users, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -89,15 +89,12 @@ export function CasaisTurmasTab() {
             Nova Turma
           </Button>
         </div>
-        <div className="relative mt-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar turmas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar turmas..."
+          value={searchTerm}
+          onChange={setSearchTerm}
+          className="mt-4"
+        />
       </CardHeader>
       <CardContent>
         {isLoading ? (

@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Plus, 
-  Search, 
   Music, 
   Video, 
   Edit2, 
@@ -16,7 +15,7 @@ import {
   Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -156,15 +155,12 @@ export const LouvorMusicasTab = ({ ministryId }: LouvorMusicasTabProps) => {
     <div className="space-y-4">
       {/* Header com busca e filtros */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por título, artista ou tag..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar por título, artista ou tag..."
+          value={searchQuery}
+          onChange={setSearchQuery}
+          className="flex-1"
+        />
         <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
           <SelectTrigger className="w-full sm:w-48">
             <Filter className="w-4 h-4 mr-2" />

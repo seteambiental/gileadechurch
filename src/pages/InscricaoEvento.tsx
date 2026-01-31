@@ -5,12 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Search, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -435,15 +436,12 @@ const InscricaoEvento = () => {
                 <div className="space-y-4 md:space-y-6">
                   <div className="space-y-2 md:space-y-3">
                     <Label className="text-base md:text-lg">Buscar cadastro existente</Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-                      <Input
-                        placeholder="Digite seu nome para buscar..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 md:pl-12 h-10 md:h-14 text-base md:text-lg"
-                      />
-                    </div>
+                    <SearchInput
+                      placeholder="Digite seu nome para buscar..."
+                      value={searchTerm}
+                      onChange={setSearchTerm}
+                      className="h-10 md:h-14 text-base md:text-lg"
+                    />
                     {searchResults.length > 0 && (
                       <div className="border rounded-lg divide-y max-h-48 md:max-h-64 overflow-y-auto">
                         {searchResults.map((person) => (
