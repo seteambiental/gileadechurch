@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Search, Edit2, Trash2, Loader2, Users } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
@@ -109,15 +109,12 @@ const MinisteriosTab = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ministérios..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar ministérios..."
+          value={searchTerm}
+          onChange={setSearchTerm}
+          className="flex-1 max-w-md"
+        />
         <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
           <Plus className="w-4 h-4 mr-2" />
           Novo Ministério

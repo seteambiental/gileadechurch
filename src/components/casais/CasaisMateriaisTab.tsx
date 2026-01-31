@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, FileText, Video, Link as LinkIcon, ExternalLink } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, FileText, Video, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import { MaterialFormDialog } from "./MaterialFormDialog";
@@ -105,15 +105,12 @@ export function CasaisMateriaisTab() {
           </Button>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar materiais..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar materiais..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+            className="flex-1"
+          />
           <Select value={turmaFilter} onValueChange={setTurmaFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filtrar por turma" />

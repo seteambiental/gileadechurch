@@ -2,9 +2,9 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Search, Filter, X, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
   SelectContent,
@@ -193,15 +193,12 @@ const CasasRefugioPage = () => {
 
         {/* Search and Filters */}
         <div className="space-y-4 mb-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar por nome, líder ou anfitrião..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-card border-border"
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar por nome, líder ou anfitrião..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+            className="bg-card border-border"
+          />
 
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">

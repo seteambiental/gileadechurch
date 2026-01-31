@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, HandHeart, Trash2, Package, DollarSign, Scale } from "lucide-react";
+import { Plus, HandHeart, Trash2, Package, DollarSign, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -117,15 +117,12 @@ export function AcaoSocialAjudasTab() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar ajuda..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar ajuda..."
+          value={search}
+          onChange={setSearch}
+          className="flex-1 max-w-sm"
+        />
         <Button onClick={() => setDialogOpen(true)} className="bg-destructive hover:bg-destructive/90">
           <Plus className="w-4 h-4 mr-2" />
           Registrar Ajuda

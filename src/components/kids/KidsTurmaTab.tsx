@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Search, Users, UserRound, Pencil, Trash2, IdCard } from "lucide-react";
+import { Users, UserRound, Pencil, Trash2, IdCard } from "lucide-react";
 import { EditarCriancaDialog } from "./EditarCriancaDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
 import { toast } from "sonner";
@@ -207,15 +207,12 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
               />
               Crianças - Turma {turma.nome_exibicao}
             </CardTitle>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar criança..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <SearchInput
+              placeholder="Buscar criança..."
+              value={search}
+              onChange={setSearch}
+              className="w-full md:w-64"
+            />
           </div>
         </CardHeader>
         <CardContent>

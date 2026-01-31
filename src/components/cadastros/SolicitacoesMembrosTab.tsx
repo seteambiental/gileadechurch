@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   Loader2,
-  Search,
   CheckCircle2,
   XCircle,
   Clock,
@@ -15,7 +14,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { includesNormalized } from "@/lib/text-utils";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -269,15 +268,12 @@ const SolicitacoesMembrosTab = () => {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar por nome..."
+          value={search}
+          onChange={setSearch}
+          className="flex-1 max-w-sm"
+        />
 
         <div className="flex gap-2">
           <Button

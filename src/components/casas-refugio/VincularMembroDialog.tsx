@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Search, UserPlus, User } from "lucide-react";
+import { Loader2, UserPlus, User } from "lucide-react";
 import { includesNormalized } from "@/lib/text-utils";
 
 interface VincularMembroDialogProps {
@@ -92,15 +92,11 @@ export const VincularMembroDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar membro pelo nome..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar membro pelo nome..."
+            value={search}
+            onChange={setSearch}
+          />
 
           <p className="text-xs text-muted-foreground">
             Apenas membros sem Casa Refúgio vinculada são exibidos. Para cadastrar um novo membro, acesse <strong>Cadastros → Membros</strong>.
