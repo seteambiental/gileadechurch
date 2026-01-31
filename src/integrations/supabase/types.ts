@@ -3341,6 +3341,171 @@ export type Database = {
         }
         Relationships: []
       }
+      mudancas_pendentes: {
+        Row: {
+          acao: string
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovador_id: string | null
+          casa_refugio_id: string | null
+          condominio_id: string | null
+          created_at: string
+          data_email_enviado: string | null
+          email_enviado: boolean | null
+          funcao_id: string | null
+          id: string
+          membro_atual_id: string | null
+          membro_id: string | null
+          ministry_id: string | null
+          motivo_rejeicao: string | null
+          solicitante_id: string | null
+          status: string
+          tipo_mudanca: string
+          updated_at: string
+        }
+        Insert: {
+          acao: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovador_id?: string | null
+          casa_refugio_id?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          data_email_enviado?: string | null
+          email_enviado?: boolean | null
+          funcao_id?: string | null
+          id?: string
+          membro_atual_id?: string | null
+          membro_id?: string | null
+          ministry_id?: string | null
+          motivo_rejeicao?: string | null
+          solicitante_id?: string | null
+          status?: string
+          tipo_mudanca: string
+          updated_at?: string
+        }
+        Update: {
+          acao?: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovador_id?: string | null
+          casa_refugio_id?: string | null
+          condominio_id?: string | null
+          created_at?: string
+          data_email_enviado?: string | null
+          email_enviado?: boolean | null
+          funcao_id?: string | null
+          id?: string
+          membro_atual_id?: string | null
+          membro_id?: string | null
+          ministry_id?: string | null
+          motivo_rejeicao?: string | null
+          solicitante_id?: string | null
+          status?: string
+          tipo_mudanca?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mudancas_pendentes_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_condominio_id_fkey"
+            columns: ["condominio_id"]
+            isOneToOne: false
+            referencedRelation: "condominios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_funcao_id_fkey"
+            columns: ["funcao_id"]
+            isOneToOne: false
+            referencedRelation: "ministerio_funcoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_membro_atual_id_fkey"
+            columns: ["membro_atual_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_membro_atual_id_fkey"
+            columns: ["membro_atual_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_membro_id_fkey"
+            columns: ["membro_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_membro_id_fkey"
+            columns: ["membro_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mudancas_pendentes_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       novos_convertidos: {
         Row: {
           address: string | null
