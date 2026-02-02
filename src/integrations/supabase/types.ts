@@ -2575,6 +2575,7 @@ export type Database = {
           neighborhood: string | null
           number: string | null
           photo_url: string | null
+          responsavel_id: string | null
           rg: string | null
           state: string | null
           status: string
@@ -2602,6 +2603,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           status?: string
@@ -2629,6 +2631,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           status?: string
@@ -2646,6 +2649,20 @@ export type Database = {
           {
             foreignKeyName: "member_requests_member_id_fkey"
             columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_requests_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_requests_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
             referencedColumns: ["id"]
@@ -2674,6 +2691,7 @@ export type Database = {
           neighborhood: string | null
           number: string | null
           photo_url: string | null
+          responsavel_id: string | null
           rg: string | null
           state: string | null
           updated_at: string
@@ -2701,6 +2719,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           updated_at?: string
@@ -2728,6 +2747,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
+          responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           updated_at?: string
@@ -2740,6 +2760,20 @@ export type Database = {
             columns: ["casa_refugio_id"]
             isOneToOne: false
             referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]

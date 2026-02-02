@@ -4,8 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, X, Loader2, UserCog } from "lucide-react";
+import { Plus, X, Loader2, UserCog, Baby } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
+import { needsResponsible, getAgeString } from "@/lib/age-utils";
+import { ResponsavelSelect } from "@/components/ui/responsavel-select";
 import {
   Dialog,
   DialogContent,
@@ -181,6 +183,17 @@ const formSchema = z.object({
   // Interesse em servir nos ministérios
   nao_pretende_servir: z.boolean().optional(),
   ministerios_interesse: z.array(z.string()).optional(),
+  // Responsável (obrigatório para menores de 12 anos)
+  responsavel_id: z.string().optional(),
+}).refine((data) => {
+  // If under 12 years old, responsavel_id is required
+  if (needsResponsible(data.birth_date) && !data.responsavel_id) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Menores de 12 anos precisam ter um responsável vinculado",
+  path: ["responsavel_id"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -232,11 +245,14 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       perfil_usuario: undefined,
       nao_pretende_servir: false,
       ministerios_interesse: [],
+      responsavel_id: "",
     },
   });
 
   const criarUsuario = form.watch("criar_usuario");
   const perfilUsuario = form.watch("perfil_usuario");
+  const birthDateValue = form.watch("birth_date");
+  const isMinor = needsResponsible(birthDateValue);
 
   const { isLoading: isLoadingCep } = useCepLookup(form.watch("cep"), ({ address, neighborhood, city, state }) => {
     form.setValue("address", address || "");
@@ -275,6 +291,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             perfil_usuario: undefined,
             nao_pretende_servir: (memberData as any).nao_pretende_servir || false,
             ministerios_interesse: (memberData as any).ministerios_interesse || [],
+            responsavel_id: (memberData as any).responsavel_id || "",
           });
           setPhotoPreview(memberData.photo_url);
 
@@ -389,6 +406,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
         nao_pretende_servir: data.nao_pretende_servir || false,
         ministerios_interesse: data.ministerios_interesse || [],
+        responsavel_id: data.responsavel_id || null,
       };
 
       let memberId: string;
@@ -725,6 +743,38 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   )}
                 />
               </div>
+
+              {/* Campo de Responsável - Aparece apenas para menores de 12 anos */}
+              {isMinor && (
+                <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <Baby className="h-5 w-5" />
+                    <span className="text-sm font-medium">
+                      Cadastro de menor de 12 anos ({getAgeString(birthDateValue)})
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    Crianças menores de 12 anos precisam ter um responsável vinculado.
+                  </p>
+                  <FormField
+                    control={form.control}
+                    name="responsavel_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável *</FormLabel>
+                        <FormControl>
+                          <ResponsavelSelect
+                            value={field.value || null}
+                            onChange={(value) => field.onChange(value || "")}
+                            placeholder="Selecionar responsável..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               {/* Address */}
               <div className="space-y-4">
