@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight, Church } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church, Baby } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +22,8 @@ import { useCepLookup } from "@/hooks/useCepLookup";
 import { DateInput } from "@/components/ui/date-input";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { TermsCheckbox } from "@/components/TermsCheckbox";
+import { ResponsavelSelect } from "@/components/ui/responsavel-select";
+import { needsResponsible, getAgeString } from "@/lib/age-utils";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
@@ -75,6 +77,9 @@ const Auth = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedTermsVisitante, setAcceptedTermsVisitante] = useState(false);
   const [naoPretendeServir, setNaoPretendeServir] = useState(false);
+  
+  // Responsável para menores de 12 anos
+  const [responsavelId, setResponsavelId] = useState<string | null>(null);
 
   
   // Visitante fields (simplified form)
@@ -408,6 +413,7 @@ const Auth = () => {
         cpf: cpfClean,
         photo_url: photoUrl,
         status: "pendente",
+        responsavel_id: responsavelId,
       };
 
       const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
@@ -880,12 +886,49 @@ const Auth = () => {
                   <DateInput
                     id="preCheckBirthDate"
                     value={preCheckBirthDate}
-                    onChange={(value) => setPreCheckBirthDate(value)}
+                    onChange={(value) => {
+                      setPreCheckBirthDate(value);
+                      // Reset responsável quando mudar a data
+                      if (!needsResponsible(value)) {
+                        setResponsavelId(null);
+                      }
+                    }}
                     className={errors.preCheckBirthDate ? "[&>input]:border-destructive" : ""}
                   />
                   {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
                 </div>
-                <Button type="submit" className="w-full" variant="secondary" disabled={isLoading}>
+                
+                {/* Campo de Responsável para menores de 12 anos */}
+                {preCheckBirthDate && needsResponsible(preCheckBirthDate) && (
+                  <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 space-y-3">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                      <Baby className="h-5 w-5" />
+                      <span className="text-sm font-medium">
+                        Cadastro de menor de 12 anos ({getAgeString(preCheckBirthDate)})
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Crianças menores de 12 anos precisam ter um responsável vinculado. 
+                      Selecione abaixo quem será o responsável pela criança.
+                    </p>
+                    <div className="space-y-2">
+                      <Label>Responsável *</Label>
+                      <ResponsavelSelect
+                        value={responsavelId}
+                        onChange={(value) => setResponsavelId(value)}
+                        placeholder="Selecionar responsável..."
+                      />
+                      {errors.responsavelId && <p className="text-sm text-destructive">{errors.responsavelId}</p>}
+                    </div>
+                  </div>
+                )}
+                
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  variant="secondary" 
+                  disabled={isLoading || (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId)}
+                >
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Verificar
                 </Button>
