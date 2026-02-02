@@ -23,6 +23,7 @@ type Body = {
   photo_url?: string | null;
   ministerios_interesse?: string[] | null;
   nao_pretende_servir?: boolean | null;
+  responsavel_id?: string | null; // UUID do membro responsável (para menores de 12 anos)
 };
 
 serve(async (req) => {
@@ -88,6 +89,7 @@ serve(async (req) => {
       photo_url: body.photo_url ?? null,
       ministerios_interesse: body.ministerios_interesse ?? [],
       nao_pretende_servir: body.nao_pretende_servir ?? false,
+      responsavel_id: body.responsavel_id ?? null,
       status: "pendente" as const,
     };
 

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight, Baby } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,8 @@ import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
+import { ResponsavelSelect } from "@/components/ui/responsavel-select";
+import { needsResponsible, getAgeString } from "@/lib/age-utils";
 
 const formSchema = z.object({
   first_name: z.string().min(2, "Primeiro nome é obrigatório"),
@@ -61,6 +63,16 @@ const formSchema = z.object({
   cpf: z.string().min(14, "CPF é obrigatório"),
   ministerios_interesse: z.array(z.string()).optional(),
   nao_pretende_servir: z.boolean().optional(),
+  responsavel_id: z.string().optional(),
+}).refine((data) => {
+  // If under 12 years old, responsavel_id is required
+  if (needsResponsible(data.birth_date) && !data.responsavel_id) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Menores de 12 anos precisam ter um responsável vinculado",
+  path: ["responsavel_id"],
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -145,11 +157,13 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       cpf: "",
       ministerios_interesse: [],
       nao_pretende_servir: false,
+      responsavel_id: "",
     },
   });
 
   const firstName = form.watch("first_name");
   const birthDate = form.watch("birth_date");
+  const isMinor = needsResponsible(birthDate);
 
   const checkMember = async () => {
     const firstNameClean = firstName?.trim();
@@ -252,6 +266,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         photo_url: photoUrl,
         ministerios_interesse: data.nao_pretende_servir ? [] : (data.ministerios_interesse || []),
         nao_pretende_servir: data.nao_pretende_servir || false,
+        responsavel_id: data.responsavel_id || null,
       };
 
       // Inserção via função backend (contorna RLS do client/anon)
@@ -678,6 +693,39 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     </FormItem>
                   )}
                 />
+
+                {/* Campo de Responsável - Aparece apenas para menores de 12 anos */}
+                {isMinor && (
+                  <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 space-y-3">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                      <Baby className="h-5 w-5" />
+                      <span className="text-sm font-medium">
+                        Cadastro de menor de 12 anos ({getAgeString(birthDate)})
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Crianças menores de 12 anos precisam ter um responsável vinculado. 
+                      Selecione abaixo quem será o responsável pela criança.
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="responsavel_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Responsável *</FormLabel>
+                          <FormControl>
+                            <ResponsavelSelect
+                              value={field.value || null}
+                              onChange={(value) => field.onChange(value || "")}
+                              placeholder="Selecionar responsável..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
               </div>
             )}
 

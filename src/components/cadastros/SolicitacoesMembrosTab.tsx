@@ -12,9 +12,11 @@ import {
   Phone,
   Mail,
   MapPin,
+  Baby,
 } from "lucide-react";
 import { includesNormalized } from "@/lib/text-utils";
 import { SearchInput } from "@/components/ui/search-input";
+import { needsResponsible, getAgeString } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -56,6 +58,7 @@ interface MemberRequest {
   created_at: string;
   ministerios_interesse: string[] | null;
   nao_pretende_servir: boolean | null;
+  responsavel_id: string | null;
 }
 
 const SolicitacoesMembrosTab = () => {
@@ -110,11 +113,30 @@ const SolicitacoesMembrosTab = () => {
           photo_url: request.photo_url,
           ministerios_interesse: request.ministerios_interesse || [],
           nao_pretende_servir: request.nao_pretende_servir || false,
+          responsavel_id: request.responsavel_id || null,
         })
         .select()
         .single();
 
       if (memberError) throw memberError;
+
+      // Se é menor de 12 anos e tem responsável, criar vínculo em kids_responsaveis
+      if (request.responsavel_id && needsResponsible(request.birth_date)) {
+        const { error: kidsError } = await supabase
+          .from("kids_responsaveis")
+          .insert({
+            crianca_member_id: newMember.id,
+            responsavel_member_id: request.responsavel_id,
+            parentesco: "responsavel",
+            principal: true,
+            notificar_ausencia: true,
+          });
+
+        if (kidsError) {
+          console.error("Erro ao criar vínculo kids_responsaveis:", kidsError);
+          // Não falhar a aprovação se o vínculo não for criado
+        }
+      }
 
       // Criar candidaturas para os ministérios de interesse
       if (request.ministerios_interesse && request.ministerios_interesse.length > 0 && !request.nao_pretende_servir) {
@@ -342,6 +364,13 @@ const SolicitacoesMembrosTab = () => {
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="w-4 h-4" />
                     {request.city}, {request.state}
+                  </div>
+                )}
+                {needsResponsible(request.birth_date) && (
+                  <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                    <Baby className="w-4 h-4" />
+                    Menor de 12 anos ({getAgeString(request.birth_date)})
+                    {request.responsavel_id ? " - Com responsável" : " - Sem responsável!"}
                   </div>
                 )}
 
