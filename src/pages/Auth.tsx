@@ -753,15 +753,6 @@ const Auth = () => {
       const fieldErrors: Record<string, string> = {};
       if (!preCheckName.trim()) fieldErrors.preCheckName = "Nome é obrigatório";
       if (!preCheckBirthDate) fieldErrors.preCheckBirthDate = "Data de nascimento é obrigatória";
-      if (!preCheckGenero) fieldErrors.preCheckGenero = "Gênero é obrigatório";
-
-      // Calcula idade para validações
-      const { years: idade } = calculateAge(preCheckBirthDate);
-      
-      // Estado civil obrigatório para maiores de 12 anos
-      if (preCheckBirthDate && idade >= 12 && !preCheckEstadoCivil) {
-        fieldErrors.preCheckEstadoCivil = "Estado civil é obrigatório";
-      }
 
       // Menor de 12 anos: responsável obrigatório (evita bypass via clique no tipo de cadastro)
       if (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId) {
