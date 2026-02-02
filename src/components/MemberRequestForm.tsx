@@ -546,10 +546,43 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   )}
                 />
 
+                {/* Campo de Responsável - Aparece na etapa 1 para menores de 12 anos */}
+                {isMinor && (
+                  <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 space-y-3">
+                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                      <Baby className="h-5 w-5" />
+                      <span className="text-sm font-medium">
+                        Cadastro de menor de 12 anos ({getAgeString(birthDate)})
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Crianças menores de 12 anos precisam ter um responsável vinculado. 
+                      Selecione abaixo quem será o responsável pela criança.
+                    </p>
+                    <FormField
+                      control={form.control}
+                      name="responsavel_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Responsável *</FormLabel>
+                          <FormControl>
+                            <ResponsavelSelect
+                              value={field.value || null}
+                              onChange={(value) => field.onChange(value || "")}
+                              placeholder="Selecionar responsável..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 <Button
                   type="button"
                   onClick={checkMember}
-                  disabled={isChecking || !canCheck}
+                  disabled={isChecking || !canCheck || (isMinor && !form.watch("responsavel_id"))}
                   variant="secondary"
                   className="w-full"
                 >
@@ -694,38 +727,6 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   )}
                 />
 
-                {/* Campo de Responsável - Aparece apenas para menores de 12 anos */}
-                {isMinor && (
-                  <div className="p-4 border rounded-lg bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 space-y-3">
-                    <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                      <Baby className="h-5 w-5" />
-                      <span className="text-sm font-medium">
-                        Cadastro de menor de 12 anos ({getAgeString(birthDate)})
-                      </span>
-                    </div>
-                    <p className="text-xs text-amber-600 dark:text-amber-500">
-                      Crianças menores de 12 anos precisam ter um responsável vinculado. 
-                      Selecione abaixo quem será o responsável pela criança.
-                    </p>
-                    <FormField
-                      control={form.control}
-                      name="responsavel_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Responsável *</FormLabel>
-                          <FormControl>
-                            <ResponsavelSelect
-                              value={field.value || null}
-                              onChange={(value) => field.onChange(value || "")}
-                              placeholder="Selecionar responsável..."
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
               </div>
             )}
 
