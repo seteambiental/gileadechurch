@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AjudaFormDialog } from "./AjudaFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
 
 export function AcaoSocialAjudasTab() {
@@ -123,10 +124,27 @@ export function AcaoSocialAjudasTab() {
           onChange={setSearch}
           className="flex-1 max-w-sm"
         />
-        <Button onClick={() => setDialogOpen(true)} className="bg-destructive hover:bg-destructive/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Registrar Ajuda
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filteredAjudas || []}
+            columns={[
+              { header: "Data", accessor: (r) => formatDate(r.data_ajuda) },
+              { header: "Beneficiário", accessor: (r) => r.familia?.nome_familia || r.instituicao?.nome || "-" },
+              { header: "Tipo", accessor: (r) => r.familia ? "Família" : "Instituição" },
+              { header: "Tipo de Ajuda", accessor: "tipo_ajuda" },
+              { header: "Valor", accessor: (r) => formatCurrency(r.valor) },
+              { header: "Kilos", accessor: (r) => r.quantidade_kilos ? `${r.quantidade_kilos} kg` : "-" },
+              { header: "Cestas", accessor: (r) => r.quantidade_cestas || "-" },
+            ]}
+            filename="ajudas-acao-social"
+            title="Histórico de Ajudas - Ação Social"
+            sheetName="Ajudas"
+          />
+          <Button onClick={() => setDialogOpen(true)} className="bg-destructive hover:bg-destructive/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Registrar Ajuda
+          </Button>
+        </div>
       </div>
 
       <Card>

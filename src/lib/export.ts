@@ -152,3 +152,100 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
 
   doc.save(`${filename}.pdf`);
 };
+
+// ========== GENERIC EXPORT UTILITIES ==========
+
+export interface ExportColumn {
+  header: string;
+  accessor: string | ((row: any) => any);
+  format?: (value: any) => string;
+}
+
+export const exportGenericToExcel = (
+  data: any[],
+  columns: ExportColumn[],
+  filename: string,
+  sheetName: string = "Dados"
+) => {
+  if (data.length === 0) return;
+
+  const exportData = data.map((row) => {
+    const exportRow: Record<string, any> = {};
+    columns.forEach((col) => {
+      const value = typeof col.accessor === "function" 
+        ? col.accessor(row) 
+        : row[col.accessor];
+      exportRow[col.header] = col.format ? col.format(value) : (value ?? "-");
+    });
+    return exportRow;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+  // Auto-size columns
+  const maxWidth = 50;
+  const colWidths = Object.keys(exportData[0] || {}).map((key) => ({
+    wch: Math.min(
+      maxWidth,
+      Math.max(
+        key.length,
+        ...exportData.map((row) => String(row[key] || "").length)
+      )
+    ),
+  }));
+  worksheet["!cols"] = colWidths;
+
+  XLSX.writeFile(workbook, `${filename}.xlsx`);
+};
+
+export const exportGenericToPDF = (
+  data: any[],
+  columns: ExportColumn[],
+  filename: string,
+  title: string
+) => {
+  if (data.length === 0) return;
+
+  const doc = new jsPDF();
+
+  // Title
+  doc.setFontSize(16);
+  doc.text(title, 14, 22);
+
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 30);
+  doc.text(`Total: ${data.length} registro${data.length !== 1 ? "s" : ""}`, 14, 36);
+
+  const headers = columns.map((col) => col.header);
+  const tableData = data.map((row) =>
+    columns.map((col) => {
+      const value = typeof col.accessor === "function" 
+        ? col.accessor(row) 
+        : row[col.accessor];
+      return col.format ? col.format(value) : (value ?? "-");
+    })
+  );
+
+  autoTable(doc, {
+    head: [headers],
+    body: tableData,
+    startY: 42,
+    styles: {
+      fontSize: 7,
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [220, 53, 69],
+      textColor: 255,
+      fontStyle: "bold",
+    },
+    alternateRowStyles: {
+      fillColor: [248, 249, 250],
+    },
+  });
+
+  doc.save(`${filename}.pdf`);
+};

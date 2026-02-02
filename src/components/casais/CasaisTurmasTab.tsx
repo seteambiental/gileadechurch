@@ -26,6 +26,7 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { TurmaFormDialog } from "./TurmaFormDialog";
 import { TurmaDetalhesDialog } from "./TurmaDetalhesDialog";
+import { ExportButton } from "@/components/ui/export-button";
 
 export function CasaisTurmasTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,10 +85,27 @@ export function CasaisTurmasTab() {
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-heading">Turmas do Curso</CardTitle>
-          <Button onClick={() => { setSelectedTurma(null); setIsFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Turma
-          </Button>
+          <div className="flex gap-2">
+            <ExportButton
+              data={filteredTurmas || []}
+              columns={[
+                { header: "Nome", accessor: "nome" },
+                { header: "Horário", accessor: "horario" },
+                { header: "Data Início", accessor: (r) => r.data_inicio ? format(new Date(r.data_inicio + "T00:00:00"), "dd/MM/yyyy") : "-" },
+                { header: "Data Fim", accessor: (r) => r.data_fim ? format(new Date(r.data_fim + "T00:00:00"), "dd/MM/yyyy") : "-" },
+                { header: "Casais", accessor: (r) => inscritosCount?.[r.id] || 0 },
+                { header: "Vagas", accessor: (r) => r.vagas || "∞" },
+                { header: "Status", accessor: (r) => r.ativo ? "Ativa" : "Encerrada" },
+              ]}
+              filename="turmas-casais"
+              title="Turmas do Curso de Casais"
+              sheetName="Turmas"
+            />
+            <Button onClick={() => { setSelectedTurma(null); setIsFormOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Turma
+            </Button>
+          </div>
         </div>
         <SearchInput
           placeholder="Buscar turmas..."

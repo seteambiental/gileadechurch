@@ -21,6 +21,7 @@ import {
 import { differenceInYears, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { VisitanteFormDialog } from "./VisitanteFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
 
 interface MinisterioMembrosTabProps {
@@ -270,10 +271,25 @@ export const MinisterioMembrosTab = ({
           </p>
         </div>
         
-        <VisitanteFormDialog 
-          ministerioSlug={ministerioSlug} 
-          ministerioTitle={ministerioTitle} 
-        />
+        <div className="flex gap-2">
+          <ExportButton
+            data={todosMembros}
+            columns={[
+              { header: "Nome", accessor: "full_name" },
+              { header: "Idade", accessor: (r) => r.idade ? `${r.idade} anos` : "-" },
+              { header: "Gênero", accessor: (r) => r.genero === "masculino" ? "Masculino" : r.genero === "feminino" ? "Feminino" : "-" },
+              { header: "WhatsApp", accessor: "whatsapp" },
+              { header: "Tipo", accessor: (r) => r.tipo === "membro" ? "Membro" : "Visitante" },
+            ]}
+            filename={`membros-${ministerioSlug}`}
+            title={`Membros - ${ministerioTitle}`}
+            sheetName="Membros"
+          />
+          <VisitanteFormDialog 
+            ministerioSlug={ministerioSlug} 
+            ministerioTitle={ministerioTitle} 
+          />
+        </div>
       </div>
 
       {/* Filtros e Busca */}

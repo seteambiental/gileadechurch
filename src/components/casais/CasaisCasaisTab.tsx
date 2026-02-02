@@ -33,6 +33,7 @@ import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { CasalFormDialog } from "./CasalFormDialog";
 import { CertificadoDialog } from "./CertificadoDialog";
+import { ExportButton } from "@/components/ui/export-button";
 
 export function CasaisCasaisTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -160,6 +161,19 @@ export function CasaisCasaisTab() {
               ))}
             </SelectContent>
           </Select>
+          <ExportButton
+            data={filteredCasais || []}
+            columns={[
+              { header: "Esposo", accessor: (r) => r.membro_masculino?.full_name || r.nome_masculino || "-" },
+              { header: "Esposa", accessor: (r) => r.membro_feminino?.full_name || r.nome_feminino || "-" },
+              { header: "Turma", accessor: (r) => r.turma?.nome || "-" },
+              { header: "Data Casamento", accessor: (r) => r.data_casamento ? format(new Date(r.data_casamento + "T00:00:00"), "dd/MM/yyyy") : r.tempo_casamento || "-" },
+              { header: "Status", accessor: (r) => r.certificado_emitido ? "Concluído" : (r.status || "Ativo") },
+            ]}
+            filename="casais-inscritos"
+            title="Casais Inscritos"
+            sheetName="Casais"
+          />
         </div>
       </CardHeader>
       <CardContent>
