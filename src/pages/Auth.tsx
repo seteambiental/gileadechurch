@@ -228,15 +228,21 @@ const Auth = () => {
     
     if (currentStep === 1) {
       if (!signupData.full_name) fieldErrors.full_name = "Nome é obrigatório";
+      if (!preCheckGenero) fieldErrors.preCheckGenero = "Gênero é obrigatório";
+      
+      // Estado civil obrigatório para maiores de 12 anos
+      const { years: idade } = calculateAge(preCheckBirthDate);
+      if (preCheckBirthDate && idade >= 12 && !preCheckEstadoCivil) {
+        fieldErrors.preCheckEstadoCivil = "Estado civil é obrigatório";
+      }
+      
       if (!signupData.email) fieldErrors.email = "Email é obrigatório";
       else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupData.email)) fieldErrors.email = "Email inválido";
       if (!signupData.whatsapp) fieldErrors.whatsapp = "WhatsApp é obrigatório";
-      if (!signupData.genero) fieldErrors.genero = "Gênero é obrigatório";
-      if (!signupData.birth_date) fieldErrors.birth_date = "Data de nascimento é obrigatória";
       if (!signupData.cpf) fieldErrors.cpf = "CPF é obrigatório";
 
       // Menor de 12 anos: responsável obrigatório
-      if (signupData.birth_date && needsResponsible(signupData.birth_date) && !responsavelId) {
+      if (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId) {
         fieldErrors.responsavelId = "Selecione um responsável para continuar";
       }
     }
@@ -752,16 +758,7 @@ const Auth = () => {
       
       const fieldErrors: Record<string, string> = {};
       if (!preCheckName.trim()) fieldErrors.preCheckName = "Nome é obrigatório";
-      if (!preCheckGenero) fieldErrors.preCheckGenero = "Gênero é obrigatório";
       if (!preCheckBirthDate) fieldErrors.preCheckBirthDate = "Data de nascimento é obrigatória";
-
-      // Calcula idade para validações
-      const { years: idade } = calculateAge(preCheckBirthDate);
-      
-      // Estado civil obrigatório para maiores de 12 anos
-      if (preCheckBirthDate && idade >= 12 && !preCheckEstadoCivil) {
-        fieldErrors.preCheckEstadoCivil = "Estado civil é obrigatório";
-      }
 
       // Menor de 12 anos: responsável obrigatório (evita bypass via clique no tipo de cadastro)
       if (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId) {
@@ -956,24 +953,6 @@ const Auth = () => {
                   {errors.preCheckName && <p className="text-sm text-destructive">{errors.preCheckName}</p>}
                 </div>
 
-                {/* Campo Gênero */}
-                <div className="space-y-2">
-                  <Label htmlFor="preCheckGenero">Gênero *</Label>
-                  <Select
-                    value={preCheckGenero}
-                    onValueChange={(v) => setPreCheckGenero(v as "masculino" | "feminino")}
-                  >
-                    <SelectTrigger className={errors.preCheckGenero ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="feminino">Feminino</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.preCheckGenero && <p className="text-sm text-destructive">{errors.preCheckGenero}</p>}
-                </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="preCheckBirthDate">Data de Nascimento *</Label>
                   <DateInput
@@ -991,27 +970,6 @@ const Auth = () => {
                   />
                   {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
                 </div>
-
-                {/* Campo Estado Civil - apenas para maiores de 12 anos */}
-                {preCheckBirthDate && !needsResponsible(preCheckBirthDate) && (
-                  <div className="space-y-2">
-                    <Label htmlFor="preCheckEstadoCivil">Estado Civil *</Label>
-                    <Select
-                      value={preCheckEstadoCivil}
-                      onValueChange={(v) => setPreCheckEstadoCivil(v as "solteiro" | "casado" | "viuvo")}
-                    >
-                      <SelectTrigger className={errors.preCheckEstadoCivil ? "border-destructive" : ""}>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="solteiro">Solteiro(a)</SelectItem>
-                        <SelectItem value="casado">Casado(a)</SelectItem>
-                        <SelectItem value="viuvo">Viúvo(a)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {errors.preCheckEstadoCivil && <p className="text-sm text-destructive">{errors.preCheckEstadoCivil}</p>}
-                  </div>
-                )}
                 
                 {/* Campo de Responsável para menores de 12 anos */}
                 {preCheckBirthDate && needsResponsible(preCheckBirthDate) && (
@@ -1319,6 +1277,45 @@ const Auth = () => {
                       {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
                     </div>
 
+                    {/* Gênero - logo após nome */}
+                    <div className="space-y-2">
+                      <Label>Gênero *</Label>
+                      <Select
+                        value={preCheckGenero}
+                        onValueChange={(v) => setPreCheckGenero(v as "masculino" | "feminino")}
+                      >
+                        <SelectTrigger className={errors.preCheckGenero ? "border-destructive" : ""}>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="masculino">Masculino</SelectItem>
+                          <SelectItem value="feminino">Feminino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {errors.preCheckGenero && <p className="text-sm text-destructive">{errors.preCheckGenero}</p>}
+                    </div>
+
+                    {/* Estado Civil - apenas para maiores de 12 anos */}
+                    {preCheckBirthDate && !needsResponsible(preCheckBirthDate) && (
+                      <div className="space-y-2">
+                        <Label>Estado Civil *</Label>
+                        <Select
+                          value={preCheckEstadoCivil}
+                          onValueChange={(v) => setPreCheckEstadoCivil(v as "solteiro" | "casado" | "viuvo")}
+                        >
+                          <SelectTrigger className={errors.preCheckEstadoCivil ? "border-destructive" : ""}>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                            <SelectItem value="casado">Casado(a)</SelectItem>
+                            <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {errors.preCheckEstadoCivil && <p className="text-sm text-destructive">{errors.preCheckEstadoCivil}</p>}
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Email *</Label>
                       <Input
@@ -1353,33 +1350,6 @@ const Auth = () => {
                       <p className="text-xs text-muted-foreground mt-1">
                         Ex: CPF 123.456.789-00 → Senha: 123456
                       </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Gênero *</Label>
-                      <Select
-                        value={signupData.genero}
-                        onValueChange={(v) => setSignupData({ ...signupData, genero: v })}
-                      >
-                        <SelectTrigger className={errors.genero ? "border-destructive" : ""}>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="feminino">Feminino</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {errors.genero && <p className="text-sm text-destructive">{errors.genero}</p>}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Data de Nascimento *</Label>
-                      <DateInput
-                        value={signupData.birth_date}
-                        onChange={(value) => setSignupData({ ...signupData, birth_date: value })}
-                        className={errors.birth_date ? "[&>input]:border-destructive" : ""}
-                      />
-                      {errors.birth_date && <p className="text-sm text-destructive">{errors.birth_date}</p>}
                     </div>
 
                     <div className="space-y-2">
