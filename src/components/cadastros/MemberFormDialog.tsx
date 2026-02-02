@@ -165,6 +165,7 @@ interface MemberFunction {
 const formSchema = z.object({
   full_name: z.string().min(1, "Nome é obrigatório"),
   genero: z.string().optional(),
+  estado_civil: z.string().optional(),
   birth_date: z.string().optional(),
   member_since: z.string().optional(),
   cep: z.string().optional(),
@@ -229,6 +230,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     defaultValues: {
       full_name: "",
       genero: "",
+      estado_civil: "",
       birth_date: "",
       member_since: "",
       cep: "",
@@ -275,6 +277,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           form.reset({
             full_name: memberData.full_name,
             genero: memberData.genero || "",
+            estado_civil: (memberData as any).estado_civil || "",
             birth_date: memberData.birth_date || "",
             member_since: memberData.member_since || "",
             cep: memberData.cep ? formatCep(memberData.cep) : "",
@@ -391,6 +394,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       const memberData = {
         full_name: formatNameField(data.full_name),
         genero: data.genero || null,
+        estado_civil: data.estado_civil || null,
         birth_date: data.birth_date || null,
         member_since: data.member_since || null,
         cep: data.cep ? unformatCep(data.cep) : null,
@@ -653,6 +657,35 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                     </SelectContent>
                   </Select>
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="estado_civil"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Estado Civil</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                          <SelectItem value="casado">Casado(a)</SelectItem>
+                          <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                          <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {isMinor && (
+                        <FormDescription>
+                          Para Kids (0–11), este campo não é necessário.
+                        </FormDescription>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
