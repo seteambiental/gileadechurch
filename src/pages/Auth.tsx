@@ -65,6 +65,7 @@ const Auth = () => {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
   const [isPreCheck, setIsPreCheck] = useState(false); // New state for pre-registration check
+  const [preCheckPassed, setPreCheckPassed] = useState(false);
   const [preCheckName, setPreCheckName] = useState("");
   const [preCheckBirthDate, setPreCheckBirthDate] = useState("");
   const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
@@ -225,6 +226,11 @@ const Auth = () => {
       if (!signupData.genero) fieldErrors.genero = "Gênero é obrigatório";
       if (!signupData.birth_date) fieldErrors.birth_date = "Data de nascimento é obrigatória";
       if (!signupData.cpf) fieldErrors.cpf = "CPF é obrigatório";
+
+      // Menor de 12 anos: responsável obrigatório
+      if (signupData.birth_date && needsResponsible(signupData.birth_date) && !responsavelId) {
+        fieldErrors.responsavelId = "Selecione um responsável para continuar";
+      }
     }
     
     if (currentStep === 2) {
@@ -366,6 +372,17 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateSignupStep(3)) return;
+
+    // Segurança extra: nunca permitir finalizar cadastro de menor sem responsável
+    if (signupData.birth_date && needsResponsible(signupData.birth_date) && !responsavelId) {
+      setErrors((prev) => ({ ...prev, responsavelId: "Selecione um responsável para continuar" }));
+      toast({
+        variant: "destructive",
+        title: "Responsável obrigatório",
+        description: "Para menores de 12 anos, selecione um responsável antes de prosseguir.",
+      });
+      return;
+    }
 
     // Validate terms acceptance
     if (!acceptedTerms) {
@@ -688,6 +705,7 @@ const Auth = () => {
                 onClick={() => {
                   setIsLogin(false);
                   setIsPreCheck(true);
+                  setPreCheckPassed(false);
                   setPreCheckName("");
                   setPreCheckBirthDate("");
                   setExistingMemberEmail(null);
@@ -722,6 +740,11 @@ const Auth = () => {
       const fieldErrors: Record<string, string> = {};
       if (!preCheckName.trim()) fieldErrors.preCheckName = "Nome é obrigatório";
       if (!preCheckBirthDate) fieldErrors.preCheckBirthDate = "Data de nascimento é obrigatória";
+
+      // Menor de 12 anos: responsável obrigatório (evita bypass via clique no tipo de cadastro)
+      if (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId) {
+        fieldErrors.responsavelId = "Selecione um responsável para continuar";
+      }
       
       if (Object.keys(fieldErrors).length > 0) {
         setErrors(fieldErrors);
@@ -741,6 +764,7 @@ const Auth = () => {
         if (error) throw error;
 
         if (data.exists) {
+          setPreCheckPassed(false);
           if (data.reason === "name_birth") {
             // User already exists - offer password recovery
             setExistingMemberEmail(data.email || null);
@@ -784,6 +808,7 @@ const Auth = () => {
             whatsapp: "",
           });
           setTipoCadastro(null); // Show type selection
+          setPreCheckPassed(true);
           toast({
             title: "Você pode prosseguir!",
             description: "Selecione o tipo de cadastro abaixo.",
@@ -791,6 +816,7 @@ const Auth = () => {
         }
       } catch (error: any) {
         console.error("Error checking user:", error);
+        setPreCheckPassed(false);
         toast({
           variant: "destructive",
           title: "Erro",
@@ -888,6 +914,7 @@ const Auth = () => {
                     value={preCheckBirthDate}
                     onChange={(value) => {
                       setPreCheckBirthDate(value);
+                      setPreCheckPassed(false);
                       // Reset responsável quando mudar a data
                       if (!needsResponsible(value)) {
                         setResponsavelId(null);
@@ -936,7 +963,7 @@ const Auth = () => {
             )}
 
             {/* Type Selection after verification */}
-            {tipocadastro === null && !existingMemberEmail && (
+            {preCheckPassed && tipocadastro === null && !existingMemberEmail && (
               <div className="space-y-4 mt-6 border-t border-border pt-6">
                 <Label>Tipo de Cadastro</Label>
                 <p className="text-sm text-muted-foreground">
