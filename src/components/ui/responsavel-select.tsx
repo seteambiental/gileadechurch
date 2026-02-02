@@ -51,13 +51,14 @@ export function ResponsavelSelect({
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["responsaveis-select-list", includeRequests],
     queryFn: async () => {
+      // Usa members_safe para acesso público (cadastro sem autenticação)
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe")
         .select("id, full_name, whatsapp")
         .order("full_name", { ascending: true });
       
       if (error) throw error;
-      return (data || []) as Member[];
+      return (data || []).filter((m): m is Member => m.id !== null && m.full_name !== null) as Member[];
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
