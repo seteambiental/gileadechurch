@@ -502,8 +502,12 @@ const MembrosTab = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedMembers.map((member) => (
-                  <TableRow key={member.id} className="border-border hover:bg-muted/50">
+              {paginatedMembers.map((member) => (
+                  <TableRow 
+                    key={member.id} 
+                    className="border-border hover:bg-muted/50 cursor-pointer"
+                    onClick={() => navigate(`/membro/${member.id}`)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 border border-border shrink-0">
@@ -563,7 +567,7 @@ const MembrosTab = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                         <Button
                           variant="ghost"
                           size="icon"
