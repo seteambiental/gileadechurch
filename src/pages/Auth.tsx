@@ -955,24 +955,6 @@ const Auth = () => {
                   />
                   {errors.preCheckName && <p className="text-sm text-destructive">{errors.preCheckName}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="preCheckBirthDate">Data de Nascimento</Label>
-                  <DateInput
-                    id="preCheckBirthDate"
-                    value={preCheckBirthDate}
-                    onChange={(value) => {
-                      setPreCheckBirthDate(value);
-                      setPreCheckPassed(false);
-                      // Reset responsável quando mudar a data
-                      if (!needsResponsible(value)) {
-                        setResponsavelId(null);
-                      }
-                    }}
-                    className={errors.preCheckBirthDate ? "[&>input]:border-destructive" : ""}
-                  />
-                  {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
-                </div>
-
                 {/* Campo Gênero */}
                 <div className="space-y-2">
                   <Label htmlFor="preCheckGenero">Gênero *</Label>
@@ -989,6 +971,24 @@ const Auth = () => {
                     </SelectContent>
                   </Select>
                   {errors.preCheckGenero && <p className="text-sm text-destructive">{errors.preCheckGenero}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="preCheckBirthDate">Data de Nascimento *</Label>
+                  <DateInput
+                    id="preCheckBirthDate"
+                    value={preCheckBirthDate}
+                    onChange={(value) => {
+                      setPreCheckBirthDate(value);
+                      setPreCheckPassed(false);
+                      // Reset responsável quando mudar a data
+                      if (!needsResponsible(value)) {
+                        setResponsavelId(null);
+                      }
+                    }}
+                    className={errors.preCheckBirthDate ? "[&>input]:border-destructive" : ""}
+                  />
+                  {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
                 </div>
 
                 {/* Campo Estado Civil - apenas para maiores de 12 anos */}
