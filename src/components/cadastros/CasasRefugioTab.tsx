@@ -32,6 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ExportButton } from "@/components/ui/export-button";
 
 interface CasaRefugio {
   id: string;
@@ -192,7 +193,24 @@ const CasasRefugioTab = () => {
             onChange={setSearchTerm}
             className="flex-1 max-w-md"
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <ExportButton
+              data={filteredItems}
+              columns={[
+                { header: "Nome", accessor: "name" },
+                { header: "Condomínio", accessor: "condominio" },
+                { header: "Líderes", accessor: (r) => formatLeaderNames(r.lider?.full_name, r.lider_esposa?.full_name) || r.lideres || "-" },
+                { header: "Supervisores", accessor: "supervisores" },
+                { header: "Dias", accessor: "dias" },
+                { header: "Frequência", accessor: "frequencia" },
+                { header: "Bairro", accessor: "neighborhood" },
+                { header: "Cidade", accessor: "city" },
+                { header: "Estado", accessor: "state" },
+              ]}
+              filename="casas-refugio"
+              title="Casas Refúgio"
+              sheetName="Casas"
+            />
             {casasSemCoordenadas > 0 && (
               <Button
                 variant="outline"

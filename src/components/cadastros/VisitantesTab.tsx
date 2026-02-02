@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
 
 interface Visitante {
@@ -147,12 +148,25 @@ const VisitantesTab = () => {
           </p>
         </div>
 
-        <SearchInput
-          placeholder="Buscar visitante..."
-          value={searchTerm}
-          onChange={setSearchTerm}
-          className="w-full sm:w-64"
-        />
+        <div className="flex gap-2 w-full sm:w-auto">
+          <SearchInput
+            placeholder="Buscar visitante..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+            className="flex-1 sm:w-64"
+          />
+          <ExportButton
+            data={filteredVisitantes || []}
+            columns={[
+              { header: "Nome", accessor: "full_name" },
+              { header: "WhatsApp", accessor: "whatsapp" },
+              { header: "Data Cadastro", accessor: (r) => format(new Date(r.created_at), "dd/MM/yyyy", { locale: ptBR }) },
+            ]}
+            filename="visitantes"
+            title="Lista de Visitantes"
+            sheetName="Visitantes"
+          />
+        </div>
       </div>
 
       {/* Lista de visitantes */}

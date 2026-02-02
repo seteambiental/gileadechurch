@@ -10,6 +10,7 @@ import { Plus, Building2, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { InstituicaoFormDialog } from "./InstituicaoFormDialog";
 import { InstituicaoDetalhesDialog } from "./InstituicaoDetalhesDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
 
 const tiposInstituicao: Record<string, string> = {
@@ -82,10 +83,28 @@ export function AcaoSocialInstituicoesTab() {
           onChange={setSearch}
           className="flex-1 max-w-sm"
         />
-        <Button onClick={handleNew} className="bg-destructive hover:bg-destructive/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Instituição
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filteredInstituicoes || []}
+            columns={[
+              { header: "Nome", accessor: "nome" },
+              { header: "CNPJ", accessor: "cnpj" },
+              { header: "Tipo", accessor: (r) => tiposInstituicao[r.tipo_instituicao] || r.tipo_instituicao },
+              { header: "Atendidos", accessor: "quantidade_atendidos" },
+              { header: "Tipo de Ajuda", accessor: "tipo_ajuda" },
+              { header: "Status", accessor: (r) => r.ativo ? "Ativo" : "Inativo" },
+              { header: "Cidade", accessor: "cidade" },
+              { header: "Telefone", accessor: "telefone" },
+            ]}
+            filename="instituicoes"
+            title="Instituições - Ação Social"
+            sheetName="Instituições"
+          />
+          <Button onClick={handleNew} className="bg-destructive hover:bg-destructive/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Instituição
+          </Button>
+        </div>
       </div>
 
       <Card>

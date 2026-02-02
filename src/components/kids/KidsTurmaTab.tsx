@@ -23,6 +23,7 @@ import {
 import { Users, UserRound, Pencil, Trash2, IdCard } from "lucide-react";
 import { EditarCriancaDialog } from "./EditarCriancaDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import { toast } from "sonner";
 import { includesNormalized } from "@/lib/text-utils";
 
@@ -207,12 +208,28 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
               />
               Crianças - Turma {turma.nome_exibicao}
             </CardTitle>
-            <SearchInput
-              placeholder="Buscar criança..."
-              value={search}
-              onChange={setSearch}
-              className="w-full md:w-64"
-            />
+            <div className="flex gap-2 items-center">
+              <SearchInput
+                placeholder="Buscar criança..."
+                value={search}
+                onChange={setSearch}
+                className="w-full md:w-64"
+              />
+              <ExportButton
+                data={criancasFiltradas}
+                columns={[
+                  { header: "Nome", accessor: "nome" },
+                  { header: "Idade", accessor: (r) => `${r.idade} anos` },
+                  { header: "Gênero", accessor: (r) => r.genero === "masculino" ? "Menino" : r.genero === "feminino" ? "Menina" : "-" },
+                  { header: "Responsável", accessor: "responsavelNome" },
+                  { header: "WhatsApp", accessor: "responsavelWhatsapp" },
+                  { header: "Status", accessor: (r) => r.tipo === "membro" ? "Membro" : "Visitante" },
+                ]}
+                filename={`kids-turma-${turma.turma}`}
+                title={`Kids - Turma ${turma.nome_exibicao}`}
+                sheetName="Crianças"
+              />
+            </div>
           </div>
         </CardHeader>
         <CardContent>

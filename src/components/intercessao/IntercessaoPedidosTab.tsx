@@ -21,6 +21,7 @@ import {
 import { Plus, User, UserX, CheckCircle, Clock, Trash2 } from "lucide-react";
 import PedidoOracaoFormDialog from "./PedidoOracaoFormDialog";
 import TestemunhoFormDialog from "./TestemunhoFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
 
 const IntercessaoPedidosTab = () => {
   const { user } = useAuth();
@@ -95,12 +96,26 @@ const IntercessaoPedidosTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-3">
         <h2 className="text-xl font-heading font-bold">Mural de Pedidos de Oração</h2>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Pedido
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={pedidos || []}
+            columns={[
+              { header: "Nome", accessor: (r) => r.anonimo ? "Anônimo" : (r.nome || "Não informado") },
+              { header: "Pedido", accessor: "pedido" },
+              { header: "Status", accessor: (r) => r.status === "respondido" ? "Respondido" : "Aberto" },
+              { header: "Data", accessor: (r) => format(new Date(r.created_at), "dd/MM/yyyy", { locale: ptBR }) },
+            ]}
+            filename="pedidos-oracao"
+            title="Pedidos de Oração"
+            sheetName="Pedidos"
+          />
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Pedido
+          </Button>
+        </div>
       </div>
 
       {pedidos?.length === 0 ? (

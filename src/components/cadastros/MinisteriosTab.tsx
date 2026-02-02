@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import MinisterioFormDialog from "./MinisterioFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -115,10 +116,23 @@ const MinisteriosTab = () => {
           onChange={setSearchTerm}
           className="flex-1 max-w-md"
         />
-        <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Ministério
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filteredItems}
+            columns={[
+              { header: "Nome", accessor: "name" },
+              { header: "Líderes", accessor: (r) => formatLeaderNames(r.lider?.full_name, r.lider_esposa?.full_name) || "-" },
+              { header: "Descrição", accessor: "description" },
+            ]}
+            filename="ministerios"
+            title="Ministérios"
+            sheetName="Ministérios"
+          />
+          <Button onClick={() => setIsFormOpen(true)} className="bg-secondary hover:bg-secondary/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Ministério
+          </Button>
+        </div>
       </div>
 
       {/* List */}

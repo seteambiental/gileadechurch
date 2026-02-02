@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bell, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ExportButton } from "@/components/ui/export-button";
 
 export const KidsNotificacoesTab = () => {
   // Buscar log de notificações
@@ -66,14 +67,30 @@ export const KidsNotificacoesTab = () => {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Bell className="h-5 w-5 text-primary" />
-          Histórico de Notificações
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe as notificações de ausência enviadas aos responsáveis
-        </p>
+      <div className="flex justify-between items-start flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
+            Histórico de Notificações
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Acompanhe as notificações de ausência enviadas aos responsáveis
+          </p>
+        </div>
+        <ExportButton
+          data={notificacoes || []}
+          columns={[
+            { header: "Data/Hora", accessor: (r) => format(parseISO(r.enviada_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
+            { header: "Criança", accessor: (r) => r.crianca_member?.full_name || r.crianca_nc?.full_name || "-" },
+            { header: "Turma", accessor: (r) => getTurmaNome(r.turma || "") },
+            { header: "Responsável", accessor: (r) => r.responsavel?.full_name || "-" },
+            { header: "WhatsApp", accessor: "whatsapp_destino" },
+            { header: "Status", accessor: (r) => r.status === "enviada" ? "Enviada" : r.status === "erro" ? "Erro" : "Pendente" },
+          ]}
+          filename="kids-notificacoes"
+          title="Histórico de Notificações Kids"
+          sheetName="Notificações"
+        />
       </div>
 
       <Card>

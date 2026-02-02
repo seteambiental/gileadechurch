@@ -10,6 +10,7 @@ import { Plus, Users, Pencil, Trash2, Eye, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 import { FamiliaFormDialog } from "./FamiliaFormDialog";
 import { FamiliaDetalhesDialog } from "./FamiliaDetalhesDialog";
+import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
 
 export function AcaoSocialFamiliasTab() {
@@ -107,10 +108,28 @@ export function AcaoSocialFamiliasTab() {
           onChange={setSearch}
           className="flex-1 max-w-sm"
         />
-        <Button onClick={handleNew} className="bg-destructive hover:bg-destructive/90">
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Família
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filteredFamilias || []}
+            columns={[
+              { header: "Nome da Família", accessor: "nome_familia" },
+              { header: "Qtd. Membros", accessor: (r) => membrosData?.[r.id]?.total || 0 },
+              { header: "Renda Total", accessor: (r) => formatCurrency(r.renda_total) },
+              { header: "Casa Refúgio", accessor: (r) => r.casa_refugio?.name || "-" },
+              { header: "Tipo de Ajuda", accessor: "tipo_ajuda" },
+              { header: "Status", accessor: (r) => r.ativo ? "Ativo" : "Inativo" },
+              { header: "Cidade", accessor: "cidade" },
+              { header: "WhatsApp", accessor: "whatsapp" },
+            ]}
+            filename="familias-acao-social"
+            title="Famílias - Ação Social"
+            sheetName="Famílias"
+          />
+          <Button onClick={handleNew} className="bg-destructive hover:bg-destructive/90">
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Família
+          </Button>
+        </div>
       </div>
 
       <Card>
