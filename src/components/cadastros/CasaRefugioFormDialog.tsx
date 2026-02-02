@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { getAprovadorId, useMudancasPendentes } from "@/hooks/useMudancasPendentes";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,17 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MemberSelect } from "@/components/ui/member-select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast as sonnerToast } from "sonner";
 
 const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -78,10 +91,38 @@ interface CasaRefugioFormDialogProps {
   item?: CasaRefugio | null;
 }
 
+interface PendingApproval {
+  tipoMudanca: string;
+  membroId: string;
+  membroAtualId: string | null;
+  label: string;
+}
+
 const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDialogProps) => {
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { createMudanca, isCreating } = useMudancasPendentes();
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+  const [formDataToSave, setFormDataToSave] = useState<FormData | null>(null);
+
+  // Buscar o membro vinculado ao usuário atual
+  const { data: currentMember } = useQuery({
+    queryKey: ["current-member", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .eq("user_id", user.id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -152,16 +193,16 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     }
   }, [item, open, form]);
 
-  const mutation = useMutation({
-    mutationFn: async (data: FormData) => {
+  const saveDirectMutation = useMutation({
+    mutationFn: async (data: FormData & { keepLeadership?: boolean }) => {
       const payload = {
         name: formatNameField(data.name),
-        lider_id: data.lider_id || null,
-        lider_esposa_id: data.lider_esposa_id || null,
-        anfitriao_id: data.anfitriao_id || null,
-        anfitriao_esposa_id: data.anfitriao_esposa_id || null,
-        supervisor_id: data.supervisor_id || null,
-        supervisor_esposa_id: data.supervisor_esposa_id || null,
+        lider_id: data.keepLeadership ? (item?.lider_id || null) : (data.lider_id || null),
+        lider_esposa_id: data.keepLeadership ? (item?.lider_esposa_id || null) : (data.lider_esposa_id || null),
+        anfitriao_id: data.keepLeadership ? (item?.anfitriao_id || null) : (data.anfitriao_id || null),
+        anfitriao_esposa_id: data.keepLeadership ? (item?.anfitriao_esposa_id || null) : (data.anfitriao_esposa_id || null),
+        supervisor_id: data.keepLeadership ? (item?.supervisor_id || null) : (data.supervisor_id || null),
+        supervisor_esposa_id: data.keepLeadership ? (item?.supervisor_esposa_id || null) : (data.supervisor_esposa_id || null),
         condominio: data.condominio ? toTitleCase(data.condominio) : null,
         dias: data.dias || null,
         frequencia: data.frequencia || null,
@@ -172,7 +213,6 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         neighborhood: data.neighborhood ? toTitleCase(data.neighborhood) : null,
         city: data.city ? toTitleCase(data.city) : null,
         state: data.state?.toUpperCase() || null,
-        // Keep legacy field updated for backward compatibility
         lideres: null,
         anfitrioes: null,
         supervisores: null,
@@ -200,6 +240,102 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     },
   });
 
+  const checkLeadershipChanges = (data: FormData): PendingApproval[] => {
+    if (!item) return []; // No approval needed for new items
+    
+    const changes: PendingApproval[] = [];
+    
+    const leadershipFields = [
+      { field: "lider_id", tipoMudanca: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
+      { field: "lider_esposa_id", tipoMudanca: "lider_esposa_casa_refugio", label: "Líder de Casa Refúgio (Cônjuge)" },
+      { field: "supervisor_id", tipoMudanca: "supervisor_casa_refugio", label: "Supervisor de Casa Refúgio" },
+      { field: "supervisor_esposa_id", tipoMudanca: "supervisor_esposa_casa_refugio", label: "Supervisor de Casa Refúgio (Cônjuge)" },
+      { field: "anfitriao_id", tipoMudanca: "anfitriao_casa_refugio", label: "Anfitrião de Casa Refúgio" },
+      { field: "anfitriao_esposa_id", tipoMudanca: "anfitriao_esposa_casa_refugio", label: "Anfitrião de Casa Refúgio (Cônjuge)" },
+    ] as const;
+
+    for (const { field, tipoMudanca, label } of leadershipFields) {
+      const newValue = data[field] || null;
+      const oldValue = (item as any)[field] || null;
+
+      if (newValue !== oldValue) {
+        if (oldValue && newValue) {
+          // Replacing existing
+          changes.push({
+            tipoMudanca,
+            membroId: newValue,
+            membroAtualId: oldValue,
+            label,
+          });
+        } else if (newValue && !oldValue) {
+          // Adding new
+          changes.push({
+            tipoMudanca,
+            membroId: newValue,
+            membroAtualId: null,
+            label,
+          });
+        }
+      }
+    }
+
+    return changes;
+  };
+
+  const handleSubmit = async (data: FormData) => {
+    const leadershipChanges = checkLeadershipChanges(data);
+
+    if (leadershipChanges.length > 0) {
+      setPendingApprovals(leadershipChanges);
+      setFormDataToSave(data);
+      setShowApprovalDialog(true);
+    } else {
+      // No leadership changes, save directly
+      saveDirectMutation.mutate(data);
+    }
+  };
+
+  const handleApprovalConfirm = async () => {
+    if (!formDataToSave || !item || !currentMember) return;
+
+    try {
+      for (const approval of pendingApprovals) {
+        const aprovadorId = await getAprovadorId(approval.tipoMudanca, item.id);
+        
+        if (!aprovadorId) {
+          sonnerToast.error(`Não foi possível encontrar o aprovador para ${approval.label}`);
+          continue;
+        }
+
+        createMudanca({
+          solicitante_id: currentMember.id,
+          aprovador_id: aprovadorId,
+          tipo_mudanca: approval.tipoMudanca,
+          acao: approval.membroAtualId ? "alterar" : "adicionar",
+          casa_refugio_id: item.id,
+          membro_id: approval.membroId,
+          membro_atual_id: approval.membroAtualId,
+        });
+      }
+
+      // Save non-leadership fields (keep existing leadership)
+      saveDirectMutation.mutate({ ...formDataToSave, keepLeadership: true } as FormData & { keepLeadership: boolean });
+    } catch (error) {
+      console.error("Erro ao criar solicitações de aprovação:", error);
+      sonnerToast.error("Erro ao enviar solicitações de aprovação");
+    }
+
+    setShowApprovalDialog(false);
+    setPendingApprovals([]);
+    setFormDataToSave(null);
+  };
+
+  const handleApprovalCancel = () => {
+    setShowApprovalDialog(false);
+    setPendingApprovals([]);
+    setFormDataToSave(null);
+  };
+
   const handleCepBlur = async () => {
     const cep = form.getValues("cep")?.replace(/\D/g, "");
     if (cep?.length !== 8) return;
@@ -222,334 +358,381 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     }
   };
 
+  const getApproverDescription = (): string => {
+    const types = pendingApprovals.map(p => p.tipoMudanca);
+    if (types.some(t => t.includes("supervisor"))) {
+      return "Síndico do Condomínio";
+    }
+    if (types.some(t => t.includes("lider") && !t.includes("anfitriao"))) {
+      return "Supervisor da Casa Refúgio";
+    }
+    if (types.some(t => t.includes("anfitriao"))) {
+      return "Líder da Casa Refúgio";
+    }
+    return "Pastor";
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-h-[90vh] max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{item ? "Editar Casa Refúgio" : "Nova Casa Refúgio"}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-card border-border max-h-[90vh] max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{item ? "Editar Casa Refúgio" : "Nova Casa Refúgio"}</DialogTitle>
+          </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh] pr-4">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-              {/* 1. Casa Refúgio (Nome) */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Casa Refúgio *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome da Casa Refúgio" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {/* 1. Casa Refúgio (Nome) */}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Casa Refúgio *</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nome da Casa Refúgio" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Líderes Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <p className="text-sm font-medium text-muted-foreground">Líderes</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="lider_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Líder</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar líder..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lider_esposa_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Líder</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar líder..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Anfitriões Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <p className="text-sm font-medium text-muted-foreground">Anfitriões</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="anfitriao_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Anfitrião</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar anfitrião..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="anfitriao_esposa_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Anfitrião</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar anfitrião..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* 3. Condomínio */}
-              <FormField
-                control={form.control}
-                name="condominio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Condomínio</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Nome do condomínio" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Supervisores Section */}
-              <div className="border rounded-lg p-4 space-y-4">
-                <p className="text-sm font-medium text-muted-foreground">Supervisores</p>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name="supervisor_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supervisor</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar supervisor..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="supervisor_esposa_id"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supervisor</FormLabel>
-                        <FormControl>
-                          <MemberSelect
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Selecionar supervisor..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* 6. Dias da Casa Refúgio */}
-              <FormField
-                control={form.control}
-                name="dias"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dias da Casa Refúgio</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: Quinta-feira" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* 7. Frequência */}
-              <FormField
-                control={form.control}
-                name="frequencia"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Frequência</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Ex: Semanal, Quinzenal" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="border-t border-border pt-4 mt-4">
-                <p className="text-sm font-medium text-muted-foreground mb-4">Endereço</p>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {/* 8. CEP */}
-                  <FormField
-                    control={form.control}
-                    name="cep"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CEP</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Input
-                              {...field}
-                              placeholder="00000-000"
-                              onBlur={handleCepBlur}
-                              inputMode="numeric"
+                {/* Líderes Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Líderes</p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="lider_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Líder</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar líder..."
                             />
-                            {isLoadingCep && (
-                              <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
-                            )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 9. Endereço */}
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Endereço</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Rua, Avenida..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 10. Número */}
-                  <FormField
-                    control={form.control}
-                    name="numero"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Número</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Nº" inputMode="numeric" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 10b. Complemento */}
-                  <FormField
-                    control={form.control}
-                    name="complement"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Complemento</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Apto, Bloco..." />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 11. Bairro */}
-                  <FormField
-                    control={form.control}
-                    name="neighborhood"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bairro</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 12. Cidade */}
-                  <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cidade</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* 13. UF */}
-                  <FormField
-                    control={form.control}
-                    name="state"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>UF</FormLabel>
-                        <FormControl>
-                          <Input {...field} maxLength={2} placeholder="PR" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lider_esposa_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Líder</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar líder..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" className="bg-secondary hover:bg-secondary/90" disabled={mutation.isPending}>
-                  {mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {item ? "Salvar" : "Cadastrar"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+                {/* Anfitriões Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Anfitriões</p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="anfitriao_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Anfitrião</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar anfitrião..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="anfitriao_esposa_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Anfitrião</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar anfitrião..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* 3. Condomínio */}
+                <FormField
+                  control={form.control}
+                  name="condominio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Condomínio</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Nome do condomínio" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Supervisores Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Supervisores</p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <FormField
+                      control={form.control}
+                      name="supervisor_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Supervisor</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar supervisor..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="supervisor_esposa_id"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Supervisor</FormLabel>
+                          <FormControl>
+                            <MemberSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Selecionar supervisor..."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* 6. Dias da Casa Refúgio */}
+                <FormField
+                  control={form.control}
+                  name="dias"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dias da Casa Refúgio</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ex: Quinta-feira" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* 7. Frequência */}
+                <FormField
+                  control={form.control}
+                  name="frequencia"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Frequência</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ex: Semanal, Quinzenal" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="border-t border-border pt-4 mt-4">
+                  <p className="text-sm font-medium text-muted-foreground mb-4">Endereço</p>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* 8. CEP */}
+                    <FormField
+                      control={form.control}
+                      name="cep"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CEP</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                {...field}
+                                placeholder="00000-000"
+                                onBlur={handleCepBlur}
+                                inputMode="numeric"
+                              />
+                              {isLoadingCep && (
+                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                              )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 9. Endereço */}
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Endereço</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Rua, Avenida..." />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 10. Número */}
+                    <FormField
+                      control={form.control}
+                      name="numero"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Número</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Nº" inputMode="numeric" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 10b. Complemento */}
+                    <FormField
+                      control={form.control}
+                      name="complement"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Complemento</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Apto, Bloco..." />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 11. Bairro */}
+                    <FormField
+                      control={form.control}
+                      name="neighborhood"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bairro</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Bairro" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 12. Cidade */}
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cidade</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="Cidade" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 13. UF */}
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estado</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="UF" maxLength={2} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    className="bg-secondary hover:bg-secondary/90" 
+                    disabled={saveDirectMutation.isPending || isCreating}
+                  >
+                    {(saveDirectMutation.isPending || isCreating) && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {item ? "Salvar" : "Cadastrar"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approval Confirmation Dialog */}
+      <AlertDialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Alteração de Liderança</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está alterando posições de liderança nesta Casa Refúgio. Esta alteração precisa ser aprovada pelo {getApproverDescription()}.
+              <br /><br />
+              <strong>Alterações:</strong>
+              <ul className="list-disc pl-4 mt-2">
+                {pendingApprovals.map((approval, index) => (
+                  <li key={index}>{approval.label}</li>
+                ))}
+              </ul>
+              <br />
+              Deseja enviar a solicitação de aprovação?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleApprovalCancel}>Não</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApprovalConfirm} className="bg-secondary hover:bg-secondary/90">
+              Sim, enviar para aprovação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
