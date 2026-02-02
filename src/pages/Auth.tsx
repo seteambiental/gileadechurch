@@ -23,7 +23,7 @@ import { DateInput } from "@/components/ui/date-input";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { TermsCheckbox } from "@/components/TermsCheckbox";
 import { ResponsavelSelect } from "@/components/ui/responsavel-select";
-import { needsResponsible, getAgeString } from "@/lib/age-utils";
+import { needsResponsible, getAgeString, calculateAge } from "@/lib/age-utils";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido").max(255, "Email muito longo"),
@@ -68,6 +68,8 @@ const Auth = () => {
   const [preCheckPassed, setPreCheckPassed] = useState(false);
   const [preCheckName, setPreCheckName] = useState("");
   const [preCheckBirthDate, setPreCheckBirthDate] = useState("");
+  const [preCheckEstadoCivil, setPreCheckEstadoCivil] = useState<"solteiro" | "casado" | "viuvo" | "">("");
+  const [preCheckGenero, setPreCheckGenero] = useState<"masculino" | "feminino" | "">("");
   const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
   const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
   
@@ -81,6 +83,12 @@ const Auth = () => {
   
   // Responsável para menores de 12 anos
   const [responsavelId, setResponsavelId] = useState<string | null>(null);
+  
+  // IDs dos ministérios para direcionamento automático
+  const MINISTERIO_GT_ID = "a1669791-6ce2-48b2-b97f-d133948da63f";
+  const MINISTERIO_FLOW_ID = "45684131-e033-4ef6-914e-bc49d1dc7b20";
+  const MINISTERIO_MULHERES_ID = "cb045877-8a53-4fe4-b704-b5aea35085b9";
+  const MINISTERIO_TRUE_MAN_ID = "245abe33-491a-4cae-afb7-32e6e18584e2";
 
   
   // Visitante fields (simplified form)
@@ -431,6 +439,9 @@ const Auth = () => {
         photo_url: photoUrl,
         status: "pendente",
         responsavel_id: responsavelId,
+        ministerios_interesse: signupData.ministerio_ids || [],
+        nao_pretende_servir: naoPretendeServir,
+        estado_civil: preCheckEstadoCivil || null,
       };
 
       const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
@@ -708,6 +719,8 @@ const Auth = () => {
                   setPreCheckPassed(false);
                   setPreCheckName("");
                   setPreCheckBirthDate("");
+                  setPreCheckEstadoCivil("");
+                  setPreCheckGenero("");
                   setExistingMemberEmail(null);
                   setErrors({});
                 }}
@@ -740,6 +753,15 @@ const Auth = () => {
       const fieldErrors: Record<string, string> = {};
       if (!preCheckName.trim()) fieldErrors.preCheckName = "Nome é obrigatório";
       if (!preCheckBirthDate) fieldErrors.preCheckBirthDate = "Data de nascimento é obrigatória";
+      if (!preCheckGenero) fieldErrors.preCheckGenero = "Gênero é obrigatório";
+
+      // Calcula idade para validações
+      const { years: idade } = calculateAge(preCheckBirthDate);
+      
+      // Estado civil obrigatório para maiores de 12 anos
+      if (preCheckBirthDate && idade >= 12 && !preCheckEstadoCivil) {
+        fieldErrors.preCheckEstadoCivil = "Estado civil é obrigatório";
+      }
 
       // Menor de 12 anos: responsável obrigatório (evita bypass via clique no tipo de cadastro)
       if (preCheckBirthDate && needsResponsible(preCheckBirthDate) && !responsavelId) {
@@ -794,11 +816,36 @@ const Auth = () => {
             });
           }
         } else {
-          // User doesn't exist - show tipo cadastro selection
+          // User doesn't exist - calculate automatic ministry based on age, gender and marital status
+          const { years: idadeCalc } = calculateAge(preCheckBirthDate);
+          let ministerioAutomaticoId: string | null = null;
+          
+          // Regras de direcionamento:
+          // 12-17 anos -> GT
+          // 17+ solteiro(a) ou viúvo(a) -> Flow
+          // 17+ casada (feminino) -> Mulheres
+          // 17+ casado (masculino) -> True Man
+          if (idadeCalc >= 12 && idadeCalc < 17) {
+            ministerioAutomaticoId = MINISTERIO_GT_ID;
+          } else if (idadeCalc >= 17) {
+            if (preCheckEstadoCivil === "solteiro" || preCheckEstadoCivil === "viuvo") {
+              ministerioAutomaticoId = MINISTERIO_FLOW_ID;
+            } else if (preCheckEstadoCivil === "casado") {
+              if (preCheckGenero === "feminino") {
+                ministerioAutomaticoId = MINISTERIO_MULHERES_ID;
+              } else if (preCheckGenero === "masculino") {
+                ministerioAutomaticoId = MINISTERIO_TRUE_MAN_ID;
+              }
+            }
+          }
+          
+          // Set signup data with pre-check info and automatic ministry
           setSignupData({
             ...signupData,
             full_name: preCheckName.trim(),
             birth_date: preCheckBirthDate,
+            genero: preCheckGenero || undefined,
+            ministerio_ids: ministerioAutomaticoId ? [ministerioAutomaticoId] : [],
           });
           // Pre-fill visitante data as well
           const nameParts = preCheckName.trim().split(" ");
@@ -924,6 +971,45 @@ const Auth = () => {
                   />
                   {errors.preCheckBirthDate && <p className="text-sm text-destructive">{errors.preCheckBirthDate}</p>}
                 </div>
+
+                {/* Campo Gênero */}
+                <div className="space-y-2">
+                  <Label htmlFor="preCheckGenero">Gênero *</Label>
+                  <Select
+                    value={preCheckGenero}
+                    onValueChange={(v) => setPreCheckGenero(v as "masculino" | "feminino")}
+                  >
+                    <SelectTrigger className={errors.preCheckGenero ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.preCheckGenero && <p className="text-sm text-destructive">{errors.preCheckGenero}</p>}
+                </div>
+
+                {/* Campo Estado Civil - apenas para maiores de 12 anos */}
+                {preCheckBirthDate && !needsResponsible(preCheckBirthDate) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="preCheckEstadoCivil">Estado Civil *</Label>
+                    <Select
+                      value={preCheckEstadoCivil}
+                      onValueChange={(v) => setPreCheckEstadoCivil(v as "solteiro" | "casado" | "viuvo")}
+                    >
+                      <SelectTrigger className={errors.preCheckEstadoCivil ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                        <SelectItem value="casado">Casado(a)</SelectItem>
+                        <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.preCheckEstadoCivil && <p className="text-sm text-destructive">{errors.preCheckEstadoCivil}</p>}
+                  </div>
+                )}
                 
                 {/* Campo de Responsável para menores de 12 anos */}
                 {preCheckBirthDate && needsResponsible(preCheckBirthDate) && (
