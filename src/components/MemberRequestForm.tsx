@@ -163,7 +163,9 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
   const firstName = form.watch("first_name");
   const birthDate = form.watch("birth_date");
-  const isMinor = needsResponsible(birthDate);
+  
+  // Calcular se é menor de 12 anos baseado na data em formato ISO (YYYY-MM-DD)
+  const isMinor = birthDate && birthDate.length === 10 ? needsResponsible(birthDate) : false;
 
   const checkMember = async () => {
     const firstNameClean = firstName?.trim();
@@ -326,10 +328,12 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     if (formatted.length === 10) {
       const isoDate = convertToISODate(formatted);
       if (isoDate) {
-        form.setValue("birth_date", isoDate);
+        form.setValue("birth_date", isoDate, { shouldValidate: true });
+      } else {
+        form.setValue("birth_date", "", { shouldValidate: true });
       }
     } else {
-      form.setValue("birth_date", "");
+      form.setValue("birth_date", "", { shouldValidate: true });
     }
     setVerified(false);
     setVerificationError(null);
