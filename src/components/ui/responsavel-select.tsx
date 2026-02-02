@@ -1,22 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronsUpDown, X, Users } from "lucide-react";
+import { Check, ChevronsUpDown, X, Users, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import { normalizeText } from "@/lib/text-utils";
 
 interface Member {
@@ -77,6 +71,18 @@ export function ResponsavelSelect({
     [members, value]
   );
 
+  // Handle selection with immediate close - use callback for performance
+  const handleSelect = useCallback((memberId: string) => {
+    onChange(memberId);
+    setOpen(false);
+    setSearch("");
+  }, [onChange]);
+
+  // Handle clear
+  const handleClear = useCallback(() => {
+    onChange(null);
+  }, [onChange]);
+
   return (
     <div className="flex gap-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -87,9 +93,13 @@ export function ResponsavelSelect({
             aria-expanded={open}
             className="w-full justify-between font-normal"
             disabled={disabled || isLoading}
+            type="button"
           >
             {isLoading ? (
-              "Carregando..."
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Carregando...
+              </span>
             ) : selectedMember ? (
               <span className="truncate flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -102,44 +112,58 @@ export function ResponsavelSelect({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[320px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder="Buscar responsável..." 
+          <div className="p-2 border-b">
+            <Input
+              placeholder="Buscar responsável..."
               value={search}
-              onValueChange={setSearch}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9"
+              autoFocus={false}
             />
-            <CommandList>
-              <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
-              <CommandGroup>
+          </div>
+          <ScrollArea className="h-[250px]">
+            {filteredMembers.length === 0 ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                Nenhum membro encontrado.
+              </div>
+            ) : (
+              <div className="p-1">
                 {filteredMembers.map((member) => (
-                  <CommandItem
+                  <button
                     key={member.id}
-                    value={member.id}
-                    onSelect={() => {
-                      onChange(member.id);
-                      setOpen(false);
-                      setSearch("");
+                    type="button"
+                    onClick={() => handleSelect(member.id)}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handleSelect(member.id);
                     }}
+                    className={cn(
+                      "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      "focus:bg-accent focus:text-accent-foreground",
+                      "active:bg-accent/80",
+                      value === member.id && "bg-accent"
+                    )}
                   >
                     <Check
                       className={cn(
-                        "mr-2 h-4 w-4",
+                        "mr-2 h-4 w-4 shrink-0",
                         value === member.id ? "opacity-100" : "opacity-0"
                       )}
                     />
-                    <div className="flex flex-col">
-                      <span>{member.full_name}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium">{member.full_name}</span>
                       {member.whatsapp && (
                         <span className="text-xs text-muted-foreground">
                           {member.whatsapp.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")}
                         </span>
                       )}
                     </div>
-                  </CommandItem>
+                  </button>
                 ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
+              </div>
+            )}
+          </ScrollArea>
         </PopoverContent>
       </Popover>
       {value && !disabled && (
@@ -147,7 +171,7 @@ export function ResponsavelSelect({
           type="button"
           variant="ghost"
           size="icon"
-          onClick={() => onChange(null)}
+          onClick={handleClear}
           className="shrink-0"
         >
           <X className="h-4 w-4" />
