@@ -11,6 +11,7 @@ type Body = {
   email?: string | null;
   whatsapp?: string | null;
   genero?: string | null;
+  estado_civil?: string | null;
   birth_date?: string | null; // YYYY-MM-DD
   cep?: string | null;
   address?: string | null;
@@ -77,6 +78,7 @@ serve(async (req) => {
       email: body.email ?? null,
       whatsapp: body.whatsapp ?? null,
       genero: body.genero ?? null,
+      estado_civil: body.estado_civil ?? null,
       birth_date: body.birth_date ?? null,
       cep: body.cep ?? null,
       address: body.address ?? null,

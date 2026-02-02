@@ -52,6 +52,7 @@ const formSchema = z.object({
   email: z.string().email("Email inválido").min(1, "Email é obrigatório"),
   whatsapp: z.string().min(10, "WhatsApp é obrigatório"),
   genero: z.string().min(1, "Gênero é obrigatório"),
+  estado_civil: z.string().optional(),
   birth_date: z.string().min(1, "Data de nascimento é obrigatória"),
   cep: z.string().min(9, "CEP é obrigatório"),
   address: z.string().min(3, "Endereço é obrigatório"),
@@ -146,6 +147,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       email: "",
       whatsapp: "",
       genero: "",
+      estado_civil: "",
       birth_date: "",
       cep: "",
       address: "",
@@ -256,6 +258,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         email: data.email || null,
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         genero: data.genero || null,
+        estado_civil: data.estado_civil || null,
         birth_date: data.birth_date || null,
         cep: data.cep ? unformatCep(data.cep) : null,
         address: data.address ? toTitleCase(data.address) : null,
@@ -709,27 +712,55 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   />
                 </div>
 
-                <FormField
-                  control={form.control}
-                  name="genero"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Gênero *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="masculino">Masculino</SelectItem>
-                          <SelectItem value="feminino">Feminino</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="genero"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gênero *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Estado Civil - só aparece para 12 anos ou mais */}
+                  {!isMinor && birthDate && (
+                    <FormField
+                      control={form.control}
+                      name="estado_civil"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estado Civil</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                              <SelectItem value="casado">Casado(a)</SelectItem>
+                              <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </div>
 
               </div>
             )}
