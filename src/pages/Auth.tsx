@@ -822,15 +822,16 @@ const Auth = () => {
           
           // Regras de direcionamento:
           // 12-17 anos -> GT
-          // 17+ solteiro(a) ou viúvo(a) -> Flow
-          // 17+ casada (feminino) -> Mulheres
-          // 17+ casado (masculino) -> True Man
+          // 12-17 anos -> GT
+          // 17+ solteiro(a) -> Flow
+          // 17+ casado/viúvo (masculino) -> True Man
+          // 17+ casada/viúva (feminino) -> Mulheres
           if (idadeCalc >= 12 && idadeCalc < 17) {
             ministerioAutomaticoId = MINISTERIO_GT_ID;
           } else if (idadeCalc >= 17) {
-            if (preCheckEstadoCivil === "solteiro" || preCheckEstadoCivil === "viuvo") {
+            if (preCheckEstadoCivil === "solteiro") {
               ministerioAutomaticoId = MINISTERIO_FLOW_ID;
-            } else if (preCheckEstadoCivil === "casado") {
+            } else if (preCheckEstadoCivil === "casado" || preCheckEstadoCivil === "viuvo") {
               if (preCheckGenero === "feminino") {
                 ministerioAutomaticoId = MINISTERIO_MULHERES_ID;
               } else if (preCheckGenero === "masculino") {
