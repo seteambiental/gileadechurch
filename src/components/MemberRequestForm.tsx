@@ -736,13 +736,13 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   />
 
                   {/* Estado Civil - só aparece para 12 anos ou mais */}
-                  {!isMinor && birthDate && (
+                  {birthDate && birthDate.length === 10 && !needsResponsible(birthDate) && (
                     <FormField
                       control={form.control}
                       name="estado_civil"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Estado Civil</FormLabel>
+                          <FormLabel>Estado Civil *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
