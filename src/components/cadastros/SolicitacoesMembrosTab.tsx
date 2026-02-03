@@ -169,8 +169,32 @@ const SolicitacoesMembrosTab = () => {
 
       if (updateError) throw updateError;
 
-      // Enviar email de boas-vindas após aprovação
+      // Criar usuário de autenticação automaticamente se tiver email
       if (request.email) {
+        try {
+          const { data: userResult, error: userError } = await supabase.functions.invoke(
+            "criar-usuario-membro",
+            {
+              body: {
+                email: request.email,
+                cpf: request.cpf || null,
+                member_id: newMember.id,
+                perfil: "membro",
+              },
+            }
+          );
+
+          if (userError) {
+            console.error("Erro ao criar usuário:", userError);
+          } else {
+            console.log("Usuário criado automaticamente:", userResult);
+          }
+        } catch (userCreateError) {
+          console.error("Erro ao criar usuário de autenticação:", userCreateError);
+          // Não falhar a aprovação se o usuário não for criado
+        }
+
+        // Enviar email de boas-vindas após aprovação
         try {
           await supabase.functions.invoke("enviar-email-boas-vindas", {
             body: {
