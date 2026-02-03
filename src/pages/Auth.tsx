@@ -127,6 +127,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Estado para controle de seleção de portal (quando usuário tem múltiplos acessos)
+  const [showPortalChoice, setShowPortalChoice] = useState(false);
+  const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean } | null>(null);
+
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -184,9 +188,13 @@ const Auth = () => {
 
   useEffect(() => {
     if (!loading && user && !isRecovery) {
-      navigate(redirectTo);
+      // Se o login acabou de acontecer e precisamos mostrar a escolha de portal,
+      // não redirecionar automaticamente.
+      if (!showPortalChoice) {
+        navigate(redirectTo);
+      }
     }
-  }, [user, loading, navigate, isRecovery, redirectTo]);
+  }, [user, loading, navigate, isRecovery, redirectTo, showPortalChoice]);
 
 
   const validateLoginForm = () => {
@@ -360,10 +368,6 @@ const Auth = () => {
       setIsLoading(false);
     }
   };
-
-  // Estado para controle de seleção de portal
-  const [showPortalChoice, setShowPortalChoice] = useState(false);
-  const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean } | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
