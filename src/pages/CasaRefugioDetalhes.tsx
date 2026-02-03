@@ -102,28 +102,42 @@ const CasaRefugioDetalhes = () => {
     enabled: !!id,
   });
 
-  // Calcular membros adultos e crianças vinculados
-  const membrosVinculadosStats = useMemo(() => {
+  // Calcular líderes, membros (excluindo líderes) e crianças vinculados
+  const indicadoresVinculados = useMemo(() => {
     const hoje = new Date();
-    let adultos = 0;
+    
+    // IDs dos líderes
+    const liderIds = [casa?.lider_id, casa?.lider_esposa_id].filter(Boolean);
+    const qtdLideres = liderIds.length;
+    
+    let membrosAdultos = 0;
     let criancas = 0;
     
     membrosVinculados.forEach((m) => {
+      // Se for líder, não conta como membro
+      if (liderIds.includes(m.id)) return;
+      
       if (m.birth_date) {
         const nascimento = parseISO(m.birth_date);
         const idade = Math.floor((hoje.getTime() - nascimento.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         if (idade < 12) {
           criancas++;
         } else {
-          adultos++;
+          membrosAdultos++;
         }
       } else {
-        adultos++; // Sem data de nascimento, considera adulto
+        membrosAdultos++; // Sem data de nascimento, considera adulto
       }
     });
     
-    return { adultos, criancas, total: membrosVinculados.length };
-  }, [membrosVinculados]);
+    return { 
+      lideres: qtdLideres, 
+      membros: membrosAdultos, 
+      criancas, 
+      visitantes: 0, // Visitantes não são vinculados
+      total: membrosVinculados.length 
+    };
+  }, [membrosVinculados, casa]);
 
   // Filter encontros by date range
   const filteredEncontros = useMemo(() => {
@@ -393,22 +407,22 @@ const CasaRefugioDetalhes = () => {
           </Card>
         </div>
 
-        {/* Breakdown */}
+        {/* Breakdown - Membros Vinculados */}
         <div className="grid grid-cols-4 gap-2">
           <div className="bg-blue-500/10 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-blue-600">{totalLideres}</p>
+            <p className="text-lg font-bold text-blue-600">{indicadoresVinculados.lideres}</p>
             <p className="text-xs text-muted-foreground">Líderes</p>
           </div>
           <div className="bg-green-500/10 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-green-600">{totalMembros}</p>
+            <p className="text-lg font-bold text-green-600">{indicadoresVinculados.membros}</p>
             <p className="text-xs text-muted-foreground">Membros</p>
           </div>
           <div className="bg-amber-500/10 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-amber-600">{totalCriancas}</p>
+            <p className="text-lg font-bold text-amber-600">{indicadoresVinculados.criancas}</p>
             <p className="text-xs text-muted-foreground">Crianças</p>
           </div>
           <div className="bg-purple-500/10 rounded-lg p-3 text-center">
-            <p className="text-lg font-bold text-purple-600">{totalVisitantes}</p>
+            <p className="text-lg font-bold text-purple-600">{indicadoresVinculados.visitantes}</p>
             <p className="text-xs text-muted-foreground">Visitantes</p>
           </div>
         </div>
