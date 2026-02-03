@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -149,6 +149,9 @@ const Auth = () => {
 
   const redirectTo = getSafeRedirect();
 
+  // Gate para evitar redirecionamentos automáticos antes de checar permissões
+  const hasProcessedAuthRef = useRef(false);
+
   // Fetch ministries for selection
   const { data: ministries = [] } = useQuery({
     queryKey: ["ministries"],
@@ -187,14 +190,48 @@ const Auth = () => {
   }, [navigate, redirectTo]);
 
   useEffect(() => {
-    if (!loading && user && !isRecovery) {
-      // Se o login acabou de acontecer e precisamos mostrar a escolha de portal,
-      // não redirecionar automaticamente.
-      if (!showPortalChoice) {
-        navigate(redirectTo);
-      }
+    // Reset quando não há usuário (ex: logout)
+    if (!user) {
+      hasProcessedAuthRef.current = false;
+      return;
     }
-  }, [user, loading, navigate, isRecovery, redirectTo, showPortalChoice]);
+
+    if (loading || isRecovery) return;
+    if (hasProcessedAuthRef.current) return;
+
+    // Marcar como processado para evitar navegações duplicadas em StrictMode
+    hasProcessedAuthRef.current = true;
+
+    (async () => {
+      // Verificar acesso do usuário para decidir fluxo
+      const { checkUserAccess } = await import("@/hooks/useUserAccess");
+      const access = await checkUserAccess(user.id);
+
+      // Se o usuário é Admin + Líder, mostrar a escolha SEM redirecionar antes
+      if (access.isAdmin && access.isLeader) {
+        setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
+        setShowPortalChoice(true);
+        return;
+      }
+
+      // Se vier de uma rota protegida, respeitar o redirect (com segurança)
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect");
+      if (redirect) {
+        navigate(getSafeRedirect());
+        return;
+      }
+
+      // Caso padrão: direcionamento por perfil
+      if (access.isAdmin) navigate("/cadastros");
+      else if (access.isLeader) navigate("/lideres");
+      else navigate("/");
+    })().catch((err) => {
+      console.error("Erro ao processar acesso pós-login:", err);
+      // Permitir nova tentativa se algo falhar
+      hasProcessedAuthRef.current = false;
+    });
+  }, [user, loading, isRecovery, navigate]);
 
 
   const validateLoginForm = () => {
@@ -390,30 +427,13 @@ const Auth = () => {
       }
 
       if (data.user) {
-        // Importar a função para verificar acesso do usuário
-        const { checkUserAccess } = await import("@/hooks/useUserAccess");
-        const access = await checkUserAccess(data.user.id);
-        
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-        
-        // Se o usuário é Admin E também tem acesso de liderança, mostrar opção de escolha
-        // (liderança pode vir via member_functions OU via user_roles)
-        if (access.isAdmin && access.isLeader) {
-          setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
-          setShowPortalChoice(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Redirecionar automaticamente baseado no perfil
-        if (access.isAdmin) {
-          navigate("/cadastros");
-        } else if (access.isLeader) {
-          navigate("/lideres");
-        } else {
-          // Usuário comum sem permissões especiais
-          navigate("/");
-        }
+
+        // Importante: NÃO navegar aqui.
+        // O useEffect pós-auth faz a checagem de acesso e decide entre:
+        // - mostrar a tela de escolha (Admin+Líder)
+        // - redirecionar para /cadastros, /lideres ou / (ou redirect=...)
+        hasProcessedAuthRef.current = false;
       }
     } catch (err) {
       console.error("Erro no login:", err);
