@@ -54,6 +54,8 @@ interface CasaRefugio {
   longitude: number | null;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
+  supervisor?: { full_name: string } | null;
+  supervisor_esposa?: { full_name: string } | null;
 }
 
 interface GeocodingResult {
@@ -82,7 +84,9 @@ const CasasRefugioTab = () => {
         .select(`
           *,
           lider:members!casas_refugio_lider_id_fkey(full_name),
-          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
+          supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
+          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name)
         `)
         .order("name");
       if (error) throw error;
@@ -200,7 +204,7 @@ const CasasRefugioTab = () => {
                 { header: "Nome", accessor: "name" },
                 { header: "Condomínio", accessor: "condominio" },
                 { header: "Líderes", accessor: (r) => formatLeaderNames(r.lider?.full_name, r.lider_esposa?.full_name) || r.lideres || "-" },
-                { header: "Supervisores", accessor: "supervisores" },
+                { header: "Supervisores", accessor: (r) => formatLeaderNames(r.supervisor?.full_name, r.supervisor_esposa?.full_name, "Supervisor") || r.supervisores || "-" },
                 { header: "Dias", accessor: "dias" },
                 { header: "Frequência", accessor: "frequencia" },
                 { header: "Bairro", accessor: "neighborhood" },

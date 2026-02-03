@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Filter, Settings, User } from "lucide-react";
+import { AdicionarMembroMinisterioDialog } from "./AdicionarMembroMinisterioDialog";
 
 interface MinisterioEquipeTabProps {
   ministryId: string;
