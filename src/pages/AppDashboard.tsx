@@ -149,17 +149,17 @@ const AppDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-56">
-      {/* Header igual à homepage, sem menu de navegação */}
+    <div className="min-h-screen bg-background pt-20">
+      {/* Header compacto */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surfaceInverse text-primary-foreground">
         <div className="container mx-auto px-4">
-          <div className="relative h-56 flex flex-col items-center justify-center">
+          <div className="relative h-20 flex items-center justify-center">
             {/* Logo centralizada */}
             <a href="/" className="flex items-center">
               <img
                 src={logoUrl}
                 alt={igrejaConfig?.nome_fantasia || "Logo"}
-                className="h-44 md:h-48 lg:h-52 object-contain"
+                className="h-14 object-contain"
               />
             </a>
 
