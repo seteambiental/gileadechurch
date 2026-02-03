@@ -101,7 +101,9 @@ export const PortalLideresCasaRefugio = ({
         .select(`
           *,
           lider:members!casas_refugio_lider_id_fkey(full_name),
-          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
+          supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
+          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name)
         `)
         .order("name");
 
@@ -199,11 +201,20 @@ export const PortalLideresCasaRefugio = ({
 
   // Gerar nome dos líderes
   const getLideresNome = (casa: any) => {
-    const nomes = [];
-    if (casa.lider?.full_name) nomes.push(casa.lider.full_name);
-    if (casa.lider_esposa?.full_name) nomes.push(casa.lider_esposa.full_name);
+    const nomes: string[] = [];
+    if (casa.lider?.full_name) nomes.push(casa.lider.full_name.split(" ")[0]);
+    if (casa.lider_esposa?.full_name) nomes.push(casa.lider_esposa.full_name.split(" ")[0]);
     if (nomes.length > 0) return nomes.join(" e ");
     return casa.lideres || "—";
+  };
+
+  // Gerar nome dos supervisores
+  const getSupervisoresNome = (casa: any) => {
+    const nomes: string[] = [];
+    if (casa.supervisor?.full_name) nomes.push(casa.supervisor.full_name.split(" ")[0]);
+    if (casa.supervisor_esposa?.full_name) nomes.push(casa.supervisor_esposa.full_name.split(" ")[0]);
+    if (nomes.length > 0) return nomes.join(" e ");
+    return casa.supervisores || "—";
   };
 
   if (loadingCasas) {
@@ -344,7 +355,7 @@ export const PortalLideresCasaRefugio = ({
                     </div>
                     <div>
                       <span className="text-muted-foreground">Supervisores:</span>{" "}
-                      {casaSelecionada.supervisores || "—"}
+                      {getSupervisoresNome(casaSelecionada)}
                     </div>
                     <div>
                       <span className="text-muted-foreground">Condomínio:</span>{" "}
