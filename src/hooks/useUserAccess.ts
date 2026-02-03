@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-// Tipos de função que têm acesso ao portal de líderes
+// Tipos de função (member_functions.function_type) que têm acesso ao portal de líderes
 const LEADER_FUNCTION_TYPES = [
   "pastor_geral",
   "pastor_auxiliar",
@@ -12,11 +12,24 @@ const LEADER_FUNCTION_TYPES = [
   "integrante_ministerio",
 ];
 
+// Roles (user_roles.role) que também indicam acesso de liderança
+// Obs: em alguns fluxos do app, liderança é modelada como role e não como member_function.
+const LEADER_ROLES = [
+  "lider_ministerio",
+  "integrante_ministerio",
+  "lider_casa_refugio",
+  "supervisor_casa_refugio",
+  "sindico_condominio",
+  "pastor_geral",
+  "pastor_auxiliar",
+];
+
 export interface UserAccess {
   isAdmin: boolean;
   isLeader: boolean;
   roles: string[];
   functions: string[];
+  hasLeaderAccess: boolean;
   loading: boolean;
 }
 
@@ -24,7 +37,14 @@ export const useUserAccess = (userId: string | undefined) => {
   const { data, isLoading } = useQuery({
     queryKey: ["user-access", userId],
     queryFn: async (): Promise<Omit<UserAccess, "loading">> => {
-      if (!userId) return { isAdmin: false, isLeader: false, roles: [], functions: [] };
+      if (!userId)
+        return {
+          isAdmin: false,
+          isLeader: false,
+          roles: [],
+          functions: [],
+          hasLeaderAccess: false,
+        };
 
       // Verificar se é admin na tabela user_roles
       const { data: roleData } = await supabase
@@ -34,6 +54,7 @@ export const useUserAccess = (userId: string | undefined) => {
 
       const roles = roleData?.map((r) => r.role) || [];
       const isAdmin = roles.some((r) => ["admin", "pastor_geral", "pastor_auxiliar"].includes(r));
+      const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
       // Verificar se tem função de liderança na member_functions
       const { data: memberData } = await supabase
@@ -50,12 +71,15 @@ export const useUserAccess = (userId: string | undefined) => {
       }
 
       const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
+      const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
       return {
         isAdmin,
-        isLeader: isAdmin || hasLeaderFunction,
+        // isLeader = acesso ao portal de líderes (não confundir com admin)
+        isLeader: hasLeaderAccess,
         roles,
         functions,
+        hasLeaderAccess,
       };
     },
     enabled: !!userId,
@@ -67,6 +91,7 @@ export const useUserAccess = (userId: string | undefined) => {
     isLeader: data?.isLeader ?? false,
     roles: data?.roles ?? [],
     functions: data?.functions ?? [],
+    hasLeaderAccess: data?.hasLeaderAccess ?? false,
     loading: isLoading,
   };
 };
@@ -81,6 +106,7 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
 
   const roles = roleData?.map((r) => r.role) || [];
   const isAdmin = roles.some((r) => ["admin", "pastor_geral", "pastor_auxiliar"].includes(r));
+  const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
   // Verificar se tem função de liderança na member_functions
   const { data: memberData } = await supabase
@@ -97,11 +123,13 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
   }
 
   const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
+  const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
   return {
     isAdmin,
-    isLeader: isAdmin || hasLeaderFunction,
+    isLeader: hasLeaderAccess,
     roles,
     functions,
+    hasLeaderAccess,
   };
 };

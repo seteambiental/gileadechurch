@@ -396,8 +396,9 @@ const Auth = () => {
         
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
         
-        // Se o usuário é Admin E Líder, mostrar opção de escolha
-        if (access.isAdmin && access.isLeader && access.functions.length > 0) {
+        // Se o usuário é Admin E também tem acesso de liderança, mostrar opção de escolha
+        // (liderança pode vir via member_functions OU via user_roles)
+        if (access.isAdmin && access.isLeader) {
           setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
           setShowPortalChoice(true);
           setIsLoading(false);
