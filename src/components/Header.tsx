@@ -3,26 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, Shield, User } from "lucide-react";
+import { useUserAccess } from "@/hooks/useUserAccess";
+import { Menu, X, Shield, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-
-// Roles que têm acesso ao portal de líderes
-const LEADER_FUNCTION_TYPES = [
-  "pastor_geral",
-  "pastor_auxiliar",
-  "sindico_condominio",
-  "supervisor_condominio",
-  "lider_casa_refugio",
-  "lider_ministerio",
-  "integrante_ministerio",
-];
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Usar o novo hook centralizado para verificar acesso
+  const { isAdmin, isLeader, loading: accessLoading } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -36,42 +29,6 @@ const Header = () => {
       if (error) return null;
       return data;
     },
-  });
-
-  // Verificar se o usuário tem função de liderança
-  const { data: leaderAccess } = useQuery({
-    queryKey: ["header-leader-access", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { isLeader: false, isAdmin: false };
-
-      // Verificar se é admin na tabela user_roles
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .in("role", ["admin", "pastor_geral", "pastor_auxiliar"]);
-
-      if (roleData && roleData.length > 0) {
-        return { isLeader: true, isAdmin: true };
-      }
-
-      // Verificar se tem função de liderança na member_functions
-      const { data: memberData } = await supabase
-        .from("members")
-        .select("id, member_functions(function_type)")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (memberData?.member_functions) {
-        const hasLeaderFunction = memberData.member_functions.some((fn: { function_type: string }) =>
-          LEADER_FUNCTION_TYPES.includes(fn.function_type)
-        );
-        return { isLeader: hasLeaderFunction, isAdmin: false };
-      }
-
-      return { isLeader: false, isAdmin: false };
-    },
-    enabled: !!user?.id,
   });
 
   useEffect(() => {
@@ -132,7 +89,7 @@ const Header = () => {
             
             {user ? (
               <div className="flex items-center gap-2 ml-4">
-                {leaderAccess?.isAdmin && (
+                {isAdmin && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -143,23 +100,14 @@ const Header = () => {
                     Admin
                   </Button>
                 )}
-                {leaderAccess?.isLeader && (
+                {isLeader && (
                   <Button
                     variant="secondary"
                     className="font-heading font-semibold shadow-red"
                     onClick={() => navigate("/lideres")}
                   >
+                    <Users className="w-4 h-4 mr-1" />
                     Portal de Líderes
-                  </Button>
-                )}
-                {!leaderAccess?.isLeader && (
-                  <Button
-                    variant="secondary"
-                    className="font-heading font-semibold shadow-red"
-                    onClick={() => navigate("/portal")}
-                  >
-                    <User className="w-4 h-4 mr-1" />
-                    Meu Portal
                   </Button>
                 )}
               </div>
@@ -193,7 +141,7 @@ const Header = () => {
                 
                 {user ? (
                   <div className="flex flex-col gap-2 mt-2">
-                    {leaderAccess?.isAdmin && (
+                    {isAdmin && (
                       <Button
                         variant="outline"
                         className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground"
@@ -206,7 +154,7 @@ const Header = () => {
                         Administração
                       </Button>
                     )}
-                    {leaderAccess?.isLeader && (
+                    {isLeader && (
                       <Button
                         variant="secondary"
                         className="font-heading font-semibold shadow-red"
@@ -215,20 +163,8 @@ const Header = () => {
                           navigate("/lideres");
                         }}
                       >
+                        <Users className="w-4 h-4 mr-2" />
                         Portal de Líderes
-                      </Button>
-                    )}
-                    {!leaderAccess?.isLeader && (
-                      <Button
-                        variant="secondary"
-                        className="font-heading font-semibold shadow-red"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          navigate("/portal");
-                        }}
-                      >
-                        <User className="w-4 h-4 mr-2" />
-                        Meu Portal
                       </Button>
                     )}
                   </div>

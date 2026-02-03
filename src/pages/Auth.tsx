@@ -361,25 +361,70 @@ const Auth = () => {
     }
   };
 
+  // Estado para controle de seleção de portal
+  const [showPortalChoice, setShowPortalChoice] = useState(false);
+  const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean } | null>(null);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateLoginForm()) return;
 
     setIsLoading(true);
     try {
-      const { error } = await signIn(email, password);
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
           toast({ variant: "destructive", title: "Erro ao entrar", description: "Email ou senha incorretos." });
         } else {
           toast({ variant: "destructive", title: "Erro ao entrar", description: error.message });
         }
-      } else {
-        toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
-        navigate(redirectTo);
+        return;
       }
+
+      if (data.user) {
+        // Importar a função para verificar acesso do usuário
+        const { checkUserAccess } = await import("@/hooks/useUserAccess");
+        const access = await checkUserAccess(data.user.id);
+        
+        toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+        
+        // Se o usuário é Admin E Líder, mostrar opção de escolha
+        if (access.isAdmin && access.isLeader && access.functions.length > 0) {
+          setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
+          setShowPortalChoice(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Redirecionar automaticamente baseado no perfil
+        if (access.isAdmin) {
+          navigate("/cadastros");
+        } else if (access.isLeader) {
+          navigate("/lideres");
+        } else {
+          // Usuário comum sem permissões especiais
+          navigate("/");
+        }
+      }
+    } catch (err) {
+      console.error("Erro no login:", err);
+      toast({ variant: "destructive", title: "Erro", description: "Ocorreu um erro ao fazer login." });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePortalChoice = (portal: "admin" | "lideres") => {
+    setShowPortalChoice(false);
+    setPendingUserAccess(null);
+    if (portal === "admin") {
+      navigate("/cadastros");
+    } else {
+      navigate("/lideres");
     }
   };
 
@@ -649,6 +694,47 @@ const Auth = () => {
     );
   }
 
+  // Portal choice modal (for users with both Admin and Leader roles)
+  if (showPortalChoice) {
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full overflow-hidden shadow-red">
+              <img src={logoGileade} alt="Gileade Church" className="w-full h-full object-cover" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                Escolha seu Portal
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Você possui múltiplos acessos. Escolha onde deseja entrar:
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              className="w-full h-16 text-lg"
+              variant="secondary"
+              onClick={() => handlePortalChoice("admin")}
+            >
+              <Church className="w-6 h-6 mr-3" />
+              Portal de Administração
+            </Button>
+            <Button
+              className="w-full h-16 text-lg"
+              variant="outline"
+              onClick={() => handlePortalChoice("lideres")}
+            >
+              <Baby className="w-6 h-6 mr-3" />
+              Portal de Líderes
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Login form
   if (isLogin) {
     return (
@@ -660,12 +746,10 @@ const Auth = () => {
             </div>
             <div>
               <CardTitle className="font-heading text-2xl text-foreground">
-                {redirectTo === "/portal" ? "Portal do Membro" : "Entrar no App"}
+                Entrar
               </CardTitle>
               <CardDescription className="text-muted-foreground mt-2">
-                {redirectTo === "/portal"
-                  ? "Entre com seu email e senha para acessar sua área."
-                  : "Acesse os ministérios da Gileade Church"}
+                Acesse os ministérios da Gileade Church
               </CardDescription>
             </div>
           </CardHeader>
