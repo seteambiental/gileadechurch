@@ -57,7 +57,15 @@ const CasaRefugioDetalhes = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casas_refugio")
-        .select("*")
+        .select(`
+          *,
+          supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
+          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name),
+          lider:members!casas_refugio_lider_id_fkey(full_name),
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
+          anfitriao:members!casas_refugio_anfitriao_id_fkey(full_name),
+          anfitriao_esposa:members!casas_refugio_anfitriao_esposa_id_fkey(full_name)
+        `)
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -321,11 +329,20 @@ const CasaRefugioDetalhes = () => {
               </div>
               <div>
                 <h2 className="font-bold text-foreground">{casa.name}</h2>
-                <p className="text-sm text-muted-foreground">{casa.lideres}</p>
+                <p className="text-sm text-muted-foreground">
+                  {[casa.lider?.full_name, casa.lider_esposa?.full_name].filter(Boolean).join(" e ") || casa.lideres || "—"}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-muted-foreground">Anfitriões:</span> {casa.anfitrioes || "—"}</div>
+              <div>
+                <span className="text-muted-foreground">Anfitriões: </span>
+                {[casa.anfitriao?.full_name, casa.anfitriao_esposa?.full_name].filter(Boolean).join(" e ") || casa.anfitrioes || "—"}
+              </div>
+              <div>
+                <span className="text-muted-foreground">Supervisores: </span>
+                {[casa.supervisor?.full_name, casa.supervisor_esposa?.full_name].filter(Boolean).join(" e ") || casa.supervisores || "—"}
+              </div>
               <div><span className="text-muted-foreground">Dias:</span> {casa.dias || "—"}</div>
               <div><span className="text-muted-foreground">Frequência:</span> {casa.frequencia || "—"}</div>
             </div>
