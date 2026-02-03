@@ -68,7 +68,7 @@ const Auth = () => {
   const [preCheckPassed, setPreCheckPassed] = useState(false);
   const [preCheckName, setPreCheckName] = useState("");
   const [preCheckBirthDate, setPreCheckBirthDate] = useState("");
-  const [preCheckEstadoCivil, setPreCheckEstadoCivil] = useState<"solteiro" | "casado" | "viuvo" | "">("");
+  const [preCheckEstadoCivil, setPreCheckEstadoCivil] = useState<"solteiro" | "casado" | "viuvo" | "divorciado" | "uniao_estavel" | "">("");
   const [preCheckGenero, setPreCheckGenero] = useState<"masculino" | "feminino" | "">("");
   const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
   const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
@@ -1301,7 +1301,7 @@ const Auth = () => {
                         <Label>Estado Civil *</Label>
                         <Select
                           value={preCheckEstadoCivil}
-                          onValueChange={(v) => setPreCheckEstadoCivil(v as "solteiro" | "casado" | "viuvo")}
+                          onValueChange={(v) => setPreCheckEstadoCivil(v as "solteiro" | "casado" | "viuvo" | "divorciado" | "uniao_estavel")}
                         >
                           <SelectTrigger className={errors.preCheckEstadoCivil ? "border-destructive" : ""}>
                             <SelectValue placeholder="Selecione" />
@@ -1309,7 +1309,9 @@ const Auth = () => {
                           <SelectContent>
                             <SelectItem value="solteiro">Solteiro(a)</SelectItem>
                             <SelectItem value="casado">Casado(a)</SelectItem>
+                            <SelectItem value="uniao_estavel">União Estável</SelectItem>
                             <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                            <SelectItem value="divorciado">Divorciado(a)</SelectItem>
                           </SelectContent>
                         </Select>
                         {errors.preCheckEstadoCivil && <p className="text-sm text-destructive">{errors.preCheckEstadoCivil}</p>}
