@@ -55,7 +55,19 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  lider_id?: string | null;
+  lider_esposa_id?: string | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
+
+// Função para obter primeiro e último nome
+const getFirstLastName = (fullName: string): string => {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(" ");
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+};
 
 interface RecognizedPerson {
   id: string;
@@ -662,6 +674,22 @@ export const EncontroFormDialog = ({
               </div>
             )}
 
+            {/* Líderes da Casa Refúgio - do cadastro */}
+            {(casa?.lider || casa?.lider_esposa) && (
+              <div className="p-3 bg-secondary/10 rounded-lg border border-secondary/20">
+                <span className="text-sm font-medium text-secondary flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4" />
+                  Líderes da Casa Refúgio
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  {[
+                    casa.lider?.full_name ? getFirstLastName(casa.lider.full_name) : null,
+                    casa.lider_esposa?.full_name ? getFirstLastName(casa.lider_esposa.full_name) : null
+                  ].filter(Boolean).join(" e ")}
+                </p>
+              </div>
+            )}
+
             {/* Participantes */}
             <div className="space-y-3">
               <span className="text-sm font-medium flex items-center gap-2">
@@ -870,7 +898,7 @@ export const EncontroFormDialog = ({
                         )}
                         
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{membro.full_name}</p>
+                          <p className="text-xs font-medium truncate">{getFirstLastName(membro.full_name)}</p>
                           <div className="flex items-center gap-1">
                             {isLider && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">

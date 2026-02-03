@@ -51,6 +51,26 @@ export const acaoLabels: Record<string, string> = {
   alterar: "Alterar",
 };
 
+// Tipos de perfis que não precisam de aprovação
+export const PERFIS_SEM_APROVACAO = ["pastor_geral", "pastor_auxiliar", "admin"];
+
+// Função para verificar se um membro tem perfil que dispensa aprovação
+export async function isPerfilSemAprovacao(memberId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("member_functions")
+    .select("function_type")
+    .eq("member_id", memberId);
+  
+  if (!data) return false;
+  
+  return data.some(fn => PERFIS_SEM_APROVACAO.includes(fn.function_type));
+}
+
+// Função síncrona para verificar por function_types já carregados
+export function hasPerfilSemAprovacao(functionTypes: string[]): boolean {
+  return functionTypes.some(ft => PERFIS_SEM_APROVACAO.includes(ft));
+}
+
 interface CreateMudancaParams {
   solicitante_id: string;
   aprovador_id: string;

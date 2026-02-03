@@ -752,7 +752,9 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                             <SelectContent>
                               <SelectItem value="solteiro">Solteiro(a)</SelectItem>
                               <SelectItem value="casado">Casado(a)</SelectItem>
+                              <SelectItem value="uniao_estavel">União Estável</SelectItem>
                               <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                              <SelectItem value="divorciado">Divorciado(a)</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

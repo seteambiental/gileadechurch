@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAprovadorId, useMudancasPendentes } from "@/hooks/useMudancasPendentes";
+import { getAprovadorId, useMudancasPendentes, hasPerfilSemAprovacao } from "@/hooks/useMudancasPendentes";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +28,13 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MemberSelect } from "@/components/ui/member-select";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -38,6 +45,24 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast as sonnerToast } from "sonner";
+
+// Opções de dias da semana
+const DIAS_SEMANA = [
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+  "Domingo",
+];
+
+// Opções de frequência
+const FREQUENCIAS = [
+  "Semanal",
+  "Quinzenal",
+  "Mensal",
+];
 
 const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -108,14 +133,14 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [formDataToSave, setFormDataToSave] = useState<FormData | null>(null);
 
-  // Buscar o membro vinculado ao usuário atual
+  // Buscar o membro vinculado ao usuário atual e suas funções
   const { data: currentMember } = useQuery({
-    queryKey: ["current-member", user?.id],
+    queryKey: ["current-member-with-functions", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name")
+        .select("id, full_name, member_functions(function_type)")
         .eq("user_id", user.id)
         .single();
       if (error) return null;
@@ -123,6 +148,24 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     },
     enabled: !!user?.id,
   });
+
+  // Buscar lista de condomínios para o dropdown
+  const { data: condominios = [] } = useQuery({
+    queryKey: ["condominios-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("condominios")
+        .select("id, name")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open,
+  });
+
+  // Verificar se o usuário atual tem perfil que dispensa aprovação
+  const currentMemberFunctionTypes = currentMember?.member_functions?.map((f: any) => f.function_type) || [];
+  const skipApproval = hasPerfilSemAprovacao(currentMemberFunctionTypes);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -285,13 +328,15 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
   const handleSubmit = async (data: FormData) => {
     const leadershipChanges = checkLeadershipChanges(data);
 
-    if (leadershipChanges.length > 0) {
+    // Se tem perfil sem aprovação (pastor geral, auxiliar, admin), salva direto
+    if (skipApproval || leadershipChanges.length === 0) {
+      // Save directly without approval
+      saveDirectMutation.mutate(data);
+    } else {
+      // Precisa de aprovação
       setPendingApprovals(leadershipChanges);
       setFormDataToSave(data);
       setShowApprovalDialog(true);
-    } else {
-      // No leadership changes, save directly
-      saveDirectMutation.mutate(data);
     }
   };
 
@@ -487,9 +532,20 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Condomínio</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Nome do condomínio" />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o condomínio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {condominios.map((cond) => (
+                            <SelectItem key={cond.id} value={cond.name}>
+                              {cond.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -543,9 +599,20 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Dias da Casa Refúgio</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: Quinta-feira" />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o dia" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {DIAS_SEMANA.map((dia) => (
+                            <SelectItem key={dia} value={dia}>
+                              {dia}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -558,9 +625,20 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Frequência</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Ex: Semanal, Quinzenal" />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione a frequência" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {FREQUENCIAS.map((freq) => (
+                            <SelectItem key={freq} value={freq}>
+                              {freq}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
