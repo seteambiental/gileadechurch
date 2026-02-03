@@ -7,6 +7,7 @@ const LEADER_FUNCTION_TYPES = [
   "pastor_auxiliar",
   "sindico_condominio",
   "supervisor_condominio",
+  "supervisor_casa_refugio",
   "lider_casa_refugio",
   "lider_ministerio",
   "integrante_ministerio",
@@ -19,7 +20,9 @@ const LEADER_ROLES = [
   "integrante_ministerio",
   "lider_casa_refugio",
   "supervisor_casa_refugio",
+  "lider_condominio",
   "sindico_condominio",
+  "supervisor_condominio",
   "pastor_geral",
   "pastor_auxiliar",
 ];
