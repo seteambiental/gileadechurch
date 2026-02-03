@@ -22,6 +22,7 @@ import InscricaoEvento from "./pages/InscricaoEvento";
 import KidsPage from "./pages/KidsPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
+import PortalLideres from "./pages/PortalLideres";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/app" element={<AppDashboard />} />
             <Route path="/app/homepage" element={<HomepageAdmin />} />
             <Route path="/portal" element={<PortalMembro />} />
+            <Route path="/lideres" element={<PortalLideres />} />
             <Route path="/cadastros" element={<Cadastros />} />
             <Route path="/membro/:id" element={<MemberDetails />} />
             <Route path="/ministerio/casas-refugio" element={<CasasRefugioPage />} />

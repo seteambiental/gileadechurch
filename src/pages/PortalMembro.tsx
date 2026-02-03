@@ -226,12 +226,27 @@ const PortalMembro = () => {
       {/* Footer */}
       <footer className="py-8 border-t border-border">
         <div className="container mx-auto px-4 text-center">
-          <button
-            onClick={() => navigate("/")}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Voltar para a homepage
-          </button>
+          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+            {(portalAccess?.role === "lider_ministerio" ||
+              portalAccess?.role === "lider_casa_refugio" ||
+              portalAccess?.role === "sindico_condominio" ||
+              portalAccess?.role === "supervisor_condominio" ||
+              portalAccess?.role === "pastor_geral" ||
+              portalAccess?.role === "pastor_auxiliar") && (
+              <button
+                onClick={() => navigate("/lideres")}
+                className="hover:text-foreground font-medium text-secondary"
+              >
+                Portal de Líderes →
+              </button>
+            )}
+            <button
+              onClick={() => navigate("/")}
+              className="hover:text-foreground"
+            >
+              ← Voltar para a homepage
+            </button>
+          </div>
         </div>
       </footer>
     </div>
