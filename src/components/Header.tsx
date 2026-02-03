@@ -1,13 +1,28 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Menu, X, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+
+// Roles que têm acesso ao portal de líderes
+const LEADER_FUNCTION_TYPES = [
+  "pastor_geral",
+  "pastor_auxiliar",
+  "sindico_condominio",
+  "supervisor_condominio",
+  "lider_casa_refugio",
+  "lider_ministerio",
+  "integrante_ministerio",
+];
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -21,6 +36,42 @@ const Header = () => {
       if (error) return null;
       return data;
     },
+  });
+
+  // Verificar se o usuário tem função de liderança
+  const { data: leaderAccess } = useQuery({
+    queryKey: ["header-leader-access", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { isLeader: false, isAdmin: false };
+
+      // Verificar se é admin na tabela user_roles
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["admin", "pastor_geral", "pastor_auxiliar"]);
+
+      if (roleData && roleData.length > 0) {
+        return { isLeader: true, isAdmin: true };
+      }
+
+      // Verificar se tem função de liderança na member_functions
+      const { data: memberData } = await supabase
+        .from("members")
+        .select("id, member_functions(function_type)")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (memberData?.member_functions) {
+        const hasLeaderFunction = memberData.member_functions.some((fn: { function_type: string }) =>
+          LEADER_FUNCTION_TYPES.includes(fn.function_type)
+        );
+        return { isLeader: hasLeaderFunction, isAdmin: false };
+      }
+
+      return { isLeader: false, isAdmin: false };
+    },
+    enabled: !!user?.id,
   });
 
   useEffect(() => {
@@ -78,13 +129,49 @@ const Header = () => {
                 {item.label}
               </a>
             ))}
-            <Button
-              variant="secondary"
-              className="font-heading font-semibold shadow-red ml-4"
-              onClick={() => (window.location.href = "/auth")}
-            >
-              Entrar
-            </Button>
+            
+            {user ? (
+              <div className="flex items-center gap-2 ml-4">
+                {leaderAccess?.isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    onClick={() => navigate("/cadastros")}
+                  >
+                    <Shield className="w-4 h-4 mr-1" />
+                    Admin
+                  </Button>
+                )}
+                {leaderAccess?.isLeader && (
+                  <Button
+                    variant="secondary"
+                    className="font-heading font-semibold shadow-red"
+                    onClick={() => navigate("/lideres")}
+                  >
+                    Portal de Líderes
+                  </Button>
+                )}
+                {!leaderAccess?.isLeader && (
+                  <Button
+                    variant="secondary"
+                    className="font-heading font-semibold shadow-red"
+                    onClick={() => navigate("/portal")}
+                  >
+                    <User className="w-4 h-4 mr-1" />
+                    Meu Portal
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Button
+                variant="secondary"
+                className="font-heading font-semibold shadow-red ml-4"
+                onClick={() => navigate("/auth")}
+              >
+                Entrar
+              </Button>
+            )}
           </nav>
         </div>
 
@@ -103,13 +190,60 @@ const Header = () => {
                     {item.label}
                   </a>
                 ))}
-                <Button
-                  variant="secondary"
-                  className="mt-2 font-heading font-semibold shadow-red"
-                  onClick={() => (window.location.href = "/auth")}
-                >
-                  Entrar
-                </Button>
+                
+                {user ? (
+                  <div className="flex flex-col gap-2 mt-2">
+                    {leaderAccess?.isAdmin && (
+                      <Button
+                        variant="outline"
+                        className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate("/cadastros");
+                        }}
+                      >
+                        <Shield className="w-4 h-4 mr-2" />
+                        Administração
+                      </Button>
+                    )}
+                    {leaderAccess?.isLeader && (
+                      <Button
+                        variant="secondary"
+                        className="font-heading font-semibold shadow-red"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate("/lideres");
+                        }}
+                      >
+                        Portal de Líderes
+                      </Button>
+                    )}
+                    {!leaderAccess?.isLeader && (
+                      <Button
+                        variant="secondary"
+                        className="font-heading font-semibold shadow-red"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          navigate("/portal");
+                        }}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Meu Portal
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    className="mt-2 font-heading font-semibold shadow-red"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate("/auth");
+                    }}
+                  >
+                    Entrar
+                  </Button>
+                )}
               </div>
             </div>
           </nav>
