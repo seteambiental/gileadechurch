@@ -453,21 +453,11 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         if (funcError) throw funcError;
       }
 
-      // Criar usuário do sistema automaticamente
-      if (data.criar_usuario && data.email) {
+      // Criar usuário do sistema automaticamente se tiver email (novo membro ou membro sem user_id)
+      const shouldCreateUser = data.email && (!member || !member.user_id);
+      
+      if (shouldCreateUser) {
         try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const session = sessionData.session;
-
-          // Se estiver usando bypass ou o usuário não estiver autenticado, não existe JWT válido
-          if (!session?.access_token) {
-            return {
-              criarUsuario: true,
-              erroUsuario: true,
-              erroUsuarioMsg: "Para criar usuário do sistema, é necessário estar logado.",
-            };
-          }
-
           const { data: result, error: funcError } = await supabase.functions.invoke(
             "criar-usuario-membro",
             {
@@ -482,7 +472,12 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
           if (funcError) {
             console.error("Erro ao criar usuário:", funcError);
-            throw new Error(funcError.message || "Erro ao criar usuário no sistema");
+            // Não impede o cadastro do membro
+            return {
+              criarUsuario: true,
+              erroUsuario: true,
+              erroUsuarioMsg: funcError.message || "Erro ao criar usuário no sistema",
+            };
           }
 
           return {
