@@ -326,7 +326,6 @@ const CasaRefugioDetalhes = () => {
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><span className="text-muted-foreground">Anfitriões:</span> {casa.anfitrioes || "—"}</div>
-              <div><span className="text-muted-foreground">Supervisores:</span> {casa.supervisores || "—"}</div>
               <div><span className="text-muted-foreground">Dias:</span> {casa.dias || "—"}</div>
               <div><span className="text-muted-foreground">Frequência:</span> {casa.frequencia || "—"}</div>
             </div>
@@ -349,89 +348,53 @@ const CasaRefugioDetalhes = () => {
           onClear={clearFilters}
         />
 
-        {/* Indicadores de Membros Vinculados */}
-        <div>
-          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Membros Vinculados
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            <Card className="bg-card border-border">
-              <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{membrosVinculadosStats.total}</p>
-                <p className="text-xs text-muted-foreground">Total</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border">
-              <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-2xl font-bold text-green-600">{membrosVinculadosStats.adultos}</p>
-                <p className="text-xs text-muted-foreground">Adultos</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-card border-border">
-              <CardContent className="pt-4 pb-4 text-center">
-                <p className="text-2xl font-bold text-amber-600">{membrosVinculadosStats.criancas}</p>
-                <p className="text-xs text-muted-foreground">Crianças</p>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Indicators */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="bg-card border-border">
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold text-foreground">{totalEncontros}</p>
+              <p className="text-xs text-muted-foreground">Encontros</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold text-foreground">{mediaPessoas}</p>
+              <p className="text-xs text-muted-foreground">Média/Encontro</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold text-foreground">{totalKilos}</p>
+              <p className="text-xs text-muted-foreground">Kilos Total</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border">
+            <CardContent className="pt-4 pb-4 text-center">
+              <p className="text-2xl font-bold text-foreground">R$ {totalOfertas.toFixed(2).replace(".", ",")}</p>
+              <p className="text-xs text-muted-foreground">Ofertas Total</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Indicadores de Encontros (Relatórios) */}
-        {filteredEncontros.length > 0 && (
-          <div>
-            <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Estatísticas dos Encontros
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Card className="bg-card border-border">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">{totalEncontros}</p>
-                  <p className="text-xs text-muted-foreground">Encontros</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">{mediaPessoas}</p>
-                  <p className="text-xs text-muted-foreground">Média/Encontro</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">{totalKilos}</p>
-                  <p className="text-xs text-muted-foreground">Kilos Total</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold text-foreground">R$ {totalOfertas.toFixed(2).replace(".", ",")}</p>
-                  <p className="text-xs text-muted-foreground">Ofertas Total</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Breakdown por tipo de participante */}
-            <div className="grid grid-cols-4 gap-2 mt-3">
-              <div className="bg-blue-500/10 rounded-lg p-3 text-center">
-                <p className="text-lg font-bold text-blue-600">{totalLideres}</p>
-                <p className="text-xs text-muted-foreground">Líderes</p>
-              </div>
-              <div className="bg-green-500/10 rounded-lg p-3 text-center">
-                <p className="text-lg font-bold text-green-600">{totalMembros}</p>
-                <p className="text-xs text-muted-foreground">Membros</p>
-              </div>
-              <div className="bg-amber-500/10 rounded-lg p-3 text-center">
-                <p className="text-lg font-bold text-amber-600">{totalCriancas}</p>
-                <p className="text-xs text-muted-foreground">Crianças</p>
-              </div>
-              <div className="bg-purple-500/10 rounded-lg p-3 text-center">
-                <p className="text-lg font-bold text-purple-600">{totalVisitantes}</p>
-                <p className="text-xs text-muted-foreground">Visitantes</p>
-              </div>
-            </div>
+        {/* Breakdown */}
+        <div className="grid grid-cols-4 gap-2">
+          <div className="bg-blue-500/10 rounded-lg p-3 text-center">
+            <p className="text-lg font-bold text-blue-600">{totalLideres}</p>
+            <p className="text-xs text-muted-foreground">Líderes</p>
           </div>
-        )}
+          <div className="bg-green-500/10 rounded-lg p-3 text-center">
+            <p className="text-lg font-bold text-green-600">{totalMembros}</p>
+            <p className="text-xs text-muted-foreground">Membros</p>
+          </div>
+          <div className="bg-amber-500/10 rounded-lg p-3 text-center">
+            <p className="text-lg font-bold text-amber-600">{totalCriancas}</p>
+            <p className="text-xs text-muted-foreground">Crianças</p>
+          </div>
+          <div className="bg-purple-500/10 rounded-lg p-3 text-center">
+            <p className="text-lg font-bold text-purple-600">{totalVisitantes}</p>
+            <p className="text-xs text-muted-foreground">Visitantes</p>
+          </div>
+        </div>
 
         {/* Membros Vinculados */}
         {id && casa && (
