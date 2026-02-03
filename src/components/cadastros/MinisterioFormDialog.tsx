@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { formatNameField } from "@/lib/text-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { getAprovadorId, useMudancasPendentes } from "@/hooks/useMudancasPendentes";
+import { getAprovadorId, useMudancasPendentes, hasRoleSemAprovacao } from "@/hooks/useMudancasPendentes";
+import { useUserAccess } from "@/hooks/useUserAccess";
 import {
   Dialog,
   DialogContent,
@@ -85,10 +86,14 @@ const MinisterioFormDialog = ({
   isSaving,
 }: MinisterioFormDialogProps) => {
   const { user } = useAuth();
+  const { isAdmin, roles } = useUserAccess(user?.id);
   const { createMudanca, isCreating } = useMudancasPendentes();
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [formDataToSave, setFormDataToSave] = useState<FormData | null>(null);
+
+  // Verifica se o usuário pode fazer alterações sem aprovação
+  const canBypassApproval = isAdmin || hasRoleSemAprovacao(roles);
 
   // Buscar o membro vinculado ao usuário atual
   const { data: currentMember } = useQuery({
@@ -137,6 +142,17 @@ const MinisterioFormDialog = ({
   }, [item, open, form]);
 
   const handleSubmit = async (data: FormData) => {
+    // Se o usuário tem permissão para bypass, salvar diretamente
+    if (canBypassApproval) {
+      onSave({
+        name: formatNameField(data.name),
+        description: data.description || "",
+        lider_id: data.lider_id || null,
+        lider_esposa_id: data.lider_esposa_id || null,
+      });
+      return;
+    }
+
     // Check for leadership changes that need approval
     const leadershipChanges: PendingApproval[] = [];
 
