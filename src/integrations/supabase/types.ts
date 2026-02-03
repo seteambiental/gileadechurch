@@ -1203,6 +1203,8 @@ export type Database = {
           kilos_arrecadados: number | null
           observacoes: string | null
           ofertas: number | null
+          ofertas_dinheiro: number | null
+          ofertas_pix: number | null
           photo_url: string | null
           qtd_criancas: number
           qtd_lideres: number
@@ -1218,6 +1220,8 @@ export type Database = {
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
+          ofertas_dinheiro?: number | null
+          ofertas_pix?: number | null
           photo_url?: string | null
           qtd_criancas?: number
           qtd_lideres?: number
@@ -1233,6 +1237,8 @@ export type Database = {
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
+          ofertas_dinheiro?: number | null
+          ofertas_pix?: number | null
           photo_url?: string | null
           qtd_criancas?: number
           qtd_lideres?: number

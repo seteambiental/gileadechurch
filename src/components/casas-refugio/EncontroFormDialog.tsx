@@ -34,7 +34,8 @@ const formSchema = z.object({
   qtd_criancas: z.coerce.number().min(0, "Valor inválido"),
   qtd_visitantes: z.coerce.number().min(0, "Valor inválido"),
   kilos_arrecadados: z.coerce.number().min(0, "Valor inválido"),
-  ofertas: z.string().optional(),
+  ofertas_dinheiro: z.string().optional(),
+  ofertas_pix: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -98,6 +99,8 @@ interface Encontro {
   qtd_visitantes: number;
   kilos_arrecadados: number | null;
   ofertas: number | null;
+  ofertas_dinheiro: number | null;
+  ofertas_pix: number | null;
   observacoes: string | null;
   photo_url: string | null;
 }
@@ -164,7 +167,8 @@ export const EncontroFormDialog = ({
       qtd_criancas: 0,
       qtd_visitantes: 0,
       kilos_arrecadados: 0,
-      ofertas: "",
+      ofertas_dinheiro: "",
+      ofertas_pix: "",
       observacoes: "",
     },
   });
@@ -173,8 +177,11 @@ export const EncontroFormDialog = ({
     if (open) {
       if (editingEncontro) {
         // Load existing data for editing
-        const ofertasValue = editingEncontro.ofertas 
-          ? Number(editingEncontro.ofertas).toFixed(2).replace(".", ",")
+        const ofertasDinheiroValue = editingEncontro.ofertas_dinheiro 
+          ? Number(editingEncontro.ofertas_dinheiro).toFixed(2).replace(".", ",")
+          : "";
+        const ofertasPixValue = editingEncontro.ofertas_pix 
+          ? Number(editingEncontro.ofertas_pix).toFixed(2).replace(".", ",")
           : "";
         form.reset({
           data_encontro: editingEncontro.data_encontro,
@@ -183,7 +190,8 @@ export const EncontroFormDialog = ({
           qtd_criancas: editingEncontro.qtd_criancas || 0,
           qtd_visitantes: editingEncontro.qtd_visitantes || 0,
           kilos_arrecadados: editingEncontro.kilos_arrecadados || 0,
-          ofertas: ofertasValue,
+          ofertas_dinheiro: ofertasDinheiroValue,
+          ofertas_pix: ofertasPixValue,
           observacoes: editingEncontro.observacoes || "",
         });
         if (editingEncontro.photo_url) {
@@ -197,7 +205,8 @@ export const EncontroFormDialog = ({
           qtd_criancas: 0,
           qtd_visitantes: 0,
           kilos_arrecadados: 0,
-          ofertas: "",
+          ofertas_dinheiro: "",
+          ofertas_pix: "",
           observacoes: "",
         });
         setPhoto(null);
@@ -358,9 +367,13 @@ export const EncontroFormDialog = ({
       }
 
       // Parse ofertas from formatted string to number
-      const ofertasValue = data.ofertas 
-        ? parseFloat(data.ofertas.replace(/\./g, "").replace(",", ".")) 
+      const ofertasDinheiroValue = data.ofertas_dinheiro 
+        ? parseFloat(data.ofertas_dinheiro.replace(/\./g, "").replace(",", ".")) 
         : 0;
+      const ofertasPixValue = data.ofertas_pix 
+        ? parseFloat(data.ofertas_pix.replace(/\./g, "").replace(",", ".")) 
+        : 0;
+      const ofertasTotalValue = ofertasDinheiroValue + ofertasPixValue;
 
       const payload = {
         data_encontro: data.data_encontro,
@@ -369,7 +382,9 @@ export const EncontroFormDialog = ({
         qtd_criancas: data.qtd_criancas,
         qtd_visitantes: data.qtd_visitantes,
         kilos_arrecadados: data.kilos_arrecadados,
-        ofertas: ofertasValue,
+        ofertas: ofertasTotalValue,
+        ofertas_dinheiro: ofertasDinheiroValue,
+        ofertas_pix: ofertasPixValue,
         observacoes: data.observacoes || null,
         photo_url: photoUrl,
       };
@@ -794,7 +809,12 @@ export const EncontroFormDialog = ({
             </div>
 
             {/* Arrecadação */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-3">
+              <span className="text-sm font-medium flex items-center gap-2">
+                <DollarSign className="w-4 h-4" />
+                Arrecadação
+              </span>
+              
               <FormField
                 control={form.control}
                 name="kilos_arrecadados"
@@ -820,29 +840,63 @@ export const EncontroFormDialog = ({
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="ofertas"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs flex items-center gap-1">
-                      <DollarSign className="w-3 h-3" />
-                      Ofertas (R$)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="0,00"
-                        value={field.value}
-                        onChange={(e) => handleOfertasInput(e, field.onChange)}
-                        className="[appearance:textfield]"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-3 gap-3">
+                <FormField
+                  control={form.control}
+                  name="ofertas_dinheiro"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Dinheiro (R$)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0,00"
+                          value={field.value}
+                          onChange={(e) => handleOfertasInput(e, field.onChange)}
+                          className="[appearance:textfield]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="ofertas_pix"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Pix (R$)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0,00"
+                          value={field.value}
+                          onChange={(e) => handleOfertasInput(e, field.onChange)}
+                          className="[appearance:textfield]"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Total (R$)</label>
+                  <div className="h-10 px-3 py-2 rounded-md border border-input bg-muted/50 flex items-center text-sm font-medium">
+                    {(() => {
+                      const dinheiro = form.watch("ofertas_dinheiro") || "";
+                      const pix = form.watch("ofertas_pix") || "";
+                      const dinheiroValue = dinheiro ? parseFloat(dinheiro.replace(/\./g, "").replace(",", ".")) : 0;
+                      const pixValue = pix ? parseFloat(pix.replace(/\./g, "").replace(",", ".")) : 0;
+                      const total = dinheiroValue + pixValue;
+                      return total > 0 ? total.toFixed(2).replace(".", ",") : "0,00";
+                    })()}
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Lista de Presença dos Membros */}
