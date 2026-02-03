@@ -60,7 +60,7 @@ Seu cadastro foi realizado com sucesso! 🙏
 📧 Email: ${email}
 🔑 Senha: ${senha}
 
-⚠️ *Importante:* Sua senha são os 6 primeiros dígitos do seu CPF. Recomendamos que você altere sua senha no primeiro acesso.
+⚠️ *Importante:* Recomendamos que você altere sua senha no primeiro acesso.
 
 Estamos muito felizes em ter você conosco!
 
