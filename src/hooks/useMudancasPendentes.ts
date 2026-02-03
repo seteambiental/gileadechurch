@@ -51,8 +51,11 @@ export const acaoLabels: Record<string, string> = {
   alterar: "Alterar",
 };
 
-// Tipos de perfis que não precisam de aprovação
-export const PERFIS_SEM_APROVACAO = ["pastor_geral", "pastor_auxiliar", "admin"];
+// Tipos de perfis que não precisam de aprovação (function_types)
+export const FUNCTION_TYPES_SEM_APROVACAO = ["pastor_geral", "pastor_auxiliar"];
+
+// Roles que não precisam de aprovação (user_roles)
+export const ROLES_SEM_APROVACAO = ["admin", "pastor_geral", "pastor_auxiliar"];
 
 // Função para verificar se um membro tem perfil que dispensa aprovação
 export async function isPerfilSemAprovacao(memberId: string): Promise<boolean> {
@@ -63,12 +66,17 @@ export async function isPerfilSemAprovacao(memberId: string): Promise<boolean> {
   
   if (!data) return false;
   
-  return data.some(fn => PERFIS_SEM_APROVACAO.includes(fn.function_type));
+  return data.some(fn => FUNCTION_TYPES_SEM_APROVACAO.includes(fn.function_type));
 }
 
 // Função síncrona para verificar por function_types já carregados
 export function hasPerfilSemAprovacao(functionTypes: string[]): boolean {
-  return functionTypes.some(ft => PERFIS_SEM_APROVACAO.includes(ft));
+  return functionTypes.some(ft => FUNCTION_TYPES_SEM_APROVACAO.includes(ft));
+}
+
+// Função síncrona para verificar por roles (user_roles)
+export function hasRoleSemAprovacao(roles: string[]): boolean {
+  return roles.some(r => ROLES_SEM_APROVACAO.includes(r));
 }
 
 interface CreateMudancaParams {

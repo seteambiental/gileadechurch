@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAprovadorId, useMudancasPendentes, hasPerfilSemAprovacao } from "@/hooks/useMudancasPendentes";
+import { getAprovadorId, useMudancasPendentes, hasPerfilSemAprovacao, hasRoleSemAprovacao } from "@/hooks/useMudancasPendentes";
 import {
   Dialog,
   DialogContent,
@@ -149,6 +149,21 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     enabled: !!user?.id,
   });
 
+  // Buscar os roles do usuário atual
+  const { data: userRoles = [] } = useQuery({
+    queryKey: ["user-roles", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id);
+      if (error) return [];
+      return data.map((r: any) => r.role);
+    },
+    enabled: !!user?.id,
+  });
+
   // Buscar lista de condomínios para o dropdown
   const { data: condominios = [] } = useQuery({
     queryKey: ["condominios-list"],
@@ -163,9 +178,9 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     enabled: open,
   });
 
-  // Verificar se o usuário atual tem perfil que dispensa aprovação
+  // Verificar se o usuário atual tem perfil que dispensa aprovação (function_types OU roles)
   const currentMemberFunctionTypes = currentMember?.member_functions?.map((f: any) => f.function_type) || [];
-  const skipApproval = hasPerfilSemAprovacao(currentMemberFunctionTypes);
+  const skipApproval = hasPerfilSemAprovacao(currentMemberFunctionTypes) || hasRoleSemAprovacao(userRoles);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
