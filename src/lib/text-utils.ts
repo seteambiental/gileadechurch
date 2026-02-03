@@ -63,6 +63,23 @@ export const getFirstName = (fullName: string | null | undefined): string => {
 };
 
 /**
+ * Pluraliza um título em português
+ * Exemplo: "Líder" -> "Líderes", "Síndico" -> "Síndicos"
+ */
+const pluralizeTitle = (title: string): string => {
+  // Títulos terminados em vogal: adiciona "s"
+  if (/[aeiouáéíóúâêîôû]$/i.test(title)) {
+    return `${title}s`;
+  }
+  // Títulos terminados em "r": adiciona "es"
+  if (/r$/i.test(title)) {
+    return `${title}es`;
+  }
+  // Default: adiciona "s"
+  return `${title}s`;
+};
+
+/**
  * Formata nomes de líderes para exibição em cards
  * Exemplo: ("José Ademir Silva", "Gerusa Santos") -> "Líderes José e Gerusa"
  * Exemplo: ("José Ademir Silva", null) -> "Líder José"
@@ -76,7 +93,7 @@ export const formatLeaderNames = (
   const spouseFirstName = getFirstName(spouseName);
 
   if (firstName && spouseFirstName) {
-    return `${title}es ${firstName} e ${spouseFirstName}`;
+    return `${pluralizeTitle(title)} ${firstName} e ${spouseFirstName}`;
   }
   if (firstName) {
     return `${title} ${firstName}`;
