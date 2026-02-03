@@ -81,9 +81,9 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Gerar senha padrão: Cpf@ + 6 primeiros dígitos do CPF ou 123456
+        // Gerar senha padrão: 6 primeiros dígitos do CPF ou 123456
         const cpfDigits = member.cpf ? member.cpf.replace(/\D/g, "") : "";
-        const defaultPassword = `Cpf@${cpfDigits.length >= 6 ? cpfDigits.substring(0, 6) : "123456"}`;
+        const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.substring(0, 6) : "123456";
 
         // Criar novo usuário
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
