@@ -293,8 +293,8 @@ const MinisterioFormDialog = ({
                       <FormLabel>Líder</FormLabel>
                       <FormControl>
                         <MemberSelect
-                          value={field.value}
-                          onChange={field.onChange}
+                          value={field.value || null}
+                          onChange={(val) => field.onChange(val || "")}
                           placeholder="Selecionar líder..."
                         />
                       </FormControl>
@@ -308,11 +308,11 @@ const MinisterioFormDialog = ({
                   name="lider_esposa_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Líder</FormLabel>
+                      <FormLabel>Líder (Cônjuge)</FormLabel>
                       <FormControl>
                         <MemberSelect
-                          value={field.value}
-                          onChange={field.onChange}
+                          value={field.value || null}
+                          onChange={(val) => field.onChange(val || "")}
                           placeholder="Selecionar líder..."
                         />
                       </FormControl>
