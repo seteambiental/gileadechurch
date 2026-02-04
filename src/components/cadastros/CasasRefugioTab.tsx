@@ -56,6 +56,8 @@ interface CasaRefugio {
   lider_esposa?: { full_name: string } | null;
   supervisor?: { full_name: string } | null;
   supervisor_esposa?: { full_name: string } | null;
+  anfitriao?: { full_name: string } | null;
+  anfitriao_esposa?: { full_name: string } | null;
 }
 
 interface GeocodingResult {
@@ -86,7 +88,9 @@ const CasasRefugioTab = () => {
           lider:members!casas_refugio_lider_id_fkey(full_name),
           lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
           supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
-          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name)
+          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name),
+          anfitriao:members!casas_refugio_anfitriao_id_fkey(full_name),
+          anfitriao_esposa:members!casas_refugio_anfitriao_esposa_id_fkey(full_name)
         `)
         .order("name");
       if (error) throw error;
@@ -94,21 +98,38 @@ const CasasRefugioTab = () => {
     },
   });
 
-  // Extract unique condominios and supervisores for filters
-  const { condominios, supervisores } = useMemo(() => {
+  // Extract unique condominios for filter
+  const condominios = useMemo(() => {
     const condSet = new Set<string>();
-    const supSet = new Set<string>();
-
     items.forEach((item) => {
       if (item.condominio) condSet.add(item.condominio);
-      if (item.supervisores) supSet.add(item.supervisores);
     });
-
-    return {
-      condominios: Array.from(condSet).sort(),
-      supervisores: Array.from(supSet).sort(),
-    };
+    return Array.from(condSet).sort();
   }, [items]);
+
+  // Extract supervisores filtered by selected condomínio
+  const supervisores = useMemo(() => {
+    const supSet = new Set<string>();
+    const filteredItems = condominioFilter === "all" 
+      ? items 
+      : items.filter(item => item.condominio === condominioFilter);
+    
+    filteredItems.forEach((item) => {
+      const supervisorName = item.supervisor?.full_name || item.supervisores;
+      if (supervisorName) supSet.add(supervisorName);
+    });
+    return Array.from(supSet).sort();
+  }, [items, condominioFilter]);
+
+  // Helper to get supervisor name from relational or legacy field
+  const getSupervisorName = (item: CasaRefugio) => {
+    return item.supervisor?.full_name || item.supervisores || null;
+  };
+
+  // Helper to get anfitriao name from relational or legacy field
+  const getAnfitriaoNames = (item: CasaRefugio) => {
+    return formatLeaderNames(item.anfitriao?.full_name, item.anfitriao_esposa?.full_name, "Anfitrião") || item.anfitrioes || null;
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -132,19 +153,27 @@ const CasasRefugioTab = () => {
         searchTerm === "" ||
         includesNormalized(item.name, searchTerm) ||
         includesNormalized(item.condominio || "", searchTerm) ||
-        includesNormalized(item.lideres || "", searchTerm);
+        includesNormalized(item.lideres || "", searchTerm) ||
+        includesNormalized(getSupervisorName(item) || "", searchTerm);
 
       // Condomínio filter
       const matchesCondominio =
         condominioFilter === "all" || item.condominio === condominioFilter;
 
-      // Supervisor filter
+      // Supervisor filter - compare with relational name
+      const supervisorName = getSupervisorName(item);
       const matchesSupervisor =
-        supervisorFilter === "all" || item.supervisores === supervisorFilter;
+        supervisorFilter === "all" || supervisorName === supervisorFilter;
 
       return matchesSearch && matchesCondominio && matchesSupervisor;
     });
   }, [items, searchTerm, condominioFilter, supervisorFilter]);
+
+  // Reset supervisor filter when condomínio changes
+  const handleCondominioChange = (value: string) => {
+    setCondominioFilter(value);
+    setSupervisorFilter("all");
+  };
 
   const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all";
 
@@ -204,6 +233,7 @@ const CasasRefugioTab = () => {
                 { header: "Nome", accessor: "name" },
                 { header: "Condomínio", accessor: "condominio" },
                 { header: "Líderes", accessor: (r) => formatLeaderNames(r.lider?.full_name, r.lider_esposa?.full_name) || r.lideres || "-" },
+                { header: "Anfitriões", accessor: (r) => formatLeaderNames(r.anfitriao?.full_name, r.anfitriao_esposa?.full_name, "Anfitrião") || r.anfitrioes || "-" },
                 { header: "Supervisores", accessor: (r) => formatLeaderNames(r.supervisor?.full_name, r.supervisor_esposa?.full_name, "Supervisor") || r.supervisores || "-" },
                 { header: "Dias", accessor: "dias" },
                 { header: "Frequência", accessor: "frequencia" },
@@ -248,7 +278,7 @@ const CasasRefugioTab = () => {
             <span>Filtros:</span>
           </div>
 
-          <Select value={condominioFilter} onValueChange={setCondominioFilter}>
+          <Select value={condominioFilter} onValueChange={handleCondominioChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Condomínio" />
             </SelectTrigger>
