@@ -6,7 +6,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft,
   Loader2,
@@ -16,9 +17,14 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  Download,
   Link,
   Users,
+  BarChart3,
+  CalendarDays,
+  PartyPopper,
+  Trash2,
+  Edit,
+  Share2,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +68,8 @@ const tipoEventoLabels: Record<string, string> = {
   evento: "Evento",
 };
 
+const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
 const AgendaPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -69,11 +77,11 @@ const AgendaPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [activeTab, setActiveTab] = useState("indicadores");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [mostrarInativos, setMostrarInativos] = useState(true);
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -91,170 +99,42 @@ const AgendaPage = () => {
     }
   }, [user, authLoading, navigate, bypass]);
 
-  const { data: eventos = [], isLoading } = useQuery({
-    queryKey: ["agenda-igreja", { mostrarInativos }],
+  // Query para eventos recorrentes (programação)
+  const { data: eventosRecorrentes = [], isLoading: loadingRecorrentes } = useQuery({
+    queryKey: ["agenda-recorrentes"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("agenda_igreja")
         .select("*")
-        .order("data_evento");
-
-      if (!mostrarInativos) {
-        query = query.eq("ativo", true);
-      }
-
-      const { data, error } = await query;
+        .eq("ativo", true)
+        .eq("recorrente", true)
+        .order("dia_semana", { ascending: true });
       if (error) throw error;
       return data as Evento[];
     },
   });
 
-  // Gerar TODOS os eventos para o calendário
-  const getEventosDoMes = () => {
-    const start = startOfMonth(currentMonth);
-    const end = endOfMonth(currentMonth);
-    const days = eachDayOfInterval({ start, end });
-    
-    const eventosExpandidos: (Evento & { dataCalculada: Date })[] = [];
+  // Query para eventos únicos (eventos)
+  const { data: eventosUnicos = [], isLoading: loadingUnicos } = useQuery({
+    queryKey: ["agenda-eventos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("*")
+        .eq("recorrente", false)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data as Evento[];
+    },
+  });
 
-    eventos.forEach(evento => {
-      if (evento.recorrente) {
-        days.forEach(day => {
-          const diaSemana = getDay(day);
-          
-          if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
-            if (evento.semana_mes) {
-              const primeiroDoMes = startOfMonth(day);
-              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
-              }
-              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-              if (semanaDoDia !== evento.semana_mes) return;
-            }
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
-          } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
-            if (evento.semana_mes) {
-              const primeiroDoMes = startOfMonth(day);
-              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
-              }
-              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-              if (semanaDoDia === evento.semana_mes) {
-                eventosExpandidos.push({ ...evento, dataCalculada: day });
-              }
-            }
-          }
-        });
-      } else {
-        // Evento único ou multi-dias
-        const dataInicio = parseISO(evento.data_evento);
-        const dataFim = evento.data_fim ? parseISO(evento.data_fim) : dataInicio;
-        
-        days.forEach(day => {
-          if (isWithinInterval(day, { start: dataInicio, end: dataFim }) || isSameDay(day, dataInicio) || isSameDay(day, dataFim)) {
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
-          }
-        });
-      }
-    });
-
-    return eventosExpandidos;
-  };
-
-  const eventosDoMes = getEventosDoMes();
-
-  const getEventosDodia = (date: Date) => {
-    return eventosDoMes.filter(e => isSameDay(e.dataCalculada, date));
-  };
-
-
-  const renderCalendar = () => {
-    const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
-    const end = endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 });
-    const days = eachDayOfInterval({ start, end });
-    const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-    return (
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
-        {/* Header do Calendário */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <h2 className="font-heading font-bold text-lg capitalize">
-            {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
-          </h2>
-          <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* Dias da Semana */}
-        <div className="grid grid-cols-7 border-b border-border">
-          {weekDays.map(day => (
-            <div key={day} className="p-2 text-center text-xs font-medium text-muted-foreground">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Dias do Mês */}
-        <div className="grid grid-cols-7">
-          {days.map((day, idx) => {
-            const eventosHoje = getEventosDodia(day);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isSelected = selectedDate && isSameDay(day, selectedDate);
-
-            return (
-              <div
-                key={idx}
-                onClick={() => setSelectedDate(day)}
-                className={`
-                  min-h-[80px] p-1 border-b border-r border-border cursor-pointer transition-colors
-                  ${!isCurrentMonth ? "bg-muted/30" : "hover:bg-muted/50"}
-                  ${isSelected ? "bg-primary/10 ring-1 ring-primary" : ""}
-                  ${isToday(day) ? "bg-primary/5" : ""}
-                `}
-              >
-                <div className={`
-                  text-xs font-medium mb-1 w-6 h-6 flex items-center justify-center rounded-full
-                  ${isToday(day) ? "bg-primary text-primary-foreground" : ""}
-                  ${!isCurrentMonth ? "text-muted-foreground/50" : "text-foreground"}
-                `}>
-                  {format(day, "d")}
-                </div>
-                <div className="space-y-0.5">
-                  {eventosHoje.slice(0, 2).map((evento, i) => (
-                    <div
-                      key={`${evento.id}-${i}`}
-                      className="text-[10px] px-1 py-0.5 rounded truncate text-white"
-                      style={{
-                        backgroundColor: evento.cor || "#dc2626",
-                        opacity: evento.ativo ? 1 : 0.45,
-                      }}
-                      title={evento.ativo ? evento.titulo : `${evento.titulo} (inativo)`}
-                    >
-                      {evento.titulo}
-                    </div>
-                  ))}
-                  {eventosHoje.length > 2 && (
-                    <div className="text-[10px] text-muted-foreground pl-1">
-                      +{eventosHoje.length - 2} mais
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const eventosSelecionados = selectedDate ? getEventosDodia(selectedDate) : [];
-
+  // Agrupar eventos recorrentes por dia da semana
+  const eventosAgrupados = eventosRecorrentes.reduce((acc, evento) => {
+    const dia = evento.dia_semana ?? 0;
+    if (!acc[dia]) acc[dia] = [];
+    acc[dia].push(evento);
+    return acc;
+  }, {} as Record<number, Evento[]>);
 
   if (authLoading) {
     return (
@@ -285,117 +165,259 @@ const AgendaPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        {/* Dashboard de Inscrições */}
-        <InscricoesDashboard />
+      <main className="container mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="indicadores" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Indicadores</span>
+            </TabsTrigger>
+            <TabsTrigger value="programacao" className="gap-2">
+              <CalendarDays className="w-4 h-4" />
+              <span className="hidden sm:inline">Programação</span>
+            </TabsTrigger>
+            <TabsTrigger value="eventos" className="gap-2">
+              <PartyPopper className="w-4 h-4" />
+              <span className="hidden sm:inline">Eventos</span>
+            </TabsTrigger>
+          </TabsList>
 
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h3 className="font-heading font-bold">Calendário</h3>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={mostrarInativos}
-                onCheckedChange={setMostrarInativos}
-                aria-label="Mostrar eventos inativos"
-              />
-              <span className="text-sm text-muted-foreground">Mostrar inativos</span>
+          {/* Aba Indicadores */}
+          <TabsContent value="indicadores" className="space-y-6">
+            <InscricoesDashboard />
+          </TabsContent>
+
+          {/* Aba Programação */}
+          <TabsContent value="programacao" className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="font-heading font-bold text-xl">Programação Semanal</h2>
+                <p className="text-sm text-muted-foreground">Cultos e atividades recorrentes</p>
+              </div>
+              <Button variant="secondary" onClick={() => {
+                setEditingEvento(null);
+                setShowEventoForm(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo
+              </Button>
             </div>
-          </div>
 
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setEditingEvento(null);
-              setShowEventoForm(true);
-            }}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Evento
-          </Button>
-        </div>
-
-        {renderCalendar()}
-
-        {/* Detalhes do dia selecionado */}
-        {selectedDate && (
-          <Card className="mt-4">
-            <CardContent className="pt-4">
-              <h4 className="font-semibold mb-3">
-                {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-              </h4>
-              {eventosSelecionados.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Nenhum evento neste dia.</p>
-              ) : (
-                <div className="space-y-2">
-                  {eventosSelecionados.map((evento, i) => (
-                    <div
-                      key={`${evento.id}-${i}`}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
-                      style={{ opacity: evento.ativo ? 1 : 0.6 }}
-                      onClick={() => {
-                        setEditingEvento(evento);
+            {loadingRecorrentes ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Object.entries(eventosAgrupados).map(([dia, eventos]) => (
+                  <Card key={dia}>
+                    <CardContent className="pt-4">
+                      <h3 className="font-semibold mb-3 text-primary">{diasSemana[parseInt(dia)]}</h3>
+                      <div className="space-y-2">
+                        {eventos.map((evento) => (
+                          <div 
+                            key={evento.id} 
+                            className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                            onClick={() => {
+                              setEditingEvento(evento);
+                              setShowEventoForm(true);
+                            }}
+                          >
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <Clock className="w-4 h-4" />
+                              <span className="font-medium text-sm">{evento.hora_inicio?.substring(0, 5) || "—"}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{evento.titulo}</p>
+                              <Badge variant="outline" className="text-xs mt-1">
+                                {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {Object.keys(eventosAgrupados).length === 0 && (
+                  <Card className="col-span-full">
+                    <CardContent className="py-12 text-center">
+                      <CalendarDays className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="font-semibold mb-2">Nenhum evento recorrente</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Cadastre cultos e atividades semanais
+                      </p>
+                      <Button variant="secondary" onClick={() => {
+                        setEditingEvento(null);
                         setShowEventoForm(true);
+                      }}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Programação
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Aba Eventos */}
+          <TabsContent value="eventos" className="space-y-6">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="font-heading font-bold text-xl">Eventos</h2>
+                <p className="text-sm text-muted-foreground">Conferências, retiros, impactos e mais</p>
+              </div>
+              <Button variant="secondary" onClick={() => {
+                setEditingEvento(null);
+                setShowEventoForm(true);
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Evento
+              </Button>
+            </div>
+
+            {loadingUnicos ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : eventosUnicos.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <PartyPopper className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <h3 className="font-semibold mb-2">Nenhum evento cadastrado</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Crie eventos especiais como conferências e retiros
+                  </p>
+                  <Button variant="secondary" onClick={() => {
+                    setEditingEvento(null);
+                    setShowEventoForm(true);
+                  }}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Primeiro Evento
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {eventosUnicos.map((evento) => {
+                  const dataEvento = parseISO(evento.data_evento);
+                  const isPast = dataEvento < new Date();
+                  
+                  return (
+                    <Card 
+                      key={evento.id} 
+                      className={`overflow-hidden group hover:shadow-lg transition-all duration-300 ${!evento.ativo ? "opacity-60" : ""}`}
+                      style={{
+                        borderLeft: `4px solid ${evento.cor || "hsl(var(--destructive))"}`,
                       }}
                     >
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: evento.cor || "#dc2626" }} />
-                      <div className="flex-1">
-                        <p className="font-medium">
+                      {evento.flyer_url && (
+                        <div className="aspect-[16/9] overflow-hidden">
+                          <img 
+                            src={evento.flyer_url} 
+                            alt={evento.titulo}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+                      
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div 
+                            className="flex flex-col items-center justify-center w-14 h-14 rounded-xl shadow-md"
+                            style={{ 
+                              backgroundColor: evento.cor || "hsl(var(--destructive))",
+                              color: "white",
+                            }}
+                          >
+                            <span className="text-xs font-medium uppercase">
+                              {format(dataEvento, "MMM", { locale: ptBR })}
+                            </span>
+                            <span className="text-xl font-bold">
+                              {format(dataEvento, "dd")}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-1">
+                            <Badge variant={evento.ativo ? "outline" : "secondary"} className="text-xs">
+                              {evento.ativo ? (tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento) : "Inativo"}
+                            </Badge>
+                            {isPast && evento.ativo && (
+                              <Badge variant="secondary" className="text-xs">Encerrado</Badge>
+                            )}
+                          </div>
+                        </div>
+
+                        <h3 className="font-semibold text-foreground mb-2 line-clamp-2">
                           {evento.titulo}
-                          {!evento.ativo && (
-                            <span className="ml-2 text-xs text-muted-foreground">(inativo)</span>
+                        </h3>
+                        
+                        <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
+                          {evento.hora_inicio && (
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{evento.hora_inicio.substring(0, 5)}</span>
+                            </div>
                           )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                          {evento.hora_inicio && ` • ${evento.hora_inicio.substring(0, 5)}`}
-                          {evento.local && ` • ${evento.local}`}
-                        </p>
-                      </div>
-                      {!evento.recorrente && (
-                        <div className="flex gap-1">
+                          {evento.local && (
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-3.5 h-3.5" />
+                              <span className="truncate">{evento.local}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2 pt-3 border-t">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setCompartilharEvento({
-                                id: evento.id,
-                                titulo: evento.titulo,
-                                data_evento: evento.data_evento,
-                                hora_inicio: evento.hora_inicio,
-                                local: evento.local,
-                                flyer_url: evento.flyer_url,
-                                cor: evento.cor,
-                              });
+                            className="flex-1"
+                            onClick={() => {
+                              setEditingEvento(evento);
+                              setShowEventoForm(true);
                             }}
                           >
-                            <Link className="w-4 h-4" />
+                            <Edit className="w-4 h-4 mr-1" />
+                            Editar
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setInscricoesEvento({ 
-                                id: evento.id, 
-                                titulo: evento.titulo,
-                                local: evento.local,
-                                data_evento: evento.data_evento,
-                                limite_vagas: evento.limite_vagas
-                              });
-                            }}
+                            onClick={() => setCompartilharEvento({
+                              id: evento.id,
+                              titulo: evento.titulo,
+                              data_evento: evento.data_evento,
+                              hora_inicio: evento.hora_inicio,
+                              local: evento.local,
+                              flyer_url: evento.flyer_url,
+                              cor: evento.cor,
+                            })}
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setInscricoesEvento({ 
+                              id: evento.id, 
+                              titulo: evento.titulo,
+                              local: evento.local,
+                              data_evento: evento.data_evento,
+                              limite_vagas: evento.limite_vagas
+                            })}
                           >
                             <Users className="w-4 h-4" />
                           </Button>
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       <EventoFormDialog
