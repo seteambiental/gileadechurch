@@ -65,6 +65,7 @@ export const MembrosVinculadosList = ({
       });
 
       queryClient.invalidateQueries({ queryKey: ["membros-casa", casaRefugioId] });
+      queryClient.invalidateQueries({ queryKey: ["membros-vinculados-stats", casaRefugioId] });
       queryClient.invalidateQueries({ queryKey: ["membros-disponiveis"] });
     } catch (error: any) {
       toast({
