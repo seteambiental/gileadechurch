@@ -36,6 +36,7 @@ const LEADER_ROLES: PortalRole[] = [
   "pastor_auxiliar",
   "sindico_condominio",
   "supervisor_condominio",
+  "supervisor_casa_refugio",
   "lider_casa_refugio",
   "lider_ministerio",
   "integrante_ministerio",
@@ -195,6 +196,7 @@ const PortalLideres = () => {
     portalAccess.role === "pastor_auxiliar" ||
     portalAccess.role === "sindico_condominio" ||
     portalAccess.role === "supervisor_condominio" ||
+    portalAccess.role === "supervisor_casa_refugio" ||
     portalAccess.role === "lider_casa_refugio"
   ) {
     availableTabs.push({ id: "casas-refugio", label: "Casas Refúgio", icon: Home });
@@ -215,6 +217,7 @@ const PortalLideres = () => {
     portalAccess.role === "pastor_auxiliar" ||
     portalAccess.role === "sindico_condominio" ||
     portalAccess.role === "supervisor_condominio" ||
+    portalAccess.role === "supervisor_casa_refugio" ||
     portalAccess.role === "lider_casa_refugio" ||
     portalAccess.role === "lider_ministerio"
   ) {

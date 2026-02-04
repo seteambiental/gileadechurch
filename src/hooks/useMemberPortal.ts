@@ -116,13 +116,24 @@ export const useMemberPortal = () => {
     }
 
     // Verificar se é supervisor de condomínio
-    const supervisorFunctions = functions.filter(f => f.function_type === "supervisor_condominio");
-    if (supervisorFunctions.length > 0) {
+    const supervisorCondFunctions = functions.filter(f => f.function_type === "supervisor_condominio");
+    if (supervisorCondFunctions.length > 0) {
       return {
         role: "supervisor_condominio",
-        supervisorCondominios: supervisorFunctions
+        supervisorCondominios: supervisorCondFunctions
           .filter(f => f.condominios?.name)
           .map(f => f.condominios!.name),
+      };
+    }
+
+    // Verificar se é supervisor de casa refúgio
+    const supervisorCasaFunctions = functions.filter(f => f.function_type === "supervisor_casa_refugio");
+    if (supervisorCasaFunctions.length > 0) {
+      return {
+        role: "supervisor_casa_refugio",
+        casasRefugioIds: supervisorCasaFunctions
+          .filter(f => f.casa_refugio_id)
+          .map(f => f.casa_refugio_id!),
       };
     }
 
