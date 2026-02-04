@@ -8,8 +8,6 @@ import {
   Home,
   Calendar,
   TrendingUp,
-  Package,
-  DollarSign,
   Loader2,
   BarChart3,
 } from "lucide-react";
@@ -38,38 +36,88 @@ export const PortalLideresIndicadores = ({
   const startMonth = startOfMonth(currentMonth);
   const endMonth = endOfMonth(currentMonth);
 
-  // Buscar estatísticas gerais da igreja
-  const { data: stats, isLoading } = useQuery({
-    queryKey: ["portal-lideres-indicadores"],
+  // Determinar quais casas refúgio o usuário pode ver
+  const casasRefugioIds = portalAccess?.casasRefugioIds || [];
+  const sindicoCondominios = portalAccess?.sindicoCondominios || [];
+  const isFullAccess = portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar";
+  const isSindico = portalAccess?.role === "sindico_condominio" && sindicoCondominios.length > 0;
+
+  // Buscar casas refúgio do condomínio (para síndicos)
+  const { data: casasDoCondominio = [] } = useQuery({
+    queryKey: ["casas-condominio-indicadores", sindicoCondominios],
     queryFn: async () => {
-      // Total de membros
-      const { count: totalMembros } = await supabase
-        .from("members")
-        .select("*", { count: "exact", head: true });
-
-      // Total de casas refúgio
-      const { count: totalCasas } = await supabase
+      if (!sindicoCondominios.length) return [];
+      
+      // Buscar nomes dos condomínios
+      const { data: condominios } = await supabase
+        .from("condominios")
+        .select("name")
+        .in("id", sindicoCondominios);
+      
+      if (!condominios?.length) return [];
+      
+      const condominioNames = condominios.map(c => c.name);
+      
+      const { data: casas } = await supabase
         .from("casas_refugio")
-        .select("*", { count: "exact", head: true });
+        .select("id")
+        .in("condominio", condominioNames);
+      
+      return casas?.map(c => c.id) || [];
+    },
+    enabled: isSindico,
+  });
 
-      // Total de ministérios
-      const { count: totalMinisterios } = await supabase
-        .from("ministries")
-        .select("*", { count: "exact", head: true });
+  // IDs finais das casas refúgio para filtrar
+  const finalCasasIds = useMemo(() => {
+    if (isFullAccess) return []; // Vazio significa todas
+    if (portalAccess?.role === "sindico_condominio" && casasDoCondominio.length > 0) {
+      return casasDoCondominio;
+    }
+    return casasRefugioIds;
+  }, [isFullAccess, portalAccess?.role, casasDoCondominio, casasRefugioIds]);
 
-      // Encontros do mês atual
-      const { data: encontrosMes } = await supabase
+  // Buscar estatísticas filtradas
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["portal-lideres-indicadores", finalCasasIds, isFullAccess],
+    queryFn: async () => {
+      // Total de casas refúgio (do usuário)
+      let casasQuery = supabase.from("casas_refugio").select("*", { count: "exact", head: true });
+      if (!isFullAccess && finalCasasIds.length > 0) {
+        casasQuery = casasQuery.in("id", finalCasasIds);
+      }
+      const { count: totalCasas } = await casasQuery;
+
+      // Membros vinculados às casas do usuário
+      let membrosQuery = supabase.from("members").select("*", { count: "exact", head: true });
+      if (!isFullAccess && finalCasasIds.length > 0) {
+        membrosQuery = membrosQuery.in("casa_refugio_id", finalCasasIds);
+      }
+      const { count: totalMembros } = await membrosQuery;
+
+      // Encontros do mês atual (apenas das casas do usuário)
+      let encontrosQuery = supabase
         .from("encontros_casa_refugio")
         .select("*")
         .gte("data_encontro", format(startMonth, "yyyy-MM-dd"))
         .lte("data_encontro", format(endMonth, "yyyy-MM-dd"));
+      
+      if (!isFullAccess && finalCasasIds.length > 0) {
+        encontrosQuery = encontrosQuery.in("casa_refugio_id", finalCasasIds);
+      }
+      const { data: encontrosMes } = await encontrosQuery;
 
-      // Novos convertidos do mês
-      const { count: novosConvertidos } = await supabase
+      // Novos convertidos do mês (vinculados às casas do usuário)
+      let ncQuery = supabase
         .from("novos_convertidos")
         .select("*", { count: "exact", head: true })
         .gte("created_at", startMonth.toISOString())
         .lte("created_at", endMonth.toISOString());
+      
+      if (!isFullAccess && finalCasasIds.length > 0) {
+        ncQuery = ncQuery.in("casa_refugio_id", finalCasasIds);
+      }
+      const { count: novosConvertidos } = await ncQuery;
 
       // Calcular totais dos encontros
       const totalEncontros = encontrosMes?.length || 0;
@@ -94,7 +142,6 @@ export const PortalLideresIndicadores = ({
       return {
         totalMembros: totalMembros || 0,
         totalCasas: totalCasas || 0,
-        totalMinisterios: totalMinisterios || 0,
         totalEncontros,
         totalPessoas,
         totalKilos,
@@ -107,16 +154,22 @@ export const PortalLideresIndicadores = ({
 
   // Buscar dados históricos para gráficos (últimos 6 meses)
   const { data: historicoEncontros = [] } = useQuery({
-    queryKey: ["portal-lideres-historico"],
+    queryKey: ["portal-lideres-historico", finalCasasIds, isFullAccess],
     queryFn: async () => {
       const sixMonthsAgo = new Date();
       sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-      const { data } = await supabase
+      let query = supabase
         .from("encontros_casa_refugio")
         .select("data_encontro, qtd_lideres, qtd_membros, qtd_criancas, qtd_visitantes, ofertas, kilos_arrecadados")
         .gte("data_encontro", format(sixMonthsAgo, "yyyy-MM-dd"))
         .order("data_encontro");
+      
+      if (!isFullAccess && finalCasasIds.length > 0) {
+        query = query.in("casa_refugio_id", finalCasasIds);
+      }
+
+      const { data } = await query;
 
       // Agrupar por mês
       const porMes: Record<string, { pessoas: number; ofertas: number; encontros: number }> = {};
@@ -143,6 +196,15 @@ export const PortalLideresIndicadores = ({
     },
   });
 
+  // Texto de contexto baseado no role
+  const getContextLabel = () => {
+    if (isFullAccess) return "todas as casas refúgio";
+    if (portalAccess?.role === "sindico_condominio") return "casas do seu condomínio";
+    if (portalAccess?.role === "supervisor_casa_refugio") return "suas casas supervisionadas";
+    if (portalAccess?.role === "lider_casa_refugio") return "sua casa refúgio";
+    return "suas casas refúgio";
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -156,7 +218,7 @@ export const PortalLideresIndicadores = ({
       <div>
         <h2 className="font-heading font-bold text-xl">Indicadores</h2>
         <p className="text-sm text-muted-foreground">
-          Visão geral do mês de {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+          {format(currentMonth, "MMMM yyyy", { locale: ptBR })} • {getContextLabel()}
         </p>
       </div>
 
