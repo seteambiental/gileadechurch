@@ -429,8 +429,15 @@ export const EncontroFormDialog = ({
     e: React.ChangeEvent<HTMLInputElement>,
     onChange: (value: number) => void
   ) => {
-    const value = e.target.value.replace(/^0+/, "") || "";
-    onChange(value === "" ? 0 : parseInt(value, 10));
+    const rawValue = e.target.value;
+    // Allow empty input or "0" 
+    if (rawValue === "" || rawValue === "0") {
+      onChange(0);
+      return;
+    }
+    // Remove leading zeros for other numbers
+    const value = rawValue.replace(/^0+/, "");
+    onChange(parseInt(value, 10) || 0);
   };
 
   const handleOfertasInput = (
