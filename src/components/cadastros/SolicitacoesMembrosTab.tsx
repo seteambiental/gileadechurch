@@ -73,22 +73,21 @@ const SolicitacoesMembrosTab = () => {
   const { data: requests = [], isLoading, error } = useQuery({
     queryKey: ["member-requests", statusFilter],
     queryFn: async () => {
-      const { data: sessionRes } = await supabase.auth.getSession();
-      const userId = sessionRes?.session?.user?.id;
+      // Consulta direta via RLS - muito mais rápido que edge function
+      let query = supabase
+        .from("member_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-      if (!userId) {
-        throw new Error("Você precisa estar logado para ver solicitações.");
+      if (statusFilter) {
+        query = query.eq("status", statusFilter);
       }
 
-      // Busca via função backend para evitar qualquer bloqueio de visibilidade (RLS)
-      const { data, error } = await supabase.functions.invoke("listar-solicitacoes-membro", {
-        body: { status: statusFilter },
-      });
+      const { data, error } = await query;
 
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error ?? "Não foi possível carregar as solicitações.");
 
-      return (data.data ?? []) as MemberRequest[];
+      return (data ?? []) as MemberRequest[];
     },
   });
 
