@@ -58,6 +58,8 @@ export const useMemberPortal = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
+      // Pode existir mais de um registro de membro vinculado ao mesmo user_id
+      // (ex.: duplicidade histórica). Para o portal, usamos o mais recente.
       const { data, error } = await supabase
         .from("members")
         .select(`
@@ -79,10 +81,12 @@ export const useMemberPortal = () => {
           )
         `)
         .eq("user_id", user.id)
-        .maybeSingle();
+        .order("created_at", { ascending: false })
+        .limit(1);
 
       if (error) throw error;
-      return data as unknown as MemberProfile | null;
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row ?? null) as unknown as MemberProfile | null;
     },
     enabled: !!user?.id,
   });
