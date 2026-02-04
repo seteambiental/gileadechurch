@@ -133,6 +133,7 @@ const MembrosTab = () => {
             condominios (name)
           )
         `)
+        .or("excluido.is.null,excluido.eq.false")
         .order("full_name");
       if (error) throw error;
       return data as Member[];
