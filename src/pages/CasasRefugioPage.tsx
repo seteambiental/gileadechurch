@@ -103,16 +103,25 @@ const CasasRefugioPage = () => {
     return unique.sort();
   }, [casas]);
 
-  // Criar lista de supervisores a partir do relacionamento
+  // Criar lista de supervisores filtrada pelo condomínio selecionado
   const supervisoresMap = useMemo(() => {
     const map = new Map<string, string>();
-    casas.forEach((casa) => {
+    const casasFiltradas = condominioFilter === "all" 
+      ? casas 
+      : casas.filter(c => c.condominio === condominioFilter);
+    
+    casasFiltradas.forEach((casa) => {
       if (casa.supervisor?.full_name) {
         map.set(casa.supervisor.full_name, casa.supervisor.full_name);
       }
     });
     return Array.from(map.values()).sort();
-  }, [casas]);
+  }, [casas, condominioFilter]);
+
+  // Reset supervisor filter when condomínio changes
+  useEffect(() => {
+    setSupervisorFilter("all");
+  }, [condominioFilter]);
 
   // Helper para obter o nome do supervisor de uma casa
   const getSupervisorName = (casa: CasaRefugioExtended) => {
