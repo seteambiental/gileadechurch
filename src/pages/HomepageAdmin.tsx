@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings, ImageIcon } from "lucide-react";
+import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings, ImageIcon, Video } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import HomepageHeroTab from "@/components/homepage-admin/HomepageHeroTab";
 import HomepageAvisosTab from "@/components/homepage-admin/HomepageAvisosTab";
@@ -13,6 +13,7 @@ import HomepageTestemunhosTab from "@/components/homepage-admin/HomepageTestemun
 import HomepageCasasRefugioTab from "@/components/homepage-admin/HomepageCasasRefugioTab";
 import HomepageConfigTab from "@/components/homepage-admin/HomepageConfigTab";
 import HomepageLogosTab from "@/components/homepage-admin/HomepageLogosTab";
+import HomepageVideosTab from "@/components/homepage-admin/HomepageVideosTab";
 
 const HomepageAdmin = () => {
   const { user, loading } = useAuth();
@@ -90,6 +91,10 @@ const HomepageAdmin = () => {
               <Home className="w-4 h-4" />
               Casas Refúgio
             </TabsTrigger>
+            <TabsTrigger value="videos" className="gap-2">
+              <Video className="w-4 h-4" />
+              Vídeos
+            </TabsTrigger>
             <TabsTrigger value="config" className="gap-2">
               <Settings className="w-4 h-4" />
               Configurações
@@ -113,6 +118,9 @@ const HomepageAdmin = () => {
           </TabsContent>
           <TabsContent value="casas-refugio">
             <HomepageCasasRefugioTab />
+          </TabsContent>
+          <TabsContent value="videos">
+            <HomepageVideosTab />
           </TabsContent>
           <TabsContent value="config">
             <HomepageConfigTab />

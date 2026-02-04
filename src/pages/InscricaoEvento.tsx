@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2 } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,6 +41,8 @@ interface PessoaBusca {
   full_name: string;
   whatsapp: string | null;
   genero: string | null;
+  cpf: string | null;
+  casa_refugio_id: string | null;
   tipo_pessoa: "member" | "convertido";
 }
 
@@ -73,6 +75,8 @@ const InscricaoEvento = () => {
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
+  const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
+  const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
@@ -136,10 +140,22 @@ const InscricaoEvento = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricao_pessoas_busca" as any)
-        .select("id, full_name, whatsapp, genero, tipo_pessoa")
+        .select("id, full_name, whatsapp, genero, cpf, casa_refugio_id, tipo_pessoa")
         .order("full_name");
       if (error) throw error;
       return (data as unknown) as PessoaBusca[];
+    },
+  });
+
+  // Fetch casas refúgio para exibir o nome
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas-refugio-inscricao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name");
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -154,6 +170,15 @@ const InscricaoEvento = () => {
     setNomeParticipante(person.full_name);
     setTelefoneContato(person.whatsapp || "");
     setGenero(person.genero || "");
+    setCpf(person.cpf ? formatCPF(person.cpf) : "");
+    setCasaRefugioId(person.casa_refugio_id);
+    // Find casa refúgio name
+    const casaRefugio = casasRefugio.find(c => c.id === person.casa_refugio_id);
+    setCasaRefugioNome(casaRefugio?.name || null);
+    // Se é membro cadastrado, não precisa perguntar sobre ministério
+    if (person.tipo_pessoa === "member") {
+      setMembroMinisterio("gileade");
+    }
     setShowSearch(false);
     setSearchTerm("");
   };
@@ -200,6 +225,7 @@ const InscricaoEvento = () => {
         lista_espera: isListaEspera,
         observacoes: observacoesMinisterio || null,
         cpf: cpf ? cpf.replace(/\D/g, "") : null,
+        casa_refugio_id: casaRefugioId,
       };
 
       const { data: inscricaoData, error } = await supabase
@@ -322,15 +348,23 @@ const InscricaoEvento = () => {
                 <img src={logoGileade} alt="Gileade" className="w-10 h-10 md:w-14 md:h-14 rounded-full object-cover" />
                 <span className="font-heading font-bold text-lg md:text-2xl">Igreja Gileade</span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFullscreen}
-                className="hidden md:flex"
-                title="Modo Tela Cheia"
-              >
-                <Maximize2 className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Link to="/">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Home className="w-4 h-4" />
+                    <span className="hidden sm:inline">Voltar à Home</span>
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleFullscreen}
+                  className="hidden md:flex"
+                  title="Modo Tela Cheia"
+                >
+                  <Maximize2 className="w-5 h-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </header>
@@ -382,7 +416,7 @@ const InscricaoEvento = () => {
               )}
             </div>
             {evento.descricao && (
-              <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-4">{evento.descricao}</p>
+              <p className="text-sm md:text-base text-muted-foreground mt-2 md:mt-4 whitespace-pre-line">{evento.descricao}</p>
             )}
             {evento.tem_custo && evento.valor_custo && (
               <p className="text-sm md:text-lg font-medium mt-2 md:mt-4">
@@ -555,36 +589,40 @@ const InscricaoEvento = () => {
                       />
                     </div>
 
-                    {/* Membro de ministério */}
-                    <div className="space-y-2 md:space-y-3">
-                      <Label className="text-base md:text-lg">É membro de Gileade ou de outro ministério?</Label>
-                      <RadioGroup value={membroMinisterio} onValueChange={(v) => setMembroMinisterio(v as "gileade" | "outro" | "nenhum")} className="space-y-2 md:space-y-3">
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="gileade" id="gileade" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="gileade" className="font-normal text-base md:text-lg">Sim, sou membro de Gileade</Label>
+                    {/* Membro de ministério - apenas para pessoas não cadastradas */}
+                    {selectedPerson?.type === "novo" && (
+                      <>
+                        <div className="space-y-2 md:space-y-3">
+                          <Label className="text-base md:text-lg">É membro de Gileade ou de outro ministério?</Label>
+                          <RadioGroup value={membroMinisterio} onValueChange={(v) => setMembroMinisterio(v as "gileade" | "outro" | "nenhum")} className="space-y-2 md:space-y-3">
+                            <div className="flex items-center space-x-2 md:space-x-3">
+                              <RadioGroupItem value="gileade" id="gileade" className="w-4 h-4 md:w-6 md:h-6" />
+                              <Label htmlFor="gileade" className="font-normal text-base md:text-lg">Sim, sou membro de Gileade</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 md:space-x-3">
+                              <RadioGroupItem value="outro" id="outro-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
+                              <Label htmlFor="outro-ministerio" className="font-normal text-base md:text-lg">Sim, de outro ministério</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 md:space-x-3">
+                              <RadioGroupItem value="nenhum" id="nenhum-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
+                              <Label htmlFor="nenhum-ministerio" className="font-normal text-base md:text-lg">Não sou membro de nenhum ministério</Label>
+                            </div>
+                          </RadioGroup>
                         </div>
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="outro" id="outro-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="outro-ministerio" className="font-normal text-base md:text-lg">Sim, de outro ministério</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="nenhum" id="nenhum-ministerio" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="nenhum-ministerio" className="font-normal text-base md:text-lg">Não sou membro de nenhum ministério</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
 
-                    {membroMinisterio === "outro" && (
-                      <div className="space-y-2 md:space-y-3 p-4 md:p-6 bg-muted/30 rounded-lg">
-                        <Label htmlFor="outroMinisterio" className="text-base md:text-lg">Qual ministério?</Label>
-                        <Input
-                          id="outroMinisterio"
-                          value={outroMinisterio}
-                          onChange={(e) => setOutroMinisterio(e.target.value)}
-                          placeholder="Nome do ministério"
-                          className="h-10 md:h-14 text-base md:text-lg"
-                        />
-                      </div>
+                        {membroMinisterio === "outro" && (
+                          <div className="space-y-2 md:space-y-3 p-4 md:p-6 bg-muted/30 rounded-lg">
+                            <Label htmlFor="outroMinisterio" className="text-base md:text-lg">Qual ministério?</Label>
+                            <Input
+                              id="outroMinisterio"
+                              value={outroMinisterio}
+                              onChange={(e) => setOutroMinisterio(e.target.value)}
+                              placeholder="Nome do ministério"
+                              className="h-10 md:h-14 text-base md:text-lg"
+                            />
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Menor de idade */}
@@ -623,24 +661,13 @@ const InscricaoEvento = () => {
                       </div>
                     )}
 
-                    {/* Preferência beliche */}
-                    <div className="space-y-2 md:space-y-3">
-                      <Label className="text-base md:text-lg">Preferência de Beliche</Label>
-                      <RadioGroup value={preferenciaBeliche} onValueChange={setPreferenciaBeliche} className="space-y-2 md:space-y-3">
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="cima" id="cima" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="cima" className="font-normal text-base md:text-lg">Cima</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="baixo" id="baixo" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="baixo" className="font-normal text-base md:text-lg">Baixo</Label>
-                        </div>
-                        <div className="flex items-center space-x-2 md:space-x-3">
-                          <RadioGroupItem value="indiferente" id="indiferente" className="w-4 h-4 md:w-6 md:h-6" />
-                          <Label htmlFor="indiferente" className="font-normal text-base md:text-lg">Indiferente</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
+                    {/* Casa Refúgio (se tiver vinculação) */}
+                    {casaRefugioNome && (
+                      <div className="p-4 md:p-6 bg-secondary/10 rounded-lg">
+                        <Label className="text-base md:text-lg text-secondary">Casa Refúgio</Label>
+                        <p className="text-sm md:text-base text-foreground mt-1">{casaRefugioNome}</p>
+                      </div>
+                    )}
 
                     {/* Alergia alimentar */}
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">

@@ -1484,6 +1484,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_videos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          ordem: number
+          thumbnail_url: string | null
+          titulo: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number
+          thumbnail_url?: string | null
+          titulo: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          ordem?: number
+          thumbnail_url?: string | null
+          titulo?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: []
+      }
       igreja_config: {
         Row: {
           address: string | null
@@ -1843,6 +1879,7 @@ export type Database = {
       }
       inscricoes_eventos: {
         Row: {
+          casa_refugio_id: string | null
           cpf: string | null
           created_at: string
           descricao_alergia: string | null
@@ -1869,6 +1906,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
           descricao_alergia?: string | null
@@ -1895,6 +1933,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
           descricao_alergia?: string | null
@@ -1921,6 +1960,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "inscricoes_eventos_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "inscricoes_eventos_evento_id_fkey"
             columns: ["evento_id"]
@@ -4035,6 +4081,8 @@ export type Database = {
     Views: {
       inscricao_pessoas_busca: {
         Row: {
+          casa_refugio_id: string | null
+          cpf: string | null
           full_name: string | null
           genero: string | null
           id: string | null

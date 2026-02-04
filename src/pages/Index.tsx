@@ -80,16 +80,17 @@ const Index = () => {
   });
 
   // Buscar eventos com flyer (próximos eventos especiais) - até 4
+  // Apenas eventos que ainda não passaram (data_fim ou data_evento >= hoje)
   const { data: eventosComFlyer } = useQuery({
     queryKey: ["eventos-com-flyer-public"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, flyer_url, data_evento, limite_vagas")
+        .select("id, titulo, flyer_url, data_evento, data_fim, limite_vagas")
         .eq("ativo", true)
         .not("flyer_url", "is", null)
-        .gte("data_evento", today)
+        .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
         .limit(4);
       if (error) return [];
@@ -97,7 +98,20 @@ const Index = () => {
     },
   });
 
-  // Buscar testemunhos aprovados (ativos por 15 dias)
+  // Buscar vídeos da homepage
+  const { data: videosHomepage } = useQuery({
+    queryKey: ["homepage-videos-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_videos")
+        .select("*")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
   const { data: testemunhosDb } = useQuery({
     queryKey: ["testemunhos-public"],
     queryFn: async () => {
@@ -341,6 +355,66 @@ const Index = () => {
                   delay={index * 100}
                 />
               ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Videos Section */}
+      {videosHomepage && videosHomepage.length > 0 && (
+        <section id="videos" className="py-20 bg-muted/50">
+          <div className="container mx-auto px-4">
+            <SectionTitle
+              title="Vídeos"
+              subtitle="Assista aos nossos vídeos e mensagens"
+              centered
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              {videosHomepage.map((video, index) => {
+                // Extract YouTube ID for embed
+                const ytMatch = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s]+)/);
+                const ytId = ytMatch ? ytMatch[1] : null;
+
+                return (
+                  <div
+                    key={video.id}
+                    className="bg-card rounded-xl overflow-hidden border border-border shadow-sm animate-fade-in"
+                    style={{ animationDelay: `${index * 100}ms` }}
+                  >
+                    {ytId ? (
+                      <div className="aspect-video">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${ytId}`}
+                          title={video.titulo}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          className="w-full h-full"
+                        />
+                      </div>
+                    ) : (
+                      <a
+                        href={video.video_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block aspect-video bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                      >
+                        {video.thumbnail_url ? (
+                          <img src={video.thumbnail_url} alt={video.titulo} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-muted-foreground">Assistir vídeo</span>
+                        )}
+                      </a>
+                    )}
+                    <div className="p-4">
+                      <h4 className="font-heading font-semibold text-foreground">{video.titulo}</h4>
+                      {video.descricao && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{video.descricao}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
