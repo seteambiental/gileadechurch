@@ -87,6 +87,24 @@ export const useMemberPortal = () => {
     enabled: !!user?.id,
   });
 
+  // Buscar casas refúgio onde o membro é líder/supervisor diretamente da tabela casas_refugio
+  const { data: directCasasRefugio = [] } = useQuery({
+    queryKey: ["member-portal-direct-casas", memberProfile?.id],
+    queryFn: async () => {
+      if (!memberProfile?.id) return [];
+      
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name, condominio")
+        .or(`lider_id.eq.${memberProfile.id},lider_esposa_id.eq.${memberProfile.id},supervisor_id.eq.${memberProfile.id},supervisor_esposa_id.eq.${memberProfile.id}`)
+        .order("name");
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Calcular nível de acesso
   const getPortalAccess = (): PortalAccess | null => {
     if (!memberProfile) return null;
@@ -126,26 +144,41 @@ export const useMemberPortal = () => {
       };
     }
 
-    // Verificar se é supervisor de casa refúgio
+    // Verificar se é supervisor de casa refúgio (via member_functions ou busca direta)
     const supervisorCasaFunctions = functions.filter(f => f.function_type === "supervisor_casa_refugio");
-    if (supervisorCasaFunctions.length > 0) {
-      return {
-        role: "supervisor_casa_refugio",
-        casasRefugioIds: supervisorCasaFunctions
-          .filter(f => f.casa_refugio_id)
-          .map(f => f.casa_refugio_id!),
-      };
+    const hasDirectCasas = directCasasRefugio.length > 0;
+    
+    if (supervisorCasaFunctions.length > 0 || hasDirectCasas) {
+      // Combinar IDs das member_functions com IDs da busca direta
+      const idsFromFunctions = supervisorCasaFunctions
+        .filter(f => f.casa_refugio_id)
+        .map(f => f.casa_refugio_id!);
+      const idsFromDirect = directCasasRefugio.map(c => c.id);
+      const allIds = [...new Set([...idsFromFunctions, ...idsFromDirect])];
+      
+      if (allIds.length > 0) {
+        return {
+          role: "supervisor_casa_refugio",
+          casasRefugioIds: allIds,
+        };
+      }
     }
 
-    // Verificar se é líder de casa refúgio
+    // Verificar se é líder de casa refúgio (via member_functions ou busca direta)
     const liderCasaFunctions = functions.filter(f => f.function_type === "lider_casa_refugio");
-    if (liderCasaFunctions.length > 0) {
-      return {
-        role: "lider_casa_refugio",
-        casasRefugioIds: liderCasaFunctions
-          .filter(f => f.casa_refugio_id)
-          .map(f => f.casa_refugio_id!),
-      };
+    if (liderCasaFunctions.length > 0 || hasDirectCasas) {
+      const idsFromFunctions = liderCasaFunctions
+        .filter(f => f.casa_refugio_id)
+        .map(f => f.casa_refugio_id!);
+      const idsFromDirect = directCasasRefugio.map(c => c.id);
+      const allIds = [...new Set([...idsFromFunctions, ...idsFromDirect])];
+      
+      if (allIds.length > 0) {
+        return {
+          role: "lider_casa_refugio",
+          casasRefugioIds: allIds,
+        };
+      }
     }
 
     // Verificar se é líder de ministério
@@ -201,12 +234,13 @@ export const useMemberPortal = () => {
     return Array.from(ministryMap.values());
   };
 
-  // Obter casas refúgio do membro
+  // Obter casas refúgio do membro (combinando member_functions e busca direta)
   const getMemberCasasRefugio = () => {
     if (!memberProfile) return [];
     
     const casaMap = new Map<string, { id: string; name: string; isLider: boolean }>();
     
+    // Primeiro, adicionar casas das member_functions
     memberProfile.member_functions?.forEach(fn => {
       if (fn.casas_refugio) {
         const existing = casaMap.get(fn.casas_refugio.id);
@@ -219,6 +253,17 @@ export const useMemberPortal = () => {
             isLider: existing?.isLider || isLider,
           });
         }
+      }
+    });
+
+    // Depois, adicionar casas da busca direta (onde o membro é líder/supervisor na tabela casas_refugio)
+    directCasasRefugio.forEach(casa => {
+      if (!casaMap.has(casa.id)) {
+        casaMap.set(casa.id, {
+          id: casa.id,
+          name: casa.name,
+          isLider: true, // Se está na busca direta, é líder ou supervisor
+        });
       }
     });
 
