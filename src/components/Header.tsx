@@ -11,7 +11,7 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -89,21 +89,9 @@ const Header = () => {
               </a>
             ))}
             
-            {/* A home pública NÃO deve exibir atalhos de portal. */}
+            {/* Na home pública, mostrar APENAS o botão Entrar (quando deslogado). Nada quando logado. */}
             {isPublicHome ? (
-              user && !authLoading ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 ml-4"
-                  onClick={async () => {
-                    await signOut();
-                    navigate("/");
-                  }}
-                >
-                  Sair
-                </Button>
-              ) : !user && !authLoading ? (
+              !user && !authLoading ? (
                 <Button
                   variant="secondary"
                   className="font-heading font-semibold shadow-red ml-4"
@@ -164,20 +152,9 @@ const Header = () => {
                   </a>
                 ))}
                 
+                {/* Na home pública, mostrar APENAS Entrar (quando deslogado). Nada quando logado. */}
                 {isPublicHome ? (
-                  user && !authLoading ? (
-                    <Button
-                      variant="outline"
-                      className="mt-2 font-heading font-semibold border-primary-foreground/30 text-primary-foreground"
-                      onClick={async () => {
-                        setIsMobileMenuOpen(false);
-                        await signOut();
-                        navigate("/");
-                      }}
-                    >
-                      Sair
-                    </Button>
-                  ) : !user && !authLoading ? (
+                  !user && !authLoading ? (
                     <Button
                       variant="secondary"
                       className="mt-2 font-heading font-semibold shadow-red"
