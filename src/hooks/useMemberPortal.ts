@@ -111,92 +111,113 @@ export const useMemberPortal = () => {
 
     const functions = memberProfile.member_functions || [];
     
+    // Coletar todas as permissões específicas, independente do role principal
+    const sindicoFunctions = functions.filter(f => f.function_type === "sindico_condominio");
+    const sindicoCondominios = sindicoFunctions
+      .filter(f => f.condominios?.name)
+      .map(f => f.condominios!.name);
+
+    const supervisorCondFunctions = functions.filter(f => f.function_type === "supervisor_condominio");
+    const supervisorCondominios = supervisorCondFunctions
+      .filter(f => f.condominios?.name)
+      .map(f => f.condominios!.name);
+
+    const supervisorCasaFunctions = functions.filter(f => f.function_type === "supervisor_casa_refugio");
+    const liderCasaFunctions = functions.filter(f => f.function_type === "lider_casa_refugio");
+    
+    // Combinar IDs de casas refúgio de várias fontes
+    const casasFromFunctions = [
+      ...supervisorCasaFunctions.filter(f => f.casa_refugio_id).map(f => f.casa_refugio_id!),
+      ...liderCasaFunctions.filter(f => f.casa_refugio_id).map(f => f.casa_refugio_id!),
+    ];
+    const casasFromDirect = directCasasRefugio.map(c => c.id);
+    const casasRefugioIds = [...new Set([...casasFromFunctions, ...casasFromDirect])];
+
+    const liderMinisterioFunctions = functions.filter(f => f.function_type === "lider_ministerio");
+    const integranteFunctions = functions.filter(f => f.function_type === "integrante_ministerio");
+    
+    const ministerioLiderIds = liderMinisterioFunctions
+      .filter(f => f.ministry_id)
+      .map(f => f.ministry_id!);
+    
+    const ministerioIds = functions
+      .filter(f => f.ministry_id)
+      .map(f => f.ministry_id!);
+
     // Verificar se é pastor geral ou pastor auxiliar (acesso total)
+    // MAS também incluir permissões específicas de síndico/supervisor
     const isPastorGeral = functions.some(f => f.function_type === "pastor_geral");
     if (isPastorGeral) {
-      return { role: "pastor_geral" };
+      return { 
+        role: "pastor_geral",
+        sindicoCondominios: sindicoCondominios.length > 0 ? sindicoCondominios : undefined,
+        supervisorCondominios: supervisorCondominios.length > 0 ? supervisorCondominios : undefined,
+        casasRefugioIds: casasRefugioIds.length > 0 ? casasRefugioIds : undefined,
+        ministerioLiderIds: ministerioLiderIds.length > 0 ? ministerioLiderIds : undefined,
+        ministerioIds: ministerioIds.length > 0 ? ministerioIds : undefined,
+      };
     }
     
     const isPastorAuxiliar = functions.some(f => f.function_type === "pastor_auxiliar");
     if (isPastorAuxiliar) {
-      return { role: "pastor_auxiliar" };
+      return { 
+        role: "pastor_auxiliar",
+        sindicoCondominios: sindicoCondominios.length > 0 ? sindicoCondominios : undefined,
+        supervisorCondominios: supervisorCondominios.length > 0 ? supervisorCondominios : undefined,
+        casasRefugioIds: casasRefugioIds.length > 0 ? casasRefugioIds : undefined,
+        ministerioLiderIds: ministerioLiderIds.length > 0 ? ministerioLiderIds : undefined,
+        ministerioIds: ministerioIds.length > 0 ? ministerioIds : undefined,
+      };
     }
 
     // Verificar se é síndico de condomínio
-    const sindicoFunctions = functions.filter(f => f.function_type === "sindico_condominio");
     if (sindicoFunctions.length > 0) {
       return {
         role: "sindico_condominio",
-        sindicoCondominios: sindicoFunctions
-          .filter(f => f.condominios?.name)
-          .map(f => f.condominios!.name),
+        sindicoCondominios,
+        casasRefugioIds: casasRefugioIds.length > 0 ? casasRefugioIds : undefined,
       };
     }
 
     // Verificar se é supervisor de condomínio
-    const supervisorCondFunctions = functions.filter(f => f.function_type === "supervisor_condominio");
     if (supervisorCondFunctions.length > 0) {
       return {
         role: "supervisor_condominio",
-        supervisorCondominios: supervisorCondFunctions
-          .filter(f => f.condominios?.name)
-          .map(f => f.condominios!.name),
+        supervisorCondominios,
+        casasRefugioIds: casasRefugioIds.length > 0 ? casasRefugioIds : undefined,
       };
     }
 
     // Verificar se é supervisor de casa refúgio (via member_functions ou busca direta)
-    const supervisorCasaFunctions = functions.filter(f => f.function_type === "supervisor_casa_refugio");
-    const hasDirectCasas = directCasasRefugio.length > 0;
-    
-    if (supervisorCasaFunctions.length > 0 || hasDirectCasas) {
-      // Combinar IDs das member_functions com IDs da busca direta
-      const idsFromFunctions = supervisorCasaFunctions
-        .filter(f => f.casa_refugio_id)
-        .map(f => f.casa_refugio_id!);
-      const idsFromDirect = directCasasRefugio.map(c => c.id);
-      const allIds = [...new Set([...idsFromFunctions, ...idsFromDirect])];
-      
-      if (allIds.length > 0) {
+    if (supervisorCasaFunctions.length > 0 || directCasasRefugio.length > 0) {
+      if (casasRefugioIds.length > 0) {
         return {
           role: "supervisor_casa_refugio",
-          casasRefugioIds: allIds,
+          casasRefugioIds,
         };
       }
     }
 
     // Verificar se é líder de casa refúgio (via member_functions ou busca direta)
-    const liderCasaFunctions = functions.filter(f => f.function_type === "lider_casa_refugio");
-    if (liderCasaFunctions.length > 0 || hasDirectCasas) {
-      const idsFromFunctions = liderCasaFunctions
-        .filter(f => f.casa_refugio_id)
-        .map(f => f.casa_refugio_id!);
-      const idsFromDirect = directCasasRefugio.map(c => c.id);
-      const allIds = [...new Set([...idsFromFunctions, ...idsFromDirect])];
-      
-      if (allIds.length > 0) {
+    if (liderCasaFunctions.length > 0 || directCasasRefugio.length > 0) {
+      if (casasRefugioIds.length > 0) {
         return {
           role: "lider_casa_refugio",
-          casasRefugioIds: allIds,
+          casasRefugioIds,
         };
       }
     }
 
     // Verificar se é líder de ministério
-    const liderMinisterioFunctions = functions.filter(f => f.function_type === "lider_ministerio");
     if (liderMinisterioFunctions.length > 0) {
       return {
         role: "lider_ministerio",
-        ministerioLiderIds: liderMinisterioFunctions
-          .filter(f => f.ministry_id)
-          .map(f => f.ministry_id!),
-        ministerioIds: functions
-          .filter(f => f.ministry_id)
-          .map(f => f.ministry_id!),
+        ministerioLiderIds,
+        ministerioIds,
       };
     }
 
     // Verificar se é integrante de ministério
-    const integranteFunctions = functions.filter(f => f.function_type === "integrante_ministerio");
     if (integranteFunctions.length > 0) {
       return {
         role: "integrante_ministerio",
