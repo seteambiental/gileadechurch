@@ -89,18 +89,15 @@ const Header = () => {
               </a>
             ))}
             
-            {/* Na home pública, mostrar APENAS o botão Entrar (quando deslogado). Nada quando logado. */}
+            {/* Na home pública: botão de acesso sempre visível */}
             {isPublicHome ? (
-              // Na home pública: mostrar botão Entrar se não está logado (mesmo durante loading)
-              !user ? (
-                <Button
-                  variant="secondary"
-                  className="font-heading font-semibold shadow-red ml-4"
-                  onClick={() => navigate("/auth")}
-                >
-                  Entrar
-                </Button>
-              ) : null
+              <Button
+                variant="secondary"
+                className="font-heading font-semibold shadow-red ml-4"
+                onClick={() => navigate(user ? "/portal" : "/auth")}
+              >
+                {user ? "Meu Portal" : "Entrar"}
+              </Button>
             ) : user && !authLoading && !accessLoading ? (
               <div className="flex items-center gap-2 ml-4">
                 {isAdmin && (
@@ -153,21 +150,18 @@ const Header = () => {
                   </a>
                 ))}
                 
-                {/* Na home pública, mostrar APENAS Entrar (quando deslogado). Nada quando logado. */}
+                {/* Na home pública: botão de acesso sempre visível */}
                 {isPublicHome ? (
-                  // Na home pública: mostrar botão Entrar se não está logado (mesmo durante loading)
-                  !user ? (
-                    <Button
-                      variant="secondary"
-                      className="mt-2 font-heading font-semibold shadow-red"
-                      onClick={() => {
-                        setIsMobileMenuOpen(false);
-                        navigate("/auth");
-                      }}
-                    >
-                      Entrar
-                    </Button>
-                  ) : null
+                  <Button
+                    variant="secondary"
+                    className="mt-2 font-heading font-semibold shadow-red"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      navigate(user ? "/portal" : "/auth");
+                    }}
+                  >
+                    {user ? "Meu Portal" : "Entrar"}
+                  </Button>
                 ) : user && !authLoading && !accessLoading ? (
                   <div className="flex flex-col gap-2 mt-2">
                     {isAdmin && (
