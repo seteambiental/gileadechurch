@@ -108,69 +108,58 @@ const AgendaPage = () => {
     },
   });
 
-  // Gerar eventos recorrentes para o mês atual
-  const getEventosDoMes = () => {
+  // Gerar SOMENTE eventos RECORRENTES para o calendário da aba Programação
+  const getEventosRecorrentesDoMes = () => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
     
     const eventosExpandidos: (Evento & { dataCalculada: Date })[] = [];
 
-    eventos.forEach(evento => {
-      if (evento.recorrente) {
-        days.forEach(day => {
-          const diaSemana = getDay(day);
-          
-          if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
-            // Para ceia, verificar se é a semana correta do mês
-            if (evento.semana_mes) {
-              const primeiroDoMes = startOfMonth(day);
-              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
-              }
-              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-              if (semanaDoDia !== evento.semana_mes) return;
-            }
-            
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
-          } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
-            // Verificar semana do mês
-            if (evento.semana_mes) {
-              const primeiroDoMes = startOfMonth(day);
-              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
-              }
-              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-              if (semanaDoDia === evento.semana_mes) {
-                eventosExpandidos.push({ ...evento, dataCalculada: day });
-              }
-            }
-          }
-        });
-      } else {
-        // Evento único ou multi-dias
-        const dataInicio = parseISO(evento.data_evento);
-        const dataFim = evento.data_fim ? parseISO(evento.data_fim) : dataInicio;
+    // Filtrar apenas eventos recorrentes
+    eventos.filter(e => e.recorrente).forEach(evento => {
+      days.forEach(day => {
+        const diaSemana = getDay(day);
         
-        // Verificar cada dia do mês se está dentro do intervalo do evento
-        days.forEach(day => {
-          if (isWithinInterval(day, { start: dataInicio, end: dataFim }) || isSameDay(day, dataInicio) || isSameDay(day, dataFim)) {
-            eventosExpandidos.push({ ...evento, dataCalculada: day });
+        if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
+          // Para ceia, verificar se é a semana correta do mês
+          if (evento.semana_mes) {
+            const primeiroDoMes = startOfMonth(day);
+            const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
+            while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
+              primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
+            }
+            const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
+            if (semanaDoDia !== evento.semana_mes) return;
           }
-        });
-      }
+          
+          eventosExpandidos.push({ ...evento, dataCalculada: day });
+        } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
+          // Verificar semana do mês
+          if (evento.semana_mes) {
+            const primeiroDoMes = startOfMonth(day);
+            const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
+            while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
+              primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
+            }
+            const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
+            if (semanaDoDia === evento.semana_mes) {
+              eventosExpandidos.push({ ...evento, dataCalculada: day });
+            }
+          }
+        }
+      });
     });
 
     return eventosExpandidos;
   };
 
-  const eventosDoMes = getEventosDoMes();
+  const eventosRecorrentesDoMes = getEventosRecorrentesDoMes();
 
   const getEventosDodia = (date: Date) => {
-    return eventosDoMes.filter(e => isSameDay(e.dataCalculada, date));
+    return eventosRecorrentesDoMes.filter(e => isSameDay(e.dataCalculada, date));
   };
+
 
   const renderCalendar = () => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
