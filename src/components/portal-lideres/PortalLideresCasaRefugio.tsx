@@ -50,34 +50,13 @@ export const PortalLideresCasaRefugio = ({
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
 
-  // Determinar IDs das casas que o usuário pode ver
-  const getCasaIds = () => {
-    if (!portalAccess) return memberCasasRefugio.map((c) => c.id);
-
-    // Pastor geral/auxiliar vê tudo
-    if (portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar") {
-      return null;
-    }
-
-    // Síndico vê casas do seu condomínio
-    if (portalAccess.role === "sindico_condominio" && portalAccess.sindicoCondominios) {
-      return portalAccess.sindicoCondominios;
-    }
-
-    // Supervisor vê casas da sua supervisão
-    if (portalAccess.role === "supervisor_condominio" && portalAccess.supervisorCondominios) {
-      return portalAccess.supervisorCondominios;
-    }
-
-    // Líder de casa refúgio
-    if (portalAccess.casasRefugioIds) {
-      return portalAccess.casasRefugioIds;
-    }
-
-    return memberCasasRefugio.map((c) => c.id);
-  };
-
-  const casaIds = getCasaIds();
+  // Determinar escopo de acesso
+  const sindicoCondominios = portalAccess?.sindicoCondominios || [];
+  const supervisorCondominios = portalAccess?.supervisorCondominios || [];
+  const casasRefugioIds = portalAccess?.casasRefugioIds || [];
+  const isFullAccess = portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar";
+  const isSindico = sindicoCondominios.length > 0;
+  const isSupervisorCondominio = supervisorCondominios.length > 0;
 
   // Verificar se é líder da casa selecionada
   const isLiderDaCasa = (casaId: string) => {
@@ -94,7 +73,7 @@ export const PortalLideresCasaRefugio = ({
   };
 
   const { data: casas = [], isLoading: loadingCasas } = useQuery({
-    queryKey: ["portal-lideres-casas-refugio", casaIds],
+    queryKey: ["portal-lideres-casas-refugio", sindicoCondominios, supervisorCondominios, casasRefugioIds, isFullAccess],
     queryFn: async () => {
       let query = supabase
         .from("casas_refugio")
@@ -107,15 +86,17 @@ export const PortalLideresCasaRefugio = ({
         `)
         .order("name");
 
-      // Filtrar por IDs específicos se não for pastor
-      if (casaIds && casaIds.length > 0 && Array.isArray(casaIds)) {
-        // Se são UUIDs, filtrar por id
-        if (casaIds[0]?.match(/^[0-9a-f-]{36}$/i)) {
-          query = query.in("id", casaIds);
-        } else {
-          // Se são nomes de condomínio
-          query = query.in("condominio", casaIds);
-        }
+      // Síndico vê casas do seu condomínio (por nome)
+      if (!isFullAccess && isSindico) {
+        query = query.in("condominio", sindicoCondominios);
+      } 
+      // Supervisor de condomínio vê casas do seu condomínio
+      else if (!isFullAccess && isSupervisorCondominio) {
+        query = query.in("condominio", supervisorCondominios);
+      }
+      // Líder/Supervisor de casa refúgio vê casas específicas por ID
+      else if (!isFullAccess && casasRefugioIds.length > 0) {
+        query = query.in("id", casasRefugioIds);
       }
 
       const { data, error } = await query;
