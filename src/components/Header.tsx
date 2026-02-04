@@ -91,7 +91,8 @@ const Header = () => {
             
             {/* Na home pública, mostrar APENAS o botão Entrar (quando deslogado). Nada quando logado. */}
             {isPublicHome ? (
-              !user && !authLoading ? (
+              // Na home pública: mostrar botão Entrar se não está logado (mesmo durante loading)
+              !user ? (
                 <Button
                   variant="secondary"
                   className="font-heading font-semibold shadow-red ml-4"
@@ -154,7 +155,8 @@ const Header = () => {
                 
                 {/* Na home pública, mostrar APENAS Entrar (quando deslogado). Nada quando logado. */}
                 {isPublicHome ? (
-                  !user && !authLoading ? (
+                  // Na home pública: mostrar botão Entrar se não está logado (mesmo durante loading)
+                  !user ? (
                     <Button
                       variant="secondary"
                       className="mt-2 font-heading font-semibold shadow-red"
