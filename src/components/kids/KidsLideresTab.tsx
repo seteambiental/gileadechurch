@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Plus, Trash2, UserCheck, Filter } from "lucide-react";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface TurmaConfig {
   id: string;
@@ -224,18 +225,16 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
             <div className="space-y-4 pt-4">
               <div>
                 <Label>Membro</Label>
-                <Select value={selectedMember} onValueChange={setSelectedMember}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um membro" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members?.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClearableSelect
+                  value={selectedMember || null}
+                  onChange={(val) => setSelectedMember(val || "")}
+                  options={(members || []).map((m) => ({
+                    value: m.id,
+                    label: m.full_name,
+                  }))}
+                  placeholder="Selecione um membro"
+                  emptyLabel="Selecione..."
+                />
               </div>
 
               <div>

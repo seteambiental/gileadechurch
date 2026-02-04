@@ -23,6 +23,7 @@ import { Loader2 } from "lucide-react";
 import { formatCep, formatPhone, formatCPF } from "@/lib/masks";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface NovoConvertidoFormDialogProps {
   open: boolean;
@@ -374,38 +375,30 @@ export const NovoConvertidoFormDialog = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label>Membro Vinculado (Padrinho/Madrinha)</Label>
-                <Select
-                  value={formData.membro_vinculado_id}
-                  onValueChange={(v) => setFormData({ ...formData, membro_vinculado_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sem vínculo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sem vínculo</SelectItem>
-                    {membros.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClearableSelect
+                  value={formData.membro_vinculado_id || null}
+                  onChange={(val) => setFormData({ ...formData, membro_vinculado_id: val || "" })}
+                  options={membros.map((m) => ({
+                    value: m.id,
+                    label: m.full_name,
+                  }))}
+                  placeholder="Sem vínculo"
+                  emptyLabel="Sem vínculo"
+                />
               </div>
               
               <div>
                 <Label>Veio através de Casa Refúgio?</Label>
-                <Select
-                  value={formData.casa_refugio_id}
-                  onValueChange={(v) => setFormData({ ...formData, casa_refugio_id: v === "none" ? "" : v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Não veio por CR" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Não veio por CR</SelectItem>
-                    {casasRefugio.map((cr) => (
-                      <SelectItem key={cr.id} value={cr.id}>{cr.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClearableSelect
+                  value={formData.casa_refugio_id || null}
+                  onChange={(val) => setFormData({ ...formData, casa_refugio_id: val || "" })}
+                  options={casasRefugio.map((cr) => ({
+                    value: cr.id,
+                    label: cr.name,
+                  }))}
+                  placeholder="Não veio por CR"
+                  emptyLabel="Não veio por CR"
+                />
               </div>
             </div>
           </div>

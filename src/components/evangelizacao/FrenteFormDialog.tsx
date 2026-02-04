@@ -20,16 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { formatNameField } from "@/lib/text-utils";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface Frente {
   id: string;
@@ -179,24 +173,18 @@ export function FrenteFormDialog({ open, onOpenChange, frente }: FrenteFormDialo
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Líder</FormLabel>
-                  <Select
-                    value={field.value || "none"}
-                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um líder" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {members?.filter((m) => !!m?.id)?.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ClearableSelect
+                      value={field.value || null}
+                      onChange={(val) => field.onChange(val || "")}
+                      options={(members?.filter((m) => !!m?.id) || []).map((m) => ({
+                        value: m.id,
+                        label: m.full_name,
+                      }))}
+                      placeholder="Selecione um líder"
+                      emptyLabel="Nenhum"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

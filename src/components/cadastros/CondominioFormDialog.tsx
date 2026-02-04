@@ -25,13 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -286,21 +280,18 @@ const CondominioFormDialog = ({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Síndico</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Selecione o síndico" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-popover border-border z-50">
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {members.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            {member.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ClearableSelect
+                        value={field.value || null}
+                        onChange={(val) => field.onChange(val || "")}
+                        options={members.map((member) => ({
+                          value: member.id,
+                          label: member.full_name,
+                        }))}
+                        placeholder="Selecione o síndico"
+                        emptyLabel="Nenhum"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -311,22 +302,19 @@ const CondominioFormDialog = ({
                 name="sindico_esposa_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Síndico</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Selecione o síndico" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-popover border-border z-50">
-                        <SelectItem value="none">Nenhum</SelectItem>
-                        {members.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            {member.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Síndico (Cônjuge)</FormLabel>
+                    <FormControl>
+                      <ClearableSelect
+                        value={field.value || null}
+                        onChange={(val) => field.onChange(val || "")}
+                        options={members.map((member) => ({
+                          value: member.id,
+                          label: member.full_name,
+                        }))}
+                        placeholder="Selecione o síndico"
+                        emptyLabel="Nenhum"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

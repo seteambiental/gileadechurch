@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatPhone, formatCep } from "@/lib/masks";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface FamiliaFormDialogProps {
   open: boolean;
@@ -336,20 +337,18 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Casa Refúgio que frequenta</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {casasRefugio?.map((casa) => (
-                          <SelectItem key={casa.id} value={casa.id}>
-                            {casa.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ClearableSelect
+                        value={field.value || null}
+                        onChange={(val) => field.onChange(val || "")}
+                        options={(casasRefugio || []).map((casa) => ({
+                          value: casa.id,
+                          label: casa.name,
+                        }))}
+                        placeholder="Selecione..."
+                        emptyLabel="Nenhuma"
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -359,20 +358,18 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Líder Responsável</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {lideres?.map((lider) => (
-                          <SelectItem key={lider.id} value={lider.id}>
-                            {lider.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ClearableSelect
+                        value={field.value || null}
+                        onChange={(val) => field.onChange(val || "")}
+                        options={(lideres || []).map((lider) => ({
+                          value: lider.id,
+                          label: lider.full_name,
+                        }))}
+                        placeholder="Selecione..."
+                        emptyLabel="Nenhum"
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

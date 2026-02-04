@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 const DEPARTAMENTOS = [
   { value: "logistica", label: "Logística" },
@@ -141,24 +142,18 @@ const ImpactoDepartamentoFormDialog = ({ open, onOpenChange, eventoId }: Impacto
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Líder</FormLabel>
-                  <Select
-                    value={field.value || "none"}
-                    onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o líder" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum</SelectItem>
-                      {members?.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ClearableSelect
+                      value={field.value || null}
+                      onChange={(val) => field.onChange(val || "")}
+                      options={(members || []).map((m) => ({
+                        value: m.id,
+                        label: m.full_name,
+                      }))}
+                      placeholder="Selecione o líder"
+                      emptyLabel="Nenhum"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

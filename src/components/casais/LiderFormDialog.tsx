@@ -12,13 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface LiderFormDialogProps {
   open: boolean;
@@ -93,36 +87,30 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Esposo</Label>
-            <Select value={membroMasculinoId || "none"} onValueChange={(v) => setMembroMasculinoId(v === "none" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o esposo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {membrosMasculinos?.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClearableSelect
+              value={membroMasculinoId || null}
+              onChange={(val) => setMembroMasculinoId(val || "")}
+              options={(membrosMasculinos || []).map((m) => ({
+                value: m.id,
+                label: m.full_name,
+              }))}
+              placeholder="Selecione o esposo"
+              emptyLabel="Nenhum"
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Esposa</Label>
-            <Select value={membroFemininoId || "none"} onValueChange={(v) => setMembroFemininoId(v === "none" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a esposa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {membrosFemininos?.map((m) => (
-                  <SelectItem key={m.id} value={m.id}>
-                    {m.full_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ClearableSelect
+              value={membroFemininoId || null}
+              onChange={(val) => setMembroFemininoId(val || "")}
+              options={(membrosFemininos || []).map((m) => ({
+                value: m.id,
+                label: m.full_name,
+              }))}
+              placeholder="Selecione a esposa"
+              emptyLabel="Nenhum"
+            />
           </div>
 
           <div className="space-y-2">

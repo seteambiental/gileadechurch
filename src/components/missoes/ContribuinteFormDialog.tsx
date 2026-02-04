@@ -23,15 +23,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField } from "@/lib/text-utils";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
@@ -179,24 +173,18 @@ export function ContribuinteFormDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Membro da Igreja</FormLabel>
-                  <Select 
-                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)} 
-                    value={field.value || "none"}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um membro (opcional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum (informar nome manual)</SelectItem>
-                      {members?.map((member) => (
-                        <SelectItem key={member.id} value={member.id}>
-                          {member.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <ClearableSelect
+                      value={field.value || null}
+                      onChange={(val) => field.onChange(val || "")}
+                      options={(members || []).map((member) => ({
+                        value: member.id,
+                        label: member.full_name,
+                      }))}
+                      placeholder="Selecione um membro (opcional)"
+                      emptyLabel="Nenhum (informar nome manual)"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
