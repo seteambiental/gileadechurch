@@ -38,6 +38,11 @@ interface CasaRefugio {
   lider_esposa?: { full_name: string } | null;
 }
 
+interface CasaRefugioExtended extends CasaRefugio {
+  supervisor?: { full_name: string } | null;
+  supervisor_esposa?: { full_name: string } | null;
+}
+
 const CasasRefugioPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -83,11 +88,13 @@ const CasasRefugioPage = () => {
         .select(`
           *,
           lider:members!casas_refugio_lider_id_fkey(full_name),
-          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name),
+          supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
+          supervisor_esposa:members!casas_refugio_supervisor_esposa_id_fkey(full_name)
         `)
         .order("name");
       if (error) throw error;
-      return data as CasaRefugio[];
+      return data as CasaRefugioExtended[];
     },
   });
 
@@ -96,23 +103,36 @@ const CasasRefugioPage = () => {
     return unique.sort();
   }, [casas]);
 
-  const supervisores = useMemo(() => {
-    const unique = [...new Set(casas.map((c) => c.supervisores).filter(Boolean))];
-    return unique.sort();
+  // Criar lista de supervisores a partir do relacionamento
+  const supervisoresMap = useMemo(() => {
+    const map = new Map<string, string>();
+    casas.forEach((casa) => {
+      if (casa.supervisor?.full_name) {
+        map.set(casa.supervisor.full_name, casa.supervisor.full_name);
+      }
+    });
+    return Array.from(map.values()).sort();
   }, [casas]);
+
+  // Helper para obter o nome do supervisor de uma casa
+  const getSupervisorName = (casa: CasaRefugioExtended) => {
+    return casa.supervisor?.full_name || casa.supervisores || null;
+  };
 
   const filteredCasas = useMemo(() => {
     return casas.filter((casa) => {
       const matchesSearch =
         includesNormalized(casa.name, searchTerm) ||
         includesNormalized(casa.lideres || "", searchTerm) ||
-        includesNormalized(casa.anfitrioes || "", searchTerm);
+        includesNormalized(casa.anfitrioes || "", searchTerm) ||
+        includesNormalized(getSupervisorName(casa) || "", searchTerm);
 
       const matchesCondominio =
         condominioFilter === "all" || casa.condominio === condominioFilter;
 
+      const supervisorName = getSupervisorName(casa);
       const matchesSupervisor =
-        supervisorFilter === "all" || casa.supervisores === supervisorFilter;
+        supervisorFilter === "all" || supervisorName === supervisorFilter;
 
       return matchesSearch && matchesCondominio && matchesSupervisor;
     });
@@ -186,7 +206,7 @@ const CasasRefugioPage = () => {
             <p className="text-xs text-muted-foreground">Condomínios</p>
           </div>
           <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{supervisores.length}</p>
+            <p className="text-2xl font-bold text-foreground">{supervisoresMap.length}</p>
             <p className="text-xs text-muted-foreground">Supervisores</p>
           </div>
         </div>
@@ -226,8 +246,8 @@ const CasasRefugioPage = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos Supervisores</SelectItem>
-                {supervisores.map((sup) => (
-                  <SelectItem key={sup} value={sup!}>
+                {supervisoresMap.map((sup) => (
+                  <SelectItem key={sup} value={sup}>
                     {sup}
                   </SelectItem>
                 ))}
