@@ -151,7 +151,8 @@ const Auth = () => {
 
   // Gate para evitar redirecionamentos automáticos antes de checar permissões
   const hasProcessedAuthRef = useRef(false);
-
+  // Flag para indicar que um login foi iniciado (evita redirect durante processo)
+  const isLoginInProgressRef = useRef(false);
   // Fetch ministries for selection
   const { data: ministries = [] } = useQuery({
     queryKey: ["ministries"],
@@ -196,8 +197,15 @@ const Auth = () => {
       return;
     }
 
-    if (loading || isRecovery) return;
+    // NÃO processar se ainda está carregando OU se um login está em progresso
+    // Isso evita redirecionamentos prematuros antes de completar o login
+    if (loading) return;
+    if (isRecovery) return;
     if (hasProcessedAuthRef.current) return;
+    
+    // Só processar redirecionamento se o login foi explicitamente concluído
+    // O flag isLoginInProgressRef é setado false no handleLogin após sucesso
+    if (isLoginInProgressRef.current) return;
 
     // Marcar como processado para evitar navegações duplicadas em StrictMode
     hasProcessedAuthRef.current = true;
@@ -411,6 +419,9 @@ const Auth = () => {
     if (!validateLoginForm()) return;
 
     setIsLoading(true);
+    // Marcar que o login está em progresso para evitar redirecionamentos prematuros
+    isLoginInProgressRef.current = true;
+    
     try {
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
@@ -418,6 +429,7 @@ const Auth = () => {
       });
       
       if (error) {
+        isLoginInProgressRef.current = false;
         if (error.message.includes("Invalid login credentials")) {
           toast({ variant: "destructive", title: "Erro ao entrar", description: "Email ou senha incorretos." });
         } else {
@@ -429,14 +441,46 @@ const Auth = () => {
       if (data.user) {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
 
-        // Importante: NÃO navegar aqui.
-        // O useEffect pós-auth faz a checagem de acesso e decide entre:
-        // - mostrar a tela de escolha (Admin+Líder)
-        // - redirecionar para /cadastros, /lideres ou / (ou redirect=...)
+        // Login concluído com sucesso - agora pode processar o redirecionamento
+        // Resetar as flags para permitir que o useEffect processe
         hasProcessedAuthRef.current = false;
+        isLoginInProgressRef.current = false;
+        
+        // Verificar acesso e redirecionar imediatamente aqui (mais estável)
+        try {
+          const { checkUserAccess } = await import("@/hooks/useUserAccess");
+          const access = await checkUserAccess(data.user.id);
+
+          // Se o usuário é Admin + Líder, mostrar a escolha
+          if (access.isAdmin && access.isLeader) {
+            setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
+            setShowPortalChoice(true);
+            hasProcessedAuthRef.current = true;
+            return;
+          }
+
+          // Se vier de uma rota protegida, respeitar o redirect
+          const params = new URLSearchParams(window.location.search);
+          const redirect = params.get("redirect");
+          if (redirect) {
+            navigate(getSafeRedirect());
+            hasProcessedAuthRef.current = true;
+            return;
+          }
+
+          // Caso padrão: direcionamento por perfil
+          hasProcessedAuthRef.current = true;
+          if (access.isAdmin) navigate("/cadastros");
+          else if (access.isLeader) navigate("/lideres");
+          else navigate("/");
+        } catch (accessErr) {
+          console.error("Erro ao verificar acesso:", accessErr);
+          navigate("/");
+        }
       }
     } catch (err) {
       console.error("Erro no login:", err);
+      isLoginInProgressRef.current = false;
       toast({ variant: "destructive", title: "Erro", description: "Ocorreu um erro ao fazer login." });
     } finally {
       setIsLoading(false);
