@@ -2,12 +2,22 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   ArrowLeft,
   Loader2,
@@ -32,7 +42,7 @@ import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, getDay, startOfWeek, endOfWeek, isToday, isSameMonth, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Evento {
@@ -92,6 +102,22 @@ const AgendaPage = () => {
     flyer_url?: string | null;
     cor?: string | null;
   } | null>(null);
+  const [eventoParaExcluir, setEventoParaExcluir] = useState<Evento | null>(null);
+
+  const excluirEventoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("agenda_igreja").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
+      toast({ title: "Evento excluído com sucesso" });
+      setEventoParaExcluir(null);
+    },
+    onError: () => {
+      toast({ title: "Erro ao excluir evento", variant: "destructive" });
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -409,6 +435,14 @@ const AgendaPage = () => {
                           >
                             <Users className="w-4 h-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setEventoParaExcluir(evento)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -446,6 +480,26 @@ const AgendaPage = () => {
           evento={compartilharEvento}
         />
       )}
+
+      <AlertDialog open={!!eventoParaExcluir} onOpenChange={(open) => !open && setEventoParaExcluir(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir evento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o evento "{eventoParaExcluir?.titulo}"? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => eventoParaExcluir && excluirEventoMutation.mutate(eventoParaExcluir.id)}
+            >
+              {excluirEventoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
