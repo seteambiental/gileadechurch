@@ -71,8 +71,7 @@ const ministries = [
 const otherModules = [
   { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros" },
   { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage" },
-  { icon: Calendar, title: "Programação", description: "Agenda da igreja", path: "/agenda" },
-  { icon: PartyPopper, title: "Eventos", description: "Celebrações especiais", path: "/agenda" },
+  { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda" },
   { icon: DollarSign, title: "Financeiro", description: "Gestão financeira" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios" },
 ];
