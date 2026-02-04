@@ -65,12 +65,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Limpa o estado local PRIMEIRO para garantir que a UI atualize
       setUser(null);
       setSession(null);
-      
-      // Limpa o localStorage manualmente para garantir que a sessão seja removida
-      localStorage.removeItem('sb-jwjmseeyjemfwgyizumk-auth-token');
-      
-      // Tenta fazer logout no servidor (pode falhar se a sessão já expirou)
-      await supabase.auth.signOut({ scope: 'local' });
+
+      // Logout via SDK (principal)
+      await supabase.auth.signOut({ scope: "local" });
+
+      // Fallback: limpar qualquer token persistido no storage (evita “sessão presa”)
+      // A chave pode variar entre ambientes/versões, então removemos por padrão conhecido.
+      const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID || "jwjmseeyjemfwgyizumk";
+
+      const clearStorage = (storage: Storage) => {
+        const keys = Object.keys(storage);
+        for (const key of keys) {
+          const isSupabaseAuthKey = key.startsWith("sb-") && key.endsWith("-auth-token");
+          const isProjectKey = key.includes(projectRef);
+
+          if (isSupabaseAuthKey || isProjectKey) {
+            storage.removeItem(key);
+          }
+        }
+      };
+
+      try {
+        clearStorage(localStorage);
+      } catch {
+        // ignore
+      }
+      try {
+        clearStorage(sessionStorage);
+      } catch {
+        // ignore
+      }
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     }
