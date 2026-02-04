@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,8 +11,9 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Usar o novo hook centralizado para verificar acesso
   const { isAdmin, isLeader, loading: accessLoading } = useUserAccess(user?.id);
@@ -48,6 +49,7 @@ const Header = () => {
   ];
 
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
+  const isPublicHome = location.pathname === "/";
 
   return (
     <header
@@ -87,7 +89,30 @@ const Header = () => {
               </a>
             ))}
             
-            {user && !accessLoading ? (
+            {/* A home pública NÃO deve exibir atalhos de portal. */}
+            {isPublicHome ? (
+              user && !authLoading ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 ml-4"
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/");
+                  }}
+                >
+                  Sair
+                </Button>
+              ) : !user && !authLoading ? (
+                <Button
+                  variant="secondary"
+                  className="font-heading font-semibold shadow-red ml-4"
+                  onClick={() => navigate("/auth")}
+                >
+                  Entrar
+                </Button>
+              ) : null
+            ) : user && !authLoading && !accessLoading ? (
               <div className="flex items-center gap-2 ml-4">
                 {isAdmin && (
                   <Button
@@ -111,7 +136,7 @@ const Header = () => {
                   </Button>
                 )}
               </div>
-            ) : !user ? (
+            ) : !user && !authLoading ? (
               <Button
                 variant="secondary"
                 className="font-heading font-semibold shadow-red ml-4"
@@ -139,7 +164,32 @@ const Header = () => {
                   </a>
                 ))}
                 
-                {user && !accessLoading ? (
+                {isPublicHome ? (
+                  user && !authLoading ? (
+                    <Button
+                      variant="outline"
+                      className="mt-2 font-heading font-semibold border-primary-foreground/30 text-primary-foreground"
+                      onClick={async () => {
+                        setIsMobileMenuOpen(false);
+                        await signOut();
+                        navigate("/");
+                      }}
+                    >
+                      Sair
+                    </Button>
+                  ) : !user && !authLoading ? (
+                    <Button
+                      variant="secondary"
+                      className="mt-2 font-heading font-semibold shadow-red"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        navigate("/auth");
+                      }}
+                    >
+                      Entrar
+                    </Button>
+                  ) : null
+                ) : user && !authLoading && !accessLoading ? (
                   <div className="flex flex-col gap-2 mt-2">
                     {isAdmin && (
                       <Button
@@ -168,7 +218,7 @@ const Header = () => {
                       </Button>
                     )}
                   </div>
-                ) : !user ? (
+                ) : !user && !authLoading ? (
                   <Button
                     variant="secondary"
                     className="mt-2 font-heading font-semibold shadow-red"
