@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
@@ -16,13 +15,9 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  PartyPopper,
-  Church,
-  Image,
   Download,
   Link,
   Users,
-  BarChart3,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -77,7 +72,6 @@ const AgendaPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [activeTab, setActiveTab] = useState("programacao");
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -108,56 +102,64 @@ const AgendaPage = () => {
     },
   });
 
-  // Gerar SOMENTE eventos RECORRENTES para o calendário da aba Programação
-  const getEventosRecorrentesDoMes = () => {
+  // Gerar TODOS os eventos para o calendário
+  const getEventosDoMes = () => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const days = eachDayOfInterval({ start, end });
     
     const eventosExpandidos: (Evento & { dataCalculada: Date })[] = [];
 
-    // Filtrar apenas eventos recorrentes
-    eventos.filter(e => e.recorrente).forEach(evento => {
-      days.forEach(day => {
-        const diaSemana = getDay(day);
-        
-        if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
-          // Para ceia, verificar se é a semana correta do mês
-          if (evento.semana_mes) {
-            const primeiroDoMes = startOfMonth(day);
-            const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-            while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-              primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
-            }
-            const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-            if (semanaDoDia !== evento.semana_mes) return;
-          }
+    eventos.forEach(evento => {
+      if (evento.recorrente) {
+        days.forEach(day => {
+          const diaSemana = getDay(day);
           
-          eventosExpandidos.push({ ...evento, dataCalculada: day });
-        } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
-          // Verificar semana do mês
-          if (evento.semana_mes) {
-            const primeiroDoMes = startOfMonth(day);
-            const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
-            while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
-              primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
+          if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
+            if (evento.semana_mes) {
+              const primeiroDoMes = startOfMonth(day);
+              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
+              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
+                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
+              }
+              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
+              if (semanaDoDia !== evento.semana_mes) return;
             }
-            const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
-            if (semanaDoDia === evento.semana_mes) {
-              eventosExpandidos.push({ ...evento, dataCalculada: day });
+            eventosExpandidos.push({ ...evento, dataCalculada: day });
+          } else if (evento.tipo_recorrencia === "mensal" && evento.dia_semana === diaSemana) {
+            if (evento.semana_mes) {
+              const primeiroDoMes = startOfMonth(day);
+              const primeiroDiaSemanaDoMes = new Date(primeiroDoMes);
+              while (getDay(primeiroDiaSemanaDoMes) !== evento.dia_semana) {
+                primeiroDiaSemanaDoMes.setDate(primeiroDiaSemanaDoMes.getDate() + 1);
+              }
+              const semanaDoDia = Math.floor((day.getDate() - primeiroDiaSemanaDoMes.getDate()) / 7) + 1;
+              if (semanaDoDia === evento.semana_mes) {
+                eventosExpandidos.push({ ...evento, dataCalculada: day });
+              }
             }
           }
-        }
-      });
+        });
+      } else {
+        // Evento único ou multi-dias
+        const dataInicio = parseISO(evento.data_evento);
+        const dataFim = evento.data_fim ? parseISO(evento.data_fim) : dataInicio;
+        
+        days.forEach(day => {
+          if (isWithinInterval(day, { start: dataInicio, end: dataFim }) || isSameDay(day, dataInicio) || isSameDay(day, dataFim)) {
+            eventosExpandidos.push({ ...evento, dataCalculada: day });
+          }
+        });
+      }
     });
 
     return eventosExpandidos;
   };
 
-  const eventosRecorrentesDoMes = getEventosRecorrentesDoMes();
+  const eventosDoMes = getEventosDoMes();
 
   const getEventosDodia = (date: Date) => {
-    return eventosRecorrentesDoMes.filter(e => isSameDay(e.dataCalculada, date));
+    return eventosDoMes.filter(e => isSameDay(e.dataCalculada, date));
   };
 
 
@@ -242,9 +244,6 @@ const AgendaPage = () => {
 
   const eventosSelecionados = selectedDate ? getEventosDodia(selectedDate) : [];
 
-  // Eventos únicos (não recorrentes) para a aba de eventos
-  const eventosUnicos = eventos.filter(e => !e.recorrente);
-
 
   if (authLoading) {
     return (
@@ -276,220 +275,96 @@ const AgendaPage = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
-            <TabsTrigger value="programacao" className="flex items-center gap-2">
-              <Church className="w-4 h-4" />
-              Programação
-            </TabsTrigger>
-            <TabsTrigger value="eventos" className="flex items-center gap-2">
-              <PartyPopper className="w-4 h-4" />
-              Eventos
-            </TabsTrigger>
-          </TabsList>
+        {/* Dashboard de Inscrições */}
+        <InscricoesDashboard />
 
-          {/* Aba Programação - Calendário (somente agenda recorrente) */}
-          <TabsContent value="programacao" className="space-y-6 mt-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <h3 className="font-heading font-bold">Agenda Semanal / Recorrente</h3>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => {
-                  setEditingEvento(null);
-                  setShowEventoForm(true);
-                }}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Novo Evento
-                </Button>
-              </div>
-            </div>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <h3 className="font-heading font-bold">Calendário</h3>
+          <Button variant="secondary" onClick={() => {
+            setEditingEvento(null);
+            setShowEventoForm(true);
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Evento
+          </Button>
+        </div>
 
-            {renderCalendar()}
+        {renderCalendar()}
 
-            {/* Detalhes do dia selecionado */}
-            {selectedDate && (
-              <Card className="mt-4">
-                <CardContent className="pt-4">
-                  <h4 className="font-semibold mb-3">
-                    {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                  </h4>
-                  {eventosSelecionados.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">Nenhum evento neste dia.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {eventosSelecionados.map((evento, i) => (
-                        <div
-                          key={`${evento.id}-${i}`}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
-                          onClick={() => {
-                            setEditingEvento(evento);
-                            setShowEventoForm(true);
-                          }}
-                        >
-                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: evento.cor || "#dc2626" }} />
-                          <div className="flex-1">
-                            <p className="font-medium">{evento.titulo}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                              {evento.hora_inicio && ` • ${evento.hora_inicio.substring(0, 5)}`}
-                              {evento.local && ` • ${evento.local}`}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Aba Eventos - Lista de eventos especiais + Dashboard */}
-          <TabsContent value="eventos" className="space-y-6 mt-6">
-            {/* Dashboard de Inscrições */}
-            <InscricoesDashboard />
-
-            <div className="flex items-center justify-between">
-              <h3 className="font-heading font-bold">Eventos Especiais</h3>
-              <Button variant="secondary" onClick={() => {
-                setEditingEvento(null);
-                setShowEventoForm(true);
-              }}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Evento
-              </Button>
-            </div>
-
-            {eventosUnicos.length === 0 ? (
-              <Card className="bg-muted/30">
-                <CardContent className="pt-6 text-center text-muted-foreground py-12">
-                  <PartyPopper className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="font-medium">Nenhum evento especial cadastrado</p>
-                  <p className="text-sm">Crie eventos como retiros, conferências, batismos especiais</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {eventosUnicos.map(evento => (
-                  <Card 
-                    key={evento.id} 
-                    className="overflow-hidden hover:shadow-md transition-shadow"
-                  >
-                    {evento.flyer_url ? (
-                      <div 
-                        className="h-40 bg-muted cursor-pointer"
-                        onClick={() => {
-                          setEditingEvento(evento);
-                          setShowEventoForm(true);
-                        }}
-                      >
-                        <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
+        {/* Detalhes do dia selecionado */}
+        {selectedDate && (
+          <Card className="mt-4">
+            <CardContent className="pt-4">
+              <h4 className="font-semibold mb-3">
+                {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              </h4>
+              {eventosSelecionados.length === 0 ? (
+                <p className="text-muted-foreground text-sm">Nenhum evento neste dia.</p>
+              ) : (
+                <div className="space-y-2">
+                  {eventosSelecionados.map((evento, i) => (
+                    <div
+                      key={`${evento.id}-${i}`}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
+                      onClick={() => {
+                        setEditingEvento(evento);
+                        setShowEventoForm(true);
+                      }}
+                    >
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: evento.cor || "#dc2626" }} />
+                      <div className="flex-1">
+                        <p className="font-medium">{evento.titulo}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                          {evento.hora_inicio && ` • ${evento.hora_inicio.substring(0, 5)}`}
+                          {evento.local && ` • ${evento.local}`}
+                        </p>
                       </div>
-                    ) : (
-                      <div 
-                        className="h-2 cursor-pointer" 
-                        style={{ backgroundColor: evento.cor || "#dc2626" }}
-                        onClick={() => {
-                          setEditingEvento(evento);
-                          setShowEventoForm(true);
-                        }}
-                      />
-                    )}
-                    <CardContent className="pt-4 space-y-2">
-                      <div 
-                        className="cursor-pointer"
-                        onClick={() => {
-                          setEditingEvento(evento);
-                          setShowEventoForm(true);
-                        }}
-                      >
-                        <h4 className="font-semibold">{evento.titulo}</h4>
-                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <CalendarIcon className="w-3 h-3" />
-                            {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
-                          </span>
-                          {evento.hora_inicio && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {evento.hora_inicio.substring(0, 5)}
-                            </span>
-                          )}
-                        </div>
-                        {evento.descricao && (
-                          <p className="text-sm text-muted-foreground line-clamp-2">{evento.descricao}</p>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCompartilharEvento({
-                              id: evento.id,
-                              titulo: evento.titulo,
-                              data_evento: evento.data_evento,
-                              hora_inicio: evento.hora_inicio,
-                              local: evento.local,
-                              flyer_url: evento.flyer_url,
-                              cor: evento.cor,
-                            });
-                          }}
-                        >
-                          <Link className="w-4 h-4 mr-2" />
-                          Compartilhar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setInscricoesEvento({ 
-                              id: evento.id, 
-                              titulo: evento.titulo,
-                              local: evento.local,
-                              data_evento: evento.data_evento,
-                              limite_vagas: evento.limite_vagas
-                            });
-                          }}
-                        >
-                          <Users className="w-4 h-4 mr-2" />
-                          Inscrições
-                        </Button>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        {evento.flyer_url && (
+                      {!evento.recorrente && (
+                        <div className="flex gap-1">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            className="flex-1"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const link = document.createElement('a');
-                              link.href = evento.flyer_url!;
-                              link.download = `flyer-${evento.titulo.replace(/\s+/g, '-').toLowerCase()}.png`;
-                              link.target = '_blank';
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                              setCompartilharEvento({
+                                id: evento.id,
+                                titulo: evento.titulo,
+                                data_evento: evento.data_evento,
+                                hora_inicio: evento.hora_inicio,
+                                local: evento.local,
+                                flyer_url: evento.flyer_url,
+                                cor: evento.cor,
+                              });
                             }}
                           >
-                            <Download className="w-4 h-4 mr-2" />
-                            Flyer
+                            <Link className="w-4 h-4" />
                           </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-        </Tabs>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setInscricoesEvento({ 
+                                id: evento.id, 
+                                titulo: evento.titulo,
+                                local: evento.local,
+                                data_evento: evento.data_evento,
+                                limite_vagas: evento.limite_vagas
+                              });
+                            }}
+                          >
+                            <Users className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       <EventoFormDialog
