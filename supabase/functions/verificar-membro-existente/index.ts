@@ -52,11 +52,12 @@ serve(async (req) => {
     const inputWords = inputFirstNameLower.split(/\s+/);
     const inputWordCount = inputWords.length;
 
-    // 1) Checagem por Primeiro Nome + Data de Nascimento (membros)
+    // 1) Checagem por Primeiro Nome + Data de Nascimento (membros não excluídos)
     const { data: membersByBirth, error: membersErr } = await supabaseAdmin
       .from("members")
-      .select("id, full_name, email")
-      .eq("birth_date", normalizedBirthDate);
+      .select("id, full_name, email, excluido")
+      .eq("birth_date", normalizedBirthDate)
+      .or("excluido.is.null,excluido.eq.false");
 
     if (membersErr) throw membersErr;
 
@@ -118,6 +119,7 @@ serve(async (req) => {
         .from("members")
         .select("id, email")
         .eq("cpf", normalizedCpf)
+        .or("excluido.is.null,excluido.eq.false")
         .limit(1);
       if (mCpfErr) throw mCpfErr;
       if (membersCpf && membersCpf.length > 0) {

@@ -2690,6 +2690,9 @@ export type Database = {
           created_at: string
           email: string | null
           estado_civil: string | null
+          excluido: boolean | null
+          excluido_em: string | null
+          excluido_por: string | null
           full_name: string
           genero: string | null
           id: string
@@ -2718,6 +2721,9 @@ export type Database = {
           created_at?: string
           email?: string | null
           estado_civil?: string | null
+          excluido?: boolean | null
+          excluido_em?: string | null
+          excluido_por?: string | null
           full_name: string
           genero?: string | null
           id?: string
@@ -2746,6 +2752,9 @@ export type Database = {
           created_at?: string
           email?: string | null
           estado_civil?: string | null
+          excluido?: boolean | null
+          excluido_em?: string | null
+          excluido_por?: string | null
           full_name?: string
           genero?: string | null
           id?: string
@@ -4067,7 +4076,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           complement?: string | null
-          cpf?: never
+          cpf?: string | null
           created_at?: string | null
           email?: string | null
           estado_civil?: string | null
@@ -4079,7 +4088,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
-          rg?: never
+          rg?: string | null
           state?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -4092,7 +4101,7 @@ export type Database = {
           cep?: string | null
           city?: string | null
           complement?: string | null
-          cpf?: never
+          cpf?: string | null
           created_at?: string | null
           email?: string | null
           estado_civil?: string | null
@@ -4104,7 +4113,7 @@ export type Database = {
           neighborhood?: string | null
           number?: string | null
           photo_url?: string | null
-          rg?: never
+          rg?: string | null
           state?: string | null
           updated_at?: string | null
           user_id?: string | null

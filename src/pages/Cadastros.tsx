@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound } from "lucide-react";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import MembrosTab from "@/components/cadastros/MembrosTab";
+import MembrosExcluidosTab from "@/components/cadastros/MembrosExcluidosTab";
 import MinisteriosTab from "@/components/cadastros/MinisteriosTab";
 import CasasRefugioTab from "@/components/cadastros/CasasRefugioTab";
 import CondominiosTab from "@/components/cadastros/CondominiosTab";
@@ -117,13 +118,20 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-8">
+          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-9">
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
             >
               <Users className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Membros</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="excluidos" 
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+            >
+              <UserX className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline">Excluídos</span>
             </TabsTrigger>
             <TabsTrigger 
               value="visitantes" 
@@ -178,6 +186,10 @@ const Cadastros = () => {
 
           <TabsContent value="membros">
             <MembrosTab />
+          </TabsContent>
+
+          <TabsContent value="excluidos">
+            <MembrosExcluidosTab />
           </TabsContent>
 
           <TabsContent value="visitantes">
