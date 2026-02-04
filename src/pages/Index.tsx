@@ -13,7 +13,10 @@ import heroImage from "@/assets/hero-grapes.jpg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
 import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Share2 } from "lucide-react";
+import { UserPlus, Share2, CalendarDays } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -71,6 +74,24 @@ const Index = () => {
         .eq("ativo", true)
         .eq("recorrente", true)
         .order("dia_semana", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Buscar eventos com flyer (próximos eventos especiais)
+  const { data: eventosComFlyer } = useQuery({
+    queryKey: ["eventos-com-flyer-public"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, flyer_url, data_evento, limite_vagas")
+        .eq("ativo", true)
+        .not("flyer_url", "is", null)
+        .gte("data_evento", today)
+        .order("data_evento", { ascending: true })
+        .limit(3);
       if (error) return [];
       return data;
     },
@@ -263,6 +284,45 @@ const Index = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Eventos com Flyer */}
+              {eventosComFlyer && eventosComFlyer.length > 0 && (
+                <div className="mt-8">
+                  <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
+                    Próximos Eventos
+                  </h3>
+                  <div className="grid gap-4">
+                    {eventosComFlyer.map((evento, index) => (
+                      <Link
+                        key={evento.id}
+                        to={`/inscricao/${evento.id}`}
+                        className="group block rounded-xl overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md"
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="relative aspect-[16/9]">
+                          <img
+                            src={evento.flyer_url}
+                            alt={evento.titulo}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h4 className="font-heading font-bold text-white text-lg mb-1">
+                              {evento.titulo}
+                            </h4>
+                            <div className="flex items-center gap-2 text-white/80 text-sm">
+                              <CalendarDays className="w-4 h-4" />
+                              <span>
+                                {format(new Date(evento.data_evento + 'T12:00:00'), "dd 'de' MMMM", { locale: ptBR })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

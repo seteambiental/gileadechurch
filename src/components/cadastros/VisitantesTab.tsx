@@ -41,14 +41,28 @@ const VisitantesTab = () => {
   const { data: visitantes, isLoading } = useQuery({
     queryKey: ["visitantes"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Query visitantes with tipo_conversao = 'visitante' or null
+      const { data: visitantesData, error: visitantesError } = await supabase
         .from("novos_convertidos")
         .select("id, full_name, whatsapp, created_at")
-        .or("tipo_conversao.eq.visitante,tipo_conversao.is.null")
+        .eq("tipo_conversao", "visitante")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      return data as Visitante[];
+      // Also query those with null tipo_conversao
+      const { data: nullData, error: nullError } = await supabase
+        .from("novos_convertidos")
+        .select("id, full_name, whatsapp, created_at")
+        .is("tipo_conversao", null)
+        .order("created_at", { ascending: false });
+
+      if (visitantesError) throw visitantesError;
+      if (nullError) throw nullError;
+
+      // Combine and sort by created_at
+      const combined = [...(visitantesData || []), ...(nullData || [])];
+      combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      
+      return combined as Visitante[];
     },
   });
 
