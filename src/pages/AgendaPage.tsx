@@ -288,7 +288,7 @@ const AgendaPage = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto">
+          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
             <TabsTrigger value="programacao" className="flex items-center gap-2">
               <Church className="w-4 h-4" />
               Programação
@@ -297,25 +297,13 @@ const AgendaPage = () => {
               <PartyPopper className="w-4 h-4" />
               Eventos
             </TabsTrigger>
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Dashboard
-            </TabsTrigger>
           </TabsList>
 
-          {/* Aba Programação - Calendário */}
+          {/* Aba Programação - Calendário (somente agenda recorrente) */}
           <TabsContent value="programacao" className="space-y-6 mt-6">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <h3 className="font-heading font-bold">Calendário de Atividades</h3>
+              <h3 className="font-heading font-bold">Agenda Semanal / Recorrente</h3>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setActiveTab("eventos")}>
-                  <PartyPopper className="w-4 h-4 mr-2" />
-                  Ver Eventos
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab("dashboard")}>
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
                 <Button variant="secondary" onClick={() => {
                   setEditingEvento(null);
                   setShowEventoForm(true);
@@ -366,8 +354,11 @@ const AgendaPage = () => {
             )}
           </TabsContent>
 
-          {/* Aba Eventos - Lista de eventos especiais */}
+          {/* Aba Eventos - Lista de eventos especiais + Dashboard */}
           <TabsContent value="eventos" className="space-y-6 mt-6">
+            {/* Dashboard de Inscrições */}
+            <InscricoesDashboard />
+
             <div className="flex items-center justify-between">
               <h3 className="font-heading font-bold">Eventos Especiais</h3>
               <Button variant="secondary" onClick={() => {
@@ -509,9 +500,6 @@ const AgendaPage = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="dashboard" className="mt-6">
-            <InscricoesDashboard />
-          </TabsContent>
         </Tabs>
       </main>
 

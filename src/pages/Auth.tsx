@@ -230,10 +230,8 @@ const Auth = () => {
         return;
       }
 
-      // Caso padrão: direcionamento por perfil
-      if (access.isAdmin) navigate("/cadastros");
-      else if (access.isLeader) navigate("/lideres");
-      else navigate("/");
+      // Caso padrão: direcionamento para dashboard principal
+      navigate("/app");
     })().catch((err) => {
       console.error("Erro ao processar acesso pós-login:", err);
       // Permitir nova tentativa se algo falhar
@@ -468,11 +466,9 @@ const Auth = () => {
             return;
           }
 
-          // Caso padrão: direcionamento por perfil
+          // Caso padrão: direcionamento para dashboard principal
           hasProcessedAuthRef.current = true;
-          if (access.isAdmin) navigate("/cadastros");
-          else if (access.isLeader) navigate("/lideres");
-          else navigate("/");
+          navigate("/app");
         } catch (accessErr) {
           console.error("Erro ao verificar acesso:", accessErr);
           navigate("/");
