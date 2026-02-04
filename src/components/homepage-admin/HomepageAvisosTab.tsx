@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical } from "lucide-react";
+import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical, Image as ImageIcon } from "lucide-react";
 
 interface Aviso {
   id: string;
@@ -26,13 +26,14 @@ interface Aviso {
   ordem: number;
 }
 
-interface EventoAgenda {
+interface EventoComFlyer {
   id: string;
   titulo: string;
   data_evento: string;
   hora_inicio?: string;
   tipo_evento: string;
   descricao?: string;
+  flyer_url: string;
 }
 
 const tipoIcons = {
@@ -78,7 +79,7 @@ const HomepageAvisosTab = () => {
     },
   });
 
-  // Buscar eventos da agenda que podem virar avisos
+  // Buscar eventos da agenda que podem virar avisos (sem flyer)
   const { data: eventosAgenda } = useQuery({
     queryKey: ["eventos-agenda-avisos"],
     queryFn: async () => {
@@ -87,11 +88,30 @@ const HomepageAvisosTab = () => {
         .from("agenda_igreja")
         .select("id, titulo, data_evento, hora_inicio, tipo_evento, descricao")
         .eq("ativo", true)
+        .is("flyer_url", null)
         .gte("data_evento", today)
         .order("data_evento", { ascending: true })
         .limit(20);
       if (error) throw error;
-      return data as EventoAgenda[];
+      return data || [];
+    },
+  });
+
+  // Buscar eventos com flyer (exibidos na homepage)
+  const { data: eventosComFlyer } = useQuery({
+    queryKey: ["eventos-com-flyer-admin"],
+    queryFn: async () => {
+      const today = format(new Date(), "yyyy-MM-dd");
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, hora_inicio, tipo_evento, descricao, flyer_url")
+        .eq("ativo", true)
+        .not("flyer_url", "is", null)
+        .gte("data_evento", today)
+        .order("data_evento", { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      return (data || []) as EventoComFlyer[];
     },
   });
 
@@ -170,7 +190,7 @@ const HomepageAvisosTab = () => {
     setFormOpen(true);
   };
 
-  const handleAddFromEvento = (evento: EventoAgenda) => {
+  const handleAddFromEvento = (evento: { titulo: string; data_evento: string; hora_inicio?: string; descricao?: string }) => {
     setFormData({
       titulo: evento.titulo,
       descricao: evento.descricao || "",
@@ -196,8 +216,6 @@ const HomepageAvisosTab = () => {
   if (loadingAvisos) {
     return <div className="text-center py-8">Carregando...</div>;
   }
-
-  const Icon = tipoIcons[formData.tipo];
 
   return (
     <div className="space-y-6">
@@ -297,6 +315,48 @@ const HomepageAvisosTab = () => {
         </Dialog>
       </div>
 
+      {/* Flyers exibidos na Homepage */}
+      {eventosComFlyer && eventosComFlyer.length > 0 && (
+        <Card className="border-secondary/50">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ImageIcon className="w-5 h-5 text-secondary" />
+              Flyers Exibidos na Homepage
+            </CardTitle>
+            <CardDescription>
+              Eventos com flyer que aparecem automaticamente na homepage. Limite de 3 eventos.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {eventosComFlyer.slice(0, 3).map((evento) => (
+                <div
+                  key={evento.id}
+                  className="rounded-lg overflow-hidden border border-border bg-muted/30"
+                >
+                  <img
+                    src={evento.flyer_url}
+                    alt={evento.titulo}
+                    className="w-full h-auto object-contain"
+                  />
+                  <div className="p-3">
+                    <p className="font-medium text-sm truncate">{evento.titulo}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {eventosComFlyer.length > 3 && (
+              <p className="text-xs text-muted-foreground mt-3">
+                + {eventosComFlyer.length - 3} flyer(s) não exibido(s) (limite de 3 na homepage)
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Eventos da Agenda que podem virar avisos */}
       {eventosAgenda && eventosAgenda.length > 0 && (
         <Card>
@@ -330,6 +390,7 @@ const HomepageAvisosTab = () => {
 
       {/* Lista de Avisos */}
       <div className="space-y-3">
+        <h3 className="font-heading font-semibold">Avisos Manuais</h3>
         {!avisos || avisos.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">

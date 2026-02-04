@@ -291,33 +291,19 @@ const Index = () => {
                   <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
                     Próximos Eventos
                   </h3>
-                  <div className="grid gap-4">
+                  <div className="grid gap-6">
                     {eventosComFlyer.map((evento, index) => (
                       <Link
                         key={evento.id}
                         to={`/inscricao/${evento.id}`}
-                        className="group block rounded-xl overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md"
+                        className="group block rounded-xl overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
-                        <div className="relative aspect-[16/9]">
-                          <img
-                            src={evento.flyer_url}
-                            alt={evento.titulo}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <h4 className="font-heading font-bold text-white text-lg mb-1">
-                              {evento.titulo}
-                            </h4>
-                            <div className="flex items-center gap-2 text-white/80 text-sm">
-                              <CalendarDays className="w-4 h-4" />
-                              <span>
-                                {format(new Date(evento.data_evento + 'T12:00:00'), "dd 'de' MMMM", { locale: ptBR })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                        <img
+                          src={evento.flyer_url}
+                          alt={evento.titulo}
+                          className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-300"
+                        />
                       </Link>
                     ))}
                   </div>
