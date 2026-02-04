@@ -79,7 +79,7 @@ const Index = () => {
     },
   });
 
-  // Buscar eventos com flyer (próximos eventos especiais)
+  // Buscar eventos com flyer (próximos eventos especiais) - até 4
   const { data: eventosComFlyer } = useQuery({
     queryKey: ["eventos-com-flyer-public"],
     queryFn: async () => {
@@ -91,7 +91,7 @@ const Index = () => {
         .not("flyer_url", "is", null)
         .gte("data_evento", today)
         .order("data_evento", { ascending: true })
-        .limit(3);
+        .limit(4);
       if (error) return [];
       return data;
     },
@@ -285,18 +285,18 @@ const Index = () => {
                 ))}
               </div>
 
-              {/* Eventos com Flyer */}
+              {/* Eventos com Flyer - Grid 2x2 */}
               {eventosComFlyer && eventosComFlyer.length > 0 && (
                 <div className="mt-8">
                   <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
                     Próximos Eventos
                   </h3>
-                  <div className="grid gap-6">
+                  <div className="grid grid-cols-2 gap-3">
                     {eventosComFlyer.map((evento, index) => (
                       <Link
                         key={evento.id}
                         to={`/inscricao/${evento.id}`}
-                        className="group block rounded-xl overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
+                        className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <img
