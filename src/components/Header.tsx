@@ -87,7 +87,7 @@ const Header = () => {
               </a>
             ))}
             
-            {user ? (
+            {user && !accessLoading ? (
               <div className="flex items-center gap-2 ml-4">
                 {isAdmin && (
                   <Button
@@ -100,7 +100,7 @@ const Header = () => {
                     Admin
                   </Button>
                 )}
-                {isLeader && (
+                {isLeader && !isAdmin && (
                   <Button
                     variant="secondary"
                     className="font-heading font-semibold shadow-red"
@@ -111,7 +111,7 @@ const Header = () => {
                   </Button>
                 )}
               </div>
-            ) : (
+            ) : !user ? (
               <Button
                 variant="secondary"
                 className="font-heading font-semibold shadow-red ml-4"
@@ -119,7 +119,7 @@ const Header = () => {
               >
                 Entrar
               </Button>
-            )}
+            ) : null}
           </nav>
         </div>
 
@@ -139,7 +139,7 @@ const Header = () => {
                   </a>
                 ))}
                 
-                {user ? (
+                {user && !accessLoading ? (
                   <div className="flex flex-col gap-2 mt-2">
                     {isAdmin && (
                       <Button
@@ -154,7 +154,7 @@ const Header = () => {
                         Administração
                       </Button>
                     )}
-                    {isLeader && (
+                    {isLeader && !isAdmin && (
                       <Button
                         variant="secondary"
                         className="font-heading font-semibold shadow-red"
@@ -168,7 +168,7 @@ const Header = () => {
                       </Button>
                     )}
                   </div>
-                ) : (
+                ) : !user ? (
                   <Button
                     variant="secondary"
                     className="mt-2 font-heading font-semibold shadow-red"
@@ -179,7 +179,7 @@ const Header = () => {
                   >
                     Entrar
                   </Button>
-                )}
+                ) : null}
               </div>
             </div>
           </nav>
