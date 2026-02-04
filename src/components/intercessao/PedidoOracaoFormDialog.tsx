@@ -19,17 +19,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Send } from "lucide-react";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
@@ -127,24 +121,18 @@ const PedidoOracaoFormDialog = ({ open, onOpenChange }: PedidoOracaoFormDialogPr
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Seu nome</FormLabel>
-                    <Select
-                      value={field.value || "none"}
-                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione seu nome" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Não informar</SelectItem>
-                        {members?.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ClearableSelect
+                        value={field.value || null}
+                        onChange={(val) => field.onChange(val || "")}
+                        options={(members || []).map((m) => ({
+                          value: m.id,
+                          label: m.full_name,
+                        }))}
+                        placeholder="Selecione seu nome"
+                        emptyLabel="Não informar"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

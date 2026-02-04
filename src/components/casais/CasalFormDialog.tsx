@@ -13,18 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { formatPhone } from "@/lib/masks";
 import { differenceInYears, differenceInMonths } from "date-fns";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField } from "@/lib/text-utils";
+import { ClearableSelect } from "@/components/ui/clearable-select";
 
 interface CasalFormDialogProps {
   open: boolean;
@@ -151,42 +145,30 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
             <>
               <div className="space-y-2">
                 <Label>Esposo *</Label>
-                <Select 
-                  value={membroMasculinoId || "none"} 
-                  onValueChange={(v) => setMembroMasculinoId(v === "none" ? "" : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o esposo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Selecione...</SelectItem>
-                    {membrosMasculinos.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClearableSelect
+                  value={membroMasculinoId || null}
+                  onChange={(val) => setMembroMasculinoId(val || "")}
+                  options={membrosMasculinos.map((m) => ({
+                    value: m.id,
+                    label: m.full_name,
+                  }))}
+                  placeholder="Selecione o esposo"
+                  emptyLabel="Selecione..."
+                />
               </div>
 
               <div className="space-y-2">
                 <Label>Esposa *</Label>
-                <Select 
-                  value={membroFemininoId || "none"} 
-                  onValueChange={(v) => setMembroFemininoId(v === "none" ? "" : v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a esposa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Selecione...</SelectItem>
-                    {membrosFemininos.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ClearableSelect
+                  value={membroFemininoId || null}
+                  onChange={(val) => setMembroFemininoId(val || "")}
+                  options={membrosFemininos.map((m) => ({
+                    value: m.id,
+                    label: m.full_name,
+                  }))}
+                  placeholder="Selecione a esposa"
+                  emptyLabel="Selecione..."
+                />
               </div>
             </>
           ) : (
