@@ -52,7 +52,11 @@ export const PortalLideresIndicadores = ({
   // Determinar escopo de acesso
   const sindicoCondominios = portalAccess?.sindicoCondominios || [];
   const casasRefugioIds = portalAccess?.casasRefugioIds || [];
-  const isFullAccess = portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar";
+  // Importante: se houver escopo explícito (ex.: síndico), ele tem prioridade mesmo que o role seja pastor.
+  const isFullAccess =
+    (portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar") &&
+    sindicoCondominios.length === 0 &&
+    casasRefugioIds.length === 0;
   const isSindico = sindicoCondominios.length > 0;
 
   // Buscar casas refúgio baseado no escopo do usuário
@@ -73,7 +77,7 @@ export const PortalLideresIndicadores = ({
         .order("name");
 
       // Filtrar por condomínio se for síndico
-      if (!isFullAccess && isSindico) {
+      if (isSindico) {
         query = query.in("condominio", sindicoCondominios);
       } else if (!isFullAccess && casasRefugioIds.length > 0) {
         // Filtrar por IDs específicos se for líder/supervisor
@@ -358,28 +362,28 @@ export const PortalLideresIndicadores = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <Users className="w-5 h-5 mx-auto mb-1 text-blue-500" />
+            <Users className="w-5 h-5 mx-auto mb-1 text-secondary" />
             <p className="text-2xl font-bold">{stats?.totalMembros || 0}</p>
             <p className="text-xs text-muted-foreground">Membros</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <Home className="w-5 h-5 mx-auto mb-1 text-green-500" />
+            <Home className="w-5 h-5 mx-auto mb-1 text-primary" />
             <p className="text-2xl font-bold">{stats?.totalCasas || 0}</p>
             <p className="text-xs text-muted-foreground">Casas Refúgio</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <Calendar className="w-5 h-5 mx-auto mb-1 text-amber-500" />
+            <Calendar className="w-5 h-5 mx-auto mb-1 text-accent-foreground" />
             <p className="text-2xl font-bold">{stats?.totalEncontros || 0}</p>
             <p className="text-xs text-muted-foreground">Encontros/Mês</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
-            <TrendingUp className="w-5 h-5 mx-auto mb-1 text-purple-500" />
+            <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <p className="text-2xl font-bold">{stats?.novosConvertidos || 0}</p>
             <p className="text-xs text-muted-foreground">Novos/Mês</p>
           </CardContent>
@@ -388,27 +392,27 @@ export const PortalLideresIndicadores = ({
 
       {/* Estatísticas de Encontros */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="bg-blue-500/10 border-blue-500/20">
+        <Card className="bg-secondary/10 border-secondary/20">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-blue-600">{stats?.totalPessoas || 0}</p>
+            <p className="text-2xl font-bold text-secondary">{stats?.totalPessoas || 0}</p>
             <p className="text-xs text-muted-foreground">Pessoas/Mês</p>
           </CardContent>
         </Card>
-        <Card className="bg-green-500/10 border-green-500/20">
+        <Card className="bg-primary/10 border-primary/20">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{stats?.mediaPorEncontro || 0}</p>
+            <p className="text-2xl font-bold text-primary">{stats?.mediaPorEncontro || 0}</p>
             <p className="text-xs text-muted-foreground">Média/Encontro</p>
           </CardContent>
         </Card>
-        <Card className="bg-amber-500/10 border-amber-500/20">
+        <Card className="bg-accent/30 border-border">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-amber-600">{stats?.totalKilos || 0} kg</p>
+            <p className="text-2xl font-bold text-foreground">{stats?.totalKilos || 0} kg</p>
             <p className="text-xs text-muted-foreground">Kilos/Mês</p>
           </CardContent>
         </Card>
-        <Card className="bg-purple-500/10 border-purple-500/20">
+        <Card className="bg-muted/30 border-border">
           <CardContent className="pt-4 pb-4 text-center">
-            <p className="text-2xl font-bold text-purple-600">
+            <p className="text-2xl font-bold text-foreground">
               R$ {(stats?.totalOfertas || 0).toFixed(0)}
             </p>
             <p className="text-xs text-muted-foreground">Ofertas/Mês</p>

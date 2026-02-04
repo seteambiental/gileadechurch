@@ -54,7 +54,12 @@ export const PortalLideresCasaRefugio = ({
   const sindicoCondominios = portalAccess?.sindicoCondominios || [];
   const supervisorCondominios = portalAccess?.supervisorCondominios || [];
   const casasRefugioIds = portalAccess?.casasRefugioIds || [];
-  const isFullAccess = portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar";
+  // Importante: se houver escopo explícito (ex.: síndico), ele tem prioridade mesmo que o role seja pastor.
+  const isFullAccess =
+    (portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar") &&
+    sindicoCondominios.length === 0 &&
+    supervisorCondominios.length === 0 &&
+    casasRefugioIds.length === 0;
   const isSindico = sindicoCondominios.length > 0;
   const isSupervisorCondominio = supervisorCondominios.length > 0;
 
@@ -87,11 +92,11 @@ export const PortalLideresCasaRefugio = ({
         .order("name");
 
       // Síndico vê casas do seu condomínio (por nome)
-      if (!isFullAccess && isSindico) {
+      if (isSindico) {
         query = query.in("condominio", sindicoCondominios);
       } 
       // Supervisor de condomínio vê casas do seu condomínio
-      else if (!isFullAccess && isSupervisorCondominio) {
+      else if (isSupervisorCondominio) {
         query = query.in("condominio", supervisorCondominios);
       }
       // Líder/Supervisor de casa refúgio vê casas específicas por ID

@@ -24,6 +24,12 @@ export const PortalLideresCondominio = ({
   const getCondominioNames = () => {
     if (!portalAccess) return null;
 
+    // Se o usuário tem função de síndico atribuída (mesmo que o role principal seja pastor),
+    // sempre restringe aos condomínios dele.
+    if (portalAccess.sindicoCondominios && portalAccess.sindicoCondominios.length > 0) {
+      return portalAccess.sindicoCondominios;
+    }
+
     // Pastor geral/auxiliar vê tudo
     if (portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar") {
       return null;
