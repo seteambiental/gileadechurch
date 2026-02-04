@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
   ArrowLeft,
   Loader2,
@@ -72,6 +73,7 @@ const AgendaPage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
+  const [mostrarInativos, setMostrarInativos] = useState(true);
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
     id: string; 
@@ -90,13 +92,18 @@ const AgendaPage = () => {
   }, [user, authLoading, navigate, bypass]);
 
   const { data: eventos = [], isLoading } = useQuery({
-    queryKey: ["agenda-igreja"],
+    queryKey: ["agenda-igreja", { mostrarInativos }],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("agenda_igreja")
         .select("*")
-        .eq("ativo", true)
         .order("data_evento");
+
+      if (!mostrarInativos) {
+        query = query.eq("ativo", true);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as Evento[];
     },
@@ -223,7 +230,11 @@ const AgendaPage = () => {
                     <div
                       key={`${evento.id}-${i}`}
                       className="text-[10px] px-1 py-0.5 rounded truncate text-white"
-                      style={{ backgroundColor: evento.cor || "#dc2626" }}
+                      style={{
+                        backgroundColor: evento.cor || "#dc2626",
+                        opacity: evento.ativo ? 1 : 0.45,
+                      }}
+                      title={evento.ativo ? evento.titulo : `${evento.titulo} (inativo)`}
                     >
                       {evento.titulo}
                     </div>
@@ -279,11 +290,25 @@ const AgendaPage = () => {
         <InscricoesDashboard />
 
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <h3 className="font-heading font-bold">Calendário</h3>
-          <Button variant="secondary" onClick={() => {
-            setEditingEvento(null);
-            setShowEventoForm(true);
-          }}>
+          <div className="flex items-center gap-4 flex-wrap">
+            <h3 className="font-heading font-bold">Calendário</h3>
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={mostrarInativos}
+                onCheckedChange={setMostrarInativos}
+                aria-label="Mostrar eventos inativos"
+              />
+              <span className="text-sm text-muted-foreground">Mostrar inativos</span>
+            </div>
+          </div>
+
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditingEvento(null);
+              setShowEventoForm(true);
+            }}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Novo Evento
           </Button>
@@ -306,6 +331,7 @@ const AgendaPage = () => {
                     <div
                       key={`${evento.id}-${i}`}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
+                      style={{ opacity: evento.ativo ? 1 : 0.6 }}
                       onClick={() => {
                         setEditingEvento(evento);
                         setShowEventoForm(true);
@@ -313,7 +339,12 @@ const AgendaPage = () => {
                     >
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: evento.cor || "#dc2626" }} />
                       <div className="flex-1">
-                        <p className="font-medium">{evento.titulo}</p>
+                        <p className="font-medium">
+                          {evento.titulo}
+                          {!evento.ativo && (
+                            <span className="ml-2 text-xs text-muted-foreground">(inativo)</span>
+                          )}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
                           {evento.hora_inicio && ` • ${evento.hora_inicio.substring(0, 5)}`}
