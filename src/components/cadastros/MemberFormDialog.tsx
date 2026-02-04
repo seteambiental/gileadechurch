@@ -65,6 +65,15 @@ const ROLE_TYPES = [
   { value: "admin", label: "Administrador", description: "Acesso completo + desenvolvimento" },
 ] as const;
 
+// Subfunções genéricas para Integrante de Ministério
+const INTEGRANTE_SUBFUNCTIONS = [
+  { value: "anfitriao", label: "Anfitrião" },
+  { value: "secretario", label: "Secretário" },
+  { value: "equipe", label: "Equipe" },
+  { value: "lider_treinamento", label: "Líder em Treinamento" },
+  { value: "timoteo", label: "Timóteo" },
+];
+
 // Funções específicas por ministério (baseado no nome do ministério)
 const MINISTRY_SPECIFIC_FUNCTIONS: Record<string, { value: string; label: string }[]> = {
   "louvor": [
@@ -991,8 +1000,34 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                           </Select>
                         )}
 
-                        {/* Subfunção específica do ministério */}
-                        {specificFunctions && func.ministry_id && (
+                        {/* Subfunção para Integrante de Ministério (genérica) */}
+                        {func.function_type === "integrante_ministerio" && func.ministry_id && (
+                          <Select
+                            value={func.subfuncao || ""}
+                            onValueChange={(value) => updateFunction(index, { subfuncao: value })}
+                          >
+                            <SelectTrigger className="bg-card sm:col-span-2">
+                              <SelectValue placeholder="Selecione a função no ministério" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-card border-border z-50">
+                              {/* Subfunções genéricas para qualquer ministério */}
+                              {INTEGRANTE_SUBFUNCTIONS.map((sf) => (
+                                <SelectItem key={sf.value} value={sf.value}>
+                                  {sf.label}
+                                </SelectItem>
+                              ))}
+                              {/* Se o ministério tiver funções específicas, adicionar também */}
+                              {specificFunctions && specificFunctions.map((sf) => (
+                                <SelectItem key={`specific-${sf.value}`} value={sf.value}>
+                                  {sf.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                        
+                        {/* Subfunção específica do ministério (para outras funções) */}
+                        {func.function_type !== "integrante_ministerio" && specificFunctions && func.ministry_id && (
                           <Select
                             value={func.subfuncao || ""}
                             onValueChange={(value) => updateFunction(index, { subfuncao: value })}
