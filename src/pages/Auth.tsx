@@ -486,11 +486,8 @@ const Auth = () => {
   const handlePortalChoice = (portal: "admin" | "lideres") => {
     setShowPortalChoice(false);
     setPendingUserAccess(null);
-    if (portal === "admin") {
-      navigate("/cadastros");
-    } else {
-      navigate("/lideres");
-    }
+    // Sempre redirecionar para o dashboard principal
+    navigate("/app");
   };
 
   const handleSignup = async (e: React.FormEvent) => {
