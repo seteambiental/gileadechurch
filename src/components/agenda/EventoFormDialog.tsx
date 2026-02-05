@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign, CalendarIcon } from "lucide-react";
+import { Copy, MessageSquare } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,6 +132,8 @@ export const EventoFormDialog = ({
   const [grupoEnvio, setGrupoEnvio] = useState("");
   const [isSendingFlyer, setIsSendingFlyer] = useState(false);
   const [templateFlyer, setTemplateFlyer] = useState("moderno");
+  const [textoCompartilhamento, setTextoCompartilhamento] = useState<string | null>(null);
+  const [isGeneratingTexto, setIsGeneratingTexto] = useState(false);
 
   const [formData, setFormData] = useState({
     titulo: "",
@@ -220,6 +223,7 @@ export const EventoFormDialog = ({
         setHorariosPorDia([]);
         setFlyerUrl(null);
         setFlyerPendente(null);
+        setTextoCompartilhamento(null);
       }
     }
   }, [open, evento, selectedDate]);
@@ -279,6 +283,11 @@ export const EventoFormDialog = ({
 
     setIsGeneratingFlyer(true);
     try {
+      // Gerar link de inscrição
+      const linkInscricao = evento?.id 
+        ? `${window.location.origin}/inscricao/${evento.id}`
+        : undefined;
+
       const { data, error } = await supabase.functions.invoke('gerar-flyer', {
         body: {
           titulo: formData.titulo,
@@ -302,18 +311,42 @@ export const EventoFormDialog = ({
           observacoes: formData.observacoes,
           corFundo: formData.cor,
           template: templateFlyer,
+          linkInscricao,
         },
       });
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      setFlyerPendente(data.flyerUrl);
-      toast({ title: "Flyer gerado! Aceite ou descarte." });
+      // Se for template simples, mostra o texto para copiar
+      if (templateFlyer === "simples" && data.textoCompartilhamento) {
+        setTextoCompartilhamento(data.textoCompartilhamento);
+        toast({ title: "Texto gerado para compartilhamento!" });
+      } else {
+        setFlyerPendente(data.flyerUrl);
+        toast({ title: "Flyer gerado! Aceite ou descarte." });
+      }
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro ao gerar flyer", description: error.message });
     } finally {
       setIsGeneratingFlyer(false);
+    }
+  };
+
+  const handleCopyTexto = async () => {
+    if (!textoCompartilhamento) return;
+    try {
+      await navigator.clipboard.writeText(textoCompartilhamento);
+      toast({ title: "Texto copiado!", description: "Cole no WhatsApp ou outro app" });
+    } catch (error) {
+      // Fallback para navegadores antigos
+      const textArea = document.createElement("textarea");
+      textArea.value = textoCompartilhamento;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      toast({ title: "Texto copiado!", description: "Cole no WhatsApp ou outro app" });
     }
   };
 
@@ -1022,6 +1055,7 @@ export const EventoFormDialog = ({
                           <SelectItem value="festivo">Festivo</SelectItem>
                           <SelectItem value="elegante">Elegante</SelectItem>
                           <SelectItem value="corporativo">Corporativo</SelectItem>
+                          <SelectItem value="simples">📝 Texto</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
@@ -1033,12 +1067,53 @@ export const EventoFormDialog = ({
                         {isGeneratingFlyer ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          templateFlyer === "simples" ? <MessageSquare className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />
                         )}
-                        Gerar Flyer
+                        {templateFlyer === "simples" ? "Gerar Texto" : "Gerar Flyer"}
                       </Button>
                     </div>
                   </div>
+
+                  {/* Texto de compartilhamento gerado */}
+                  {textoCompartilhamento && (
+                    <div className="space-y-2 mt-3">
+                      <div className="relative">
+                        <pre className="p-3 bg-muted rounded-lg text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border font-sans">
+                          {textoCompartilhamento}
+                        </pre>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-2 right-2"
+                          onClick={() => setTextoCompartilhamento(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="flex-1"
+                          onClick={handleCopyTexto}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copiar Texto
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={handleGenerateFlyer}
+                          disabled={isGeneratingFlyer}
+                          title="Gerar novamente"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

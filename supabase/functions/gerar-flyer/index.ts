@@ -44,6 +44,163 @@ const getPeriodoLabel = (periodo: string): string => {
   return labels[periodo] || periodo;
 };
 
+// Gerar texto formatado para compartilhamento
+const generateTextoCompartilhamento = (params: {
+  titulo: string;
+  dataFormatada: string;
+  dataFimFormatada?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  local?: string;
+  descricao?: string;
+  publicoAlvo?: string;
+  idadeMinima?: number;
+  idadeMaxima?: number;
+  temRefeicao?: boolean;
+  comentariosRefeicao?: string;
+  temCusto?: boolean;
+  valorCusto?: number;
+  comentariosCusto?: string;
+  cronograma?: string[];
+  limiteVagas?: number;
+  observacoes?: string;
+  linkInscricao?: string;
+}): string => {
+  const {
+    titulo,
+    dataFormatada,
+    dataFimFormatada,
+    horaInicio,
+    horaFim,
+    local,
+    descricao,
+    publicoAlvo,
+    idadeMinima,
+    idadeMaxima,
+    temRefeicao,
+    comentariosRefeicao,
+    temCusto,
+    valorCusto,
+    comentariosCusto,
+    cronograma,
+    limiteVagas,
+    observacoes,
+    linkInscricao,
+  } = params;
+
+  // Determinar público
+  let publicoTexto = "";
+  if (publicoAlvo === "masculino" || publicoAlvo === "homens") publicoTexto = "Público masculino";
+  else if (publicoAlvo === "feminino" || publicoAlvo === "mulheres") publicoTexto = "Público feminino";
+  else if (publicoAlvo === "jovens") publicoTexto = "Jovens";
+  else if (publicoAlvo === "adolescentes") publicoTexto = "Adolescentes";
+  else if (publicoAlvo === "criancas") publicoTexto = "Crianças";
+  else if (publicoAlvo === "todos") publicoTexto = "Todos os públicos";
+
+  // Faixa etária
+  let faixaEtaria = "";
+  if (idadeMinima && idadeMaxima) {
+    faixaEtaria = `${idadeMinima} a ${idadeMaxima} anos`;
+  } else if (idadeMinima) {
+    faixaEtaria = `A partir de ${idadeMinima} anos`;
+  } else if (idadeMaxima) {
+    faixaEtaria = `Até ${idadeMaxima} anos`;
+  }
+
+  // Horário formatado
+  let horarioTexto = "";
+  if (horaInicio && horaFim) {
+    horarioTexto = `${horaInicio} às ${horaFim}`;
+  } else if (horaInicio) {
+    horarioTexto = `A partir das ${horaInicio}`;
+  }
+
+  // Data formatada (com data fim se houver)
+  let dataTexto = dataFormatada;
+  if (dataFimFormatada && dataFimFormatada !== dataFormatada) {
+    dataTexto = `${dataFormatada} a ${dataFimFormatada}`;
+  }
+
+  // Custo formatado
+  let custoTexto = "Entrada gratuita";
+  if (temCusto && valorCusto) {
+    custoTexto = `R$ ${valorCusto.toFixed(2).replace('.', ',')}`;
+  }
+
+  // Montar texto
+  let texto = "";
+  
+  // Cabeçalho
+  texto += `✨ *${titulo.toUpperCase()}* ✨\n`;
+  texto += `━━━━━━━━━━━━━━━━━━━\n\n`;
+  
+  // Descrição
+  if (descricao) {
+    texto += `${descricao}\n\n`;
+  }
+  
+  // Data e horário
+  texto += `📅 *Data:* ${dataTexto}\n`;
+  if (horarioTexto) {
+    texto += `🕐 *Horário:* ${horarioTexto}\n`;
+  }
+  
+  // Local
+  if (local) {
+    texto += `📍 *Local:* ${local}\n`;
+  }
+  
+  texto += `\n`;
+  
+  // Público e faixa etária
+  if (publicoTexto || faixaEtaria) {
+    texto += `👥 *Público:* ${publicoTexto}${publicoTexto && faixaEtaria ? ' • ' : ''}${faixaEtaria}\n`;
+  }
+  
+  // Vagas
+  if (limiteVagas) {
+    texto += `🎟️ *Vagas:* ${limiteVagas} vagas disponíveis\n`;
+  }
+  
+  // Cronograma
+  if (cronograma && cronograma.length > 0) {
+    texto += `\n📋 *Programação:*\n`;
+    cronograma.forEach((item) => {
+      texto += `   • ${item}\n`;
+    });
+  }
+  
+  // Refeição
+  if (temRefeicao) {
+    const refeicaoInfo = comentariosRefeicao || "Refeições inclusas";
+    texto += `\n🍽️ *Alimentação:* ${refeicaoInfo}\n`;
+  }
+  
+  // Investimento
+  texto += `\n💰 *Investimento:* ${custoTexto}\n`;
+  if (temCusto && comentariosCusto) {
+    texto += `   _${comentariosCusto}_\n`;
+  }
+  
+  // Observações
+  if (observacoes) {
+    texto += `\nℹ️ *Observações:*\n${observacoes}\n`;
+  }
+  
+  // Link de inscrição
+  if (linkInscricao) {
+    texto += `\n━━━━━━━━━━━━━━━━━━━\n`;
+    texto += `📝 *Inscreva-se aqui:*\n${linkInscricao}\n`;
+  }
+  
+  // Rodapé
+  texto += `\n━━━━━━━━━━━━━━━━━━━\n`;
+  texto += `🏛️ *Igreja Gileade*\n`;
+  texto += `_Um lugar de cura e restauração_`;
+  
+  return texto;
+};
+
 // Função para escapar caracteres XML
 const escapeXml = (str: string): string => {
   if (!str) return "";
@@ -747,6 +904,42 @@ serve(async (req) => {
           cronograma.push(`${formatShortDate(data)}: ${getPeriodoLabel(h.periodo)} ${h.hora_inicio}-${h.hora_fim}`);
         });
       });
+    }
+
+    // Se o template for "simples", retornar apenas texto formatado
+    if (template === "simples") {
+      const textoCompartilhamento = generateTextoCompartilhamento({
+        titulo,
+        dataFormatada,
+        dataFimFormatada,
+        horaInicio,
+        horaFim,
+        local,
+        descricao,
+        publicoAlvo,
+        idadeMinima: idadeMinima ? parseInt(idadeMinima) : undefined,
+        idadeMaxima: idadeMaxima ? parseInt(idadeMaxima) : undefined,
+        temRefeicao,
+        comentariosRefeicao,
+        temCusto,
+        valorCusto: valorCusto ? parseFloat(valorCusto) : undefined,
+        comentariosCusto,
+        cronograma: cronograma.length > 0 ? cronograma : undefined,
+        limiteVagas: limiteVagas ? parseInt(limiteVagas) : undefined,
+        observacoes,
+        linkInscricao,
+      });
+
+      console.log("Texto de compartilhamento gerado com sucesso");
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          textoCompartilhamento,
+          message: 'Texto para compartilhamento gerado com sucesso!' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Gerar SVG
