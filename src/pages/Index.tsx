@@ -247,11 +247,10 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section - Aspect Ratio 16:9 */}
+      {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden"
-        style={{ aspectRatio: '16/9' }}
+        className="relative w-full overflow-hidden aspect-video max-h-[50vh] md:max-h-[70vh] lg:max-h-[85vh]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
