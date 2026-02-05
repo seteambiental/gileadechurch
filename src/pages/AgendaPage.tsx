@@ -42,6 +42,7 @@ import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
+ import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -215,76 +216,18 @@ const AgendaPage = () => {
 
           {/* Aba Programação */}
           <TabsContent value="programacao" className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h2 className="font-heading font-bold text-xl">Programação Semanal</h2>
-                <p className="text-sm text-muted-foreground">Cultos e atividades recorrentes</p>
-              </div>
-              <Button variant="secondary" onClick={() => {
+             <AgendaCalendar
+               eventos={eventosRecorrentes}
+               onEventoClick={(evento) => {
+                 setEditingEvento(evento as Evento);
+                 setShowEventoForm(true);
+               }}
+               onNovoEvento={() => {
                 setEditingEvento(null);
                 setShowEventoForm(true);
-              }}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo
-              </Button>
-            </div>
-
-            {loadingRecorrentes ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {Object.entries(eventosAgrupados).map(([dia, eventos]) => (
-                  <Card key={dia}>
-                    <CardContent className="pt-4">
-                      <h3 className="font-semibold mb-3 text-primary">{diasSemana[parseInt(dia)]}</h3>
-                      <div className="space-y-2">
-                        {eventos.map((evento) => (
-                          <div 
-                            key={evento.id} 
-                            className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                            onClick={() => {
-                              setEditingEvento(evento);
-                              setShowEventoForm(true);
-                            }}
-                          >
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                              <Clock className="w-4 h-4" />
-                              <span className="font-medium text-sm">{evento.hora_inicio?.substring(0, 5) || "—"}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{evento.titulo}</p>
-                              <Badge variant="outline" className="text-xs mt-1">
-                                {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {Object.keys(eventosAgrupados).length === 0 && (
-                  <Card className="col-span-full">
-                    <CardContent className="py-12 text-center">
-                      <CalendarDays className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                      <h3 className="font-semibold mb-2">Nenhum evento recorrente</h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Cadastre cultos e atividades semanais
-                      </p>
-                      <Button variant="secondary" onClick={() => {
-                        setEditingEvento(null);
-                        setShowEventoForm(true);
-                      }}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        Adicionar Programação
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
+               }}
+               isLoading={loadingRecorrentes}
+             />
           </TabsContent>
 
           {/* Aba Eventos */}
