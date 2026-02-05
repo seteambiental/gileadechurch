@@ -38,18 +38,21 @@ const Index = () => {
     },
   });
 
+  // Total de slides: 1 (hero fixo) + imagens do carrossel
+  const totalSlides = 1 + (carrosselImages?.length || 0);
+
   // Auto-rotação do carrossel a cada 10 segundos
   useEffect(() => {
-    if (!carrosselImages || carrosselImages.length <= 1) return;
+    if (totalSlides <= 1) return;
     
     const interval = setInterval(() => {
       setCurrentCarouselIndex((prev) => 
-        prev === carrosselImages.length - 1 ? 0 : prev + 1
+        prev === totalSlides - 1 ? 0 : prev + 1
       );
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [carrosselImages]);
+  }, [totalSlides]);
 
   // Buscar configuração do hero
   const { data: homepageConfig } = useQuery({
@@ -249,46 +252,42 @@ const Index = () => {
         id="inicio"
         className="relative min-h-screen flex flex-col overflow-hidden"
       >
-        {/* Background - Carrossel ou Hero padrão */}
+        {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="flex-1 relative bg-primary">
-          {carrosselImages && carrosselImages.length > 0 ? (
-            <>
-              {carrosselImages.map((img, index) => (
-                <div
-                  key={img.id}
-                  className={`absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-1000 ${
-                    index === currentCarouselIndex ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  <img
-                    src={img.imagem_url}
-                    alt={img.titulo}
-                    className="max-w-full max-h-full object-contain"
-                    style={{ maxHeight: 'calc(100vh - 120px)' }}
-                  />
-                </div>
-              ))}
-              {/* Overlay só na primeira imagem */}
-              <div 
-                className={`absolute inset-0 transition-opacity duration-1000 pointer-events-none ${
-                  currentCarouselIndex === 0 ? "bg-primary/60" : "bg-transparent"
-                }`} 
-              />
-            </>
-          ) : (
-            <>
+          {/* Slide 0: Hero fixo com texto */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              currentCarouselIndex === 0 ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            <img
+              src={homepageConfig?.hero_image_url || heroImage}
+              alt="Gileade Church - Um lugar de cura e restauração"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-primary/70" />
+          </div>
+
+          {/* Slides do carrossel (índices 1+) */}
+          {carrosselImages && carrosselImages.map((img, index) => (
+            <div
+              key={img.id}
+              className={`absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-1000 ${
+                index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
+              }`}
+            >
               <img
-                src={homepageConfig?.hero_image_url || heroImage}
-                alt="Gileade Church - Um lugar de cura e restauração"
-                className="absolute inset-0 w-full h-full object-cover"
+                src={img.imagem_url}
+                alt={img.titulo}
+                className="max-w-full max-h-full object-contain"
+                style={{ maxHeight: 'calc(100vh - 80px)' }}
               />
-              <div className="absolute inset-0 bg-primary/70" />
-            </>
-          )}
+            </div>
+          ))}
         </div>
 
-        {/* Content - Só aparece na primeira imagem ou quando não há carrossel */}
-        {(!carrosselImages || carrosselImages.length === 0 || currentCarouselIndex === 0) && (
+        {/* Content - Só aparece no slide 0 (hero fixo) */}
+        {currentCarouselIndex === 0 && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="container mx-auto px-4 text-center">
               <div className="max-w-4xl mx-auto space-y-6">
@@ -315,10 +314,10 @@ const Index = () => {
           </div>
         )}
 
-        {/* Indicadores do Carrossel (bolinhas) */}
-        {carrosselImages && carrosselImages.length >= 1 && (
+        {/* Indicadores do Carrossel (bolinhas) - só quando há imagens no carrossel */}
+        {totalSlides > 1 && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-            {carrosselImages.map((_, index) => (
+            {Array.from({ length: totalSlides }).map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentCarouselIndex(index)}
@@ -327,14 +326,14 @@ const Index = () => {
                     ? "bg-secondary scale-125"
                     : "bg-white/70 hover:bg-white"
                 }`}
-                aria-label={`Ir para imagem ${index + 1}`}
+                aria-label={`Ir para slide ${index + 1}`}
               />
             ))}
           </div>
         )}
 
         {/* Scroll Indicator - só quando não há carrossel */}
-        {(!carrosselImages || carrosselImages.length === 0) && (
+        {totalSlides <= 1 && (
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in z-10">
             <div className="w-6 h-10 rounded-full border-2 border-primary-foreground/30 flex items-start justify-center p-2">
               <div className="w-1.5 h-3 rounded-full bg-secondary animate-bounce" />
