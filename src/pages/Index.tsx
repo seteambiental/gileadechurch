@@ -276,11 +276,24 @@ const Index = () => {
                 index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
               }`}
             >
-              <img
-                src={img.imagem_url}
-                alt={img.titulo}
-                className="w-full h-full object-contain"
+              {/* Fundo “blend” para colorir as faixas quando a imagem não preenche a largura */}
+              <div
+                className="absolute inset-0 scale-110 bg-center bg-cover blur-2xl opacity-60"
+                style={{ backgroundImage: `url(${img.imagem_url})` }}
+                aria-hidden="true"
               />
+              <div className="absolute inset-0 bg-primary/25" aria-hidden="true" />
+
+              {/* Imagem principal sempre inteira (sem corte) */}
+              <div className="absolute inset-0 flex items-center justify-center px-3 sm:px-6 pb-16">
+                <img
+                  src={img.imagem_url}
+                  alt={img.titulo}
+                  className="relative z-10 max-h-full max-w-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -294,7 +307,7 @@ const Index = () => {
                   Bem-vindo à Gileade Church
                 </div>
                 
-                <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in">
+                <h1 className="text-[clamp(1.35rem,6.5vw,4.25rem)] font-heading font-bold text-primary-foreground leading-[1.08] sm:leading-tight animate-fade-in">
                   {heroTitulo.includes("Cura") ? (
                     <>
                       Um Lugar de{" "}
@@ -305,7 +318,7 @@ const Index = () => {
                   )}
                 </h1>
                 
-                <p className="text-xs sm:text-sm md:text-lg lg:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in">
+                <p className="text-[clamp(0.85rem,3.6vw,1.25rem)] text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in">
                   {heroSubtitulo}
                 </p>
               </div>
