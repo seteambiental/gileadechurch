@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import {
@@ -17,8 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { CasaRefugioRow } from "@/components/casas-refugio/CasaRefugioRow";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
+import { EncontrosReportDialog } from "@/components/casas-refugio/EncontrosReportDialog";
 import { includesNormalized } from "@/lib/text-utils";
-
 interface CasaRefugio {
   id: string;
   name: string;
@@ -56,7 +56,7 @@ const CasasRefugioPage = () => {
 
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
-
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   // Helper to update search params without replacing
   const updateSearchParams = useCallback((key: string, value: string) => {
     setSearchParams(prev => {
@@ -147,6 +147,12 @@ const CasasRefugioPage = () => {
     });
   }, [casas, searchTerm, condominioFilter, supervisorFilter]);
 
+  // Map for report dialog
+  const casasNomesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    casas.forEach((casa) => map.set(casa.id, casa.name));
+    return map;
+  }, [casas]);
   const hasActiveFilters =
     condominioFilter !== "all" || supervisorFilter !== "all" || searchTerm !== "";
 
@@ -274,6 +280,18 @@ const CasasRefugioPage = () => {
                 Limpar
               </Button>
             )}
+
+            <div className="ml-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setReportDialogOpen(true)}
+                className="gap-2"
+              >
+                <FileBarChart className="w-4 h-4" />
+                Relatório Encontros
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -310,6 +328,14 @@ const CasasRefugioPage = () => {
         open={encontroDialogOpen}
         onOpenChange={setEncontroDialogOpen}
         casa={selectedCasa}
+      />
+
+      {/* Report Dialog */}
+      <EncontrosReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        casasIds={filteredCasas.map((c) => c.id)}
+        casasNomes={casasNomesMap}
       />
     </div>
   );
