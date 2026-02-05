@@ -185,7 +185,7 @@ const MinisterioFormDialog = ({
           tipoMudanca: "lider_esposa_ministerio",
           membroId: data.lider_esposa_id,
           membroAtualId: item.lider_esposa_id,
-          label: "Líder do Ministério (Cônjuge)",
+          label: "Líder do Ministério",
         });
       } else if (data.lider_esposa_id && !item.lider_esposa_id) {
         // Adding new leader where there was none
@@ -193,7 +193,7 @@ const MinisterioFormDialog = ({
           tipoMudanca: "lider_esposa_ministerio",
           membroId: data.lider_esposa_id,
           membroAtualId: null,
-          label: "Líder do Ministério (Cônjuge)",
+          label: "Líder do Ministério",
         });
       }
     }
@@ -307,7 +307,7 @@ const MinisterioFormDialog = ({
                   name="lider_esposa_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Líder (Cônjuge)</FormLabel>
+                      <FormLabel>Líder</FormLabel>
                       <FormControl>
                         <MemberSelect
                           value={field.value || null}

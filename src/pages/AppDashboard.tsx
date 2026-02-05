@@ -40,6 +40,7 @@ import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import AniversariantesDialog from "@/components/AniversariantesDialog";
 
 // Ministérios (ícones vermelhos) - ordenados alfabeticamente
 const ministries = [
@@ -80,29 +81,7 @@ const AppDashboard = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
-  const [enviandoAniversarios, setEnviandoAniversarios] = useState(false);
-
-  const handleEnviarAniversarios = async () => {
-    setEnviandoAniversarios(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("feliz-aniversario");
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data?.enviados > 0) {
-        toast.success(`${data.enviados} mensagem(ns) de aniversário enviada(s)!`);
-      } else {
-        toast.info("Nenhum aniversariante hoje.");
-      }
-    } catch (error: any) {
-      console.error("Erro ao enviar aniversários:", error);
-      toast.error("Erro ao enviar mensagens de aniversário");
-    } finally {
-      setEnviandoAniversarios(false);
-    }
-  };
+  const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -216,18 +195,18 @@ const AppDashboard = () => {
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
           <Button
             variant="outline"
-            onClick={handleEnviarAniversarios}
-            disabled={enviandoAniversarios}
+            onClick={() => setAniversariantesOpen(true)}
             className="gap-2"
           >
-            {enviandoAniversarios ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Cake className="w-4 h-4" />
-            )}
-            Enviar Aniversários de Hoje
+            <Cake className="w-4 h-4" />
+            Aniversariantes de Hoje
           </Button>
         </div>
+
+        <AniversariantesDialog 
+          open={aniversariantesOpen} 
+          onOpenChange={setAniversariantesOpen} 
+        />
 
         {/* Separador */}
         <div className="my-8 border-t border-border" />
