@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings, ImageIcon, Video } from "lucide-react";
+import { ArrowLeft, Image, Bell, Clock, MessageSquare, Home, Settings, ImageIcon, Video, GalleryHorizontal } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import HomepageHeroTab from "@/components/homepage-admin/HomepageHeroTab";
 import HomepageAvisosTab from "@/components/homepage-admin/HomepageAvisosTab";
@@ -14,7 +14,7 @@ import HomepageCasasRefugioTab from "@/components/homepage-admin/HomepageCasasRe
 import HomepageConfigTab from "@/components/homepage-admin/HomepageConfigTab";
 import HomepageLogosTab from "@/components/homepage-admin/HomepageLogosTab";
 import HomepageVideosTab from "@/components/homepage-admin/HomepageVideosTab";
-
+import HomepageCarrosselTab from "@/components/homepage-admin/HomepageCarrosselTab";
 const HomepageAdmin = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -91,6 +91,10 @@ const HomepageAdmin = () => {
               <Home className="w-4 h-4" />
               Casas Refúgio
             </TabsTrigger>
+            <TabsTrigger value="carrossel" className="gap-2">
+              <GalleryHorizontal className="w-4 h-4" />
+              Carrossel
+            </TabsTrigger>
             <TabsTrigger value="videos" className="gap-2">
               <Video className="w-4 h-4" />
               Vídeos
@@ -118,6 +122,9 @@ const HomepageAdmin = () => {
           </TabsContent>
           <TabsContent value="casas-refugio">
             <HomepageCasasRefugioTab />
+          </TabsContent>
+          <TabsContent value="carrossel">
+            <HomepageCarrosselTab />
           </TabsContent>
           <TabsContent value="videos">
             <HomepageVideosTab />

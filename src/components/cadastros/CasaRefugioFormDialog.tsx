@@ -305,11 +305,11 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
     
     const leadershipFields = [
       { field: "lider_id", tipoMudanca: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
-      { field: "lider_esposa_id", tipoMudanca: "lider_esposa_casa_refugio", label: "Líder de Casa Refúgio (Cônjuge)" },
+      { field: "lider_esposa_id", tipoMudanca: "lider_esposa_casa_refugio", label: "Líder de Casa Refúgio" },
       { field: "supervisor_id", tipoMudanca: "supervisor_casa_refugio", label: "Supervisor de Casa Refúgio" },
-      { field: "supervisor_esposa_id", tipoMudanca: "supervisor_esposa_casa_refugio", label: "Supervisor de Casa Refúgio (Cônjuge)" },
+      { field: "supervisor_esposa_id", tipoMudanca: "supervisor_esposa_casa_refugio", label: "Supervisor de Casa Refúgio" },
       { field: "anfitriao_id", tipoMudanca: "anfitriao_casa_refugio", label: "Anfitrião de Casa Refúgio" },
-      { field: "anfitriao_esposa_id", tipoMudanca: "anfitriao_esposa_casa_refugio", label: "Anfitrião de Casa Refúgio (Cônjuge)" },
+      { field: "anfitriao_esposa_id", tipoMudanca: "anfitriao_esposa_casa_refugio", label: "Anfitrião de Casa Refúgio" },
     ] as const;
 
     for (const { field, tipoMudanca, label } of leadershipFields) {

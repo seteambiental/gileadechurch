@@ -141,7 +141,7 @@ const AgendaPage = () => {
     },
   });
 
-  // Query para eventos únicos (eventos)
+  // Query para eventos únicos (eventos) - ordenados por data crescente
   const { data: eventosUnicos = [], isLoading: loadingUnicos } = useQuery({
     queryKey: ["agenda-eventos"],
     queryFn: async () => {
@@ -149,7 +149,7 @@ const AgendaPage = () => {
         .from("agenda_igreja")
         .select("*")
         .eq("recorrente", false)
-        .order("data_evento", { ascending: false });
+        .order("data_evento", { ascending: true });
       if (error) throw error;
       return data as Evento[];
     },
