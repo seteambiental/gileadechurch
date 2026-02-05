@@ -279,7 +279,7 @@ const Index = () => {
               <img
                 src={img.imagem_url}
                 alt={img.titulo}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </div>
           ))}
