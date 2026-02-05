@@ -165,11 +165,27 @@ const Index = () => {
         { day: "Quarta", time: "19h30", event: "Culto de Ensino" },
       ];
     }
-    return eventosRecorrentes.map((evento) => ({
-      day: diasSemana[evento.dia_semana ?? 0],
-      time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
-      event: evento.titulo,
-    }));
+     return eventosRecorrentes.map((evento) => {
+       let day = diasSemana[evento.dia_semana ?? 0];
+       
+       // Se for evento mensal, adicionar indicação de qual semana
+       if (evento.tipo_recorrencia === "mensal" && evento.semana_mes) {
+         const semanaLabels: Record<number, string> = {
+           1: "1º",
+           2: "2º",
+           3: "3º",
+           4: "4º",
+           5: "Último",
+         };
+         day = `${semanaLabels[evento.semana_mes] || ""} ${day} do mês`;
+       }
+       
+       return {
+         day,
+         time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
+         event: evento.titulo,
+       };
+     });
   }, [eventosRecorrentes]);
 
   // Formatar testemunhos

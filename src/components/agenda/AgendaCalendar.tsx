@@ -25,6 +25,7 @@
    subYears,
    isToday,
    getDay,
+   getWeekOfMonth,
  } from "date-fns";
  import { ptBR } from "date-fns/locale";
  
@@ -39,6 +40,8 @@
    cor: string | null;
    recorrente: boolean;
    dia_semana: number | null;
+   semana_mes: number | null;
+   tipo_recorrencia: string | null;
    ativo: boolean;
  }
  
@@ -73,10 +76,20 @@
    const getEventosParaData = (date: Date) => {
      const diaSemana = getDay(date);
      const dateStr = format(date, "yyyy-MM-dd");
+     const semanaDoMes = getWeekOfMonth(date, { weekStartsOn: 0 });
  
      return eventos.filter((evento) => {
        if (evento.recorrente) {
-         return evento.dia_semana === diaSemana;
+         // Verifica se o dia da semana coincide
+         if (evento.dia_semana !== diaSemana) return false;
+         
+         // Se for evento mensal (tem semana_mes definido), verifica se é a semana correta
+         if (evento.semana_mes !== null && evento.semana_mes !== undefined) {
+           return evento.semana_mes === semanaDoMes;
+         }
+         
+         // Evento semanal - aparece toda semana naquele dia
+         return true;
        } else {
          return evento.data_evento === dateStr;
        }
