@@ -288,13 +288,13 @@ const Index = () => {
         {/* Content - Só aparece no slide 0 (hero fixo) */}
         {currentCarouselIndex === 0 && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="container mx-auto px-4 text-center">
-              <div className="max-w-4xl mx-auto space-y-6">
-                <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 animate-fade-in">
+            <div className="container mx-auto px-3 sm:px-4 text-center">
+              <div className="max-w-4xl mx-auto space-y-2 sm:space-y-4 md:space-y-6">
+                <div className="inline-block px-2 sm:px-4 py-1 sm:py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-[10px] sm:text-xs md:text-sm font-medium animate-fade-in">
                   Bem-vindo à Gileade Church
                 </div>
                 
-                <h1 className="text-4xl md:text-6xl lg:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in">
+                <h1 className="text-xl sm:text-3xl md:text-5xl lg:text-6xl xl:text-7xl font-heading font-bold text-primary-foreground leading-tight animate-fade-in">
                   {heroTitulo.includes("Cura") ? (
                     <>
                       Um Lugar de{" "}
@@ -305,7 +305,7 @@ const Index = () => {
                   )}
                 </h1>
                 
-                <p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in">
+                <p className="text-xs sm:text-sm md:text-lg lg:text-xl text-primary-foreground/80 max-w-2xl mx-auto leading-relaxed animate-fade-in">
                   {heroSubtitulo}
                 </p>
               </div>
