@@ -268,7 +268,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-primary/70" />
           </div>
 
-          {/* Slides do carrossel (índices 1+) */}
+          {/* Slides do carrossel (índices 1+) - Fullscreen sem faixas */}
           {carrosselImages && carrosselImages.map((img, index) => (
             <div
               key={img.id}
@@ -276,19 +276,10 @@ const Index = () => {
                 index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
               }`}
             >
-              {/* Fundo “blend” para colorir as faixas quando a imagem não preenche a largura */}
-              <div
-                className="absolute inset-0 scale-110 bg-center bg-cover blur-2xl opacity-60"
-                style={{ backgroundImage: `url(${img.imagem_url})` }}
-                aria-hidden="true"
-              />
-              <div className="absolute inset-0 bg-primary/25" aria-hidden="true" />
-
-              {/* Imagem principal em fullscreen centralizada */}
               <img
                 src={img.imagem_url}
                 alt={img.titulo}
-                className="absolute inset-0 w-full h-full object-cover object-center z-10"
+                className="w-full h-full object-cover object-center"
                 loading="lazy"
                 decoding="async"
               />
