@@ -284,7 +284,7 @@ const MinisterioFormDialog = ({
                 )}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <FormField
                   control={form.control}
                   name="lider_id"
@@ -302,8 +302,7 @@ const MinisterioFormDialog = ({
                     </FormItem>
                   )}
                 />
-
-                <FormField
+                 <FormField
                   control={form.control}
                   name="lider_esposa_id"
                   render={({ field }) => (
