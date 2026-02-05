@@ -284,16 +284,14 @@ const Index = () => {
               />
               <div className="absolute inset-0 bg-primary/25" aria-hidden="true" />
 
-              {/* Imagem principal sempre inteira (sem corte) */}
-              <div className="absolute inset-0 flex items-center justify-center px-3 sm:px-6 pb-16">
-                <img
-                  src={img.imagem_url}
-                  alt={img.titulo}
-                  className="relative z-10 max-h-full max-w-full object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
+              {/* Imagem principal em fullscreen centralizada */}
+              <img
+                src={img.imagem_url}
+                alt={img.titulo}
+                className="absolute inset-0 w-full h-full object-cover object-center z-10"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           ))}
         </div>
