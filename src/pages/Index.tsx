@@ -247,13 +247,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
+      {/* Hero Section - Aspect Ratio 16:9 */}
       <section
         id="inicio"
-        className="relative min-h-screen flex flex-col overflow-hidden"
+        className="relative w-full overflow-hidden"
+        style={{ aspectRatio: '16/9' }}
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
-        <div className="flex-1 relative bg-primary">
+        <div className="absolute inset-0 bg-primary">
           {/* Slide 0: Hero fixo com texto */}
           <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
@@ -272,15 +273,14 @@ const Index = () => {
           {carrosselImages && carrosselImages.map((img, index) => (
             <div
               key={img.id}
-              className={`absolute inset-0 flex items-center justify-center p-4 transition-opacity duration-1000 ${
+              className={`absolute inset-0 transition-opacity duration-1000 ${
                 index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
               }`}
             >
               <img
                 src={img.imagem_url}
                 alt={img.titulo}
-                className="max-w-full max-h-full object-contain"
-                style={{ maxHeight: 'calc(100vh - 80px)' }}
+                className="w-full h-full object-cover"
               />
             </div>
           ))}
