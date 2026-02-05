@@ -320,10 +320,12 @@ export const EventoFormDialog = ({
 
       // Se for template simples, mostra o texto para copiar
       if (templateFlyer === "simples" && data.textoCompartilhamento) {
-        setTextoCompartilhamento(data.textoCompartilhamento);
-        toast({ title: "Texto gerado para compartilhamento!" });
-      } else {
         setFlyerPendente(data.flyerUrl);
+        setTextoCompartilhamento(data.textoCompartilhamento);
+        toast({ title: "Flyer informativo gerado!" });
+      } else if (data.flyerUrl) {
+        setFlyerPendente(data.flyerUrl);
+        setTextoCompartilhamento(null);
         toast({ title: "Flyer gerado! Aceite ou descarte." });
       }
     } catch (error: any) {
@@ -1069,14 +1071,24 @@ export const EventoFormDialog = ({
                         ) : (
                           templateFlyer === "simples" ? <MessageSquare className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />
                         )}
-                        {templateFlyer === "simples" ? "Gerar Texto" : "Gerar Flyer"}
+                        {templateFlyer === "simples" ? "Gerar Flyer Informativo" : "Gerar Flyer"}
                       </Button>
                     </div>
                   </div>
 
                   {/* Texto de compartilhamento gerado */}
-                  {textoCompartilhamento && (
+                  {textoCompartilhamento && flyerPendente && (
                     <div className="space-y-2 mt-3">
+                      {/* Imagem do flyer informativo */}
+                      <div className="relative">
+                        <img
+                          src={flyerPendente}
+                          alt="Flyer gerado"
+                          className="w-full rounded-lg border shadow-sm"
+                        />
+                      </div>
+                      
+                      {/* Texto para copiar */}
                       <div className="relative">
                         <pre className="p-3 bg-muted rounded-lg text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border font-sans">
                           {textoCompartilhamento}
@@ -1086,20 +1098,57 @@ export const EventoFormDialog = ({
                           size="icon"
                           variant="ghost"
                           className="absolute top-2 right-2"
-                          onClick={() => setTextoCompartilhamento(null)}
+                          onClick={() => {
+                            setTextoCompartilhamento(null);
+                            setFlyerPendente(null);
+                          }}
                         >
                           <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      
+                      {/* Ações */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant="default"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = flyerPendente;
+                            link.download = `flyer-${formData.titulo.replace(/\s+/g, '-').toLowerCase()}.svg`;
+                            link.target = '_blank';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Baixar Imagem
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={handleCopyTexto}
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copiar Texto
                         </Button>
                       </div>
                       <div className="flex gap-2">
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="outline"
                           className="flex-1"
-                          onClick={handleCopyTexto}
+                          onClick={() => {
+                            setFlyerUrl(flyerPendente);
+                            setFlyerPendente(null);
+                            setTextoCompartilhamento(null);
+                            toast({ title: "Flyer aceito!" });
+                          }}
+                          disabled={isUploadingFlyer}
                         >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copiar Texto
+                          <Check className="w-4 h-4 mr-2" />
+                          Aceitar como Flyer Oficial
                         </Button>
                         <Button
                           type="button"

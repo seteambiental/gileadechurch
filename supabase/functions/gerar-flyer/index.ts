@@ -44,6 +44,264 @@ const getPeriodoLabel = (periodo: string): string => {
   return labels[periodo] || periodo;
 };
 
+// Template Simples/Informativo - Layout clean com todas as informações
+const generateSimplesFlyerSVG = (params: {
+  titulo: string;
+  dataFormatada: string;
+  dataFimFormatada?: string;
+  horaInicio?: string;
+  horaFim?: string;
+  local?: string;
+  descricao?: string;
+  publicoAlvo?: string;
+  idadeMinima?: number;
+  idadeMaxima?: number;
+  temRefeicao?: boolean;
+  comentariosRefeicao?: string;
+  temCusto?: boolean;
+  valorCusto?: number;
+  comentariosCusto?: string;
+  cronograma?: string[];
+  limiteVagas?: number;
+  observacoes?: string;
+  corFundo: string;
+  linkInscricao?: string;
+}): string => {
+  const {
+    titulo,
+    dataFormatada,
+    dataFimFormatada,
+    horaInicio,
+    horaFim,
+    local,
+    descricao,
+    publicoAlvo,
+    idadeMinima,
+    idadeMaxima,
+    temRefeicao,
+    comentariosRefeicao,
+    temCusto,
+    valorCusto,
+    comentariosCusto,
+    cronograma,
+    limiteVagas,
+    observacoes,
+    corFundo,
+    linkInscricao,
+  } = params;
+
+  // Determinar público
+  let publicoTexto = "Todos os públicos";
+  if (publicoAlvo === "masculino" || publicoAlvo === "homens") publicoTexto = "Público masculino";
+  else if (publicoAlvo === "feminino" || publicoAlvo === "mulheres") publicoTexto = "Público feminino";
+  else if (publicoAlvo === "jovens") publicoTexto = "Jovens";
+  else if (publicoAlvo === "adolescentes") publicoTexto = "Adolescentes";
+  else if (publicoAlvo === "criancas") publicoTexto = "Crianças";
+
+  // Faixa etária
+  let faixaEtaria = "";
+  if (idadeMinima && idadeMaxima) {
+    faixaEtaria = `(${idadeMinima} a ${idadeMaxima} anos)`;
+  } else if (idadeMinima) {
+    faixaEtaria = `(A partir de ${idadeMinima} anos)`;
+  } else if (idadeMaxima) {
+    faixaEtaria = `(Até ${idadeMaxima} anos)`;
+  }
+
+  // Horário formatado
+  const horarioTexto = horaInicio 
+    ? (horaFim ? `${horaInicio} às ${horaFim}` : `A partir das ${horaInicio}`)
+    : "";
+
+  // Data formatada (com data fim se houver)
+  const dataTexto = dataFimFormatada && dataFimFormatada !== dataFormatada
+    ? `${dataFormatada} a ${dataFimFormatada}`
+    : dataFormatada;
+
+  // Custo formatado
+  let custoTexto = "Entrada gratuita";
+  if (temCusto && valorCusto) {
+    custoTexto = `R$ ${valorCusto.toFixed(2).replace('.', ',')}`;
+  }
+
+  // Refeição formatada
+  let refeicaoTexto = "";
+  if (temRefeicao) {
+    refeicaoTexto = comentariosRefeicao || "Refeições inclusas";
+  }
+
+  // Quebrar título
+  const tituloLinhas = wrapText(titulo.toUpperCase(), 28);
+  
+  // Calcular altura dinâmica baseada no conteúdo
+  let currentY = 120;
+  
+  // Construir itens de informação
+  const infoItems: Array<{icon: string; label: string; value: string}> = [];
+  
+  infoItems.push({ icon: "📅", label: "Data", value: dataTexto });
+  
+  if (horarioTexto) {
+    infoItems.push({ icon: "🕐", label: "Horário", value: horarioTexto });
+  }
+  
+  if (local) {
+    infoItems.push({ icon: "📍", label: "Local", value: local.substring(0, 50) });
+  }
+  
+  infoItems.push({ icon: "👥", label: "Público", value: `${publicoTexto} ${faixaEtaria}`.trim() });
+  
+  if (limiteVagas) {
+    infoItems.push({ icon: "🎟️", label: "Vagas", value: `${limiteVagas} vagas disponíveis` });
+  }
+  
+  if (refeicaoTexto) {
+    infoItems.push({ icon: "🍽️", label: "Alimentação", value: refeicaoTexto.substring(0, 45) });
+  }
+  
+  infoItems.push({ icon: "💰", label: "Investimento", value: custoTexto });
+  
+  // Gerar linhas de informação
+  const generateInfoLines = (items: Array<{icon: string; label: string; value: string}>, startY: number): string => {
+    let result = "";
+    let y = startY;
+    const lineHeight = 55;
+    
+    items.forEach((item) => {
+      result += `
+    <g transform="translate(80, ${y})">
+      <text x="0" y="0" class="icon">${item.icon}</text>
+      <text x="50" y="0" class="label">${escapeXml(item.label)}:</text>
+      <text x="220" y="0" class="value">${escapeXml(item.value)}</text>
+    </g>`;
+      y += lineHeight;
+    });
+    
+    return result;
+  };
+
+  // Calcular posição inicial após título e descrição
+  const tituloHeight = tituloLinhas.length * 60;
+  const descricaoHeight = descricao ? 80 : 0;
+  const infoStartY = 180 + tituloHeight + descricaoHeight;
+  
+  // Calcular posição do cronograma
+  const infoHeight = infoItems.length * 55;
+  const cronogramaStartY = infoStartY + infoHeight + 40;
+  
+  // Gerar cronograma se houver
+  const generateCronograma = (): string => {
+    if (!cronograma || cronograma.length === 0) return "";
+    
+    let result = `
+    <g transform="translate(80, ${cronogramaStartY})">
+      <text x="0" y="0" class="section-title">📋 Programação</text>`;
+    
+    cronograma.slice(0, 6).forEach((item, i) => {
+      result += `
+      <text x="30" y="${40 + (i * 35)}" class="cronograma-item">• ${escapeXml(item.substring(0, 55))}</text>`;
+    });
+    
+    result += `
+    </g>`;
+    return result;
+  };
+  
+  // Calcular posição das observações e comentários de custo
+  const cronogramaHeight = cronograma && cronograma.length > 0 ? 40 + (Math.min(cronograma.length, 6) * 35) + 30 : 0;
+  const extrasStartY = cronogramaStartY + cronogramaHeight;
+  
+  // Gerar extras (comentários de custo e observações)
+  const generateExtras = (): string => {
+    let result = "";
+    let y = extrasStartY;
+    
+    if (temCusto && comentariosCusto) {
+      result += `
+    <text x="80" y="${y}" class="obs-text">💵 ${escapeXml(comentariosCusto.substring(0, 60))}</text>`;
+      y += 45;
+    }
+    
+    if (observacoes) {
+      result += `
+    <text x="80" y="${y}" class="obs-text">ℹ️ ${escapeXml(observacoes.substring(0, 60))}</text>`;
+      y += 45;
+    }
+    
+    return result;
+  };
+  
+  // Calcular altura total e posição do rodapé
+  const extrasHeight = ((temCusto && comentariosCusto) ? 45 : 0) + (observacoes ? 45 : 0);
+  const footerY = extrasStartY + extrasHeight + 60;
+  const totalHeight = Math.max(900, footerY + 140);
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1080" height="${totalHeight}" viewBox="0 0 1080 ${totalHeight}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .titulo { font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 48px; fill: white; }
+      .descricao { font-family: Arial, sans-serif; font-weight: 400; font-size: 26px; fill: rgba(255,255,255,0.9); }
+      .icon { font-size: 28px; }
+      .label { font-family: Arial, sans-serif; font-weight: 700; font-size: 24px; fill: rgba(255,255,255,0.95); }
+      .value { font-family: Arial, sans-serif; font-weight: 400; font-size: 24px; fill: white; }
+      .section-title { font-family: Arial, sans-serif; font-weight: 700; font-size: 26px; fill: white; }
+      .cronograma-item { font-family: Arial, sans-serif; font-weight: 400; font-size: 22px; fill: rgba(255,255,255,0.9); }
+      .obs-text { font-family: Arial, sans-serif; font-weight: 400; font-size: 20px; fill: rgba(255,255,255,0.8); font-style: italic; }
+      .link { font-family: Arial, sans-serif; font-weight: 400; font-size: 18px; fill: rgba(255,255,255,0.7); }
+      .marca { font-family: Arial, sans-serif; font-weight: 700; font-size: 32px; fill: white; }
+      .submarca { font-family: Arial, sans-serif; font-weight: 400; font-size: 18px; fill: rgba(255,255,255,0.7); font-style: italic; }
+    </style>
+  </defs>
+  
+  <!-- Fundo -->
+  <rect width="1080" height="${totalHeight}" fill="${corFundo}"/>
+  
+  <!-- Header com linha decorativa -->
+  <rect x="80" y="60" width="80" height="4" fill="white" opacity="0.9"/>
+  
+  <!-- Título -->
+  ${tituloLinhas.map((linha, i) => 
+    `<text x="80" y="${120 + (i * 60)}" class="titulo">${escapeXml(linha)}</text>`
+  ).join('\n  ')}
+  
+  <!-- Descrição -->
+  ${descricao ? wrapText(descricao, 55).slice(0, 2).map((linha, i) => 
+    `<text x="80" y="${130 + tituloHeight + (i * 32)}" class="descricao">${escapeXml(linha)}</text>`
+  ).join('\n  ') : ''}
+  
+  <!-- Separador -->
+  <rect x="80" y="${infoStartY - 25}" width="920" height="1" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- Informações -->
+  ${generateInfoLines(infoItems, infoStartY)}
+  
+  <!-- Cronograma -->
+  ${generateCronograma()}
+  
+  <!-- Extras -->
+  ${generateExtras()}
+  
+  <!-- Separador do rodapé -->
+  <rect x="80" y="${footerY - 20}" width="920" height="1" fill="rgba(255,255,255,0.3)"/>
+  
+  <!-- Link de inscrição -->
+  ${linkInscricao ? `
+  <text x="80" y="${footerY + 20}" class="section-title">📝 Inscreva-se:</text>
+  <text x="80" y="${footerY + 55}" class="link">${escapeXml(linkInscricao)}</text>
+  ` : ''}
+  
+  <!-- Marca Gileade -->
+  <g transform="translate(920, ${totalHeight - 60})">
+    <text x="0" y="0" class="marca" text-anchor="end">IGREJA GILEADE</text>
+    <text x="0" y="28" class="submarca" text-anchor="end">Um lugar de cura e restauração</text>
+  </g>
+  
+  <!-- Linha decorativa inferior -->
+  <rect x="920" y="${totalHeight - 25}" width="80" height="4" fill="white" opacity="0.9"/>
+</svg>`;
+};
+
 // Gerar texto formatado para compartilhamento
 const generateTextoCompartilhamento = (params: {
   titulo: string;
@@ -908,6 +1166,60 @@ serve(async (req) => {
 
     // Se o template for "simples", retornar apenas texto formatado
     if (template === "simples") {
+      // Gerar SVG com template simples/informativo
+      const svgContent = generateSimplesFlyerSVG({
+        titulo,
+        dataFormatada,
+        dataFimFormatada,
+        horaInicio,
+        horaFim,
+        local,
+        descricao,
+        publicoAlvo,
+        idadeMinima: idadeMinima ? parseInt(idadeMinima) : undefined,
+        idadeMaxima: idadeMaxima ? parseInt(idadeMaxima) : undefined,
+        temRefeicao,
+        comentariosRefeicao,
+        temCusto,
+        valorCusto: valorCusto ? parseFloat(valorCusto) : undefined,
+        comentariosCusto,
+        cronograma: cronograma.length > 0 ? cronograma : undefined,
+        limiteVagas: limiteVagas ? parseInt(limiteVagas) : undefined,
+        observacoes,
+        corFundo: corFundo || "#1e3a5f",
+        linkInscricao,
+      });
+
+      console.log("Flyer simples (SVG) gerado com sucesso");
+
+      // Upload para o storage do Supabase
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      // Salvar como SVG
+      const fileName = `flyer-simples-${Date.now()}.svg`;
+      const svgBuffer = new TextEncoder().encode(svgContent);
+      
+      const { error: uploadError } = await supabase.storage
+        .from('encontros-fotos')
+        .upload(`flyers/${fileName}`, svgBuffer, {
+          contentType: 'image/svg+xml',
+          upsert: true,
+        });
+
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        throw new Error('Erro ao salvar flyer');
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('encontros-fotos')
+        .getPublicUrl(`flyers/${fileName}`);
+
+      console.log('Flyer simples salvo:', urlData.publicUrl);
+
+      // Também gerar o texto para cópia
       const textoCompartilhamento = generateTextoCompartilhamento({
         titulo,
         dataFormatada,
@@ -930,13 +1242,12 @@ serve(async (req) => {
         linkInscricao,
       });
 
-      console.log("Texto de compartilhamento gerado com sucesso");
-
       return new Response(
         JSON.stringify({ 
           success: true, 
+          flyerUrl: urlData.publicUrl,
           textoCompartilhamento,
-          message: 'Texto para compartilhamento gerado com sucesso!' 
+          message: 'Flyer informativo gerado com sucesso!' 
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
