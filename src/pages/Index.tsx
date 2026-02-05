@@ -250,7 +250,7 @@ const Index = () => {
       {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[30vh] sm:h-[35vh] md:h-[45vh] lg:h-[55vh] xl:h-[60vh] max-h-[600px]"
+        className="relative w-full overflow-hidden h-[42vh] sm:h-[48vh] md:h-[56vh] lg:h-[62vh] xl:h-[68vh] min-h-[360px] sm:min-h-[420px] md:min-h-[520px] max-h-[820px]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
