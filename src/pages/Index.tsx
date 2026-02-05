@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
@@ -22,6 +22,35 @@ const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta",
 
 const Index = () => {
   const [memberFormOpen, setMemberFormOpen] = useState(false);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+
+  // Buscar imagens do carrossel
+  const { data: carrosselImages } = useQuery({
+    queryKey: ["homepage-carrossel-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_carrossel")
+        .select("*")
+        .eq("ativo", true)
+        .order("ordem", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Auto-rotação do carrossel a cada 10 segundos
+  useEffect(() => {
+    if (!carrosselImages || carrosselImages.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setCurrentCarouselIndex((prev) => 
+        prev === carrosselImages.length - 1 ? 0 : prev + 1
+      );
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [carrosselImages]);
+
   // Buscar configuração do hero
   const { data: homepageConfig } = useQuery({
     queryKey: ["homepage-config-public"],
@@ -220,15 +249,48 @@ const Index = () => {
         id="inicio"
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        {/* Background Image */}
+        {/* Background Image - Carrossel ou Hero padrão */}
         <div className="absolute inset-0">
-          <img
-            src={homepageConfig?.hero_image_url || heroImage}
-            alt="Gileade Church - Um lugar de cura e restauração"
-            className="w-full h-full object-cover"
-          />
+          {carrosselImages && carrosselImages.length > 0 ? (
+            <>
+              {carrosselImages.map((img, index) => (
+                <img
+                  key={img.id}
+                  src={img.imagem_url}
+                  alt={img.titulo}
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                    index === currentCarouselIndex ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              ))}
+            </>
+          ) : (
+            <img
+              src={homepageConfig?.hero_image_url || heroImage}
+              alt="Gileade Church - Um lugar de cura e restauração"
+              className="w-full h-full object-cover"
+            />
+          )}
           <div className="absolute inset-0 bg-primary/70" />
         </div>
+
+        {/* Indicadores do Carrossel */}
+        {carrosselImages && carrosselImages.length > 1 && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+            {carrosselImages.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentCarouselIndex(index)}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  index === currentCarouselIndex
+                    ? "bg-secondary w-6"
+                    : "bg-primary-foreground/50 hover:bg-primary-foreground/70"
+                }`}
+                aria-label={`Ir para imagem ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
 
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
