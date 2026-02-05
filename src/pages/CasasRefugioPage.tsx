@@ -334,8 +334,6 @@ const CasasRefugioPage = () => {
       <EncontrosReportDialog
         open={reportDialogOpen}
         onOpenChange={setReportDialogOpen}
-        casasIds={filteredCasas.map((c) => c.id)}
-        casasNomes={casasNomesMap}
       />
     </div>
   );
