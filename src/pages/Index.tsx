@@ -249,19 +249,23 @@ const Index = () => {
         id="inicio"
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
       >
-        {/* Background Image - Carrossel ou Hero padrão */}
-        <div className="absolute inset-0">
+        {/* Background - Carrossel ou Hero padrão */}
+        <div className="absolute inset-0 bg-primary">
           {carrosselImages && carrosselImages.length > 0 ? (
             <>
               {carrosselImages.map((img, index) => (
-                <img
+                <div
                   key={img.id}
-                  src={img.imagem_url}
-                  alt={img.titulo}
-                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                  className={`absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${
                     index === currentCarouselIndex ? "opacity-100" : "opacity-0"
                   }`}
-                />
+                >
+                  <img
+                    src={img.imagem_url}
+                    alt={img.titulo}
+                    className="max-w-full max-h-full w-auto h-auto object-contain"
+                  />
+                </div>
               ))}
             </>
           ) : (
@@ -271,20 +275,27 @@ const Index = () => {
               className="w-full h-full object-cover"
             />
           )}
-          <div className="absolute inset-0 bg-primary/70" />
+          {/* Overlay só quando não há carrossel ou na primeira imagem */}
+          <div 
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              carrosselImages && carrosselImages.length > 0 && currentCarouselIndex !== 0
+                ? "bg-transparent"
+                : "bg-primary/70"
+            }`} 
+          />
         </div>
 
-        {/* Indicadores do Carrossel */}
+        {/* Indicadores do Carrossel (bolinhas) */}
         {carrosselImages && carrosselImages.length > 1 && (
-          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 z-20">
             {carrosselImages.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentCarouselIndex(index)}
-                className={`w-3 h-3 rounded-full transition-all ${
+                className={`w-3 h-3 rounded-full transition-all duration-300 border-2 border-primary-foreground/70 ${
                   index === currentCarouselIndex
-                    ? "bg-secondary w-6"
-                    : "bg-primary-foreground/50 hover:bg-primary-foreground/70"
+                    ? "bg-secondary border-secondary scale-125"
+                    : "bg-transparent hover:bg-primary-foreground/30"
                 }`}
                 aria-label={`Ir para imagem ${index + 1}`}
               />
