@@ -292,8 +292,14 @@ const Index = () => {
           </div>
         )}
 
-        {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center">
+        {/* Content - Só aparece na primeira imagem ou quando não há carrossel */}
+        <div 
+          className={`relative z-10 container mx-auto px-4 text-center transition-opacity duration-1000 ${
+            carrosselImages && carrosselImages.length > 0 && currentCarouselIndex !== 0
+              ? "opacity-0 pointer-events-none"
+              : "opacity-100"
+          }`}
+        >
           <div className="max-w-4xl mx-auto space-y-6">
             <div className="inline-block px-4 py-2 rounded-full bg-secondary/20 border border-secondary/30 text-secondary text-sm font-medium mb-4 animate-fade-in">
               Bem-vindo à Gileade Church
