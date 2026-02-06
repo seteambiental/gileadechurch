@@ -18,9 +18,10 @@ import {
   Trash2,
   UserPlus,
   Eye,
+  ChevronLeft,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
@@ -49,6 +50,8 @@ export const PortalLideresCasaRefugio = ({
   const [editingEncontro, setEditingEncontro] = useState<any>(null);
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
+  const [encontrosPage, setEncontrosPage] = useState(1);
+  const ENCONTROS_PER_PAGE = 5;
 
   // Determinar escopo de acesso
   const sindicoCondominios = portalAccess?.sindicoCondominios || [];
@@ -126,6 +129,9 @@ export const PortalLideresCasaRefugio = ({
     enabled: !!selectedCasa,
   });
 
+  const casaSelecionada = casas.find((c) => c.id === selectedCasa);
+  const canEditSelected = selectedCasa ? canEditCasa(selectedCasa) : false;
+
   // Filtrar encontros por data
   const filteredEncontros = useMemo(() => {
     if (!startDate && !endDate) return encontros;
@@ -147,19 +153,102 @@ export const PortalLideresCasaRefugio = ({
     });
   }, [encontros, startDate, endDate]);
 
-  // Calcular estatísticas
-  const totalEncontros = filteredEncontros.length;
-  const totalLideres = filteredEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
-  const totalMembros = filteredEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
-  const totalCriancas = filteredEncontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
-  const totalVisitantes = filteredEncontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
+  // Gerar encontros esperados (linhas em branco) com base na config da casa
+  const mergedEncontros = useMemo(() => {
+    if (!casaSelecionada) return filteredEncontros.map((e: any) => ({ ...e, is_blank: false }));
+
+    const diasStr = casaSelecionada.dias;
+    const frequencia = casaSelecionada.frequencia;
+    if (!diasStr) return filteredEncontros.map((e: any) => ({ ...e, is_blank: false }));
+
+    const dayMap: Record<string, number> = {
+      "domingo": 0, "segunda": 1, "terca": 2, "terça": 2,
+      "quarta": 3, "quinta": 4, "sexta": 5, "sabado": 6, "sábado": 6,
+    };
+
+    const normalizedDay = diasStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace("-feira", "").trim();
+    const targetDayNum = dayMap[normalizedDay];
+    if (targetDayNum === undefined) return filteredEncontros.map((e: any) => ({ ...e, is_blank: false }));
+
+    const isQuinzenal = frequencia?.toLowerCase().includes("quinzenal");
+    const today = startOfDay(new Date());
+    const startRef = new Date(2026, 1, 1); // Feb 1, 2026
+
+    let current = new Date(startRef);
+    while (getDay(current) !== targetDayNum) {
+      current.setDate(current.getDate() + 1);
+    }
+
+    const expectedDates: string[] = [];
+    while (!isAfter(current, today)) {
+      const dateStr = format(current, "yyyy-MM-dd");
+      // Apply date filter
+      if (startDate && isBefore(parseISO(dateStr), parseISO(startDate))) {
+        current = addWeeks(current, isQuinzenal ? 2 : 1);
+        continue;
+      }
+      if (endDate && isAfter(parseISO(dateStr), parseISO(endDate))) {
+        break;
+      }
+      expectedDates.push(dateStr);
+      current = addWeeks(current, isQuinzenal ? 2 : 1);
+    }
+
+    const encontrosByDate = new Map(
+      filteredEncontros.map((e: any) => [e.data_encontro, e])
+    );
+
+    const merged = expectedDates.map((dateStr) => {
+      const actual = encontrosByDate.get(dateStr);
+      if (actual) return { ...actual, is_blank: false };
+      return {
+        id: `blank-${dateStr}`,
+        data_encontro: dateStr,
+        casa_refugio_id: casaSelecionada.id,
+        qtd_lideres: 0,
+        qtd_membros: 0,
+        qtd_criancas: 0,
+        qtd_visitantes: 0,
+        kilos_arrecadados: 0,
+        ofertas: 0,
+        ofertas_dinheiro: 0,
+        ofertas_pix: 0,
+        observacoes: null,
+        photo_url: null,
+        is_blank: true,
+      };
+    });
+
+    // Add any actual encounters not in expected dates
+    filteredEncontros.forEach((e: any) => {
+      if (!expectedDates.includes(e.data_encontro)) {
+        merged.push({ ...e, is_blank: false });
+      }
+    });
+
+    merged.sort((a: any, b: any) => b.data_encontro.localeCompare(a.data_encontro));
+    return merged;
+  }, [filteredEncontros, casaSelecionada, startDate, endDate]);
+
+  // Calcular estatísticas (somente encontros reais)
+  const realEncontros = mergedEncontros.filter((e: any) => !e.is_blank);
+  const totalEncontros = realEncontros.length;
+  const totalLideres = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_lideres || 0), 0);
+  const totalMembros = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_membros || 0), 0);
+  const totalCriancas = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_criancas || 0), 0);
+  const totalVisitantes = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_visitantes || 0), 0);
   const totalPessoas = totalLideres + totalMembros + totalCriancas + totalVisitantes;
-  const totalKilos = filteredEncontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
-  const totalOfertas = filteredEncontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
+  const totalKilos = realEncontros.reduce((acc: number, e: any) => acc + Number(e.kilos_arrecadados || 0), 0);
+  const totalOfertas = realEncontros.reduce((acc: number, e: any) => acc + Number(e.ofertas || 0), 0);
   const mediaPessoas = totalEncontros > 0 ? Math.round(totalPessoas / totalEncontros) : 0;
 
-  const casaSelecionada = casas.find((c) => c.id === selectedCasa);
-  const canEditSelected = selectedCasa ? canEditCasa(selectedCasa) : false;
+  // Pagination
+  const totalEncontrosPages = Math.ceil(mergedEncontros.length / ENCONTROS_PER_PAGE);
+  const paginatedEncontros = mergedEncontros.slice(
+    (encontrosPage - 1) * ENCONTROS_PER_PAGE,
+    encontrosPage * ENCONTROS_PER_PAGE
+  );
+
 
   // Mutation para excluir encontro
   const deleteMutation = useMutation({
@@ -361,6 +450,123 @@ export const PortalLideresCasaRefugio = ({
                 onClear={clearFilters}
               />
 
+              {/* Histórico de Encontros */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Histórico de Encontros ({mergedEncontros.length})
+                </h3>
+                {loadingEncontros ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-6 h-6 text-secondary animate-spin" />
+                  </div>
+                ) : mergedEncontros.length === 0 ? (
+                  <Card className="bg-muted/30">
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      Nenhum encontro registrado
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {paginatedEncontros.map((encontro: any) => {
+                      const total =
+                        (encontro.qtd_lideres || 0) +
+                        (encontro.qtd_membros || 0) +
+                        (encontro.qtd_criancas || 0) +
+                        (encontro.qtd_visitantes || 0);
+                      return (
+                        <Card
+                          key={encontro.id}
+                          className={encontro.is_blank ? "border-destructive/30 bg-destructive/5" : ""}
+                        >
+                          <CardContent className="py-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={`font-medium ${encontro.is_blank ? "text-destructive font-bold" : ""}`}>
+                                  {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                                  {encontro.is_blank && (
+                                    <span className="ml-2 text-xs">(pendente)</span>
+                                  )}
+                                </p>
+                                {!encontro.is_blank && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {total} pessoas • {encontro.kilos_arrecadados || 0} kg • R$ {Number(encontro.ofertas || 0).toFixed(2)}
+                                  </p>
+                                )}
+                                {encontro.is_blank && (
+                                  <p className="text-xs text-destructive/70">
+                                    Encontro não relatado
+                                  </p>
+                                )}
+                              </div>
+                              {canEditSelected && (
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (encontro.is_blank) {
+                                        setEditingEncontro({
+                                          ...encontro,
+                                          id: undefined,
+                                          is_blank: true,
+                                        });
+                                      } else {
+                                        setEditingEncontro(encontro);
+                                      }
+                                      setShowEncontroDialog(true);
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                  {!encontro.is_blank && (
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive"
+                                      onClick={() => setDeletingEncontroId(encontro.id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+
+                    {/* Paginação */}
+                    {totalEncontrosPages > 1 && (
+                      <div className="flex items-center justify-between pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEncontrosPage((p) => Math.max(1, p - 1))}
+                          disabled={encontrosPage === 1}
+                        >
+                          <ChevronLeft className="w-4 h-4 mr-1" />
+                          Anterior
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          {encontrosPage} de {totalEncontrosPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEncontrosPage((p) => Math.min(totalEncontrosPages, p + 1))}
+                          disabled={encontrosPage === totalEncontrosPages}
+                        >
+                          Próximo
+                          <ChevronRight className="w-4 h-4 ml-1" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Indicadores */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card>
@@ -423,73 +629,6 @@ export const PortalLideresCasaRefugio = ({
 
               {/* Gráficos */}
               <EncontrosCharts encontros={filteredEncontros} />
-
-              {/* Lista de Encontros */}
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Histórico de Encontros ({filteredEncontros.length})
-                </h3>
-                {loadingEncontros ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-6 h-6 text-secondary animate-spin" />
-                  </div>
-                ) : filteredEncontros.length === 0 ? (
-                  <Card className="bg-muted/30">
-                    <CardContent className="py-8 text-center text-muted-foreground">
-                      Nenhum encontro registrado
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredEncontros.slice(0, 10).map((encontro) => {
-                      const total =
-                        (encontro.qtd_lideres || 0) +
-                        (encontro.qtd_membros || 0) +
-                        (encontro.qtd_criancas || 0) +
-                        (encontro.qtd_visitantes || 0);
-                      return (
-                        <Card key={encontro.id}>
-                          <CardContent className="py-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">
-                                  {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {total} pessoas • {encontro.kilos_arrecadados || 0} kg • R$ {Number(encontro.ofertas || 0).toFixed(2)}
-                                </p>
-                              </div>
-                              {canEditSelected && (
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                      setEditingEncontro(encontro);
-                                      setShowEncontroDialog(true);
-                                    }}
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive"
-                                    onClick={() => setDeletingEncontroId(encontro.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
             </>
           )}
 
