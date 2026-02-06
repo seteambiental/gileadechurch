@@ -173,9 +173,12 @@ export const EncontroFormDialog = ({
     },
   });
 
+  const isNewFromBlank = editingEncontro && (editingEncontro as any).isNew;
+  const isEditing = editingEncontro && !isNewFromBlank;
+
   useEffect(() => {
     if (open) {
-      if (editingEncontro) {
+      if (isEditing) {
         // Load existing data for editing
         const ofertasDinheiroValue = editingEncontro.ofertas_dinheiro 
           ? Number(editingEncontro.ofertas_dinheiro).toFixed(2).replace(".", ",")
@@ -198,8 +201,9 @@ export const EncontroFormDialog = ({
           setPhotoPreview(editingEncontro.photo_url);
         }
       } else {
+        // New encontro (or from blank row with pre-filled date)
         form.reset({
-          data_encontro: new Date().toISOString().split("T")[0],
+          data_encontro: isNewFromBlank ? editingEncontro.data_encontro : new Date().toISOString().split("T")[0],
           qtd_lideres: 0,
           qtd_membros: 0,
           qtd_criancas: 0,
@@ -215,7 +219,7 @@ export const EncontroFormDialog = ({
       setRecognitionResult(null);
       setPresencas({});
     }
-  }, [open, form, editingEncontro]);
+  }, [open, form, editingEncontro, isEditing, isNewFromBlank]);
 
   // Update presencas when recognition result changes
   useEffect(() => {
@@ -346,7 +350,7 @@ export const EncontroFormDialog = ({
     mutationFn: async (data: FormData) => {
       if (!casa) throw new Error("Casa não selecionada");
 
-      let photoUrl: string | null = editingEncontro?.photo_url || null;
+      let photoUrl: string | null = isEditing ? editingEncontro?.photo_url || null : null;
 
       // Upload photo if exists (new photo)
       if (photo) {
@@ -389,7 +393,7 @@ export const EncontroFormDialog = ({
         photo_url: photoUrl,
       };
 
-      if (editingEncontro) {
+      if (isEditing && editingEncontro) {
         // Update existing
         const { error } = await supabase
           .from("encontros_casa_refugio")
@@ -411,7 +415,7 @@ export const EncontroFormDialog = ({
       queryClient.invalidateQueries({ queryKey: ["encontros-supervisor"] });
       queryClient.invalidateQueries({ queryKey: ["encontros-condominio"] });
       toast({
-        title: editingEncontro ? "Encontro atualizado!" : "Encontro registrado!",
+        title: isEditing ? "Encontro atualizado!" : "Encontro registrado!",
         description: "O relatório foi salvo com sucesso.",
       });
       onOpenChange(false);

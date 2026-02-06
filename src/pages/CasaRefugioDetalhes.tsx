@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, parseISO, isWithinInterval, addWeeks, startOfDay, isBefore, isAfter, getDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
@@ -141,41 +141,127 @@ const CasaRefugioDetalhes = () => {
     };
   }, [membrosVinculados, casa]);
 
-  // Filter encontros by date range
+  // Map Portuguese day names to JS day numbers (0=Sun, 1=Mon, ...)
+  const dayNameToNumber = (dia: string): number | null => {
+    const map: Record<string, number> = {
+      "domingo": 0, "segunda": 1, "terça": 2, "terca": 2,
+      "quarta": 3, "quinta": 4, "sexta": 5, "sábado": 6, "sabado": 6,
+    };
+    return map[dia.toLowerCase()] ?? null;
+  };
+
+  // Generate expected encounter dates based on casa config
+  const mergedEncontros = useMemo(() => {
+    if (!casa) return encontros.map((e) => ({ ...e, is_blank: false }));
+
+    const diaNum = casa.dias ? dayNameToNumber(casa.dias) : null;
+    const isQuinzenal = casa.frequencia?.toLowerCase() === "quinzenal";
+    const isSemanal = casa.frequencia?.toLowerCase() === "semanal";
+
+    if (diaNum === null || (!isSemanal && !isQuinzenal)) {
+      return encontros.map((e) => ({ ...e, is_blank: false }));
+    }
+
+    // Generate dates from Feb 1, 2026 up to today
+    const startGen = new Date(2026, 1, 1); // Feb 1, 2026
+    const today = startOfDay(new Date());
+
+    // Find the first occurrence of the target day on or after startGen
+    let current = new Date(startGen);
+    while (getDay(current) !== diaNum) {
+      current.setDate(current.getDate() + 1);
+    }
+
+    const expectedDates: string[] = [];
+    const weekIncrement = isQuinzenal ? 2 : 1;
+
+    while (!isAfter(current, today)) {
+      const dateStr = format(current, "yyyy-MM-dd");
+      expectedDates.push(dateStr);
+      current = addWeeks(current, weekIncrement);
+    }
+
+    // Create a map of actual encontros by date
+    const encontrosByDate = new Map<string, typeof encontros[0]>();
+    encontros.forEach((e) => {
+      encontrosByDate.set(e.data_encontro, e);
+    });
+
+    // Merge: for each expected date, use actual or create blank
+    const merged = expectedDates.map((dateStr) => {
+      const actual = encontrosByDate.get(dateStr);
+      if (actual) {
+        return { ...actual, is_blank: false };
+      }
+      return {
+        id: `blank-${dateStr}`,
+        casa_refugio_id: id!,
+        data_encontro: dateStr,
+        qtd_lideres: 0,
+        qtd_membros: 0,
+        qtd_criancas: 0,
+        qtd_visitantes: 0,
+        kilos_arrecadados: 0,
+        ofertas: 0,
+        ofertas_dinheiro: 0,
+        ofertas_pix: 0,
+        observacoes: null,
+        photo_url: null,
+        created_at: "",
+        updated_at: "",
+        is_blank: true,
+      };
+    });
+
+    // Also include any actual encontros that don't match expected dates
+    encontros.forEach((e) => {
+      if (!expectedDates.includes(e.data_encontro)) {
+        merged.push({ ...e, is_blank: false });
+      }
+    });
+
+    // Sort descending by date
+    merged.sort((a, b) => b.data_encontro.localeCompare(a.data_encontro));
+
+    return merged;
+  }, [encontros, casa, id]);
+
+  // Filter merged encontros by date range
   const filteredEncontros = useMemo(() => {
-    if (!startDate && !endDate) return encontros;
-    
-    return encontros.filter((encontro) => {
+    if (!startDate && !endDate) return mergedEncontros;
+
+    return mergedEncontros.filter((encontro) => {
       const encontroDate = parseISO(encontro.data_encontro);
-      
+
       if (startDate && endDate) {
         return isWithinInterval(encontroDate, {
           start: parseISO(startDate),
           end: parseISO(endDate),
         });
       }
-      
+
       if (startDate) {
         return encontroDate >= parseISO(startDate);
       }
-      
+
       if (endDate) {
         return encontroDate <= parseISO(endDate);
       }
-      
+
       return true;
     });
-  }, [encontros, startDate, endDate]);
+  }, [mergedEncontros, startDate, endDate]);
 
-  // Calculate indicators from filtered data
-  const totalEncontros = filteredEncontros.length;
-  const totalLideres = filteredEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
-  const totalMembros = filteredEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
-  const totalCriancas = filteredEncontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
-  const totalVisitantes = filteredEncontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
+  // Calculate indicators from filtered data (only non-blank)
+  const realEncontros = filteredEncontros.filter((e) => !e.is_blank);
+  const totalEncontros = realEncontros.length;
+  const totalLideres = realEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
+  const totalMembros = realEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
+  const totalCriancas = realEncontros.reduce((acc, e) => acc + (e.qtd_criancas || 0), 0);
+  const totalVisitantes = realEncontros.reduce((acc, e) => acc + (e.qtd_visitantes || 0), 0);
   const totalPessoas = totalLideres + totalMembros + totalCriancas + totalVisitantes;
-  const totalKilos = filteredEncontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
-  const totalOfertas = filteredEncontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
+  const totalKilos = realEncontros.reduce((acc, e) => acc + Number(e.kilos_arrecadados || 0), 0);
+  const totalOfertas = realEncontros.reduce((acc, e) => acc + Number(e.ofertas || 0), 0);
   const mediaPessoas = totalEncontros > 0 ? Math.round(totalPessoas / totalEncontros) : 0;
 
   const clearFilters = () => {
@@ -423,74 +509,111 @@ const CasaRefugioDetalhes = () => {
                     </TableHeader>
                     <TableBody>
                       {paginatedEncontros.map((encontro) => {
+                        const isBlank = encontro.is_blank;
                         const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
+                        const blankCellClass = isBlank ? "text-destructive font-bold" : "";
                         return (
-                          <TableRow key={encontro.id}>
-                            <TableCell className="font-medium whitespace-nowrap">
+                          <TableRow
+                            key={encontro.id}
+                            className={isBlank ? "bg-destructive/5 hover:bg-destructive/10" : ""}
+                          >
+                            <TableCell className={`whitespace-nowrap ${isBlank ? "text-destructive font-bold" : "font-medium"}`}>
                               {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                              {isBlank && <span className="ml-2 text-xs">(pendente)</span>}
                             </TableCell>
-                            <TableCell className="text-center text-blue-600">{encontro.qtd_lideres || 0}</TableCell>
-                            <TableCell className="text-center text-green-600">{encontro.qtd_membros || 0}</TableCell>
-                            <TableCell className="text-center text-purple-600">{encontro.qtd_visitantes || 0}</TableCell>
-                            <TableCell className="text-center text-amber-600">{encontro.qtd_criancas || 0}</TableCell>
-                            <TableCell className="text-center font-medium">{total}</TableCell>
-                            <TableCell className="text-center">{encontro.kilos_arrecadados || 0}</TableCell>
-                            <TableCell className="text-center whitespace-nowrap">R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</TableCell>
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-blue-600"}`}>
+                              {isBlank ? "—" : encontro.qtd_lideres || 0}
+                            </TableCell>
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-green-600"}`}>
+                              {isBlank ? "—" : encontro.qtd_membros || 0}
+                            </TableCell>
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-purple-600"}`}>
+                              {isBlank ? "—" : encontro.qtd_visitantes || 0}
+                            </TableCell>
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-amber-600"}`}>
+                              {isBlank ? "—" : encontro.qtd_criancas || 0}
+                            </TableCell>
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : "font-medium"}`}>
+                              {isBlank ? "—" : total}
+                            </TableCell>
+                            <TableCell className={`text-center ${blankCellClass}`}>
+                              {isBlank ? "—" : encontro.kilos_arrecadados || 0}
+                            </TableCell>
+                            <TableCell className={`text-center whitespace-nowrap ${blankCellClass}`}>
+                              {isBlank ? "—" : `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`}
+                            </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
-                                {encontro.photo_url && (
+                                {isBlank ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-destructive"
+                                    onClick={() => setEditingEncontro({
+                                      isNew: true,
+                                      data_encontro: encontro.data_encontro,
+                                    })}
+                                    title="Preencher encontro"
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                ) : (
                                   <>
+                                    {encontro.photo_url && (
+                                      <>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => setAnaliseEncontro({
+                                            id: encontro.id,
+                                            photoUrl: encontro.photo_url!,
+                                            dataEncontro: encontro.data_encontro,
+                                          })}
+                                          title="Analisar presença"
+                                        >
+                                          <ScanFace className="w-4 h-4 text-destructive" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8"
+                                          onClick={() => setSelectedPhoto(encontro.photo_url)}
+                                          title="Ver foto"
+                                        >
+                                          <Image className="w-4 h-4" />
+                                        </Button>
+                                      </>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
-                                      onClick={() => setAnaliseEncontro({
-                                        id: encontro.id,
-                                        photoUrl: encontro.photo_url!,
-                                        dataEncontro: encontro.data_encontro,
-                                      })}
-                                      title="Analisar presença"
+                                      onClick={() => exportEncontroPDF(encontro)}
+                                      title="Exportar PDF"
                                     >
-                                      <ScanFace className="w-4 h-4 text-destructive" />
+                                      <FileDown className="w-4 h-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8"
-                                      onClick={() => setSelectedPhoto(encontro.photo_url)}
-                                      title="Ver foto"
+                                      onClick={() => setEditingEncontro(encontro)}
+                                      title="Editar"
                                     >
-                                      <Image className="w-4 h-4" />
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive"
+                                      onClick={() => setDeletingEncontroId(encontro.id)}
+                                      title="Excluir"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
                                   </>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => exportEncontroPDF(encontro)}
-                                  title="Exportar PDF"
-                                >
-                                  <FileDown className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => setEditingEncontro(encontro)}
-                                  title="Editar"
-                                >
-                                  <Pencil className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-destructive hover:text-destructive"
-                                  onClick={() => setDeletingEncontroId(encontro.id)}
-                                  title="Excluir"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
                               </div>
                             </TableCell>
                           </TableRow>
