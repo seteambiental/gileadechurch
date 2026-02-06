@@ -218,10 +218,11 @@ const AgendaPage = () => {
           {/* Aba Programação */}
           <TabsContent value="programacao" className="space-y-6">
              <AgendaCalendar
-               eventos={eventosRecorrentes}
+               eventos={[...eventosRecorrentes, ...eventosUnicos]}
                onEventoClick={(evento) => {
+                 const isRecorrente = evento.recorrente;
                  setEditingEvento(evento as Evento);
-                 setFormMode("compromisso");
+                 setFormMode(isRecorrente ? "compromisso" : "evento");
                  setShowEventoForm(true);
                }}
                onNovoCompromisso={() => {
@@ -229,7 +230,7 @@ const AgendaPage = () => {
                 setFormMode("compromisso");
                 setShowEventoForm(true);
                }}
-               isLoading={loadingRecorrentes}
+               isLoading={loadingRecorrentes || loadingUnicos}
              />
           </TabsContent>
 
