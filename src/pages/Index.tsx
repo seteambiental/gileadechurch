@@ -121,6 +121,7 @@ const Index = () => {
         .from("agenda_igreja")
         .select("id, titulo, flyer_url, data_evento, data_fim, limite_vagas")
         .eq("ativo", true)
+        .eq("recorrente", false)
         .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
