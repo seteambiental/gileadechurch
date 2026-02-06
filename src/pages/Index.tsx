@@ -125,9 +125,14 @@ const Index = () => {
         .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
-        .limit(4);
+        .limit(8);
       if (error) return [];
-      return data;
+      // Filtrar apenas flyers externos (não SVGs gerados pela IA)
+      const externosOnly = (data || []).filter((e: any) => {
+        const url = (e.flyer_url || "").toLowerCase();
+        return !url.endsWith(".svg");
+      });
+      return externosOnly.slice(0, 4);
     },
   });
 
