@@ -80,6 +80,7 @@ interface EventoFormDialogProps {
   onOpenChange: (open: boolean) => void;
   evento?: Evento | null;
   selectedDate?: Date | null;
+  mode?: "evento" | "compromisso";
 }
 
 const CORES = [
@@ -119,6 +120,7 @@ export const EventoFormDialog = ({
   onOpenChange,
   evento,
   selectedDate,
+  mode = "evento",
 }: EventoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -195,6 +197,7 @@ export const EventoFormDialog = ({
         setFlyerUrl(evento.flyer_url || null);
         setFlyerPendente(null);
       } else {
+        const isCompromisso = mode === "compromisso";
         setFormData({
           titulo: "",
           descricao: "",
@@ -203,11 +206,11 @@ export const EventoFormDialog = ({
           hora_inicio: "",
           hora_fim: "",
           local: "Igreja Gileade",
-          tipo_evento: "evento",
+          tipo_evento: isCompromisso ? "culto" : "evento",
           genero_alvo: "todos",
           cor: "#dc2626",
-          recorrente: false,
-          tipo_recorrencia: "",
+          recorrente: isCompromisso,
+          tipo_recorrencia: isCompromisso ? "semanal" : "",
           dia_semana: "",
           semana_mes: "",
           observacoes: "",
@@ -226,7 +229,7 @@ export const EventoFormDialog = ({
         setTextoCompartilhamento(null);
       }
     }
-  }, [open, evento, selectedDate]);
+  }, [open, evento, selectedDate, mode]);
 
   const handleFlyerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -444,20 +447,25 @@ export const EventoFormDialog = ({
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
       };
 
+      const label = mode === "compromisso" ? "Compromisso" : "Evento";
+
       if (evento) {
         const { error } = await supabase
           .from("agenda_igreja")
           .update(payload)
           .eq("id", evento.id);
         if (error) throw error;
-        toast({ title: "Evento atualizado!" });
+        toast({ title: `${label} atualizado!` });
       } else {
         const { error } = await supabase.from("agenda_igreja").insert(payload);
         if (error) throw error;
-        toast({ title: "Evento criado!" });
+        toast({ title: `${label} criado!` });
       }
 
+      queryClient.invalidateQueries({ queryKey: ["agenda-recorrentes"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-igreja"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-recorrentes-homepage"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -493,7 +501,11 @@ export const EventoFormDialog = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{evento ? "Editar Evento" : "Novo Evento"}</DialogTitle>
+            <DialogTitle>
+              {evento 
+                ? (mode === "compromisso" ? "Editar Compromisso" : "Editar Evento") 
+                : (mode === "compromisso" ? "Novo Compromisso" : "Novo Evento")}
+            </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">

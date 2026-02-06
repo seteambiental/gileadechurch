@@ -92,6 +92,7 @@ const AgendaPage = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showEventoForm, setShowEventoForm] = useState(false);
+  const [formMode, setFormMode] = useState<"evento" | "compromisso">("evento");
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [inscricoesEvento, setInscricoesEvento] = useState<{ id: string; titulo: string; local?: string | null; data_evento?: string; limite_vagas?: number | null } | null>(null);
   const [compartilharEvento, setCompartilharEvento] = useState<{ 
@@ -220,10 +221,12 @@ const AgendaPage = () => {
                eventos={eventosRecorrentes}
                onEventoClick={(evento) => {
                  setEditingEvento(evento as Evento);
+                 setFormMode("compromisso");
                  setShowEventoForm(true);
                }}
-               onNovoEvento={() => {
+               onNovoCompromisso={() => {
                 setEditingEvento(null);
+                setFormMode("compromisso");
                 setShowEventoForm(true);
                }}
                isLoading={loadingRecorrentes}
@@ -239,6 +242,7 @@ const AgendaPage = () => {
               </div>
               <Button variant="secondary" onClick={() => {
                 setEditingEvento(null);
+                setFormMode("evento");
                 setShowEventoForm(true);
               }}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -260,6 +264,7 @@ const AgendaPage = () => {
                   </p>
                   <Button variant="secondary" onClick={() => {
                     setEditingEvento(null);
+                    setFormMode("evento");
                     setShowEventoForm(true);
                   }}>
                     <Plus className="w-4 h-4 mr-2" />
@@ -344,6 +349,7 @@ const AgendaPage = () => {
                             className="flex-1"
                             onClick={() => {
                               setEditingEvento(evento);
+                              setFormMode("evento");
                               setShowEventoForm(true);
                             }}
                           >
@@ -402,6 +408,7 @@ const AgendaPage = () => {
         onOpenChange={setShowEventoForm}
         evento={editingEvento}
         selectedDate={selectedDate}
+        mode={formMode}
       />
 
       {inscricoesEvento && (
