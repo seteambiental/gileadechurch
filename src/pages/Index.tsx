@@ -203,27 +203,60 @@ const Index = () => {
         { day: "Quarta", time: "19h30", event: "Culto de Ensino" },
       ];
     }
-     return eventosRecorrentes.map((evento) => {
-       let day = diasSemana[evento.dia_semana ?? 0];
-       
-       // Se for evento mensal, adicionar indicação de qual semana
-       if (evento.tipo_recorrencia === "mensal" && evento.semana_mes) {
-         const semanaLabels: Record<number, string> = {
-           1: "1º",
-           2: "2º",
-           3: "3º",
-           4: "4º",
-           5: "Último",
-         };
-         day = `${semanaLabels[evento.semana_mes] || ""} ${day} do mês`;
-       }
-       
-       return {
-         day,
-         time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
-         event: evento.titulo,
-       };
-     });
+
+    // Separar eventos de ceia (mensais) dos demais
+    const ceiaKeywords = ["ceia", "santa ceia"];
+    const celebracaoKeywords = ["celebração", "celebracao"];
+    
+    const eventosCeia = eventosRecorrentes.filter(
+      (e) => e.tipo_recorrencia === "mensal" && ceiaKeywords.some((k) => e.titulo.toLowerCase().includes(k))
+    );
+    const ceiaByDay: Record<number, typeof eventosCeia[0]> = {};
+    eventosCeia.forEach((c) => {
+      if (c.dia_semana != null) ceiaByDay[c.dia_semana] = c;
+    });
+
+    // IDs dos eventos de ceia para excluí-los da lista principal
+    const ceiaIds = new Set(eventosCeia.map((c) => c.id));
+
+    const items = eventosRecorrentes
+      .filter((e) => !ceiaIds.has(e.id))
+      .map((evento) => {
+        let day = diasSemana[evento.dia_semana ?? 0];
+        let title = evento.titulo;
+
+        // Se for evento mensal, adicionar indicação de qual semana
+        if (evento.tipo_recorrencia === "mensal" && evento.semana_mes) {
+          const semanaLabels: Record<number, string> = {
+            1: "1º",
+            2: "2º",
+            3: "3º",
+            4: "4º",
+            5: "Último",
+          };
+          day = `${semanaLabels[evento.semana_mes] || ""} ${day} do mês`;
+        }
+
+        // Se é um culto de celebração e existe ceia no mesmo dia, unificar como "Culto de Ceia"
+        if (
+          evento.tipo_recorrencia === "semanal" &&
+          celebracaoKeywords.some((k) => evento.titulo.toLowerCase().includes(k)) &&
+          evento.dia_semana != null &&
+          ceiaByDay[evento.dia_semana]
+        ) {
+          const ceia = ceiaByDay[evento.dia_semana];
+          const semanaLabel = ceia.semana_mes ? `${ceia.semana_mes}º` : "2º";
+          title = `Culto de Ceia (${semanaLabel} ${diasSemana[evento.dia_semana]})`;
+        }
+
+        return {
+          day,
+          time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
+          event: title,
+        };
+      });
+
+    return items;
   }, [eventosRecorrentes]);
 
   // Formatar testemunhos
