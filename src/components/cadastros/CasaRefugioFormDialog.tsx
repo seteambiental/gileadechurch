@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -75,6 +76,7 @@ const formSchema = z.object({
   condominio: z.string().optional(),
   dias: z.string().optional(),
   frequencia: z.string().optional(),
+  data_inicio_cr: z.string().optional(),
   cep: z.string().optional(),
   address: z.string().optional(),
   numero: z.string().optional(),
@@ -95,6 +97,7 @@ interface CasaRefugio {
   supervisores: string | null;
   dias: string | null;
   frequencia: string | null;
+  data_inicio_cr: string | null;
   cep: string | null;
   address: string | null;
   numero: string | null;
@@ -195,6 +198,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
       condominio: "",
       dias: "",
       frequencia: "",
+      data_inicio_cr: "",
       cep: "",
       address: "",
       numero: "",
@@ -219,6 +223,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           condominio: item.condominio || "",
           dias: item.dias || "",
           frequencia: item.frequencia || "",
+          data_inicio_cr: item.data_inicio_cr || "",
           cep: item.cep || "",
           address: item.address || "",
           numero: item.numero || "",
@@ -239,6 +244,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
           condominio: "",
           dias: "",
           frequencia: "",
+          data_inicio_cr: "",
           cep: "",
           address: "",
           numero: "",
@@ -264,6 +270,7 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
         condominio: data.condominio ? toTitleCase(data.condominio) : null,
         dias: data.dias || null,
         frequencia: data.frequencia || null,
+        data_inicio_cr: data.data_inicio_cr || null,
         cep: data.cep || null,
         address: data.address ? toTitleCase(data.address) : null,
         numero: data.numero || null,
@@ -654,6 +661,25 @@ const CasaRefugioFormDialog = ({ open, onOpenChange, item }: CasaRefugioFormDial
                           ))}
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Início da CR */}
+                <FormField
+                  control={form.control}
+                  name="data_inicio_cr"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Início da CR (1ª reunião do ano)</FormLabel>
+                      <FormControl>
+                        <DateInput
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          maxDate={undefined}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

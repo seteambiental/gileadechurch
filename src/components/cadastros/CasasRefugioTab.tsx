@@ -43,6 +43,7 @@ interface CasaRefugio {
   supervisores: string | null;
   dias: string | null;
   frequencia: string | null;
+  data_inicio_cr: string | null;
   cep: string | null;
   address: string | null;
   numero: string | null;

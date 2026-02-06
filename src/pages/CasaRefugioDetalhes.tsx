@@ -167,8 +167,10 @@ const CasaRefugioDetalhes = () => {
       return encontros.map((e) => ({ ...e, is_blank: false }));
     }
 
-    // Generate dates from Feb 1, 2026 up to today
-    const startGen = new Date(2026, 1, 1); // Feb 1, 2026
+    // Use data_inicio_cr if set, otherwise fallback to Feb 1, 2026
+    const startGen = casa.data_inicio_cr 
+      ? parseISO(casa.data_inicio_cr) 
+      : new Date(2026, 1, 1);
     const today = startOfDay(new Date());
 
     // Find the first occurrence of the target day on or after startGen

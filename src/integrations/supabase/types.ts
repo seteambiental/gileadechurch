@@ -822,6 +822,7 @@ export type Database = {
           complement: string | null
           condominio: string | null
           created_at: string
+          data_inicio_cr: string | null
           dias: string | null
           frequencia: string | null
           id: string
@@ -849,6 +850,7 @@ export type Database = {
           complement?: string | null
           condominio?: string | null
           created_at?: string
+          data_inicio_cr?: string | null
           dias?: string | null
           frequencia?: string | null
           id?: string
@@ -876,6 +878,7 @@ export type Database = {
           complement?: string | null
           condominio?: string | null
           created_at?: string
+          data_inicio_cr?: string | null
           dias?: string | null
           frequencia?: string | null
           id?: string

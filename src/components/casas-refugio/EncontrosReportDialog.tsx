@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DateInput } from "@/components/ui/date-input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -16,7 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns, ListFilter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -35,6 +41,7 @@ interface CasaRefugioData {
   condominio: string | null;
   dias: string | null;
   frequencia: string | null;
+  data_inicio_cr: string | null;
   supervisor?: { full_name: string } | null;
 }
 
@@ -105,10 +112,44 @@ export const EncontrosReportDialog = ({
   const [supervisorFilter, setSupervisorFilter] = useState("all");
   const [casaRefugioFilter, setCasaRefugioFilter] = useState("all");
 
+  // Status filter
+  const [statusFilter, setStatusFilter] = useState<"todas" | "realizadas" | "pendentes">("todas");
+
+  // Column visibility
+  const allColumns = [
+    { key: "casa_nome", label: "Casa Refúgio", default: true },
+    { key: "data_encontro", label: "Data", default: true },
+    { key: "qtd_lideres", label: "Líderes", default: true },
+    { key: "qtd_membros", label: "Membros", default: true },
+    { key: "qtd_criancas", label: "Crianças", default: true },
+    { key: "qtd_visitantes", label: "Visitantes", default: true },
+    { key: "total_presentes", label: "Total", default: true },
+    { key: "ofertas_dinheiro", label: "R$ Dinheiro", default: true },
+    { key: "ofertas_pix", label: "R$ Pix", default: true },
+    { key: "ofertas_total", label: "R$ Total", default: true },
+    { key: "kilos_arrecadados", label: "Kilos", default: true },
+  ] as const;
+
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+    new Set(allColumns.map((c) => c.key))
+  );
+
+  const toggleColumn = (key: string) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const isColumnVisible = (key: string) => visibleColumns.has(key);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Reset dependent filters when parent filter changes
   useEffect(() => {
     setSupervisorFilter("all");
     setCasaRefugioFilter("all");
@@ -135,6 +176,7 @@ export const EncontrosReportDialog = ({
           condominio,
           dias,
           frequencia,
+          data_inicio_cr,
           supervisor:members!casas_refugio_supervisor_id_fkey(full_name)
         `)
         .order("name");
@@ -235,7 +277,11 @@ export const EncontrosReportDialog = ({
       const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
       if (dayNumber === null || dayNumber === undefined) return;
 
-      const expectedDates = generateExpectedDates(appliedStartDate, appliedEndDate, dayNumber);
+      // Use data_inicio_cr as start, but clamp to appliedStartDate
+      const casaStart = casa.data_inicio_cr && casa.data_inicio_cr > appliedStartDate 
+        ? casa.data_inicio_cr 
+        : appliedStartDate;
+      const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber);
 
       expectedDates.forEach((date) => {
         const key = `${casa.id}_${date}`;
@@ -325,9 +371,16 @@ export const EncontrosReportDialog = ({
     return rows;
   }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap]);
 
-  // Totals (only non-blank)
+  // Apply status filter
+  const filteredReportData = useMemo(() => {
+    if (statusFilter === "realizadas") return reportData.filter((r) => !r.is_blank);
+    if (statusFilter === "pendentes") return reportData.filter((r) => r.is_blank);
+    return reportData;
+  }, [reportData, statusFilter]);
+
+  // Totals (only non-blank from filtered data)
   const totals = useMemo(() => {
-    return reportData
+    return filteredReportData
       .filter((r) => !r.is_blank)
       .reduce(
         (acc, row) => ({
@@ -353,11 +406,11 @@ export const EncontrosReportDialog = ({
           kilos_arrecadados: 0,
         }
       );
-  }, [reportData]);
+  }, [filteredReportData]);
 
   // Pagination
-  const totalPages = Math.max(1, Math.ceil(reportData.length / ITEMS_PER_PAGE));
-  const paginatedData = reportData.slice(
+  const totalPages = Math.max(1, Math.ceil(filteredReportData.length / ITEMS_PER_PAGE));
+  const paginatedData = filteredReportData.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -375,6 +428,7 @@ export const EncontrosReportDialog = ({
     setCondominioFilter("all");
     setSupervisorFilter("all");
     setCasaRefugioFilter("all");
+    setStatusFilter("todas");
   };
 
   const exportColumns: ExportColumn[] = [
@@ -417,7 +471,7 @@ export const EncontrosReportDialog = ({
       ? `${formatDateBR(appliedStartDate)}-${formatDateBR(appliedEndDate)}` 
       : "todos";
     exportGenericToExcel(
-      reportData,
+      filteredReportData,
       exportColumns,
       `relatorio-encontros-${periodLabel}`,
       "Encontros"
@@ -429,15 +483,15 @@ export const EncontrosReportDialog = ({
       ? `${formatDateBR(appliedStartDate)} a ${formatDateBR(appliedEndDate)}` 
       : "Todos os períodos";
     exportGenericToPDF(
-      reportData,
+      filteredReportData,
       exportColumns,
       `relatorio-encontros`,
       `Relatório de Encontros - Casas Refúgio (${periodLabel})`
     );
   };
 
-  const blankCount = reportData.filter((r) => r.is_blank).length;
-  const filledCount = reportData.filter((r) => !r.is_blank).length;
+  const blankCount = filteredReportData.filter((r) => r.is_blank).length;
+  const filledCount = filteredReportData.filter((r) => !r.is_blank).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -514,6 +568,55 @@ export const EncontrosReportDialog = ({
             </div>
           </div>
 
+          {/* Status + Column Visibility + Date Range */}
+          <div className="flex flex-wrap items-end gap-4">
+            {/* Status filter */}
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <ListFilter className="w-3 h-3" /> Status
+              </label>
+              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as any)}>
+                <SelectTrigger className="w-[160px] bg-background">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  <SelectItem value="realizadas">Realizadas</SelectItem>
+                  <SelectItem value="pendentes">Pendentes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Column visibility */}
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Columns className="w-3 h-3" /> Colunas
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-[160px] justify-start">
+                    <Columns className="w-4 h-4 mr-2" />
+                    {visibleColumns.size} de {allColumns.length}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-3" align="start">
+                  <p className="text-sm font-medium mb-2">Colunas visíveis</p>
+                  <div className="space-y-2">
+                    {allColumns.map((col) => (
+                      <label key={col.key} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={isColumnVisible(col.key)}
+                          onCheckedChange={() => toggleColumn(col.key)}
+                        />
+                        <span className="text-sm">{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+
           {/* Date Range Filter */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -580,7 +683,7 @@ export const EncontrosReportDialog = ({
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : reportData.length === 0 ? (
+        ) : filteredReportData.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             Nenhum encontro encontrado para o período selecionado.
           </div>
@@ -590,55 +693,58 @@ export const EncontrosReportDialog = ({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>
-                    <TableHead className="whitespace-nowrap">Data</TableHead>
-                    <TableHead className="text-center">Líd.</TableHead>
-                    <TableHead className="text-center">Memb.</TableHead>
-                    <TableHead className="text-center">Crian.</TableHead>
-                    <TableHead className="text-center">Visit.</TableHead>
-                    <TableHead className="text-center font-semibold">Total</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">R$ Dinh.</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">R$ Pix</TableHead>
-                    <TableHead className="text-right whitespace-nowrap font-semibold">R$ Total</TableHead>
-                    <TableHead className="text-right">Kilos</TableHead>
+                    {isColumnVisible("casa_nome") && <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>}
+                    {isColumnVisible("data_encontro") && <TableHead className="whitespace-nowrap">Data</TableHead>}
+                    {isColumnVisible("qtd_lideres") && <TableHead className="text-center">Líd.</TableHead>}
+                    {isColumnVisible("qtd_membros") && <TableHead className="text-center">Memb.</TableHead>}
+                    {isColumnVisible("qtd_criancas") && <TableHead className="text-center">Crian.</TableHead>}
+                    {isColumnVisible("qtd_visitantes") && <TableHead className="text-center">Visit.</TableHead>}
+                    {isColumnVisible("total_presentes") && <TableHead className="text-center font-semibold">Total</TableHead>}
+                    {isColumnVisible("ofertas_dinheiro") && <TableHead className="text-right whitespace-nowrap">R$ Dinh.</TableHead>}
+                    {isColumnVisible("ofertas_pix") && <TableHead className="text-right whitespace-nowrap">R$ Pix</TableHead>}
+                    {isColumnVisible("ofertas_total") && <TableHead className="text-right whitespace-nowrap font-semibold">R$ Total</TableHead>}
+                    {isColumnVisible("kilos_arrecadados") && <TableHead className="text-right">Kilos</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedData.map((row, index) => (
                     <TableRow 
                       key={`${row.casa_refugio_id}-${row.data_encontro}-${index}`}
-                      className={row.is_blank ? "bg-amber-50 dark:bg-amber-950/30 text-muted-foreground" : ""}
+                      className={row.is_blank ? "bg-destructive/5 text-muted-foreground" : ""}
                     >
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {row.casa_nome}
-                        {row.is_blank && (
-                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">(pendente)</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>
-                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_lideres}</TableCell>
-                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_membros}</TableCell>
-                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_criancas}</TableCell>
-                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_visitantes}</TableCell>
-                      <TableCell className="text-center font-semibold">{row.is_blank ? "-" : row.total_presentes}</TableCell>
-                      <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_dinheiro.toFixed(2)}`}</TableCell>
-                      <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_pix.toFixed(2)}`}</TableCell>
-                      <TableCell className="text-right font-semibold">{row.is_blank ? "-" : `R$ ${row.ofertas_total.toFixed(2)}`}</TableCell>
-                      <TableCell className="text-right">{row.is_blank ? "-" : row.kilos_arrecadados.toFixed(1)}</TableCell>
+                      {isColumnVisible("casa_nome") && (
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {row.casa_nome}
+                          {row.is_blank && (
+                            <span className="ml-2 text-xs text-destructive">(pendente)</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {isColumnVisible("data_encontro") && <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>}
+                      {isColumnVisible("qtd_lideres") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_lideres}</TableCell>}
+                      {isColumnVisible("qtd_membros") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_membros}</TableCell>}
+                      {isColumnVisible("qtd_criancas") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_criancas}</TableCell>}
+                      {isColumnVisible("qtd_visitantes") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_visitantes}</TableCell>}
+                      {isColumnVisible("total_presentes") && <TableCell className="text-center font-semibold">{row.is_blank ? "-" : row.total_presentes}</TableCell>}
+                      {isColumnVisible("ofertas_dinheiro") && <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_dinheiro.toFixed(2)}`}</TableCell>}
+                      {isColumnVisible("ofertas_pix") && <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_pix.toFixed(2)}`}</TableCell>}
+                      {isColumnVisible("ofertas_total") && <TableCell className="text-right font-semibold">{row.is_blank ? "-" : `R$ ${row.ofertas_total.toFixed(2)}`}</TableCell>}
+                      {isColumnVisible("kilos_arrecadados") && <TableCell className="text-right">{row.is_blank ? "-" : row.kilos_arrecadados.toFixed(1)}</TableCell>}
                     </TableRow>
                   ))}
                   {/* Totals Row */}
                   <TableRow className="bg-muted/50 font-semibold">
-                    <TableCell colSpan={2}>TOTAL</TableCell>
-                    <TableCell className="text-center">{totals.qtd_lideres}</TableCell>
-                    <TableCell className="text-center">{totals.qtd_membros}</TableCell>
-                    <TableCell className="text-center">{totals.qtd_criancas}</TableCell>
-                    <TableCell className="text-center">{totals.qtd_visitantes}</TableCell>
-                    <TableCell className="text-center">{totals.total_presentes}</TableCell>
-                    <TableCell className="text-right">R$ {totals.ofertas_dinheiro.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">R$ {totals.ofertas_pix.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">R$ {totals.ofertas_total.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{totals.kilos_arrecadados.toFixed(1)}</TableCell>
+                    {isColumnVisible("casa_nome") && <TableCell>TOTAL</TableCell>}
+                    {isColumnVisible("data_encontro") && <TableCell />}
+                    {isColumnVisible("qtd_lideres") && <TableCell className="text-center">{totals.qtd_lideres}</TableCell>}
+                    {isColumnVisible("qtd_membros") && <TableCell className="text-center">{totals.qtd_membros}</TableCell>}
+                    {isColumnVisible("qtd_criancas") && <TableCell className="text-center">{totals.qtd_criancas}</TableCell>}
+                    {isColumnVisible("qtd_visitantes") && <TableCell className="text-center">{totals.qtd_visitantes}</TableCell>}
+                    {isColumnVisible("total_presentes") && <TableCell className="text-center">{totals.total_presentes}</TableCell>}
+                    {isColumnVisible("ofertas_dinheiro") && <TableCell className="text-right">R$ {totals.ofertas_dinheiro.toFixed(2)}</TableCell>}
+                    {isColumnVisible("ofertas_pix") && <TableCell className="text-right">R$ {totals.ofertas_pix.toFixed(2)}</TableCell>}
+                    {isColumnVisible("ofertas_total") && <TableCell className="text-right">R$ {totals.ofertas_total.toFixed(2)}</TableCell>}
+                    {isColumnVisible("kilos_arrecadados") && <TableCell className="text-right">{totals.kilos_arrecadados.toFixed(1)}</TableCell>}
                   </TableRow>
                 </TableBody>
               </Table>
