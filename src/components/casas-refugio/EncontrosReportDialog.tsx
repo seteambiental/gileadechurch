@@ -22,7 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns, ListFilter } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -590,12 +590,12 @@ export const EncontrosReportDialog = ({
             {/* Column visibility */}
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground flex items-center gap-1">
-                <Columns className="w-3 h-3" /> Colunas
+                <Columns3 className="w-3 h-3" /> Colunas
               </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="w-[160px] justify-start">
-                    <Columns className="w-4 h-4 mr-2" />
+                    <Columns3 className="w-4 h-4 mr-2" />
                     {visibleColumns.size} de {allColumns.length}
                   </Button>
                 </PopoverTrigger>
