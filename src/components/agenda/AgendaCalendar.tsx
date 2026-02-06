@@ -70,7 +70,7 @@
  
  export const AgendaCalendar = ({ eventos, onEventoClick, onNovoEvento, isLoading }: AgendaCalendarProps) => {
    const [currentDate, setCurrentDate] = useState(new Date());
-   const [view, setView] = useState<ViewType>("semana");
+   const [view, setView] = useState<ViewType>("mes");
  
    // Gera eventos recorrentes para um intervalo de datas
    const getEventosParaData = (date: Date) => {
