@@ -100,7 +100,7 @@ export const exportToExcel = (members: Member[], filename: string = "membros", f
 };
 
 export const exportToPDF = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = []) => {
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: "landscape" });
   const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
 
   // Title
@@ -208,7 +208,7 @@ export const exportGenericToPDF = (
 ) => {
   if (data.length === 0) return;
 
-  const doc = new jsPDF();
+  const doc = new jsPDF({ orientation: "landscape" });
 
   // Title
   doc.setFontSize(16);

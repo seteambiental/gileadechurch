@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck } from "lucide-react";
+import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -27,12 +27,14 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn } from "@/lib/export";
-import { format, startOfMonth, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, parseISO } from "date-fns";
 
 interface CasaRefugioData {
   id: string;
   name: string;
   condominio: string | null;
+  dias: string | null;
+  frequencia: string | null;
   supervisor?: { full_name: string } | null;
 }
 
@@ -54,15 +56,44 @@ interface EncontroReport {
   ofertas_pix: number;
   ofertas_total: number;
   kilos_arrecadados: number;
+  is_blank: boolean;
 }
+
+const ITEMS_PER_PAGE = 5;
+
+// Map day name to JS day number (0=Sunday, 1=Monday, etc.)
+const dayNameToNumber: Record<string, number> = {
+  "Domingo": 0,
+  "Segunda-feira": 1,
+  "Terça-feira": 2,
+  "Quarta-feira": 3,
+  "Quinta-feira": 4,
+  "Sexta-feira": 5,
+  "Sábado": 6,
+};
+
+const generateExpectedDates = (
+  startDate: string,
+  endDate: string,
+  dayOfWeek: number
+): string[] => {
+  const start = parseISO(startDate);
+  const end = parseISO(endDate);
+  if (start > end) return [];
+
+  const allDays = eachDayOfInterval({ start, end });
+  return allDays
+    .filter((d) => getDay(d) === dayOfWeek)
+    .map((d) => format(d, "yyyy-MM-dd"));
+};
 
 export const EncontrosReportDialog = ({
   open,
   onOpenChange,
 }: EncontrosReportDialogProps) => {
-  // Default: last 30 days
-  const defaultStartDate = format(startOfMonth(subMonths(new Date(), 1)), "yyyy-MM-dd");
-  const defaultEndDate = format(new Date(), "yyyy-MM-dd");
+  // Default: February 2026
+  const defaultStartDate = "2026-02-01";
+  const defaultEndDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
@@ -74,6 +105,9 @@ export const EncontrosReportDialog = ({
   const [supervisorFilter, setSupervisorFilter] = useState("all");
   const [casaRefugioFilter, setCasaRefugioFilter] = useState("all");
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+
   // Reset dependent filters when parent filter changes
   useEffect(() => {
     setSupervisorFilter("all");
@@ -83,6 +117,11 @@ export const EncontrosReportDialog = ({
   useEffect(() => {
     setCasaRefugioFilter("all");
   }, [supervisorFilter]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [condominioFilter, supervisorFilter, casaRefugioFilter, appliedStartDate, appliedEndDate]);
 
   // Fetch all casas refugio for filters
   const { data: allCasas = [] } = useQuery({
@@ -94,6 +133,8 @@ export const EncontrosReportDialog = ({
           id,
           name,
           condominio,
+          dias,
+          frequencia,
           supervisor:members!casas_refugio_supervisor_id_fkey(full_name)
         `)
         .order("name");
@@ -141,10 +182,10 @@ export const EncontrosReportDialog = ({
     return casasFiltradasParaSelect.map((c) => c.id);
   }, [casasFiltradasParaSelect, casaRefugioFilter]);
 
-  // Map of casa names
-  const casasNomesMap = useMemo(() => {
-    const map = new Map<string, string>();
-    allCasas.forEach((casa) => map.set(casa.id, casa.name));
+  // Map of casa data
+  const casasMap = useMemo(() => {
+    const map = new Map<string, CasaRefugioData>();
+    allCasas.forEach((casa) => map.set(casa.id, casa));
     return map;
   }, [allCasas]);
 
@@ -174,53 +215,152 @@ export const EncontrosReportDialog = ({
   });
 
   const reportData: EncontroReport[] = useMemo(() => {
-    return encontros.map((encontro) => ({
-      casa_refugio_id: encontro.casa_refugio_id,
-      casa_nome: casasNomesMap.get(encontro.casa_refugio_id) || "Desconhecida",
-      data_encontro: encontro.data_encontro,
-      qtd_lideres: encontro.qtd_lideres || 0,
-      qtd_membros: encontro.qtd_membros || 0,
-      qtd_criancas: encontro.qtd_criancas || 0,
-      qtd_visitantes: encontro.qtd_visitantes || 0,
-      total_presentes:
-        (encontro.qtd_lideres || 0) +
-        (encontro.qtd_membros || 0) +
-        (encontro.qtd_criancas || 0) +
-        (encontro.qtd_visitantes || 0),
-      ofertas_dinheiro: Number(encontro.ofertas_dinheiro || 0),
-      ofertas_pix: Number(encontro.ofertas_pix || 0),
-      ofertas_total: Number(encontro.ofertas || 0),
-      kilos_arrecadados: Number(encontro.kilos_arrecadados || 0),
-    }));
-  }, [encontros, casasNomesMap]);
+    // Build a set of existing encontros by casa_id + date
+    const existingSet = new Set<string>();
+    const existingMap = new Map<string, typeof encontros[0]>();
+    encontros.forEach((e) => {
+      const key = `${e.casa_refugio_id}_${e.data_encontro}`;
+      existingSet.add(key);
+      existingMap.set(key, e);
+    });
 
-  // Totals
-  const totals = useMemo(() => {
-    return reportData.reduce(
-      (acc, row) => ({
-        qtd_lideres: acc.qtd_lideres + row.qtd_lideres,
-        qtd_membros: acc.qtd_membros + row.qtd_membros,
-        qtd_criancas: acc.qtd_criancas + row.qtd_criancas,
-        qtd_visitantes: acc.qtd_visitantes + row.qtd_visitantes,
-        total_presentes: acc.total_presentes + row.total_presentes,
-        ofertas_dinheiro: acc.ofertas_dinheiro + row.ofertas_dinheiro,
-        ofertas_pix: acc.ofertas_pix + row.ofertas_pix,
-        ofertas_total: acc.ofertas_total + row.ofertas_total,
-        kilos_arrecadados: acc.kilos_arrecadados + row.kilos_arrecadados,
-      }),
-      {
-        qtd_lideres: 0,
-        qtd_membros: 0,
-        qtd_criancas: 0,
-        qtd_visitantes: 0,
-        total_presentes: 0,
-        ofertas_dinheiro: 0,
-        ofertas_pix: 0,
-        ofertas_total: 0,
-        kilos_arrecadados: 0,
+    const rows: EncontroReport[] = [];
+
+    // For each filtered casa, generate expected dates and merge with existing
+    const casasToProcess = casaRefugioFilter !== "all"
+      ? allCasas.filter((c) => c.id === casaRefugioFilter)
+      : casasFiltradasParaSelect;
+
+    casasToProcess.forEach((casa) => {
+      const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
+      if (dayNumber === null || dayNumber === undefined) return;
+
+      const expectedDates = generateExpectedDates(appliedStartDate, appliedEndDate, dayNumber);
+
+      expectedDates.forEach((date) => {
+        const key = `${casa.id}_${date}`;
+        const existing = existingMap.get(key);
+
+        if (existing) {
+          rows.push({
+            casa_refugio_id: casa.id,
+            casa_nome: casa.name,
+            data_encontro: existing.data_encontro,
+            qtd_lideres: existing.qtd_lideres || 0,
+            qtd_membros: existing.qtd_membros || 0,
+            qtd_criancas: existing.qtd_criancas || 0,
+            qtd_visitantes: existing.qtd_visitantes || 0,
+            total_presentes:
+              (existing.qtd_lideres || 0) +
+              (existing.qtd_membros || 0) +
+              (existing.qtd_criancas || 0) +
+              (existing.qtd_visitantes || 0),
+            ofertas_dinheiro: Number(existing.ofertas_dinheiro || 0),
+            ofertas_pix: Number(existing.ofertas_pix || 0),
+            ofertas_total: Number(existing.ofertas || 0),
+            kilos_arrecadados: Number(existing.kilos_arrecadados || 0),
+            is_blank: false,
+          });
+        } else {
+          rows.push({
+            casa_refugio_id: casa.id,
+            casa_nome: casa.name,
+            data_encontro: date,
+            qtd_lideres: 0,
+            qtd_membros: 0,
+            qtd_criancas: 0,
+            qtd_visitantes: 0,
+            total_presentes: 0,
+            ofertas_dinheiro: 0,
+            ofertas_pix: 0,
+            ofertas_total: 0,
+            kilos_arrecadados: 0,
+            is_blank: true,
+          });
+        }
+      });
+    });
+
+    // Also add encontros that exist but don't match expected days
+    encontros.forEach((e) => {
+      const casa = casasMap.get(e.casa_refugio_id);
+      if (!casa) return;
+      const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
+      const eDate = parseISO(e.data_encontro);
+      if (dayNumber === null || getDay(eDate) !== dayNumber) {
+        // This encontro was on an unexpected day, still include it
+        const key = `${e.casa_refugio_id}_${e.data_encontro}`;
+        if (!existingSet.has(key)) return; // should always be true
+        const alreadyAdded = rows.some(
+          (r) => r.casa_refugio_id === e.casa_refugio_id && r.data_encontro === e.data_encontro
+        );
+        if (!alreadyAdded) {
+          rows.push({
+            casa_refugio_id: e.casa_refugio_id,
+            casa_nome: casa.name,
+            data_encontro: e.data_encontro,
+            qtd_lideres: e.qtd_lideres || 0,
+            qtd_membros: e.qtd_membros || 0,
+            qtd_criancas: e.qtd_criancas || 0,
+            qtd_visitantes: e.qtd_visitantes || 0,
+            total_presentes:
+              (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0),
+            ofertas_dinheiro: Number(e.ofertas_dinheiro || 0),
+            ofertas_pix: Number(e.ofertas_pix || 0),
+            ofertas_total: Number(e.ofertas || 0),
+            kilos_arrecadados: Number(e.kilos_arrecadados || 0),
+            is_blank: false,
+          });
+        }
       }
-    );
+    });
+
+    // Sort by date then casa name
+    rows.sort((a, b) => {
+      const dateCompare = a.data_encontro.localeCompare(b.data_encontro);
+      if (dateCompare !== 0) return dateCompare;
+      return a.casa_nome.localeCompare(b.casa_nome);
+    });
+
+    return rows;
+  }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap]);
+
+  // Totals (only non-blank)
+  const totals = useMemo(() => {
+    return reportData
+      .filter((r) => !r.is_blank)
+      .reduce(
+        (acc, row) => ({
+          qtd_lideres: acc.qtd_lideres + row.qtd_lideres,
+          qtd_membros: acc.qtd_membros + row.qtd_membros,
+          qtd_criancas: acc.qtd_criancas + row.qtd_criancas,
+          qtd_visitantes: acc.qtd_visitantes + row.qtd_visitantes,
+          total_presentes: acc.total_presentes + row.total_presentes,
+          ofertas_dinheiro: acc.ofertas_dinheiro + row.ofertas_dinheiro,
+          ofertas_pix: acc.ofertas_pix + row.ofertas_pix,
+          ofertas_total: acc.ofertas_total + row.ofertas_total,
+          kilos_arrecadados: acc.kilos_arrecadados + row.kilos_arrecadados,
+        }),
+        {
+          qtd_lideres: 0,
+          qtd_membros: 0,
+          qtd_criancas: 0,
+          qtd_visitantes: 0,
+          total_presentes: 0,
+          ofertas_dinheiro: 0,
+          ofertas_pix: 0,
+          ofertas_total: 0,
+          kilos_arrecadados: 0,
+        }
+      );
   }, [reportData]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(reportData.length / ITEMS_PER_PAGE));
+  const paginatedData = reportData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const handleApplyFilter = () => {
     setAppliedStartDate(startDate);
@@ -244,6 +384,7 @@ export const EncontrosReportDialog = ({
       accessor: "data_encontro",
       format: (value) => formatDateBR(value),
     },
+    { header: "Status", accessor: (row) => row.is_blank ? "Pendente" : "Preenchido" },
     { header: "Líderes", accessor: "qtd_lideres" },
     { header: "Membros", accessor: "qtd_membros" },
     { header: "Crianças", accessor: "qtd_criancas" },
@@ -294,6 +435,9 @@ export const EncontrosReportDialog = ({
       `Relatório de Encontros - Casas Refúgio (${periodLabel})`
     );
   };
+
+  const blankCount = reportData.filter((r) => r.is_blank).length;
+  const filledCount = reportData.filter((r) => !r.is_blank).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -405,8 +549,8 @@ export const EncontrosReportDialog = ({
           </div>
         </div>
 
-        {/* Export Buttons */}
-        <div className="flex items-center gap-2 mb-4">
+        {/* Export Buttons + Stats */}
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -425,9 +569,10 @@ export const EncontrosReportDialog = ({
             <FileText className="w-4 h-4 mr-2" />
             Exportar PDF
           </Button>
-          <span className="text-sm text-muted-foreground ml-auto">
-            {reportData.length} encontro{reportData.length !== 1 ? "s" : ""} encontrado{reportData.length !== 1 ? "s" : ""}
-          </span>
+          <div className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
+            <span>{filledCount} preenchido{filledCount !== 1 ? "s" : ""}</span>
+            <span className="text-amber-500">{blankCount} pendente{blankCount !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
         {/* Data Table */}
@@ -440,55 +585,92 @@ export const EncontrosReportDialog = ({
             Nenhum encontro encontrado para o período selecionado.
           </div>
         ) : (
-          <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>
-                  <TableHead className="whitespace-nowrap">Data</TableHead>
-                  <TableHead className="text-center">Líd.</TableHead>
-                  <TableHead className="text-center">Memb.</TableHead>
-                  <TableHead className="text-center">Crian.</TableHead>
-                  <TableHead className="text-center">Visit.</TableHead>
-                  <TableHead className="text-center font-semibold">Total</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">R$ Dinh.</TableHead>
-                  <TableHead className="text-right whitespace-nowrap">R$ Pix</TableHead>
-                  <TableHead className="text-right whitespace-nowrap font-semibold">R$ Total</TableHead>
-                  <TableHead className="text-right">Kilos</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reportData.map((row, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium whitespace-nowrap">{row.casa_nome}</TableCell>
-                    <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>
-                    <TableCell className="text-center">{row.qtd_lideres}</TableCell>
-                    <TableCell className="text-center">{row.qtd_membros}</TableCell>
-                    <TableCell className="text-center">{row.qtd_criancas}</TableCell>
-                    <TableCell className="text-center">{row.qtd_visitantes}</TableCell>
-                    <TableCell className="text-center font-semibold">{row.total_presentes}</TableCell>
-                    <TableCell className="text-right">R$ {row.ofertas_dinheiro.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">R$ {row.ofertas_pix.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-semibold">R$ {row.ofertas_total.toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{row.kilos_arrecadados.toFixed(1)}</TableCell>
+          <>
+            <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>
+                    <TableHead className="whitespace-nowrap">Data</TableHead>
+                    <TableHead className="text-center">Líd.</TableHead>
+                    <TableHead className="text-center">Memb.</TableHead>
+                    <TableHead className="text-center">Crian.</TableHead>
+                    <TableHead className="text-center">Visit.</TableHead>
+                    <TableHead className="text-center font-semibold">Total</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">R$ Dinh.</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">R$ Pix</TableHead>
+                    <TableHead className="text-right whitespace-nowrap font-semibold">R$ Total</TableHead>
+                    <TableHead className="text-right">Kilos</TableHead>
                   </TableRow>
-                ))}
-                {/* Totals Row */}
-                <TableRow className="bg-muted/50 font-semibold">
-                  <TableCell colSpan={2}>TOTAL</TableCell>
-                  <TableCell className="text-center">{totals.qtd_lideres}</TableCell>
-                  <TableCell className="text-center">{totals.qtd_membros}</TableCell>
-                  <TableCell className="text-center">{totals.qtd_criancas}</TableCell>
-                  <TableCell className="text-center">{totals.qtd_visitantes}</TableCell>
-                  <TableCell className="text-center">{totals.total_presentes}</TableCell>
-                  <TableCell className="text-right">R$ {totals.ofertas_dinheiro.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">R$ {totals.ofertas_pix.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">R$ {totals.ofertas_total.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">{totals.kilos_arrecadados.toFixed(1)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.map((row, index) => (
+                    <TableRow 
+                      key={`${row.casa_refugio_id}-${row.data_encontro}-${index}`}
+                      className={row.is_blank ? "bg-amber-50 dark:bg-amber-950/30 text-muted-foreground" : ""}
+                    >
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {row.casa_nome}
+                        {row.is_blank && (
+                          <span className="ml-2 text-xs text-amber-600 dark:text-amber-400">(pendente)</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>
+                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_lideres}</TableCell>
+                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_membros}</TableCell>
+                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_criancas}</TableCell>
+                      <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_visitantes}</TableCell>
+                      <TableCell className="text-center font-semibold">{row.is_blank ? "-" : row.total_presentes}</TableCell>
+                      <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_dinheiro.toFixed(2)}`}</TableCell>
+                      <TableCell className="text-right">{row.is_blank ? "-" : `R$ ${row.ofertas_pix.toFixed(2)}`}</TableCell>
+                      <TableCell className="text-right font-semibold">{row.is_blank ? "-" : `R$ ${row.ofertas_total.toFixed(2)}`}</TableCell>
+                      <TableCell className="text-right">{row.is_blank ? "-" : row.kilos_arrecadados.toFixed(1)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {/* Totals Row */}
+                  <TableRow className="bg-muted/50 font-semibold">
+                    <TableCell colSpan={2}>TOTAL</TableCell>
+                    <TableCell className="text-center">{totals.qtd_lideres}</TableCell>
+                    <TableCell className="text-center">{totals.qtd_membros}</TableCell>
+                    <TableCell className="text-center">{totals.qtd_criancas}</TableCell>
+                    <TableCell className="text-center">{totals.qtd_visitantes}</TableCell>
+                    <TableCell className="text-center">{totals.total_presentes}</TableCell>
+                    <TableCell className="text-right">R$ {totals.ofertas_dinheiro.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">R$ {totals.ofertas_pix.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">R$ {totals.ofertas_total.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{totals.kilos_arrecadados.toFixed(1)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4">
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>

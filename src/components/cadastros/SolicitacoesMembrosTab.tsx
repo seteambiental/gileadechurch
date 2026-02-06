@@ -13,7 +13,10 @@ import {
   Mail,
   MapPin,
   Baby,
+  UserX,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MembrosExcluidosTab from "@/components/cadastros/MembrosExcluidosTab";
 import { includesNormalized } from "@/lib/text-utils";
 import { SearchInput } from "@/components/ui/search-input";
 import { needsResponsible, getAgeString } from "@/lib/age-utils";
@@ -312,40 +315,45 @@ const SolicitacoesMembrosTab = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+      <Tabs defaultValue="pendente" value={statusFilter || "excluidos"} onValueChange={(val) => {
+        if (val === "excluidos") {
+          setStatusFilter("");
+        } else {
+          setStatusFilter(val);
+        }
+      }}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="pendente" className="gap-1">
+            <Clock className="w-4 h-4" />
+            <span className="hidden sm:inline">Pendentes</span>
+          </TabsTrigger>
+          <TabsTrigger value="aprovado" className="gap-1">
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="hidden sm:inline">Aprovados</span>
+          </TabsTrigger>
+          <TabsTrigger value="rejeitado" className="gap-1">
+            <XCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Rejeitados</span>
+          </TabsTrigger>
+          <TabsTrigger value="excluidos" className="gap-1" onClick={() => setStatusFilter("")}>
+            <UserX className="w-4 h-4" />
+            <span className="hidden sm:inline">Excluídos</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="excluidos" className="mt-6">
+          <MembrosExcluidosTab />
+        </TabsContent>
+
+        {statusFilter && (
+          <div className="mt-6">
+      <div className="flex flex-col sm:flex-row gap-4 justify-between mb-6">
         <SearchInput
           placeholder="Buscar por nome..."
           value={search}
           onChange={setSearch}
           className="flex-1 max-w-sm"
         />
-
-        <div className="flex gap-2">
-          <Button
-            variant={statusFilter === "pendente" ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("pendente")}
-          >
-            <Clock className="w-4 h-4 mr-1" />
-            Pendentes
-          </Button>
-          <Button
-            variant={statusFilter === "aprovado" ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("aprovado")}
-          >
-            <CheckCircle2 className="w-4 h-4 mr-1" />
-            Aprovados
-          </Button>
-          <Button
-            variant={statusFilter === "rejeitado" ? "secondary" : "outline"}
-            size="sm"
-            onClick={() => setStatusFilter("rejeitado")}
-          >
-            <XCircle className="w-4 h-4 mr-1" />
-            Rejeitados
-          </Button>
-        </div>
       </div>
 
       {filteredRequests.length === 0 ? (
@@ -476,6 +484,9 @@ const SolicitacoesMembrosTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+          </div>
+        )}
+      </Tabs>
     </div>
   );
 };
