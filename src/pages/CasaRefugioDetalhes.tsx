@@ -147,7 +147,12 @@ const CasaRefugioDetalhes = () => {
       "domingo": 0, "segunda": 1, "terça": 2, "terca": 2,
       "quarta": 3, "quinta": 4, "sexta": 5, "sábado": 6, "sabado": 6,
     };
-    return map[dia.toLowerCase()] ?? null;
+    // Normalize: lowercase, remove accents, remove "-feira" suffix
+    const normalized = dia.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace("-feira", "")
+      .trim();
+    return map[normalized] ?? null;
   };
 
   // Generate expected encounter dates based on casa config
