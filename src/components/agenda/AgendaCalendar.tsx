@@ -45,12 +45,12 @@
    ativo: boolean;
  }
  
- interface AgendaCalendarProps {
-   eventos: Evento[];
-   onEventoClick: (evento: Evento) => void;
-   onNovoEvento: () => void;
-   isLoading?: boolean;
- }
+interface AgendaCalendarProps {
+  eventos: Evento[];
+  onEventoClick: (evento: Evento) => void;
+  onNovoCompromisso: () => void;
+  isLoading?: boolean;
+}
  
  type ViewType = "dia" | "semana" | "mes" | "ano";
  
@@ -68,7 +68,7 @@
  const diasSemanaAbrev = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
  const mesesAbrev = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
  
- export const AgendaCalendar = ({ eventos, onEventoClick, onNovoEvento, isLoading }: AgendaCalendarProps) => {
+ export const AgendaCalendar = ({ eventos, onEventoClick, onNovoCompromisso, isLoading }: AgendaCalendarProps) => {
    const [currentDate, setCurrentDate] = useState(new Date());
    const [view, setView] = useState<ViewType>("mes");
  
@@ -371,10 +371,10 @@
              </TabsList>
            </Tabs>
            
-           <Button variant="secondary" onClick={onNovoEvento}>
-             <Plus className="w-4 h-4 mr-2" />
-             Novo
-           </Button>
+            <Button variant="secondary" onClick={onNovoCompromisso}>
+              <Plus className="w-4 h-4 mr-2" />
+              Compromisso
+            </Button>
          </div>
        </div>
  
