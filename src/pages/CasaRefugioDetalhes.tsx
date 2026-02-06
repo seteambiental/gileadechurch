@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +35,8 @@ const CasaRefugioDetalhes = () => {
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [encontrosPage, setEncontrosPage] = useState(1);
+  const ENCONTROS_PER_PAGE = 5;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
   const [analiseEncontro, setAnaliseEncontro] = useState<{
@@ -179,7 +181,15 @@ const CasaRefugioDetalhes = () => {
   const clearFilters = () => {
     setStartDate("");
     setEndDate("");
+    setEncontrosPage(1);
   };
+
+  // Pagination
+  const totalEncontrosPages = Math.ceil(filteredEncontros.length / ENCONTROS_PER_PAGE);
+  const paginatedEncontros = filteredEncontros.slice(
+    (encontrosPage - 1) * ENCONTROS_PER_PAGE,
+    encontrosPage * ENCONTROS_PER_PAGE
+  );
 
   const deleteMutation = useMutation({
     mutationFn: async (encontroId: string) => {
@@ -379,6 +389,150 @@ const CasaRefugioDetalhes = () => {
           onClear={clearFilters}
         />
 
+        {/* Encontros Table - right after date filter */}
+        <div>
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Histórico de Encontros ({filteredEncontros.length})
+          </h3>
+          {loadingEncontros ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 text-destructive animate-spin" />
+            </div>
+          ) : filteredEncontros.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhum encontro registrado
+            </div>
+          ) : (
+            <>
+              <Card className="overflow-hidden">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="text-center">Líd.</TableHead>
+                        <TableHead className="text-center">Memb.</TableHead>
+                        <TableHead className="text-center">Vis.</TableHead>
+                        <TableHead className="text-center">Cri.</TableHead>
+                        <TableHead className="text-center">Total</TableHead>
+                        <TableHead className="text-center">Kilos</TableHead>
+                        <TableHead className="text-center">Ofertas</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedEncontros.map((encontro) => {
+                        const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
+                        return (
+                          <TableRow key={encontro.id}>
+                            <TableCell className="font-medium whitespace-nowrap">
+                              {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="text-center text-blue-600">{encontro.qtd_lideres || 0}</TableCell>
+                            <TableCell className="text-center text-green-600">{encontro.qtd_membros || 0}</TableCell>
+                            <TableCell className="text-center text-purple-600">{encontro.qtd_visitantes || 0}</TableCell>
+                            <TableCell className="text-center text-amber-600">{encontro.qtd_criancas || 0}</TableCell>
+                            <TableCell className="text-center font-medium">{total}</TableCell>
+                            <TableCell className="text-center">{encontro.kilos_arrecadados || 0}</TableCell>
+                            <TableCell className="text-center whitespace-nowrap">R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center justify-end gap-1">
+                                {encontro.photo_url && (
+                                  <>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => setAnaliseEncontro({
+                                        id: encontro.id,
+                                        photoUrl: encontro.photo_url!,
+                                        dataEncontro: encontro.data_encontro,
+                                      })}
+                                      title="Analisar presença"
+                                    >
+                                      <ScanFace className="w-4 h-4 text-destructive" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => setSelectedPhoto(encontro.photo_url)}
+                                      title="Ver foto"
+                                    >
+                                      <Image className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => exportEncontroPDF(encontro)}
+                                  title="Exportar PDF"
+                                >
+                                  <FileDown className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setEditingEncontro(encontro)}
+                                  title="Editar"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  onClick={() => setDeletingEncontroId(encontro.id)}
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+
+              {/* Pagination */}
+              {totalEncontrosPages > 1 && (
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-sm text-muted-foreground">
+                    Página {encontrosPage} de {totalEncontrosPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEncontrosPage((p) => Math.max(1, p - 1))}
+                      disabled={encontrosPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-1" />
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEncontrosPage((p) => Math.min(totalEncontrosPages, p + 1))}
+                      disabled={encontrosPage === totalEncontrosPages}
+                    >
+                      Próximo
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         {/* Indicators */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card className="bg-card border-border">
@@ -438,118 +592,6 @@ const CasaRefugioDetalhes = () => {
         {/* Charts */}
         <EncontrosCharts encontros={filteredEncontros} />
 
-        {/* Encontros Table */}
-        <div>
-          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Histórico de Encontros ({filteredEncontros.length})
-          </h3>
-          {loadingEncontros ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 text-destructive animate-spin" />
-            </div>
-          ) : filteredEncontros.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nenhum encontro registrado
-            </div>
-          ) : (
-            <Card className="overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="text-center">Líd.</TableHead>
-                      <TableHead className="text-center">Memb.</TableHead>
-                      <TableHead className="text-center">Vis.</TableHead>
-                      <TableHead className="text-center">Cri.</TableHead>
-                      <TableHead className="text-center">Total</TableHead>
-                      <TableHead className="text-center">Kilos</TableHead>
-                      <TableHead className="text-center">Ofertas</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEncontros.map((encontro) => {
-                      const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
-                      return (
-                        <TableRow key={encontro.id}>
-                          <TableCell className="font-medium whitespace-nowrap">
-                            {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
-                          </TableCell>
-                          <TableCell className="text-center text-blue-600">{encontro.qtd_lideres || 0}</TableCell>
-                          <TableCell className="text-center text-green-600">{encontro.qtd_membros || 0}</TableCell>
-                          <TableCell className="text-center text-purple-600">{encontro.qtd_visitantes || 0}</TableCell>
-                          <TableCell className="text-center text-amber-600">{encontro.qtd_criancas || 0}</TableCell>
-                          <TableCell className="text-center font-medium">{total}</TableCell>
-                          <TableCell className="text-center">{encontro.kilos_arrecadados || 0}</TableCell>
-                          <TableCell className="text-center whitespace-nowrap">R$ {Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
-                              {encontro.photo_url && (
-                                <>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => setAnaliseEncontro({
-                                      id: encontro.id,
-                                      photoUrl: encontro.photo_url!,
-                                      dataEncontro: encontro.data_encontro,
-                                    })}
-                                    title="Analisar presença"
-                                  >
-                                    <ScanFace className="w-4 h-4 text-destructive" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                    onClick={() => setSelectedPhoto(encontro.photo_url)}
-                                    title="Ver foto"
-                                  >
-                                    <Image className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => exportEncontroPDF(encontro)}
-                                title="Exportar PDF"
-                              >
-                                <FileDown className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => setEditingEncontro(encontro)}
-                                title="Editar"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => setDeletingEncontroId(encontro.id)}
-                                title="Excluir"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          )}
-        </div>
       </main>
 
       {/* Photo Modal */}
