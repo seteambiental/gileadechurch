@@ -172,7 +172,10 @@ export const PortalLideresCasaRefugio = ({
 
     const isQuinzenal = frequencia?.toLowerCase().includes("quinzenal");
     const today = startOfDay(new Date());
-    const startRef = new Date(2026, 1, 1); // Feb 1, 2026
+    // Use data_inicio_cr if set, otherwise fallback to Feb 1, 2026
+    const startRef = casaSelecionada.data_inicio_cr 
+      ? parseISO(casaSelecionada.data_inicio_cr) 
+      : new Date(2026, 1, 1);
 
     let current = new Date(startRef);
     while (getDay(current) !== targetDayNum) {
