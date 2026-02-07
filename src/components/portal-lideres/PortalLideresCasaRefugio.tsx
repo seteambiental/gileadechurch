@@ -25,6 +25,7 @@ import { format, parseISO, isWithinInterval, getDay, addWeeks, isAfter, isBefore
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
+import { EncontroPreScreenDialog } from "@/components/casas-refugio/EncontroPreScreenDialog";
 import { VincularMembroDialog } from "@/components/casas-refugio/VincularMembroDialog";
 import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVinculadosList";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
@@ -50,6 +51,7 @@ export const PortalLideresCasaRefugio = ({
   const [editingEncontro, setEditingEncontro] = useState<any>(null);
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
+  const [preScreenData, setPreScreenData] = useState<{ dataEncontro: string } | null>(null);
   const [encontrosPage, setEncontrosPage] = useState(1);
   const ENCONTROS_PER_PAGE = 5;
 
@@ -218,6 +220,8 @@ export const PortalLideresCasaRefugio = ({
         ofertas_pix: 0,
         observacoes: null,
         photo_url: null,
+        reuniao_realizada: true,
+        justificativa: null,
         is_blank: true,
       };
     });
@@ -234,7 +238,7 @@ export const PortalLideresCasaRefugio = ({
   }, [filteredEncontros, casaSelecionada, startDate, endDate]);
 
   // Calcular estatísticas (somente encontros reais)
-  const realEncontros = mergedEncontros.filter((e: any) => !e.is_blank);
+  const realEncontros = mergedEncontros.filter((e: any) => !e.is_blank && e.reuniao_realizada !== false);
   const totalEncontros = realEncontros.length;
   const totalLideres = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_lideres || 0), 0);
   const totalMembros = realEncontros.reduce((acc: number, e: any) => acc + (e.qtd_membros || 0), 0);
@@ -485,15 +489,23 @@ export const PortalLideresCasaRefugio = ({
                           <CardContent className="py-3">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className={`font-medium ${encontro.is_blank ? "text-destructive font-bold" : ""}`}>
+                                <p className={`font-medium ${encontro.is_blank ? "text-destructive font-bold" : encontro.reuniao_realizada === false ? "text-muted-foreground" : ""}`}>
                                   {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
                                   {encontro.is_blank && (
                                     <span className="ml-2 text-xs">(pendente)</span>
                                   )}
+                                  {!encontro.is_blank && encontro.reuniao_realizada === false && (
+                                    <span className="ml-2 text-xs">(não realizada)</span>
+                                  )}
                                 </p>
-                                {!encontro.is_blank && (
+                                {!encontro.is_blank && encontro.reuniao_realizada !== false && (
                                   <p className="text-sm text-muted-foreground">
                                     {total} pessoas • {encontro.kilos_arrecadados || 0} kg • R$ {Number(encontro.ofertas || 0).toFixed(2)}
+                                  </p>
+                                )}
+                                {!encontro.is_blank && encontro.reuniao_realizada === false && encontro.justificativa && (
+                                  <p className="text-xs text-muted-foreground italic">
+                                    {encontro.justificativa}
                                   </p>
                                 )}
                                 {encontro.is_blank && (
@@ -509,20 +521,20 @@ export const PortalLideresCasaRefugio = ({
                                     size="icon"
                                     onClick={() => {
                                       if (encontro.is_blank) {
-                                        setEditingEncontro({
-                                          ...encontro,
-                                          id: undefined,
-                                          is_blank: true,
+                                        setPreScreenData({
+                                          dataEncontro: encontro.data_encontro,
                                         });
+                                      } else if (encontro.reuniao_realizada === false) {
+                                        // Don't allow editing cancelled meetings
                                       } else {
                                         setEditingEncontro(encontro);
+                                        setShowEncontroDialog(true);
                                       }
-                                      setShowEncontroDialog(true);
                                     }}
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </Button>
-                                  {!encontro.is_blank && (
+                                  {!encontro.is_blank && encontro.reuniao_realizada !== false && (
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -633,6 +645,25 @@ export const PortalLideresCasaRefugio = ({
               {/* Gráficos */}
               <EncontrosCharts encontros={filteredEncontros} />
             </>
+          )}
+
+          {/* Pre-Screen Dialog */}
+          {selectedCasa && casaSelecionada && preScreenData && (
+            <EncontroPreScreenDialog
+              open={!!preScreenData}
+              onOpenChange={(isOpen) => !isOpen && setPreScreenData(null)}
+              dataEncontro={preScreenData.dataEncontro}
+              casaRefugioId={selectedCasa}
+              onProceedToReport={(justificativaMudanca) => {
+                setEditingEncontro({
+                  isNew: true,
+                  data_encontro: preScreenData.dataEncontro,
+                  justificativa: justificativaMudanca || null,
+                });
+                setPreScreenData(null);
+                setShowEncontroDialog(true);
+              }}
+            />
           )}
 
           {/* Dialog Encontro */}

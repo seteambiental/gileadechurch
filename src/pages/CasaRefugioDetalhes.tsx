@@ -16,6 +16,7 @@ import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVincula
 import { VincularMembroDialog } from "@/components/casas-refugio/VincularMembroDialog";
 import { AnalisePresencaDialog } from "@/components/casas-refugio/AnalisePresencaDialog";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
+import { EncontroPreScreenDialog } from "@/components/casas-refugio/EncontroPreScreenDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ const CasaRefugioDetalhes = () => {
   } | null>(null);
   const [editingEncontro, setEditingEncontro] = useState<any>(null);
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);
+  const [preScreenData, setPreScreenData] = useState<{ dataEncontro: string } | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -216,6 +218,8 @@ const CasaRefugioDetalhes = () => {
         photo_url: null,
         created_at: "",
         updated_at: "",
+        reuniao_realizada: true,
+        justificativa: null,
         is_blank: true,
       };
     });
@@ -260,7 +264,7 @@ const CasaRefugioDetalhes = () => {
   }, [mergedEncontros, startDate, endDate]);
 
   // Calculate indicators from filtered data (only non-blank)
-  const realEncontros = filteredEncontros.filter((e) => !e.is_blank);
+  const realEncontros = filteredEncontros.filter((e) => !e.is_blank && e.reuniao_realizada !== false);
   const totalEncontros = realEncontros.length;
   const totalLideres = realEncontros.reduce((acc, e) => acc + (e.qtd_lideres || 0), 0);
   const totalMembros = realEncontros.reduce((acc, e) => acc + (e.qtd_membros || 0), 0);
@@ -517,37 +521,40 @@ const CasaRefugioDetalhes = () => {
                     <TableBody>
                       {paginatedEncontros.map((encontro) => {
                         const isBlank = encontro.is_blank;
+                        const isCancelled = !isBlank && encontro.reuniao_realizada === false;
                         const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
                         const blankCellClass = isBlank ? "text-destructive font-bold" : "";
+                        const cancelledCellClass = isCancelled ? "text-muted-foreground line-through" : "";
                         return (
                           <TableRow
                             key={encontro.id}
-                            className={isBlank ? "bg-destructive/5 hover:bg-destructive/10" : ""}
+                            className={isBlank ? "bg-destructive/5 hover:bg-destructive/10" : isCancelled ? "bg-muted/30" : ""}
                           >
-                            <TableCell className={`whitespace-nowrap ${isBlank ? "text-destructive font-bold" : "font-medium"}`}>
+                            <TableCell className={`whitespace-nowrap ${isBlank ? "text-destructive font-bold" : isCancelled ? "font-medium text-muted-foreground" : "font-medium"}`}>
                               {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
                               {isBlank && <span className="ml-2 text-xs">(pendente)</span>}
+                              {isCancelled && <span className="ml-2 text-xs">(não realizada)</span>}
                             </TableCell>
-                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-blue-600"}`}>
-                              {isBlank ? "—" : encontro.qtd_lideres || 0}
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : isCancelled ? cancelledCellClass : "text-blue-600"}`}>
+                              {isBlank || isCancelled ? "—" : encontro.qtd_lideres || 0}
                             </TableCell>
-                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-green-600"}`}>
-                              {isBlank ? "—" : encontro.qtd_membros || 0}
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : isCancelled ? cancelledCellClass : "text-green-600"}`}>
+                              {isBlank || isCancelled ? "—" : encontro.qtd_membros || 0}
                             </TableCell>
-                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-purple-600"}`}>
-                              {isBlank ? "—" : encontro.qtd_visitantes || 0}
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : isCancelled ? cancelledCellClass : "text-purple-600"}`}>
+                              {isBlank || isCancelled ? "—" : encontro.qtd_visitantes || 0}
                             </TableCell>
-                            <TableCell className={`text-center ${isBlank ? blankCellClass : "text-amber-600"}`}>
-                              {isBlank ? "—" : encontro.qtd_criancas || 0}
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : isCancelled ? cancelledCellClass : "text-amber-600"}`}>
+                              {isBlank || isCancelled ? "—" : encontro.qtd_criancas || 0}
                             </TableCell>
-                            <TableCell className={`text-center ${isBlank ? blankCellClass : "font-medium"}`}>
-                              {isBlank ? "—" : total}
+                            <TableCell className={`text-center ${isBlank ? blankCellClass : isCancelled ? cancelledCellClass : "font-medium"}`}>
+                              {isBlank || isCancelled ? "—" : total}
                             </TableCell>
-                            <TableCell className={`text-center ${blankCellClass}`}>
-                              {isBlank ? "—" : encontro.kilos_arrecadados || 0}
+                            <TableCell className={`text-center ${blankCellClass} ${cancelledCellClass}`}>
+                              {isBlank || isCancelled ? "—" : encontro.kilos_arrecadados || 0}
                             </TableCell>
-                            <TableCell className={`text-center whitespace-nowrap ${blankCellClass}`}>
-                              {isBlank ? "—" : `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`}
+                            <TableCell className={`text-center whitespace-nowrap ${blankCellClass} ${cancelledCellClass}`}>
+                              {isBlank || isCancelled ? "—" : `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
@@ -556,14 +563,17 @@ const CasaRefugioDetalhes = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-8 w-8 text-destructive"
-                                    onClick={() => setEditingEncontro({
-                                      isNew: true,
-                                      data_encontro: encontro.data_encontro,
+                                    onClick={() => setPreScreenData({
+                                      dataEncontro: encontro.data_encontro,
                                     })}
                                     title="Preencher encontro"
                                   >
                                     <Pencil className="w-4 h-4" />
                                   </Button>
+                                ) : isCancelled ? (
+                                  <span className="text-xs text-muted-foreground italic px-2" title={encontro.justificativa || ""}>
+                                    {encontro.justificativa ? encontro.justificativa.slice(0, 30) + (encontro.justificativa.length > 30 ? "..." : "") : "Cancelada"}
+                                  </span>
                                 ) : (
                                   <>
                                     {encontro.photo_url && (
@@ -756,6 +766,24 @@ const CasaRefugioDetalhes = () => {
           onOpenChange={setShowVincularDialog}
           casaRefugioId={id}
           casaRefugioName={casa.name}
+        />
+      )}
+
+      {/* Pre-Screen Dialog */}
+      {id && preScreenData && (
+        <EncontroPreScreenDialog
+          open={!!preScreenData}
+          onOpenChange={(open) => !open && setPreScreenData(null)}
+          dataEncontro={preScreenData.dataEncontro}
+          casaRefugioId={id}
+          onProceedToReport={(justificativaMudanca) => {
+            setEditingEncontro({
+              isNew: true,
+              data_encontro: preScreenData.dataEncontro,
+              justificativa: justificativaMudanca || null,
+            });
+            setPreScreenData(null);
+          }}
         />
       )}
 
