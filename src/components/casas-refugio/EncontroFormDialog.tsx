@@ -103,6 +103,7 @@ interface Encontro {
   ofertas_pix: number | null;
   observacoes: string | null;
   photo_url: string | null;
+  justificativa?: string | null;
 }
 
 interface EncontroFormDialogProps {
@@ -391,6 +392,8 @@ export const EncontroFormDialog = ({
         ofertas_pix: ofertasPixValue,
         observacoes: data.observacoes || null,
         photo_url: photoUrl,
+        reuniao_realizada: true,
+        justificativa: isNewFromBlank && editingEncontro?.justificativa ? editingEncontro.justificativa : null,
       };
 
       if (isEditing && editingEncontro) {
@@ -545,7 +548,18 @@ export const EncontroFormDialog = ({
               )}
             />
 
-            {/* Foto - Moved to top for recognition */}
+            {/* Justificativa de mudança de data (from pre-screen) */}
+            {isNewFromBlank && editingEncontro?.justificativa && (
+              <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <span className="text-sm font-medium text-amber-700 flex items-center gap-2 mb-1">
+                  ⚠️ Reunião em data diferente da agendada
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  {editingEncontro.justificativa}
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <span className="text-xs font-medium flex items-center gap-1">
                 <Camera className="w-3 h-3" />

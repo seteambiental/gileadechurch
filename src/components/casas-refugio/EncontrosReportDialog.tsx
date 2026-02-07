@@ -64,6 +64,7 @@ interface EncontroReport {
   ofertas_total: number;
   kilos_arrecadados: number;
   is_blank: boolean;
+  is_cancelled: boolean;
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -306,6 +307,7 @@ export const EncontrosReportDialog = ({
             ofertas_total: Number(existing.ofertas || 0),
             kilos_arrecadados: Number(existing.kilos_arrecadados || 0),
             is_blank: false,
+            is_cancelled: existing.reuniao_realizada === false,
           });
         } else {
           rows.push({
@@ -322,6 +324,7 @@ export const EncontrosReportDialog = ({
             ofertas_total: 0,
             kilos_arrecadados: 0,
             is_blank: true,
+            is_cancelled: false,
           });
         }
       });
@@ -356,6 +359,7 @@ export const EncontrosReportDialog = ({
             ofertas_total: Number(e.ofertas || 0),
             kilos_arrecadados: Number(e.kilos_arrecadados || 0),
             is_blank: false,
+            is_cancelled: (e as any).reuniao_realizada === false,
           });
         }
       }
@@ -381,7 +385,7 @@ export const EncontrosReportDialog = ({
   // Totals (only non-blank from filtered data)
   const totals = useMemo(() => {
     return filteredReportData
-      .filter((r) => !r.is_blank)
+      .filter((r) => !r.is_blank && !r.is_cancelled)
       .reduce(
         (acc, row) => ({
           qtd_lideres: acc.qtd_lideres + row.qtd_lideres,
@@ -438,7 +442,7 @@ export const EncontrosReportDialog = ({
       accessor: "data_encontro",
       format: (value) => formatDateBR(value),
     },
-    { header: "Status", accessor: (row) => row.is_blank ? "Pendente" : "Preenchido" },
+    { header: "Status", accessor: (row) => row.is_blank ? "Pendente" : row.is_cancelled ? "Não realizada" : "Preenchido" },
     { header: "Líderes", accessor: "qtd_lideres" },
     { header: "Membros", accessor: "qtd_membros" },
     { header: "Crianças", accessor: "qtd_criancas" },

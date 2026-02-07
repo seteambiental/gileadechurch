@@ -1203,6 +1203,7 @@ export type Database = {
           created_at: string
           data_encontro: string
           id: string
+          justificativa: string | null
           kilos_arrecadados: number | null
           observacoes: string | null
           ofertas: number | null
@@ -1213,6 +1214,7 @@ export type Database = {
           qtd_lideres: number
           qtd_membros: number
           qtd_visitantes: number
+          reuniao_realizada: boolean
           updated_at: string
         }
         Insert: {
@@ -1220,6 +1222,7 @@ export type Database = {
           created_at?: string
           data_encontro: string
           id?: string
+          justificativa?: string | null
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
@@ -1230,6 +1233,7 @@ export type Database = {
           qtd_lideres?: number
           qtd_membros?: number
           qtd_visitantes?: number
+          reuniao_realizada?: boolean
           updated_at?: string
         }
         Update: {
@@ -1237,6 +1241,7 @@ export type Database = {
           created_at?: string
           data_encontro?: string
           id?: string
+          justificativa?: string | null
           kilos_arrecadados?: number | null
           observacoes?: string | null
           ofertas?: number | null
@@ -1247,6 +1252,7 @@ export type Database = {
           qtd_lideres?: number
           qtd_membros?: number
           qtd_visitantes?: number
+          reuniao_realizada?: boolean
           updated_at?: string
         }
         Relationships: [
