@@ -76,6 +76,8 @@ const tipoEventoLabels: Record<string, string> = {
   retiro: "Retiro",
   conferencia: "Conferência",
   casa_refugio: "Casa Refúgio",
+  gileade_fest: "Gileade Fest",
+  retiro_kids: "Retiro Kids",
   evento: "Evento",
   conexao_lider: "Conexão Líder",
   cursos: "Cursos",
