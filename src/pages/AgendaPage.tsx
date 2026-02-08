@@ -81,6 +81,7 @@ const tipoEventoLabels: Record<string, string> = {
   evento: "Evento",
   conexao_lider: "Conexão Líder",
   quarta_proposito: "Quarta com Propósito",
+  quarta_proposito_prestacao: "Quarta com Propósito - Prestação de Contas",
   cursos: "Cursos",
   aulas: "Aulas",
   apresentacao_criancas: "Apresentação de Crianças",

@@ -67,6 +67,7 @@ interface AgendaCalendarProps {
     evento: "Evento",
     conexao_lider: "Conexão Líder",
     quarta_proposito: "Quarta com Propósito",
+    quarta_proposito_prestacao: "Quarta com Propósito - Prestação de Contas",
     cursos: "Cursos",
     aulas: "Aulas",
     apresentacao_criancas: "Apresentação de Crianças",
@@ -101,6 +102,13 @@ interface AgendaCalendarProps {
       const temCeia = eventosFiltrados.some(e => e.tipo_evento === "ceia");
       if (temCeia) {
         return eventosFiltrados.filter(e => e.tipo_evento !== "culto");
+      }
+
+      // Se há Quarta com Propósito e Quarta com Propósito - Prestação de Contas, remover a regular
+      const temQuartaPrestacao = eventosFiltrados.some(e => e.tipo_evento === "quarta_proposito_prestacao");
+      const temQuartaProposito = eventosFiltrados.some(e => e.tipo_evento === "quarta_proposito");
+      if (temQuartaPrestacao && temQuartaProposito) {
+        return eventosFiltrados.filter(e => e.tipo_evento !== "quarta_proposito");
       }
 
       return eventosFiltrados;
