@@ -112,6 +112,8 @@ const TIPOS_EVENTO = [
   { value: "retiro", label: "Retiro" },
   { value: "conferencia", label: "Conferência" },
   { value: "casa_refugio", label: "Casa Refúgio" },
+  { value: "gileade_fest", label: "Gileade Fest" },
+  { value: "retiro_kids", label: "Retiro Kids" },
   { value: "evento", label: "Outro Evento" },
 ];
 
