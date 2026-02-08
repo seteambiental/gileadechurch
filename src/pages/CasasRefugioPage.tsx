@@ -316,7 +316,6 @@ const CasasRefugioPage = () => {
               <CasaRefugioRow
                 key={casa.id}
                 casa={casa}
-                onOpenEncontro={() => handleOpenEncontro(casa)}
               />
             ))}
           </div>
