@@ -54,16 +54,20 @@ interface AgendaCalendarProps {
  
  type ViewType = "dia" | "semana" | "mes" | "ano";
  
- const tipoEventoLabels: Record<string, string> = {
-   culto: "Culto",
-   ceia: "Santa Ceia",
-   batismo: "Batismo",
-   impacto: "Impacto",
-   retiro: "Retiro",
-   conferencia: "Conferência",
-   casa_refugio: "Casa Refúgio",
-   evento: "Evento",
- };
+  const tipoEventoLabels: Record<string, string> = {
+    culto: "Culto",
+    ceia: "Culto de Ceia",
+    batismo: "Batismo",
+    impacto: "Impacto",
+    retiro: "Retiro",
+    conferencia: "Conferência",
+    casa_refugio: "Casa Refúgio",
+    evento: "Evento",
+    conexao_lider: "Conexão Líder",
+    cursos: "Cursos",
+    aulas: "Aulas",
+    apresentacao_criancas: "Apresentação de Crianças",
+  };
  
  const diasSemanaAbrev = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
  const mesesAbrev = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -73,28 +77,31 @@ interface AgendaCalendarProps {
    const [view, setView] = useState<ViewType>("mes");
  
    // Gera eventos recorrentes para um intervalo de datas
-   const getEventosParaData = (date: Date) => {
-     const diaSemana = getDay(date);
-     const dateStr = format(date, "yyyy-MM-dd");
-     const semanaDoMes = getWeekOfMonth(date, { weekStartsOn: 0 });
- 
-     return eventos.filter((evento) => {
-       if (evento.recorrente) {
-         // Verifica se o dia da semana coincide
-         if (evento.dia_semana !== diaSemana) return false;
-         
-         // Se for evento mensal (tem semana_mes definido), verifica se é a semana correta
-         if (evento.semana_mes !== null && evento.semana_mes !== undefined) {
-           return evento.semana_mes === semanaDoMes;
-         }
-         
-         // Evento semanal - aparece toda semana naquele dia
-         return true;
-       } else {
-         return evento.data_evento === dateStr;
-       }
-     });
-   };
+    const getEventosParaData = (date: Date) => {
+      const diaSemana = getDay(date);
+      const dateStr = format(date, "yyyy-MM-dd");
+      const semanaDoMes = getWeekOfMonth(date, { weekStartsOn: 0 });
+
+      const eventosFiltrados = eventos.filter((evento) => {
+        if (evento.recorrente) {
+          if (evento.dia_semana !== diaSemana) return false;
+          if (evento.semana_mes !== null && evento.semana_mes !== undefined) {
+            return evento.semana_mes === semanaDoMes;
+          }
+          return true;
+        } else {
+          return evento.data_evento === dateStr;
+        }
+      });
+
+      // Se há Culto e Culto de Ceia no mesmo dia, remover o Culto regular
+      const temCeia = eventosFiltrados.some(e => e.tipo_evento === "ceia");
+      if (temCeia) {
+        return eventosFiltrados.filter(e => e.tipo_evento !== "culto");
+      }
+
+      return eventosFiltrados;
+    };
  
    const navigatePrev = () => {
      switch (view) {
