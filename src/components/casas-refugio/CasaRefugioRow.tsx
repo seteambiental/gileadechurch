@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Calendar, Users, ChevronRight, UserCheck, Building } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Home, Calendar, ChevronRight, UserCheck, Building } from "lucide-react";
+
 import { formatLeaderNames } from "@/lib/text-utils";
 
 interface CasaRefugio {
@@ -24,10 +24,9 @@ interface CasaRefugio {
 
 interface CasaRefugioRowProps {
   casa: CasaRefugio;
-  onOpenEncontro: () => void;
 }
 
-export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) => {
+export const CasaRefugioRow = ({ casa }: CasaRefugioRowProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -50,10 +49,6 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
     }
   };
 
-  const handleEncontroClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onOpenEncontro();
-  };
 
   // Monta o nome dos líderes para exibição usando primeiro nome
   const liderNomes = formatLeaderNames(
@@ -121,15 +116,6 @@ export const CasaRefugioRow = ({ casa, onOpenEncontro }: CasaRefugioRowProps) =>
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEncontroClick}
-            className="border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            <Users className="w-4 h-4 mr-1" />
-            <span className="hidden sm:inline">Encontro</span>
-          </Button>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </div>
       </div>
