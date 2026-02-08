@@ -104,11 +104,16 @@ interface AgendaCalendarProps {
         return eventosFiltrados.filter(e => e.tipo_evento !== "culto");
       }
 
-      // Se há Quarta com Propósito e Quarta com Propósito - Prestação de Contas, remover a regular
-      const temQuartaPrestacao = eventosFiltrados.some(e => e.tipo_evento === "quarta_proposito_prestacao");
-      const temQuartaProposito = eventosFiltrados.some(e => e.tipo_evento === "quarta_proposito");
-      if (temQuartaPrestacao && temQuartaProposito) {
-        return eventosFiltrados.filter(e => e.tipo_evento !== "quarta_proposito");
+      // Se há Quarta com Propósito - Prestação de Contas, remover a Quarta com Propósito regular
+      const temQuartaPrestacao = eventosFiltrados.some(
+        e => e.tipo_evento === "quarta_proposito" || e.tipo_evento === "quarta_proposito_prestacao"
+      );
+      if (temQuartaPrestacao) {
+        return eventosFiltrados.filter(e => {
+          // Remove cultos cujo título contenha "propósito" (ex: "Quarta com Propósito", "Culto de Quarta com Propósito")
+          if (e.tipo_evento === "culto" && e.titulo.toLowerCase().includes("propósito")) return false;
+          return true;
+        });
       }
 
       return eventosFiltrados;
