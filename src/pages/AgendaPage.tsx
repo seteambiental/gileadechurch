@@ -70,13 +70,17 @@ interface Evento {
 
 const tipoEventoLabels: Record<string, string> = {
   culto: "Culto",
-  ceia: "Santa Ceia",
+  ceia: "Culto de Ceia",
   batismo: "Batismo",
   impacto: "Impacto",
   retiro: "Retiro",
   conferencia: "Conferência",
   casa_refugio: "Casa Refúgio",
   evento: "Evento",
+  conexao_lider: "Conexão Líder",
+  cursos: "Cursos",
+  aulas: "Aulas",
+  apresentacao_criancas: "Apresentação de Crianças",
 };
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];

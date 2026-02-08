@@ -115,6 +115,15 @@ const TIPOS_EVENTO = [
   { value: "evento", label: "Outro Evento" },
 ];
 
+const TIPOS_COMPROMISSO = [
+  { value: "culto", label: "Culto" },
+  { value: "ceia", label: "Culto de Ceia" },
+  { value: "conexao_lider", label: "Conexão Líder" },
+  { value: "cursos", label: "Cursos" },
+  { value: "aulas", label: "Aulas" },
+  { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
+];
+
 export const EventoFormDialog = ({
   open,
   onOpenChange,
@@ -521,7 +530,7 @@ export const EventoFormDialog = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Tipo de Evento</Label>
+                <Label>{mode === "compromisso" ? "Tipo de Compromisso" : "Tipo de Evento"}</Label>
                 <Select
                   value={formData.tipo_evento}
                   onValueChange={(v) => setFormData({ ...formData, tipo_evento: v })}
@@ -530,7 +539,7 @@ export const EventoFormDialog = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {TIPOS_EVENTO.map(t => (
+                    {(mode === "compromisso" ? TIPOS_COMPROMISSO : TIPOS_EVENTO).map(t => (
                       <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -898,361 +907,445 @@ export const EventoFormDialog = ({
               />
             </div>
 
-            {/* Flyer Section */}
-            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-              <Label className="font-medium">Flyer do Evento</Label>
-              
-              {/* Flyer pendente de aprovação */}
-              {flyerPendente && (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <img 
-                      src={flyerPendente} 
-                      alt="Flyer gerado" 
-                      className="w-full max-h-48 object-contain rounded-lg border border-amber-400"
-                    />
-                    <div className="absolute bottom-2 left-2">
-                      <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
-                    </div>
-                    <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
-                      Pendente
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="sm"
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      onClick={() => {
-                        setFlyerUrl(flyerPendente);
-                        setFlyerPendente(null);
-                        toast({ title: "Flyer aceito!" });
-                      }}
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Aceitar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => {
-                        setFlyerPendente(null);
-                        toast({ title: "Flyer descartado" });
-                      }}
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Descartar
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleGenerateFlyer}
-                      disabled={isGeneratingFlyer}
-                    >
-                      {isGeneratingFlyer ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RotateCcw className="w-4 h-4" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )}
-              
-              {/* Flyer aceito */}
-              {flyerUrl && !flyerPendente ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <img 
-                      src={flyerUrl} 
-                      alt="Flyer do evento" 
-                      className="w-full max-h-48 object-contain rounded-lg border"
-                    />
-                    <div className="absolute bottom-2 left-2">
-                      <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
-                    </div>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="absolute top-2 right-2 w-6 h-6"
-                      onClick={() => setFlyerUrl(null)}
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  
-                  {/* Botões de ação do flyer */}
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDownloadFlyer}
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar Flyer
-                    </Button>
-                  </div>
-                  
-                  {/* Envio para grupos */}
-                  <div className="flex gap-2">
-                    <Select value={grupoEnvio} onValueChange={setGrupoEnvio}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Enviar para..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="homens">Homens</SelectItem>
-                        <SelectItem value="mulheres">Mulheres</SelectItem>
-                        <SelectItem value="jovens">Jovens</SelectItem>
-                        <SelectItem value="adolescentes">Adolescentes</SelectItem>
-                        <SelectItem value="criancas">Crianças</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={handleSendFlyer}
-                      disabled={isSendingFlyer || !grupoEnvio}
-                    >
-                      {isSendingFlyer ? (
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4 mr-2" />
-                      )}
-                      Enviar
-                    </Button>
-                  </div>
-                </div>
-              ) : !flyerPendente && (
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFlyerUpload}
-                        className="hidden"
-                        id="flyer-upload"
+            {/* Flyer Section - apenas para eventos */}
+            {mode !== "compromisso" && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <Label className="font-medium">Flyer do Evento</Label>
+                
+                {/* Flyer pendente de aprovação */}
+                {flyerPendente && (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <img 
+                        src={flyerPendente} 
+                        alt="Flyer gerado" 
+                        className="w-full max-h-48 object-contain rounded-lg border border-amber-400"
                       />
+                      <div className="absolute bottom-2 left-2">
+                        <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                      </div>
+                      <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-1 rounded">
+                        Pendente
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          setFlyerUrl(flyerPendente);
+                          setFlyerPendente(null);
+                          toast({ title: "Flyer aceito!" });
+                        }}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Aceitar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setFlyerPendente(null);
+                          toast({ title: "Flyer descartado" });
+                        }}
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Descartar
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full"
-                        onClick={() => document.getElementById("flyer-upload")?.click()}
-                        disabled={isUploadingFlyer}
+                        size="sm"
+                        onClick={handleGenerateFlyer}
+                        disabled={isGeneratingFlyer}
                       >
-                        {isUploadingFlyer ? (
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {isGeneratingFlyer ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Upload className="w-4 h-4 mr-2" />
+                          <RotateCcw className="w-4 h-4" />
                         )}
-                        Upload
                       </Button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Select value={templateFlyer} onValueChange={setTemplateFlyer}>
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue placeholder="Template" />
+                  </div>
+                )}
+                
+                {/* Flyer aceito */}
+                {flyerUrl && !flyerPendente ? (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <img 
+                        src={flyerUrl} 
+                        alt="Flyer do evento" 
+                        className="w-full max-h-48 object-contain rounded-lg border"
+                      />
+                      <div className="absolute bottom-2 left-2">
+                        <img src={logoGileade} alt="Logo Gileade" className="w-8 h-8 rounded-full border-2 border-white shadow" />
+                      </div>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="destructive"
+                        className="absolute top-2 right-2 w-6 h-6"
+                        onClick={() => setFlyerUrl(null)}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    
+                    {/* Botões de ação do flyer */}
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDownloadFlyer}
+                        className="flex-1"
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Baixar Flyer
+                      </Button>
+                    </div>
+                    
+                    {/* Envio para grupos */}
+                    <div className="flex gap-2">
+                      <Select value={grupoEnvio} onValueChange={setGrupoEnvio}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Enviar para..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="moderno">Moderno</SelectItem>
-                          <SelectItem value="minimalista">Minimalista</SelectItem>
-                          <SelectItem value="festivo">Festivo</SelectItem>
-                          <SelectItem value="elegante">Elegante</SelectItem>
-                          <SelectItem value="corporativo">Corporativo</SelectItem>
-                          <SelectItem value="simples">📝 Texto</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="homens">Homens</SelectItem>
+                          <SelectItem value="mulheres">Mulheres</SelectItem>
+                          <SelectItem value="jovens">Jovens</SelectItem>
+                          <SelectItem value="adolescentes">Adolescentes</SelectItem>
+                          <SelectItem value="criancas">Crianças</SelectItem>
                         </SelectContent>
                       </Select>
                       <Button
                         type="button"
                         variant="secondary"
-                        onClick={handleGenerateFlyer}
-                        disabled={isGeneratingFlyer || !formData.titulo || !formData.data_evento}
+                        size="sm"
+                        onClick={handleSendFlyer}
+                        disabled={isSendingFlyer || !grupoEnvio}
                       >
-                        {isGeneratingFlyer ? (
+                        {isSendingFlyer ? (
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         ) : (
-                          templateFlyer === "simples" ? <MessageSquare className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />
+                          <Send className="w-4 h-4 mr-2" />
                         )}
-                        {templateFlyer === "simples" ? "Gerar Flyer Informativo" : "Gerar Flyer"}
+                        Enviar
                       </Button>
                     </div>
                   </div>
-
-                  {/* Texto de compartilhamento gerado */}
-                  {textoCompartilhamento && flyerPendente && (
-                    <div className="space-y-2 mt-3">
-                      {/* Imagem do flyer informativo */}
-                      <div className="relative">
-                        <img
-                          src={flyerPendente}
-                          alt="Flyer gerado"
-                          className="w-full rounded-lg border shadow-sm"
+                ) : !flyerPendente && (
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFlyerUpload}
+                          className="hidden"
+                          id="flyer-upload"
                         />
-                      </div>
-                      
-                      {/* Texto para copiar */}
-                      <div className="relative">
-                        <pre className="p-3 bg-muted rounded-lg text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border font-sans">
-                          {textoCompartilhamento}
-                        </pre>
                         <Button
                           type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="absolute top-2 right-2"
-                          onClick={() => {
-                            setTextoCompartilhamento(null);
-                            setFlyerPendente(null);
-                          }}
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => document.getElementById("flyer-upload")?.click()}
+                          disabled={isUploadingFlyer}
                         >
-                          <X className="w-4 h-4" />
+                          {isUploadingFlyer ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Upload className="w-4 h-4 mr-2" />
+                          )}
+                          Upload
                         </Button>
                       </div>
-                      
-                      {/* Ações */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="default"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = flyerPendente;
-                            link.download = `flyer-${formData.titulo.replace(/\s+/g, '-').toLowerCase()}.svg`;
-                            link.target = '_blank';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Baixar Imagem
-                        </Button>
+                      <div className="flex items-center gap-2">
+                        <Select value={templateFlyer} onValueChange={setTemplateFlyer}>
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue placeholder="Template" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="moderno">Moderno</SelectItem>
+                            <SelectItem value="minimalista">Minimalista</SelectItem>
+                            <SelectItem value="festivo">Festivo</SelectItem>
+                            <SelectItem value="elegante">Elegante</SelectItem>
+                            <SelectItem value="corporativo">Corporativo</SelectItem>
+                            <SelectItem value="simples">📝 Texto</SelectItem>
+                          </SelectContent>
+                        </Select>
                         <Button
                           type="button"
                           variant="secondary"
-                          onClick={handleCopyTexto}
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copiar Texto
-                        </Button>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="flex-1"
-                          onClick={() => {
-                            setFlyerUrl(flyerPendente);
-                            setFlyerPendente(null);
-                            setTextoCompartilhamento(null);
-                            toast({ title: "Flyer aceito!" });
-                          }}
-                          disabled={isUploadingFlyer}
-                        >
-                          <Check className="w-4 h-4 mr-2" />
-                          Aceitar como Flyer Oficial
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
                           onClick={handleGenerateFlyer}
-                          disabled={isGeneratingFlyer}
-                          title="Gerar novamente"
+                          disabled={isGeneratingFlyer || !formData.titulo || !formData.data_evento}
                         >
-                          <RotateCcw className="w-4 h-4" />
+                          {isGeneratingFlyer ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            templateFlyer === "simples" ? <MessageSquare className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />
+                          )}
+                          {templateFlyer === "simples" ? "Gerar Flyer Informativo" : "Gerar Flyer"}
                         </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+
+                    {/* Texto de compartilhamento gerado */}
+                    {textoCompartilhamento && flyerPendente && (
+                      <div className="space-y-2 mt-3">
+                        {/* Imagem do flyer informativo */}
+                        <div className="relative">
+                          <img
+                            src={flyerPendente}
+                            alt="Flyer gerado"
+                            className="w-full rounded-lg border shadow-sm"
+                          />
+                        </div>
+                        
+                        {/* Texto para copiar */}
+                        <div className="relative">
+                          <pre className="p-3 bg-muted rounded-lg text-sm whitespace-pre-wrap max-h-48 overflow-y-auto border font-sans">
+                            {textoCompartilhamento}
+                          </pre>
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            className="absolute top-2 right-2"
+                            onClick={() => {
+                              setTextoCompartilhamento(null);
+                              setFlyerPendente(null);
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        
+                        {/* Ações */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant="default"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = flyerPendente;
+                              link.download = `flyer-${formData.titulo.replace(/\s+/g, '-').toLowerCase()}.svg`;
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Baixar Imagem
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleCopyTexto}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Copiar Texto
+                          </Button>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="flex-1"
+                            onClick={() => {
+                              setFlyerUrl(flyerPendente);
+                              setFlyerPendente(null);
+                              setTextoCompartilhamento(null);
+                              toast({ title: "Flyer aceito!" });
+                            }}
+                            disabled={isUploadingFlyer}
+                          >
+                            <Check className="w-4 h-4 mr-2" />
+                            Aceitar como Flyer Oficial
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={handleGenerateFlyer}
+                            disabled={isGeneratingFlyer}
+                            title="Gerar novamente"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Recorrência */}
-            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="recorrente"
-                  checked={formData.recorrente}
-                  onCheckedChange={(c) => setFormData({ ...formData, recorrente: !!c })}
-                />
-                <Label htmlFor="recorrente" className="cursor-pointer">Evento Recorrente</Label>
+            {mode === "compromisso" ? (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="compromisso_unico"
+                    checked={!formData.recorrente}
+                    onCheckedChange={(c) => setFormData({ 
+                      ...formData, 
+                      recorrente: !c,
+                      ...(c ? { tipo_recorrencia: "", dia_semana: "", semana_mes: "" } : {}),
+                    })}
+                  />
+                  <Label htmlFor="compromisso_unico" className="cursor-pointer font-medium">
+                    Compromisso Único
+                  </Label>
+                </div>
+
+                {formData.recorrente && (
+                  <div className="space-y-3 pt-2 border-t border-border/50">
+                    <Label className="font-medium text-sm text-muted-foreground">Evento Recorrente</Label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Semana</Label>
+                        <Select
+                          value={formData.semana_mes}
+                          onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Primeiro</SelectItem>
+                            <SelectItem value="2">Segundo</SelectItem>
+                            <SelectItem value="3">Terceiro</SelectItem>
+                            <SelectItem value="4">Quarto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Dia</Label>
+                        <Select
+                          value={formData.dia_semana}
+                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Segunda</SelectItem>
+                            <SelectItem value="2">Terça</SelectItem>
+                            <SelectItem value="3">Quarta</SelectItem>
+                            <SelectItem value="4">Quinta</SelectItem>
+                            <SelectItem value="5">Sexta</SelectItem>
+                            <SelectItem value="6">Sábado</SelectItem>
+                            <SelectItem value="0">Domingo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Frequência</Label>
+                        <Select
+                          value={formData.tipo_recorrencia}
+                          onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="semanal">Da Semana</SelectItem>
+                            <SelectItem value="mensal">Do Mês</SelectItem>
+                            <SelectItem value="anual">Do Ano</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="recorrente"
+                    checked={formData.recorrente}
+                    onCheckedChange={(c) => setFormData({ ...formData, recorrente: !!c })}
+                  />
+                  <Label htmlFor="recorrente" className="cursor-pointer">Evento Recorrente</Label>
+                </div>
 
-              {formData.recorrente && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Tipo de Recorrência</Label>
-                    <Select
-                      value={formData.tipo_recorrencia}
-                      onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="semanal">Semanal</SelectItem>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="semestral">Semestral</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>Dia da Semana</Label>
-                    <Select
-                      value={formData.dia_semana}
-                      onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Domingo</SelectItem>
-                        <SelectItem value="1">Segunda</SelectItem>
-                        <SelectItem value="2">Terça</SelectItem>
-                        <SelectItem value="3">Quarta</SelectItem>
-                        <SelectItem value="4">Quinta</SelectItem>
-                        <SelectItem value="5">Sexta</SelectItem>
-                        <SelectItem value="6">Sábado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {(formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
+                {formData.recorrente && (
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label>Semana do Mês</Label>
+                      <Label>Tipo de Recorrência</Label>
                       <Select
-                        value={formData.semana_mes}
-                        onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                        value={formData.tipo_recorrencia}
+                        onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">1ª Semana</SelectItem>
-                          <SelectItem value="2">2ª Semana</SelectItem>
-                          <SelectItem value="3">3ª Semana</SelectItem>
-                          <SelectItem value="4">4ª Semana</SelectItem>
-                          <SelectItem value="5">Última Semana</SelectItem>
+                          <SelectItem value="semanal">Semanal</SelectItem>
+                          <SelectItem value="mensal">Mensal</SelectItem>
+                          <SelectItem value="semestral">Semestral</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+
+                    <div>
+                      <Label>Dia da Semana</Label>
+                      <Select
+                        value={formData.dia_semana}
+                        onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Domingo</SelectItem>
+                          <SelectItem value="1">Segunda</SelectItem>
+                          <SelectItem value="2">Terça</SelectItem>
+                          <SelectItem value="3">Quarta</SelectItem>
+                          <SelectItem value="4">Quinta</SelectItem>
+                          <SelectItem value="5">Sexta</SelectItem>
+                          <SelectItem value="6">Sábado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {(formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
+                      <div>
+                        <Label>Semana do Mês</Label>
+                        <Select
+                          value={formData.semana_mes}
+                          onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">1ª Semana</SelectItem>
+                            <SelectItem value="2">2ª Semana</SelectItem>
+                            <SelectItem value="3">3ª Semana</SelectItem>
+                            <SelectItem value="4">4ª Semana</SelectItem>
+                            <SelectItem value="5">Última Semana</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-between pt-4 border-t">
               {evento && (
