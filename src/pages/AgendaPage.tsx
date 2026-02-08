@@ -80,6 +80,7 @@ const tipoEventoLabels: Record<string, string> = {
   retiro_kids: "Retiro Kids",
   evento: "Evento",
   conexao_lider: "Conexão Líder",
+  quarta_proposito: "Quarta com Propósito",
   cursos: "Cursos",
   aulas: "Aulas",
   apresentacao_criancas: "Apresentação de Crianças",

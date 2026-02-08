@@ -121,6 +121,7 @@ const TIPOS_COMPROMISSO = [
   { value: "culto", label: "Culto" },
   { value: "ceia", label: "Culto de Ceia" },
   { value: "conexao_lider", label: "Conexão Líder" },
+  { value: "quarta_proposito", label: "Quarta com Propósito - Prestação de Contas" },
   { value: "cursos", label: "Cursos" },
   { value: "aulas", label: "Aulas" },
   { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
