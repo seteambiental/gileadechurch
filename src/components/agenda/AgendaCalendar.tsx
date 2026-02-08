@@ -4,30 +4,31 @@
  import { Badge } from "@/components/ui/badge";
  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
  import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
- import {
-   format,
-   startOfWeek,
-   endOfWeek,
-   startOfMonth,
-   endOfMonth,
-   startOfYear,
-   endOfYear,
-   eachDayOfInterval,
-   isSameDay,
-   isSameMonth,
-   addDays,
-   addWeeks,
-   addMonths,
-   addYears,
-   subDays,
-   subWeeks,
-   subMonths,
-   subYears,
-   isToday,
-   getDay,
-   getWeekOfMonth,
- } from "date-fns";
- import { ptBR } from "date-fns/locale";
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
+  eachDayOfInterval,
+  isSameDay,
+  isSameMonth,
+  addDays,
+  addWeeks,
+  addMonths,
+  addYears,
+  subDays,
+  subWeeks,
+  subMonths,
+  subYears,
+  isToday,
+  getDay,
+  getWeekOfMonth,
+} from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { getFeriadoParaData } from "@/lib/feriados";
  
  interface Evento {
    id: string;
@@ -172,46 +173,57 @@ interface AgendaCalendarProps {
    };
  
    // Renderiza a visualização do dia
-   const renderDayView = () => {
-     const eventosHoje = getEventosParaData(currentDate);
-     
-     return (
-       <Card>
-         <CardContent className="p-4">
-           <div className="text-center mb-4">
-             <h3 className="text-2xl font-bold text-primary">{format(currentDate, "d")}</h3>
-             <p className="text-muted-foreground">{format(currentDate, "EEEE", { locale: ptBR })}</p>
-           </div>
-           
-           {eventosHoje.length === 0 ? (
-             <p className="text-center text-muted-foreground py-8">Nenhum evento neste dia</p>
-           ) : (
-             <div className="space-y-2">
-               {eventosHoje.map((evento) => (
-                 <div
-                   key={evento.id}
-                   className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
-                   style={{ borderLeft: `4px solid ${evento.cor || "hsl(var(--primary))"}` }}
-                   onClick={() => onEventoClick(evento)}
-                 >
-                   <div className="flex items-center gap-2 text-muted-foreground">
-                     <Clock className="w-4 h-4" />
-                     <span className="font-medium">{evento.hora_inicio?.substring(0, 5) || "—"}</span>
-                   </div>
-                   <div className="flex-1">
-                     <p className="font-medium">{evento.titulo}</p>
-                     <Badge variant="outline" className="text-xs mt-1">
-                       {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
-                     </Badge>
-                   </div>
-                 </div>
-               ))}
-             </div>
-           )}
-         </CardContent>
-       </Card>
-     );
-   };
+    const renderDayView = () => {
+      const eventosHoje = getEventosParaData(currentDate);
+      const dateStr = format(currentDate, "yyyy-MM-dd");
+      const feriado = getFeriadoParaData(dateStr);
+      
+      return (
+        <Card>
+          <CardContent className="p-4">
+            <div className="text-center mb-4">
+              <h3 className="text-2xl font-bold text-primary">{format(currentDate, "d")}</h3>
+              <p className="text-muted-foreground">{format(currentDate, "EEEE", { locale: ptBR })}</p>
+            </div>
+
+            {feriado && (
+              <div
+                className="flex items-center gap-3 p-3 rounded-lg mb-2 font-bold"
+                style={{ backgroundColor: "#ccff0020", borderLeft: "4px solid #a3e635", color: "#65a30d" }}
+              >
+                🎉 {feriado.nome}
+              </div>
+            )}
+            
+            {eventosHoje.length === 0 && !feriado ? (
+              <p className="text-center text-muted-foreground py-8">Nenhum evento neste dia</p>
+            ) : (
+              <div className="space-y-2">
+                {eventosHoje.map((evento) => (
+                  <div
+                    key={evento.id}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
+                    style={{ borderLeft: `4px solid ${evento.cor || "hsl(var(--primary))"}` }}
+                    onClick={() => onEventoClick(evento)}
+                  >
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-4 h-4" />
+                      <span className="font-medium">{evento.hora_inicio?.substring(0, 5) || "—"}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{evento.titulo}</p>
+                      <Badge variant="outline" className="text-xs mt-1">
+                        {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      );
+    };
  
    // Renderiza a visualização da semana
    const renderWeekView = () => {
@@ -221,42 +233,52 @@ interface AgendaCalendarProps {
  
      return (
        <div className="grid grid-cols-7 gap-2">
-         {days.map((day) => {
-           const eventosDay = getEventosParaData(day);
-           const isCurrentDay = isToday(day);
- 
-           return (
-             <Card key={day.toISOString()} className={`min-h-[140px] ${isCurrentDay ? "ring-2 ring-primary" : ""}`}>
-               <CardContent className="p-2">
-                 <div className={`text-center mb-2 pb-2 border-b ${isCurrentDay ? "text-primary font-bold" : ""}`}>
-                   <p className="text-xs text-muted-foreground">{diasSemanaAbrev[getDay(day)]}</p>
-                   <p className={`text-lg ${isCurrentDay ? "bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto" : ""}`}>
-                     {format(day, "d")}
-                   </p>
-                 </div>
-                 
-                 <div className="space-y-1 max-h-[100px] overflow-y-auto">
-                   {eventosDay.slice(0, 3).map((evento) => (
-                     <div
-                       key={evento.id}
-                       className="text-xs p-1.5 rounded cursor-pointer hover:opacity-80 truncate"
-                       style={{ 
-                         backgroundColor: evento.cor ? `${evento.cor}20` : "hsl(var(--primary) / 0.1)",
-                         borderLeft: `3px solid ${evento.cor || "hsl(var(--primary))"}`,
-                       }}
-                       onClick={() => onEventoClick(evento)}
-                     >
-                       <span className="font-medium">{evento.hora_inicio?.substring(0, 5)}</span> {evento.titulo}
-                     </div>
-                   ))}
-                   {eventosDay.length > 3 && (
-                     <p className="text-xs text-muted-foreground text-center">+{eventosDay.length - 3} mais</p>
-                   )}
-                 </div>
-               </CardContent>
-             </Card>
-           );
-         })}
+          {days.map((day) => {
+            const eventosDay = getEventosParaData(day);
+            const isCurrentDay = isToday(day);
+            const dayStr = format(day, "yyyy-MM-dd");
+            const feriado = getFeriadoParaData(dayStr);
+
+            return (
+              <Card key={day.toISOString()} className={`min-h-[140px] ${isCurrentDay ? "ring-2 ring-primary" : ""}`}>
+                <CardContent className="p-2">
+                  <div className={`text-center mb-2 pb-2 border-b ${isCurrentDay ? "text-primary font-bold" : ""}`}>
+                    <p className="text-xs text-muted-foreground">{diasSemanaAbrev[getDay(day)]}</p>
+                    <p className={`text-lg ${isCurrentDay ? "bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto" : ""}`}>
+                      {format(day, "d")}
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-1 max-h-[100px] overflow-y-auto">
+                    {feriado && (
+                      <div
+                        className="text-xs p-1.5 rounded truncate font-bold"
+                        style={{ backgroundColor: "#a3e635", color: "#1a2e05" }}
+                      >
+                        🎉 {feriado.nome}
+                      </div>
+                    )}
+                    {eventosDay.slice(0, feriado ? 2 : 3).map((evento) => (
+                      <div
+                        key={evento.id}
+                        className="text-xs p-1.5 rounded cursor-pointer hover:opacity-80 truncate"
+                        style={{ 
+                          backgroundColor: evento.cor ? `${evento.cor}20` : "hsl(var(--primary) / 0.1)",
+                          borderLeft: `3px solid ${evento.cor || "hsl(var(--primary))"}`,
+                        }}
+                        onClick={() => onEventoClick(evento)}
+                      >
+                        <span className="font-medium">{evento.hora_inicio?.substring(0, 5)}</span> {evento.titulo}
+                      </div>
+                    ))}
+                    {eventosDay.length > (feriado ? 2 : 3) && (
+                      <p className="text-xs text-muted-foreground text-center">+{eventosDay.length - (feriado ? 2 : 3)} mais</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
        </div>
      );
    };
@@ -279,42 +301,52 @@ interface AgendaCalendarProps {
            ))}
          </div>
          <div className="grid grid-cols-7 gap-1">
-           {days.map((day) => {
-             const eventosDay = getEventosParaData(day);
-             const isCurrentDay = isToday(day);
-             const isCurrentMonth = isSameMonth(day, currentDate);
- 
-             return (
-               <div
-                 key={day.toISOString()}
-                 className={`min-h-[80px] p-1 rounded-lg border ${
-                   isCurrentDay ? "ring-2 ring-primary bg-primary/5" : ""
-                 } ${!isCurrentMonth ? "opacity-40 bg-muted/30" : "bg-card"}`}
-               >
-                 <p className={`text-xs text-center mb-1 ${isCurrentDay ? "font-bold text-primary" : ""}`}>
-                   {format(day, "d")}
-                 </p>
-                 <div className="space-y-0.5">
-                   {eventosDay.slice(0, 2).map((evento) => (
-                     <div
-                       key={evento.id}
-                       className="text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 truncate"
-                       style={{ 
-                         backgroundColor: evento.cor || "hsl(var(--primary))",
-                         color: "white",
-                       }}
-                       onClick={() => onEventoClick(evento)}
-                     >
-                       {evento.titulo}
-                     </div>
-                   ))}
-                   {eventosDay.length > 2 && (
-                     <p className="text-[10px] text-muted-foreground text-center">+{eventosDay.length - 2}</p>
-                   )}
-                 </div>
-               </div>
-             );
-           })}
+            {days.map((day) => {
+              const eventosDay = getEventosParaData(day);
+              const isCurrentDay = isToday(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const dayStr = format(day, "yyyy-MM-dd");
+              const feriado = getFeriadoParaData(dayStr);
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={`min-h-[80px] p-1 rounded-lg border ${
+                    isCurrentDay ? "ring-2 ring-primary bg-primary/5" : ""
+                  } ${!isCurrentMonth ? "opacity-40 bg-muted/30" : "bg-card"}`}
+                >
+                  <p className={`text-xs text-center mb-1 ${isCurrentDay ? "font-bold text-primary" : ""}`}>
+                    {format(day, "d")}
+                  </p>
+                  <div className="space-y-0.5">
+                    {feriado && (
+                      <div
+                        className="text-[10px] px-1 py-0.5 rounded truncate font-bold"
+                        style={{ backgroundColor: "#a3e635", color: "#1a2e05" }}
+                      >
+                        🎉 {feriado.nome}
+                      </div>
+                    )}
+                    {eventosDay.slice(0, feriado ? 1 : 2).map((evento) => (
+                      <div
+                        key={evento.id}
+                        className="text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 truncate"
+                        style={{ 
+                          backgroundColor: evento.cor || "hsl(var(--primary))",
+                          color: "white",
+                        }}
+                        onClick={() => onEventoClick(evento)}
+                      >
+                        {evento.titulo}
+                      </div>
+                    ))}
+                    {eventosDay.length > (feriado ? 1 : 2) && (
+                      <p className="text-[10px] text-muted-foreground text-center">+{eventosDay.length - (feriado ? 1 : 2)}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
          </div>
        </div>
      );
