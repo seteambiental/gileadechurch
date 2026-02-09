@@ -30,21 +30,22 @@ import {
 import { ptBR } from "date-fns/locale";
 import { getFeriadoParaData } from "@/lib/feriados";
  
- interface Evento {
-   id: string;
-   titulo: string;
-   descricao: string | null;
-   data_evento: string;
-   hora_inicio: string | null;
-   hora_fim: string | null;
-   tipo_evento: string;
-   cor: string | null;
-   recorrente: boolean;
-   dia_semana: number | null;
-   semana_mes: number | null;
-   tipo_recorrencia: string | null;
-   ativo: boolean;
- }
+interface Evento {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  data_evento: string;
+  data_fim: string | null;
+  hora_inicio: string | null;
+  hora_fim: string | null;
+  tipo_evento: string;
+  cor: string | null;
+  recorrente: boolean;
+  dia_semana: number | null;
+  semana_mes: number | null;
+  tipo_recorrencia: string | null;
+  ativo: boolean;
+}
  
 interface AgendaCalendarProps {
   eventos: Evento[];
@@ -95,6 +96,10 @@ interface AgendaCalendarProps {
           }
           return true;
         } else {
+          // Para eventos com data_fim, verificar se o dia está no intervalo
+          if (evento.data_fim) {
+            return dateStr >= evento.data_evento && dateStr <= evento.data_fim;
+          }
           return evento.data_evento === dateStr;
         }
       });
