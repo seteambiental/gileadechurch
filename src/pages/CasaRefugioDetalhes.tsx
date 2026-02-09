@@ -191,22 +191,27 @@ const CasaRefugioDetalhes = () => {
       current = addWeeks(current, weekIncrement);
     }
 
-    // Create a map of actual encontros by date
-    const encontrosByDate = new Map<string, typeof encontros[0]>();
+    // Create a map of actual encontros by data_esperada (preferred) or data_encontro
+    const encontrosByExpectedDate = new Map<string, typeof encontros[0]>();
+    const matchedExpectedDates = new Set<string>();
+    
     encontros.forEach((e) => {
-      encontrosByDate.set(e.data_encontro, e);
+      const key = e.data_esperada || e.data_encontro;
+      encontrosByExpectedDate.set(key, e);
     });
 
-    // Merge: for each expected date, use actual or create blank
+    // Merge: for each expected date, use actual (matched by data_esperada) or create blank
     const merged = expectedDates.map((dateStr) => {
-      const actual = encontrosByDate.get(dateStr);
+      const actual = encontrosByExpectedDate.get(dateStr);
       if (actual) {
-        return { ...actual, is_blank: false };
+        matchedExpectedDates.add(dateStr);
+        return { ...actual, is_blank: false, display_date: actual.data_encontro };
       }
       return {
         id: `blank-${dateStr}`,
         casa_refugio_id: id!,
         data_encontro: dateStr,
+        data_esperada: dateStr,
         qtd_lideres: 0,
         qtd_membros: 0,
         qtd_criancas: 0,
@@ -222,13 +227,16 @@ const CasaRefugioDetalhes = () => {
         reuniao_realizada: true,
         justificativa: null,
         is_blank: true,
+        display_date: dateStr,
       };
     });
 
-    // Also include any actual encontros that don't match expected dates
+    // Also include any actual encontros whose data_esperada doesn't match any expected date
+    // (e.g. manually created encontros without expected date tracking)
     encontros.forEach((e) => {
-      if (!expectedDates.includes(e.data_encontro)) {
-        merged.push({ ...e, is_blank: false });
+      const key = e.data_esperada || e.data_encontro;
+      if (!matchedExpectedDates.has(key) && !expectedDates.includes(key)) {
+        merged.push({ ...e, is_blank: false, display_date: e.data_encontro });
       }
     });
 
@@ -313,6 +321,7 @@ const CasaRefugioDetalhes = () => {
       const { error } = await supabase.from("encontros_casa_refugio").insert({
         casa_refugio_id: id!,
         data_encontro: dataEncontro,
+        data_esperada: dataEncontro,
         reuniao_realizada: false,
         justificativa,
         qtd_lideres: 0,
@@ -844,6 +853,7 @@ const CasaRefugioDetalhes = () => {
             setEditingEncontro({
               isNew: true,
               data_encontro: preScreenData.dataEncontro,
+              data_esperada: preScreenData.dataEncontro,
               justificativa: justificativaMudanca || null,
             });
             setPreScreenData(null);

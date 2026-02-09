@@ -258,12 +258,11 @@ export const EncontrosReportDialog = ({
   });
 
   const reportData: EncontroReport[] = useMemo(() => {
-    // Build a set of existing encontros by casa_id + date
-    const existingSet = new Set<string>();
+    // Build a map of existing encontros by casa_id + data_esperada (or data_encontro as fallback)
     const existingMap = new Map<string, typeof encontros[0]>();
     encontros.forEach((e) => {
-      const key = `${e.casa_refugio_id}_${e.data_encontro}`;
-      existingSet.add(key);
+      const expectedDate = (e as any).data_esperada || e.data_encontro;
+      const key = `${e.casa_refugio_id}_${expectedDate}`;
       existingMap.set(key, e);
     });
 
@@ -330,38 +329,35 @@ export const EncontrosReportDialog = ({
       });
     });
 
-    // Also add encontros that exist but don't match expected days
+    // Also add encontros whose data_esperada doesn't match any expected date
+    // (manually created or from before data_esperada tracking)
+    const addedKeys = new Set(rows.map((r) => `${r.casa_refugio_id}_${r.data_encontro}`));
     encontros.forEach((e) => {
+      const expectedDate = (e as any).data_esperada || e.data_encontro;
       const casa = casasMap.get(e.casa_refugio_id);
       if (!casa) return;
-      const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
-      const eDate = parseISO(e.data_encontro);
-      if (dayNumber === null || getDay(eDate) !== dayNumber) {
-        // This encontro was on an unexpected day, still include it
-        const key = `${e.casa_refugio_id}_${e.data_encontro}`;
-        if (!existingSet.has(key)) return; // should always be true
-        const alreadyAdded = rows.some(
-          (r) => r.casa_refugio_id === e.casa_refugio_id && r.data_encontro === e.data_encontro
-        );
-        if (!alreadyAdded) {
-          rows.push({
-            casa_refugio_id: e.casa_refugio_id,
-            casa_nome: casa.name,
-            data_encontro: e.data_encontro,
-            qtd_lideres: e.qtd_lideres || 0,
-            qtd_membros: e.qtd_membros || 0,
-            qtd_criancas: e.qtd_criancas || 0,
-            qtd_visitantes: e.qtd_visitantes || 0,
-            total_presentes:
-              (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0),
-            ofertas_dinheiro: Number(e.ofertas_dinheiro || 0),
-            ofertas_pix: Number(e.ofertas_pix || 0),
-            ofertas_total: Number(e.ofertas || 0),
-            kilos_arrecadados: Number(e.kilos_arrecadados || 0),
-            is_blank: false,
-            is_cancelled: (e as any).reuniao_realizada === false,
-          });
-        }
+      // Check if this encontro was already included via expected date matching
+      const alreadyIncluded = rows.some(
+        (r) => r.casa_refugio_id === e.casa_refugio_id && r.data_encontro === e.data_encontro
+      );
+      if (!alreadyIncluded) {
+        rows.push({
+          casa_refugio_id: e.casa_refugio_id,
+          casa_nome: casa.name,
+          data_encontro: e.data_encontro,
+          qtd_lideres: e.qtd_lideres || 0,
+          qtd_membros: e.qtd_membros || 0,
+          qtd_criancas: e.qtd_criancas || 0,
+          qtd_visitantes: e.qtd_visitantes || 0,
+          total_presentes:
+            (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0),
+          ofertas_dinheiro: Number(e.ofertas_dinheiro || 0),
+          ofertas_pix: Number(e.ofertas_pix || 0),
+          ofertas_total: Number(e.ofertas || 0),
+          kilos_arrecadados: Number(e.kilos_arrecadados || 0),
+          is_blank: false,
+          is_cancelled: (e as any).reuniao_realizada === false,
+        });
       }
     });
 

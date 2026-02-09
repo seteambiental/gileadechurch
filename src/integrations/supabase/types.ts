@@ -1202,6 +1202,7 @@ export type Database = {
           casa_refugio_id: string
           created_at: string
           data_encontro: string
+          data_esperada: string | null
           id: string
           justificativa: string | null
           kilos_arrecadados: number | null
@@ -1221,6 +1222,7 @@ export type Database = {
           casa_refugio_id: string
           created_at?: string
           data_encontro: string
+          data_esperada?: string | null
           id?: string
           justificativa?: string | null
           kilos_arrecadados?: number | null
@@ -1240,6 +1242,7 @@ export type Database = {
           casa_refugio_id?: string
           created_at?: string
           data_encontro?: string
+          data_esperada?: string | null
           id?: string
           justificativa?: string | null
           kilos_arrecadados?: number | null
