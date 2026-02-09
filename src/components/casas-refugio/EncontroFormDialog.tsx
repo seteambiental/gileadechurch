@@ -93,6 +93,7 @@ interface RecognitionResult {
 interface Encontro {
   id: string;
   data_encontro: string;
+  data_esperada?: string | null;
   qtd_lideres: number;
   qtd_membros: number;
   qtd_criancas: number;
@@ -380,8 +381,16 @@ export const EncontroFormDialog = ({
         : 0;
       const ofertasTotalValue = ofertasDinheiroValue + ofertasPixValue;
 
+      // data_esperada: if creating from blank row, use the original expected date
+      const dataEsperada = isNewFromBlank 
+        ? (editingEncontro as any).data_esperada || editingEncontro.data_encontro 
+        : isEditing 
+          ? editingEncontro?.data_esperada || editingEncontro?.data_encontro
+          : data.data_encontro;
+
       const payload = {
         data_encontro: data.data_encontro,
+        data_esperada: dataEsperada,
         qtd_lideres: data.qtd_lideres,
         qtd_membros: data.qtd_membros,
         qtd_criancas: data.qtd_criancas,

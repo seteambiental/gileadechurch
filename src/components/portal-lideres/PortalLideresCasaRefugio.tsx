@@ -199,16 +199,25 @@ export const PortalLideresCasaRefugio = ({
       current = addWeeks(current, isQuinzenal ? 2 : 1);
     }
 
-    const encontrosByDate = new Map(
-      filteredEncontros.map((e: any) => [e.data_encontro, e])
-    );
+    // Create a map of actual encontros by data_esperada (preferred) or data_encontro
+    const encontrosByExpectedDate = new Map<string, any>();
+    const matchedExpectedDates = new Set<string>();
+    
+    filteredEncontros.forEach((e: any) => {
+      const key = e.data_esperada || e.data_encontro;
+      encontrosByExpectedDate.set(key, e);
+    });
 
     const merged = expectedDates.map((dateStr) => {
-      const actual = encontrosByDate.get(dateStr);
-      if (actual) return { ...actual, is_blank: false };
+      const actual = encontrosByExpectedDate.get(dateStr);
+      if (actual) {
+        matchedExpectedDates.add(dateStr);
+        return { ...actual, is_blank: false, display_date: actual.data_encontro };
+      }
       return {
         id: `blank-${dateStr}`,
         data_encontro: dateStr,
+        data_esperada: dateStr,
         casa_refugio_id: casaSelecionada.id,
         qtd_lideres: 0,
         qtd_membros: 0,
@@ -223,13 +232,15 @@ export const PortalLideresCasaRefugio = ({
         reuniao_realizada: true,
         justificativa: null,
         is_blank: true,
+        display_date: dateStr,
       };
     });
 
-    // Add any actual encounters not in expected dates
+    // Add any actual encounters whose data_esperada doesn't match any expected date
     filteredEncontros.forEach((e: any) => {
-      if (!expectedDates.includes(e.data_encontro)) {
-        merged.push({ ...e, is_blank: false });
+      const key = e.data_esperada || e.data_encontro;
+      if (!matchedExpectedDates.has(key) && !expectedDates.includes(key)) {
+        merged.push({ ...e, is_blank: false, display_date: e.data_encontro });
       }
     });
 
@@ -658,6 +669,7 @@ export const PortalLideresCasaRefugio = ({
                 setEditingEncontro({
                   isNew: true,
                   data_encontro: preScreenData.dataEncontro,
+                  data_esperada: preScreenData.dataEncontro,
                   justificativa: justificativaMudanca || null,
                 });
                 setPreScreenData(null);

@@ -59,6 +59,7 @@ export const EncontroPreScreenDialog = ({
       const { error } = await supabase.from("encontros_casa_refugio").insert({
         casa_refugio_id: casaRefugioId,
         data_encontro: dataEncontro,
+        data_esperada: dataEncontro,
         reuniao_realizada: false,
         justificativa: justificativa.trim(),
         qtd_lideres: 0,
