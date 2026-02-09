@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight, XCircle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialo
 import { EncontroPreScreenDialog } from "@/components/casas-refugio/EncontroPreScreenDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -306,6 +307,35 @@ const CasaRefugioDetalhes = () => {
     },
   });
 
+  // Quick action: mark as "não houve encontro" or "transferido"
+  const quickCancelMutation = useMutation({
+    mutationFn: async ({ dataEncontro, justificativa }: { dataEncontro: string; justificativa: string }) => {
+      const { error } = await supabase.from("encontros_casa_refugio").insert({
+        casa_refugio_id: id!,
+        data_encontro: dataEncontro,
+        reuniao_realizada: false,
+        justificativa,
+        qtd_lideres: 0,
+        qtd_membros: 0,
+        qtd_criancas: 0,
+        qtd_visitantes: 0,
+        kilos_arrecadados: 0,
+        ofertas: 0,
+        ofertas_dinheiro: 0,
+        ofertas_pix: 0,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["encontros-casa", id] });
+      queryClient.invalidateQueries({ queryKey: ["encontros"] });
+      toast.success("Registro salvo com sucesso!");
+    },
+    onError: (error) => {
+      toast.error("Erro ao salvar: " + error.message);
+    },
+  });
+
   const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
@@ -559,17 +589,51 @@ const CasaRefugioDetalhes = () => {
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
                                 {isBlank ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-destructive"
-                                    onClick={() => setPreScreenData({
-                                      dataEncontro: encontro.data_encontro,
-                                    })}
-                                    title="Preencher encontro"
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive"
+                                      onClick={() => setPreScreenData({
+                                        dataEncontro: encontro.data_encontro,
+                                      })}
+                                      title="Preencher encontro"
+                                    >
+                                      <Pencil className="w-4 h-4" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground"
+                                          title="Ações rápidas"
+                                        >
+                                          <XCircle className="w-4 h-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => quickCancelMutation.mutate({
+                                            dataEncontro: encontro.data_encontro,
+                                            justificativa: "Não houve encontro",
+                                          })}
+                                        >
+                                          <XCircle className="w-4 h-4 mr-2" />
+                                          Não houve encontro
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={() => quickCancelMutation.mutate({
+                                            dataEncontro: encontro.data_encontro,
+                                            justificativa: "Encontro transferido para a próxima semana",
+                                          })}
+                                        >
+                                          <ArrowRightLeft className="w-4 h-4 mr-2" />
+                                          Encontro transferido
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 ) : isCancelled ? (
                                   <span className="text-xs text-muted-foreground italic px-2" title={encontro.justificativa || ""}>
                                     {encontro.justificativa ? encontro.justificativa.slice(0, 30) + (encontro.justificativa.length > 30 ? "..." : "") : "Cancelada"}
