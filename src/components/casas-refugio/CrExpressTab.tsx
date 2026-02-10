@@ -37,6 +37,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Send,
+  Mail,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
@@ -206,6 +209,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   const [showPreviewDialog, setShowPreviewDialog] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState<string | null>(null); // 'email' | 'whatsapp' | null
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
@@ -475,6 +479,30 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
     }
   };
 
+  const handleEnviar = async (crId: string, action: 'email' | 'whatsapp') => {
+    setSending(action);
+    try {
+      const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
+        body: { action, crExpressId: crId },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const res = data.resultados;
+      if (action === 'email') {
+        toast.success(`E-mail enviado para ${res.email.enviados} líder(es)${res.email.erros > 0 ? `. ${res.email.erros} falha(s).` : ''}`);
+      } else {
+        toast.success(`WhatsApp enviado para ${res.whatsapp.enviados} líder(es)${res.whatsapp.erros > 0 ? `. ${res.whatsapp.erros} falha(s).` : ''}`);
+      }
+    } catch (err: any) {
+      console.error("Erro ao enviar:", err);
+      toast.error(err.message || `Erro ao enviar por ${action}`);
+    } finally {
+      setSending(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -529,7 +557,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1 flex-shrink-0 flex-wrap justify-end">
                     {getStatusBadge(cr.status)}
                     <Button
                       variant="ghost"
@@ -538,6 +566,28 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
+                    {!readOnly && cr.status === "aprovado" && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Enviar por E-mail"
+                          disabled={sending === 'email'}
+                          onClick={() => handleEnviar(cr.id, 'email')}
+                        >
+                          {sending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4 text-blue-600" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Enviar por WhatsApp"
+                          disabled={sending === 'whatsapp'}
+                          onClick={() => handleEnviar(cr.id, 'whatsapp')}
+                        >
+                          {sending === 'whatsapp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 text-green-600" />}
+                        </Button>
+                      </>
+                    )}
                     {!readOnly && cr.status === "pendente" && (
                       <Button
                         variant="ghost"
@@ -735,22 +785,52 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                 logoUrl={logoUrl}
                 igrejaEndereco={igrejaEndereco}
               />
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Status:</span>
                   {getStatusBadge(showPreviewDialog.status)}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownload(showPreviewDialog)}
-                >
-                  <Download className="w-4 h-4 mr-1" />
-                  Download PDF
-                </Button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(showPreviewDialog)}
+                  >
+                    <Download className="w-4 h-4 mr-1" />
+                    PDF
+                  </Button>
+                  {!readOnly && showPreviewDialog.status === "aprovado" && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={sending === 'email'}
+                        onClick={() => handleEnviar(showPreviewDialog.id, 'email')}
+                      >
+                        {sending === 'email' ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                        E-mail
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={sending === 'whatsapp'}
+                        onClick={() => handleEnviar(showPreviewDialog.id, 'whatsapp')}
+                      >
+                        {sending === 'whatsapp' ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <MessageCircle className="w-4 h-4 mr-1" />}
+                        WhatsApp
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
               {!readOnly && (
                 <DialogFooter className="gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowPreviewDialog(null)}
+                  >
+                    Fechar
+                  </Button>
                   <Button
                     variant="destructive"
                     onClick={() => { setDeletingId(showPreviewDialog.id); setShowPreviewDialog(null); }}
@@ -764,6 +844,13 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                       Aprovar
                     </Button>
                   )}
+                </DialogFooter>
+              )}
+              {readOnly && (
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowPreviewDialog(null)}>
+                    Fechar
+                  </Button>
                 </DialogFooter>
               )}
             </div>
