@@ -2,8 +2,9 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
@@ -18,6 +19,7 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 import { CasaRefugioRow } from "@/components/casas-refugio/CasaRefugioRow";
 import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialog";
 import { EncontrosReportDialog } from "@/components/casas-refugio/EncontrosReportDialog";
+import { CrExpressTab } from "@/components/casas-refugio/CrExpressTab";
 import { includesNormalized } from "@/lib/text-utils";
 interface CasaRefugio {
   id: string;
@@ -210,6 +212,23 @@ const CasasRefugioPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
+        <Tabs defaultValue="casas" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="casas" className="gap-1.5">
+              <Home className="w-4 h-4" />
+              Casas Refúgio
+            </TabsTrigger>
+            <TabsTrigger value="cr-express" className="gap-1.5">
+              <Sparkles className="w-4 h-4" />
+              CR Express
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="cr-express">
+            <CrExpressTab />
+          </TabsContent>
+
+          <TabsContent value="casas">
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-card border border-border rounded-lg p-4 text-center">
@@ -320,6 +339,8 @@ const CasasRefugioPage = () => {
             ))}
           </div>
         )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Encontro Dialog */}
