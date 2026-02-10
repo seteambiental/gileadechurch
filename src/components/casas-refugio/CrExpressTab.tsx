@@ -418,12 +418,55 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
 
     try {
       toast.info("Gerando PDF...");
+
+      // Temporarily reduce font size for PDF fitting
+      const originalFontSize = el.style.fontSize;
+      el.style.fontSize = "11px";
+
       const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+
+      // Restore original font size
+      el.style.fontSize = originalFontSize;
+
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const A4_WIDTH = 210;
+      const A4_HEIGHT = 297;
+      const MARGIN = 10;
+      const contentWidth = A4_WIDTH - MARGIN * 2;
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+      if (imgHeight <= A4_HEIGHT - MARGIN * 2) {
+        // Fits in one page
+        pdf.addImage(imgData, "PNG", MARGIN, MARGIN, contentWidth, imgHeight);
+      } else {
+        // Multi-page: slice the canvas
+        const pageContentHeight = A4_HEIGHT - MARGIN * 2;
+        const scaleFactor = contentWidth / canvas.width;
+        const pageCanvasHeight = pageContentHeight / scaleFactor;
+        let yOffset = 0;
+        let pageNum = 0;
+
+        while (yOffset < canvas.height) {
+          if (pageNum > 0) pdf.addPage();
+
+          const sliceHeight = Math.min(pageCanvasHeight, canvas.height - yOffset);
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeight;
+          const ctx = sliceCanvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
+          }
+          const sliceImg = sliceCanvas.toDataURL("image/png");
+          const sliceImgHeight = sliceHeight * scaleFactor;
+          pdf.addImage(sliceImg, "PNG", MARGIN, MARGIN, contentWidth, sliceImgHeight);
+
+          yOffset += pageCanvasHeight;
+          pageNum++;
+        }
+      }
+
       pdf.save(`CR-Express-${cr.numero}.pdf`);
       toast.success("PDF baixado com sucesso!");
     } catch (err) {
