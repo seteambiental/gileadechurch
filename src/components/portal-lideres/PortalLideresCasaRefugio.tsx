@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,7 @@ import { MembrosVinculadosList } from "@/components/casas-refugio/MembrosVincula
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { toast } from "sonner";
+import { CrExpressTab } from "@/components/casas-refugio/CrExpressTab";
 
 interface PortalLideresCasaRefugioProps {
   portalAccess: PortalAccess | null;
@@ -333,6 +335,17 @@ export const PortalLideresCasaRefugio = ({
   }
 
   return (
+    <Tabs defaultValue="casas" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="casas">Casas Refúgio</TabsTrigger>
+        <TabsTrigger value="cr-express">CR Express</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="cr-express">
+        <CrExpressTab />
+      </TabsContent>
+
+      <TabsContent value="casas">
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -728,5 +741,7 @@ export const PortalLideresCasaRefugio = ({
         </div>
       )}
     </div>
+      </TabsContent>
+    </Tabs>
   );
 };
