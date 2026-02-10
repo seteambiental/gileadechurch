@@ -480,24 +480,24 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                       <Eye className="w-4 h-4" />
                     </Button>
                     {!readOnly && cr.status === "pendente" && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600"
-                          onClick={() => handleAprovar(cr.id)}
-                        >
-                          <Check className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
-                          onClick={() => setDeletingId(cr.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-green-600"
+                        onClick={() => handleAprovar(cr.id)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {!readOnly && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive"
+                        onClick={() => setDeletingId(cr.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -690,7 +690,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                   Download PDF
                 </Button>
               </div>
-              {!readOnly && showPreviewDialog.status === "pendente" && (
+              {!readOnly && (
                 <DialogFooter className="gap-2">
                   <Button
                     variant="destructive"
@@ -699,10 +699,12 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                     <Trash2 className="w-4 h-4 mr-1" />
                     Excluir
                   </Button>
-                  <Button onClick={() => handleAprovar(showPreviewDialog.id)}>
-                    <Check className="w-4 h-4 mr-1" />
-                    Aprovar
-                  </Button>
+                  {showPreviewDialog.status === "pendente" && (
+                    <Button onClick={() => handleAprovar(showPreviewDialog.id)}>
+                      <Check className="w-4 h-4 mr-1" />
+                      Aprovar
+                    </Button>
+                  )}
                 </DialogFooter>
               )}
             </div>
