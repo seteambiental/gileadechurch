@@ -36,10 +36,13 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 // Componente do documento formatado como o template
@@ -66,7 +69,7 @@ const CrExpressDocument = ({
   logoUrl?: string;
   igrejaEndereco?: string;
 }) => (
-  <div className="bg-white text-black rounded-lg border shadow-sm overflow-hidden">
+  <div id="cr-express-preview" className="bg-white text-black rounded-lg border shadow-sm overflow-hidden">
     {/* Header com logo */}
     <div className="flex items-center justify-between px-6 pt-6 pb-3 border-b">
       <img
@@ -336,6 +339,26 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
     }
   };
 
+  const handleDownload = async (cr: any) => {
+    const el = document.getElementById("cr-express-preview");
+    if (!el) return;
+
+    try {
+      toast.info("Gerando PDF...");
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`CR-Express-${cr.numero}.pdf`);
+      toast.success("PDF baixado com sucesso!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erro ao gerar PDF");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -578,8 +601,8 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
             <DialogTitle>
               CR Express Nro. {showPreviewDialog?.numero}
             </DialogTitle>
-            <DialogDescription>
-              {showPreviewDialog?.data_culto && format(parseISO(showPreviewDialog.data_culto), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          <DialogDescription>
+              {showPreviewDialog?.data_culto && format(parseISO(showPreviewDialog.data_culto), "dd/MM/yyyy")}
             </DialogDescription>
           </DialogHeader>
           {showPreviewDialog && (
@@ -596,9 +619,19 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                 logoUrl={logoUrl}
                 igrejaEndereco={igrejaEndereco}
               />
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Status:</span>
-                {getStatusBadge(showPreviewDialog.status)}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Status:</span>
+                  {getStatusBadge(showPreviewDialog.status)}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(showPreviewDialog)}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Download PDF
+                </Button>
               </div>
               {!readOnly && showPreviewDialog.status === "pendente" && (
                 <DialogFooter className="gap-2">
