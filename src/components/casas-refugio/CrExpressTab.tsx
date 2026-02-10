@@ -41,7 +41,11 @@ import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-export const CrExpressTab = () => {
+interface CrExpressTabProps {
+  readOnly?: boolean;
+}
+
+export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   const queryClient = useQueryClient();
   const [showGerarDialog, setShowGerarDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState<any>(null);
@@ -63,10 +67,14 @@ export const CrExpressTab = () => {
   const { data: crExpressList = [], isLoading } = useQuery({
     queryKey: ["cr-express-list"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("cr_express")
         .select("*, gerado_por_member:members!cr_express_gerado_por_fkey(full_name), aprovado_por_member:members!cr_express_aprovado_por_fkey(full_name)")
         .order("data_culto", { ascending: false });
+      if (readOnly) {
+        query = query.eq("status", "aprovado");
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -248,10 +256,12 @@ export const CrExpressTab = () => {
             Resumo semanal da palavra do culto para as Casas Refúgio
           </p>
         </div>
-        <Button onClick={() => setShowGerarDialog(true)}>
-          <Sparkles className="w-4 h-4 mr-2" />
-          Gerar CR Express
-        </Button>
+        {!readOnly && (
+          <Button onClick={() => setShowGerarDialog(true)}>
+            <Sparkles className="w-4 h-4 mr-2" />
+            Gerar CR Express
+          </Button>
+        )}
       </div>
 
       {/* List */}
@@ -292,7 +302,7 @@ export const CrExpressTab = () => {
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
-                    {cr.status === "pendente" && (
+                    {!readOnly && cr.status === "pendente" && (
                       <>
                         <Button
                           variant="ghost"
@@ -516,7 +526,7 @@ export const CrExpressTab = () => {
                 <span className="text-xs text-muted-foreground">Status:</span>
                 {getStatusBadge(showPreviewDialog.status)}
               </div>
-              {showPreviewDialog.status === "pendente" && (
+              {!readOnly && showPreviewDialog.status === "pendente" && (
                 <DialogFooter className="gap-2">
                   <Button
                     variant="destructive"

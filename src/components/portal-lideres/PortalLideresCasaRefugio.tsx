@@ -342,7 +342,7 @@ export const PortalLideresCasaRefugio = ({
       </TabsList>
 
       <TabsContent value="cr-express">
-        <CrExpressTab />
+        <CrExpressTab readOnly />
       </TabsContent>
 
       <TabsContent value="casas">
