@@ -40,6 +40,85 @@ import {
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import logoGileade from "@/assets/logo-gileade.jpeg";
+
+// Componente do documento formatado como o template
+const CrExpressDocument = ({
+  numero,
+  tema,
+  pastor,
+  textoBase,
+  introducao,
+  desenvolvimento,
+  conclusao,
+  avisos_importantes,
+  logoUrl,
+  igrejaEndereco,
+}: {
+  numero: string;
+  tema: string;
+  pastor: string;
+  textoBase: string;
+  introducao: string;
+  desenvolvimento: string;
+  conclusao: string;
+  avisos_importantes: string;
+  logoUrl?: string;
+  igrejaEndereco?: string;
+}) => (
+  <div className="bg-white text-black rounded-lg border shadow-sm overflow-hidden">
+    {/* Header com logo */}
+    <div className="flex items-center justify-between px-6 pt-6 pb-3 border-b">
+      <img
+        src={logoUrl || logoGileade}
+        alt="Logo"
+        className="w-16 h-16 rounded-full object-cover"
+      />
+      <h2 className="font-bold text-lg text-center flex-1 px-4">
+        CASA REFÚGIO EXPRESS – NRO. {numero}
+      </h2>
+      <div className="w-16" /> {/* Spacer */}
+    </div>
+
+    {/* Body */}
+    <div className="px-6 py-4 space-y-4 text-sm leading-relaxed">
+      <div className="space-y-1">
+        <p><span className="font-bold">Tema da Ministração:</span> {tema}</p>
+        <p><span className="font-bold">Pastor / Ministrador:</span> {pastor}</p>
+        <p><span className="font-bold">Texto Base:</span> {textoBase}</p>
+      </div>
+
+      <div>
+        <h4 className="font-bold mb-1">Introdução:</h4>
+        <p className="whitespace-pre-wrap">{introducao}</p>
+      </div>
+
+      <div>
+        <h4 className="font-bold mb-1">Desenvolvimento</h4>
+        <p className="whitespace-pre-wrap">{desenvolvimento}</p>
+      </div>
+
+      <div>
+        <h4 className="font-bold mb-1">Conclusão (prática)</h4>
+        <p className="whitespace-pre-wrap">{conclusao}</p>
+      </div>
+
+      <div className="italic text-center text-xs text-gray-500 py-1">
+        Uma nova igreja, a mesma essência!
+      </div>
+
+      <div>
+        <h4 className="font-bold mb-1">Avisos importantes:</h4>
+        <p className="whitespace-pre-wrap">{avisos_importantes}</p>
+      </div>
+    </div>
+
+    {/* Footer */}
+    <div className="px-6 py-3 border-t bg-gray-50 text-center text-xs text-gray-500">
+      {igrejaEndereco || "Ministério Gileade – Rua Araçás, 103 – Uberaba – Curitiba – PR"}
+    </div>
+  </div>
+);
 
 interface CrExpressTabProps {
   readOnly?: boolean;
@@ -63,6 +142,24 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
 
   // Generated content state
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+
+  // Fetch church config for logo and address
+  const { data: igrejaConfig } = useQuery({
+    queryKey: ["igreja-config-cr-express"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("igreja_config")
+        .select("logo_dark_url, nome_fantasia, address, number, neighborhood, city, state")
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const logoUrl = igrejaConfig?.logo_dark_url || logoGileade;
+  const igrejaEndereco = igrejaConfig
+    ? `${igrejaConfig.nome_fantasia} – ${igrejaConfig.address || ""}, ${igrejaConfig.number || ""} – ${igrejaConfig.neighborhood || ""} – ${igrejaConfig.city || ""} – ${igrejaConfig.state || ""}`
+    : undefined;
 
   const { data: crExpressList = [], isLoading } = useQuery({
     queryKey: ["cr-express-list"],
@@ -436,32 +533,18 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-muted/30 rounded-lg p-4 space-y-4">
-                <h3 className="font-bold text-center text-lg">
-                  CASA REFÚGIO EXPRESS – NRO. {generatedContent.numero}
-                </h3>
-                <div className="space-y-1 text-sm">
-                  <p><strong>Tema da Ministração:</strong> {tema}</p>
-                  <p><strong>Pastor / Ministrador:</strong> {pastor}</p>
-                  <p><strong>Texto Base:</strong> {textoBase}</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm mb-1">Introdução:</h4>
-                  <p className="text-sm whitespace-pre-wrap">{generatedContent.introducao}</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm mb-1">Desenvolvimento:</h4>
-                  <p className="text-sm whitespace-pre-wrap">{generatedContent.desenvolvimento}</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm mb-1">Conclusão (prática):</h4>
-                  <p className="text-sm whitespace-pre-wrap">{generatedContent.conclusao}</p>
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm mb-1">Avisos Importantes:</h4>
-                  <p className="text-sm whitespace-pre-wrap">{generatedContent.avisos_importantes}</p>
-                </div>
-              </div>
+              <CrExpressDocument
+                numero={generatedContent.numero}
+                tema={tema}
+                pastor={pastor}
+                textoBase={textoBase}
+                introducao={generatedContent.introducao}
+                desenvolvimento={generatedContent.desenvolvimento}
+                conclusao={generatedContent.conclusao}
+                avisos_importantes={generatedContent.avisos_importantes}
+                logoUrl={logoUrl}
+                igrejaEndereco={igrejaEndereco}
+              />
 
               <DialogFooter className="gap-2">
                 <Button variant="outline" onClick={() => setGeneratedContent(null)}>
@@ -501,27 +584,18 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
           </DialogHeader>
           {showPreviewDialog && (
             <div className="space-y-4">
-              <div className="space-y-1 text-sm">
-                <p><strong>Tema:</strong> {showPreviewDialog.tema}</p>
-                <p><strong>Pastor/Ministrador:</strong> {showPreviewDialog.pastor_ministrador}</p>
-                <p><strong>Texto Base:</strong> {showPreviewDialog.texto_base}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm mb-1">Introdução:</h4>
-                <p className="text-sm whitespace-pre-wrap">{showPreviewDialog.introducao}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm mb-1">Desenvolvimento:</h4>
-                <p className="text-sm whitespace-pre-wrap">{showPreviewDialog.desenvolvimento}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm mb-1">Conclusão (prática):</h4>
-                <p className="text-sm whitespace-pre-wrap">{showPreviewDialog.conclusao}</p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm mb-1">Avisos Importantes:</h4>
-                <p className="text-sm whitespace-pre-wrap">{showPreviewDialog.avisos_importantes}</p>
-              </div>
+              <CrExpressDocument
+                numero={showPreviewDialog.numero}
+                tema={showPreviewDialog.tema}
+                pastor={showPreviewDialog.pastor_ministrador}
+                textoBase={showPreviewDialog.texto_base}
+                introducao={showPreviewDialog.introducao || ""}
+                desenvolvimento={showPreviewDialog.desenvolvimento || ""}
+                conclusao={showPreviewDialog.conclusao || ""}
+                avisos_importantes={showPreviewDialog.avisos_importantes || ""}
+                logoUrl={logoUrl}
+                igrejaEndereco={igrejaEndereco}
+              />
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Status:</span>
                 {getStatusBadge(showPreviewDialog.status)}
