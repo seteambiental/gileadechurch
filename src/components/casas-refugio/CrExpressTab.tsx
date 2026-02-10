@@ -115,23 +115,57 @@ const CrExpressDocument = ({
         {typeof avisos_importantes === "string" ? (
           <p className="whitespace-pre-wrap">{avisos_importantes}</p>
         ) : avisos_importantes && typeof avisos_importantes === "object" ? (
-          <div className="space-y-2 text-sm">
-            {(avisos_importantes as any).programacao_igreja && (
+          <div className="space-y-3 text-sm">
+            {Array.isArray((avisos_importantes as any).programacao_igreja) && (avisos_importantes as any).programacao_igreja.length > 0 && (
               <div>
-                <p className="font-semibold">Programação da Igreja:</p>
-                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).programacao_igreja)}</p>
+                <p className="font-semibold mb-1">Programação da Igreja:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {(avisos_importantes as any).programacao_igreja.map((item: any, i: number) => (
+                    <li key={i}>
+                      {item.evento}
+                      {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
+                      {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-            {(avisos_importantes as any).proximos_eventos && (
+            {Array.isArray((avisos_importantes as any).proximos_eventos_agenda) && (avisos_importantes as any).proximos_eventos_agenda.length > 0 && (
               <div>
-                <p className="font-semibold">Próximos Eventos:</p>
-                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).proximos_eventos)}</p>
+                <p className="font-semibold mb-1">Próximos Eventos:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {(avisos_importantes as any).proximos_eventos_agenda.map((item: any, i: number) => (
+                    <li key={i}>
+                      {item.evento}
+                      {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
+                      {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
+                      {item.local ? ` (${item.local})` : ""}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
-            {(avisos_importantes as any).lembretes_fixos && (
+            {/* Fallback para proximos_eventos (sem _agenda) */}
+            {!Array.isArray((avisos_importantes as any).proximos_eventos_agenda) && Array.isArray((avisos_importantes as any).proximos_eventos) && (avisos_importantes as any).proximos_eventos.length > 0 && (
               <div>
-                <p className="font-semibold">Lembretes:</p>
-                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).lembretes_fixos)}</p>
+                <p className="font-semibold mb-1">Próximos Eventos:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {(avisos_importantes as any).proximos_eventos.map((item: any, i: number) => (
+                    <li key={i}>
+                      {typeof item === "string" ? item : `${item.evento || ""}${item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}${item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}${item.local ? ` (${item.local})` : ""}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {Array.isArray((avisos_importantes as any).lembretes_fixos) && (avisos_importantes as any).lembretes_fixos.length > 0 && (
+              <div>
+                <p className="font-semibold mb-1">Lembretes:</p>
+                <ul className="list-disc list-inside space-y-0.5">
+                  {(avisos_importantes as any).lembretes_fixos.map((item: string, i: number) => (
+                    <li key={i}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
