@@ -427,12 +427,12 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
       const originalFontSize = el.style.fontSize;
       el.style.fontSize = "11px";
 
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+      const canvas = await html2canvas(el, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff" });
 
       // Restore original font size
       el.style.fontSize = originalFontSize;
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.75);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const A4_WIDTH = 210;
       const A4_HEIGHT = 297;
@@ -442,7 +442,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
 
       if (imgHeight <= A4_HEIGHT - MARGIN * 2) {
         // Fits in one page
-        pdf.addImage(imgData, "PNG", MARGIN, MARGIN, contentWidth, imgHeight);
+        pdf.addImage(imgData, "JPEG", MARGIN, MARGIN, contentWidth, imgHeight);
       } else {
         // Multi-page: slice the canvas
         const pageContentHeight = A4_HEIGHT - MARGIN * 2;
@@ -462,9 +462,9 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
           if (ctx) {
             ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
           }
-          const sliceImg = sliceCanvas.toDataURL("image/png");
+          const sliceImg = sliceCanvas.toDataURL("image/jpeg", 0.75);
           const sliceImgHeight = sliceHeight * scaleFactor;
-          pdf.addImage(sliceImg, "PNG", MARGIN, MARGIN, contentWidth, sliceImgHeight);
+          pdf.addImage(sliceImg, "JPEG", MARGIN, MARGIN, contentWidth, sliceImgHeight);
 
           yOffset += pageCanvasHeight;
           pageNum++;
