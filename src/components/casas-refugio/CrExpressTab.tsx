@@ -110,67 +110,83 @@ const CrExpressDocument = ({
         Uma nova igreja, a mesma essência!
       </div>
 
-      <div>
-        <h4 className="font-bold mb-1">Avisos importantes:</h4>
-        {typeof avisos_importantes === "string" ? (
-          <p className="whitespace-pre-wrap">{avisos_importantes}</p>
-        ) : avisos_importantes && typeof avisos_importantes === "object" ? (
-          <div className="space-y-3 text-sm">
-            {Array.isArray((avisos_importantes as any).programacao_igreja) && (avisos_importantes as any).programacao_igreja.length > 0 && (
-              <div>
-                <p className="font-semibold mb-1">Programação da Igreja:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {(avisos_importantes as any).programacao_igreja.map((item: any, i: number) => (
-                    <li key={i}>
-                      {item.evento}
-                      {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
-                      {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
-                    </li>
-                  ))}
-                </ul>
+      {(() => {
+        // Normalize: parse JSON string into object if needed
+        let avisosData: any = avisos_importantes;
+        if (typeof avisosData === "string") {
+          try {
+            const parsed = JSON.parse(avisosData);
+            if (typeof parsed === "object" && parsed !== null) {
+              avisosData = parsed;
+            }
+          } catch {
+            // Not JSON, keep as string
+          }
+        }
+
+        return (
+          <div>
+            <h4 className="font-bold mb-1">Avisos importantes:</h4>
+            {typeof avisosData === "string" ? (
+              <p className="whitespace-pre-wrap">{avisosData}</p>
+            ) : avisosData && typeof avisosData === "object" ? (
+              <div className="space-y-3 text-sm">
+                {Array.isArray(avisosData.programacao_igreja) && avisosData.programacao_igreja.length > 0 && (
+                  <div>
+                    <p className="font-semibold mb-1">Programação da Igreja:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {avisosData.programacao_igreja.map((item: any, i: number) => (
+                        <li key={i}>
+                          {item.evento}
+                          {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
+                          {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(avisosData.proximos_eventos_agenda) && avisosData.proximos_eventos_agenda.length > 0 && (
+                  <div>
+                    <p className="font-semibold mb-1">Próximos Eventos:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {avisosData.proximos_eventos_agenda.map((item: any, i: number) => (
+                        <li key={i}>
+                          {item.evento}
+                          {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
+                          {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
+                          {item.local ? ` (${item.local})` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {!Array.isArray(avisosData.proximos_eventos_agenda) && Array.isArray(avisosData.proximos_eventos) && avisosData.proximos_eventos.length > 0 && (
+                  <div>
+                    <p className="font-semibold mb-1">Próximos Eventos:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {avisosData.proximos_eventos.map((item: any, i: number) => (
+                        <li key={i}>
+                          {typeof item === "string" ? item : `${item.evento || ""}${item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}${item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}${item.local ? ` (${item.local})` : ""}`}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {Array.isArray(avisosData.lembretes_fixos) && avisosData.lembretes_fixos.length > 0 && (
+                  <div>
+                    <p className="font-semibold mb-1">Lembretes:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {avisosData.lembretes_fixos.map((item: string, i: number) => (
+                        <li key={i}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            )}
-            {Array.isArray((avisos_importantes as any).proximos_eventos_agenda) && (avisos_importantes as any).proximos_eventos_agenda.length > 0 && (
-              <div>
-                <p className="font-semibold mb-1">Próximos Eventos:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {(avisos_importantes as any).proximos_eventos_agenda.map((item: any, i: number) => (
-                    <li key={i}>
-                      {item.evento}
-                      {item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}
-                      {item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}
-                      {item.local ? ` (${item.local})` : ""}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {/* Fallback para proximos_eventos (sem _agenda) */}
-            {!Array.isArray((avisos_importantes as any).proximos_eventos_agenda) && Array.isArray((avisos_importantes as any).proximos_eventos) && (avisos_importantes as any).proximos_eventos.length > 0 && (
-              <div>
-                <p className="font-semibold mb-1">Próximos Eventos:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {(avisos_importantes as any).proximos_eventos.map((item: any, i: number) => (
-                    <li key={i}>
-                      {typeof item === "string" ? item : `${item.evento || ""}${item.data ? ` – ${item.data.split("-").reverse().join("/")}` : ""}${item.hora ? ` às ${item.hora.substring(0, 5)}` : ""}${item.local ? ` (${item.local})` : ""}`}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {Array.isArray((avisos_importantes as any).lembretes_fixos) && (avisos_importantes as any).lembretes_fixos.length > 0 && (
-              <div>
-                <p className="font-semibold mb-1">Lembretes:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {(avisos_importantes as any).lembretes_fixos.map((item: string, i: number) => (
-                    <li key={i}>{typeof item === "string" ? item : JSON.stringify(item)}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            ) : null}
           </div>
-        ) : null}
-      </div>
+        );
+      })()}
     </div>
 
     {/* Footer */}
