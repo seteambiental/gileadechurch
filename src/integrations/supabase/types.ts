@@ -1042,6 +1042,95 @@ export type Database = {
           },
         ]
       }
+      cr_express: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          arquivo_url: string | null
+          avisos_importantes: string | null
+          conclusao: string | null
+          created_at: string
+          data_culto: string
+          desenvolvimento: string | null
+          gerado_por: string | null
+          id: string
+          introducao: string | null
+          numero: string
+          pastor_ministrador: string
+          status: string
+          tema: string
+          texto_base: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_url?: string | null
+          avisos_importantes?: string | null
+          conclusao?: string | null
+          created_at?: string
+          data_culto: string
+          desenvolvimento?: string | null
+          gerado_por?: string | null
+          id?: string
+          introducao?: string | null
+          numero: string
+          pastor_ministrador: string
+          status?: string
+          tema: string
+          texto_base: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_url?: string | null
+          avisos_importantes?: string | null
+          conclusao?: string | null
+          created_at?: string
+          data_culto?: string
+          desenvolvimento?: string | null
+          gerado_por?: string | null
+          id?: string
+          introducao?: string | null
+          numero?: string
+          pastor_ministrador?: string
+          status?: string
+          tema?: string
+          texto_base?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cr_express_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_express_aprovado_por_fkey"
+            columns: ["aprovado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_express_gerado_por_fkey"
+            columns: ["gerado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cr_express_gerado_por_fkey"
+            columns: ["gerado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       danca_equipe_membros: {
         Row: {
           ativo: boolean

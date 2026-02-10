@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.notificar-cadastro-alteracao]
 verify_jwt = false
+
+[functions.gerar-cr-express]
+verify_jwt = false
