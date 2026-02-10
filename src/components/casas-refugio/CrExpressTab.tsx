@@ -65,7 +65,7 @@ const CrExpressDocument = ({
   introducao: string;
   desenvolvimento: string;
   conclusao: string;
-  avisos_importantes: string;
+  avisos_importantes: string | Record<string, any>;
   logoUrl?: string;
   igrejaEndereco?: string;
 }) => (
@@ -112,7 +112,30 @@ const CrExpressDocument = ({
 
       <div>
         <h4 className="font-bold mb-1">Avisos importantes:</h4>
-        <p className="whitespace-pre-wrap">{avisos_importantes}</p>
+        {typeof avisos_importantes === "string" ? (
+          <p className="whitespace-pre-wrap">{avisos_importantes}</p>
+        ) : avisos_importantes && typeof avisos_importantes === "object" ? (
+          <div className="space-y-2 text-sm">
+            {(avisos_importantes as any).programacao_igreja && (
+              <div>
+                <p className="font-semibold">Programação da Igreja:</p>
+                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).programacao_igreja)}</p>
+              </div>
+            )}
+            {(avisos_importantes as any).proximos_eventos && (
+              <div>
+                <p className="font-semibold">Próximos Eventos:</p>
+                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).proximos_eventos)}</p>
+              </div>
+            )}
+            {(avisos_importantes as any).lembretes_fixos && (
+              <div>
+                <p className="font-semibold">Lembretes:</p>
+                <p className="whitespace-pre-wrap">{String((avisos_importantes as any).lembretes_fixos)}</p>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
 
