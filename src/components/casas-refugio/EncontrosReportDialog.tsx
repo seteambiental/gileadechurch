@@ -689,7 +689,7 @@ export const EncontrosReportDialog = ({
           </div>
         ) : (
           <>
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-lg overflow-x-auto text-sm">
               <Table>
                 <TableHeader>
                   <TableRow>

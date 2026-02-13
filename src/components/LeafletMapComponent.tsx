@@ -2,6 +2,7 @@ import { useEffect, memo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { Navigation } from "lucide-react";
 
 // Fix for default marker icons in Leaflet with bundlers
 // This needs to be done before any markers are created
@@ -35,13 +36,22 @@ interface LeafletMapComponentProps {
   onSelectCasa: (id: string) => void;
 }
 
-// Component to handle map center changes
-const MapCenterHandler = ({ center }: { center: [number, number] }) => {
+// Component to handle map bounds fitting
+const MapBoundsHandler = ({ casas, center }: { casas: Casa[]; center: [number, number] }) => {
   const map = useMap();
   
   useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+    if (casas.length > 1) {
+      const bounds = L.latLngBounds(
+        casas.map(c => [c.latitude!, c.longitude!] as [number, number])
+      );
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    } else if (casas.length === 1) {
+      map.setView([casas[0].latitude!, casas[0].longitude!], 15);
+    } else {
+      map.setView(center, 12);
+    }
+  }, [casas, center, map]);
   
   return null;
 };
@@ -62,7 +72,7 @@ const LeafletMapComponent = memo(function LeafletMapComponent({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapCenterHandler center={center} />
+      <MapBoundsHandler casas={casas} center={center} />
       {casas.map((casa) => (
         <Marker
           key={casa.id}
@@ -89,6 +99,14 @@ const LeafletMapComponent = memo(function LeafletMapComponent({
                   {casa.address}, {casa.numero}
                 </p>
               )}
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${casa.latitude},${casa.longitude}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-1"
+              >
+                <span>📍</span> Traçar rota
+              </a>
             </div>
           </Popup>
         </Marker>

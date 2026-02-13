@@ -13,7 +13,7 @@ import heroImage from "@/assets/hero-grapes.jpg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
 import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Share2, CalendarDays } from "lucide-react";
+import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
@@ -354,22 +354,24 @@ const Index = () => {
           </div>
         )}
 
-        {/* Indicadores do Carrossel (bolinhas) - só quando há imagens no carrossel */}
+        {/* Setas de navegação do Carrossel */}
         {totalSlides > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
-            {Array.from({ length: totalSlides }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentCarouselIndex(index)}
-                className={`w-4 h-4 rounded-full transition-all duration-300 shadow-md ${
-                  index === currentCarouselIndex
-                    ? "bg-secondary scale-125"
-                    : "bg-white/70 hover:bg-white"
-                }`}
-                aria-label={`Ir para slide ${index + 1}`}
-              />
-            ))}
-          </div>
+          <>
+            <button
+              onClick={() => setCurrentCarouselIndex((prev) => prev === 0 ? totalSlides - 1 : prev - 1)}
+              className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-all backdrop-blur-sm"
+              aria-label="Slide anterior"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={() => setCurrentCarouselIndex((prev) => prev === totalSlides - 1 ? 0 : prev + 1)}
+              className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center transition-all backdrop-blur-sm"
+              aria-label="Próximo slide"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
         )}
 
         {/* Scroll Indicator - só quando não há carrossel */}
@@ -662,12 +664,13 @@ const Index = () => {
               {/* @ts-ignore */}
               {igrejaConfig?.latitude && igrejaConfig?.longitude && (
                 <a
-                  className="mt-3 inline-block text-sm text-secondary hover:underline"
-                  href={`https://www.openstreetmap.org/?mlat=${igrejaConfig.latitude}&mlon=${igrejaConfig.longitude}#map=17/${igrejaConfig.latitude}/${igrejaConfig.longitude}`}
+                  className="mt-3 inline-flex items-center gap-2 text-sm text-secondary hover:underline"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${igrejaConfig.latitude},${igrejaConfig.longitude}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Abrir no mapa
+                  <Navigation className="w-4 h-4" />
+                  Traçar rota no Google Maps
                 </a>
               )}
             </div>
