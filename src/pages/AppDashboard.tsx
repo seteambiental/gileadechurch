@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import rumoImage from "@/assets/rumo-aos-1000.png";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
 import {
@@ -97,6 +98,18 @@ const AppDashboard = () => {
     },
   });
 
+  // Contador de membros cadastrados
+  const { data: totalMembros } = useQuery({
+    queryKey: ["total-membros-counter"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("members")
+        .select("id", { count: "exact", head: true });
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
   useEffect(() => {
@@ -170,6 +183,32 @@ const AppDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Contador Rumo aos 1000 */}
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent border border-secondary/20">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="font-heading font-bold text-lg text-foreground">Rumo aos 1.000 Cadastros!</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {totalMembros ?? 0} de 1.000 membros cadastrados
+              </p>
+              <div className="mt-3 w-full bg-muted rounded-full h-4 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-secondary to-secondary/70 rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                  style={{ width: `${Math.min(((totalMembros ?? 0) / 1000) * 100, 100)}%` }}
+                >
+                  {(totalMembros ?? 0) >= 50 && (
+                    <span className="text-[10px] font-bold text-secondary-foreground">
+                      {((totalMembros ?? 0) / 10).toFixed(0)}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="text-center flex-shrink-0">
+              <span className="text-4xl font-heading font-bold text-secondary">{totalMembros ?? 0}</span>
+            </div>
+          </div>
+        </div>
         {/* Outros Módulos */}
         <SectionTitle
           title="Gestão"
