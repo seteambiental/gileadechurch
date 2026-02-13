@@ -150,6 +150,12 @@ const AgendaPage = () => {
     },
   });
 
+  // Tipos que são compromissos (não devem aparecer como cards de eventos)
+  const TIPOS_COMPROMISSO = [
+    "culto", "ceia", "conexao_lider", "quarta_proposito",
+    "quarta_proposito_prestacao", "cursos", "aulas", "apresentacao_criancas",
+  ];
+
   // Query para eventos únicos (eventos) - ordenados por data crescente
   const { data: eventosUnicos = [], isLoading: loadingUnicos } = useQuery({
     queryKey: ["agenda-eventos"],
@@ -163,6 +169,11 @@ const AgendaPage = () => {
       return data as Evento[];
     },
   });
+
+  // Filtrar: apenas eventos reais (não compromissos) para exibir como cards
+  const eventosParaCards = eventosUnicos.filter(
+    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento)
+  );
 
   // Agrupar eventos recorrentes por dia da semana
   const eventosAgrupados = eventosRecorrentes.reduce((acc, evento) => {
@@ -263,7 +274,7 @@ const AgendaPage = () => {
               <div className="flex justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
-            ) : eventosUnicos.length === 0 ? (
+            ) : eventosParaCards.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <PartyPopper className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -283,7 +294,7 @@ const AgendaPage = () => {
               </Card>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {eventosUnicos.map((evento) => {
+                {eventosParaCards.map((evento) => {
                   const dataEvento = parseISO(evento.data_evento);
                   const isPast = dataEvento < new Date();
                   
