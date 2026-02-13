@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, Package, DollarSign, Calendar, Camera, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
 import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
@@ -127,6 +127,7 @@ export const EncontroFormDialog = ({
   const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch leaders linked to this casa
   const { data: lideres = [] } = useQuery({
@@ -587,6 +588,13 @@ export const EncontroFormDialog = ({
                 onChange={handleFileChange}
                 className="hidden"
               />
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
 
               {photoPreview ? (
                 <div className="relative">
@@ -615,17 +623,30 @@ export const EncontroFormDialog = ({
                   </Button>
                 </div>
               ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full h-24 border-dashed"
-                  onClick={handleTakePhoto}
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Camera className="w-6 h-6 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Tirar Foto (reconhecimento automático)</span>
-                  </div>
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-24 border-dashed"
+                    onClick={handleTakePhoto}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Camera className="w-6 h-6 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Tirar Foto</span>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 h-24 border-dashed"
+                    onClick={() => uploadInputRef.current?.click()}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <Upload className="w-6 h-6 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Upload</span>
+                    </div>
+                  </Button>
+                </div>
               )}
             </div>
 
