@@ -71,12 +71,13 @@ const ministries = [
 ];
 
 // Outros módulos (ícones pretos) - serão filtrados por permissão
+// moduleKey é usado para verificar permissões do pastor auxiliar
 const allOtherModules = [
-  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true },
-  { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true },
-  { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false },
-  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", adminOnly: true },
-  { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true },
+  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true, moduleKey: "cadastros" },
+  { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true, moduleKey: "homepage" },
+  { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false, moduleKey: "agenda" },
+  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", adminOnly: true, moduleKey: "financeiro" },
+  { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
 ];
 
 const AppDashboard = () => {
@@ -84,7 +85,7 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
   const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
-  const { isAdmin, hasLeaderAccess } = useUserAccess(user?.id);
+  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -220,7 +221,13 @@ const AppDashboard = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {allOtherModules
-            .filter((module) => !module.adminOnly || isAdmin || isBypassed)
+            .filter((module) => {
+              if (!module.adminOnly) return true;
+              if (isBypassed) return true;
+              if (isAdmin && !isPastorAuxiliar) return true; // admin/pastor_geral vê tudo
+              if (isPastorAuxiliar) return pastorAuxiliarModules.includes(module.moduleKey);
+              return false;
+            })
             .map((module, index) => (
             <MinistryCard
               key={module.title}
