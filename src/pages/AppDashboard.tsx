@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import AniversariantesDialog from "@/components/AniversariantesDialog";
+import { useUserAccess } from "@/hooks/useUserAccess";
 
 // Ministérios (ícones vermelhos) - ordenados alfabeticamente
 const ministries = [
@@ -69,13 +70,13 @@ const ministries = [
   { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
 ];
 
-// Outros módulos (ícones pretos)
-const otherModules = [
-  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros" },
-  { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage" },
-  { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda" },
-  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira" },
-  { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios" },
+// Outros módulos (ícones pretos) - serão filtrados por permissão
+const allOtherModules = [
+  { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true },
+  { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true },
+  { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false },
+  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", adminOnly: true },
+  { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true },
 ];
 
 const AppDashboard = () => {
@@ -83,6 +84,7 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
   const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
+  const { isAdmin, hasLeaderAccess } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -217,7 +219,9 @@ const AppDashboard = () => {
         />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {otherModules.map((module, index) => (
+          {allOtherModules
+            .filter((module) => !module.adminOnly || isAdmin || isBypassed)
+            .map((module, index) => (
             <MinistryCard
               key={module.title}
               icon={module.icon}
@@ -230,8 +234,28 @@ const AppDashboard = () => {
           ))}
         </div>
 
-        {/* Ações Rápidas */}
+        {/* Links rápidos de portais */}
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
+          {hasLeaderAccess && (
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/lideres")}
+              className="gap-2"
+            >
+              <Shield className="w-4 h-4" />
+              Portal de Líderes
+            </Button>
+          )}
+          {user && (
+            <Button
+              variant="outline"
+              onClick={() => navigate("/portal")}
+              className="gap-2"
+            >
+              <Users className="w-4 h-4" />
+              Portal do Membro
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => setAniversariantesOpen(true)}
