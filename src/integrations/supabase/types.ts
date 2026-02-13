@@ -3929,6 +3929,33 @@ export type Database = {
           },
         ]
       }
+      pastor_auxiliar_permissoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          modulo: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modulo: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          modulo?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pedidos_oracao: {
         Row: {
           anonimo: boolean
@@ -4336,6 +4363,10 @@ export type Database = {
       is_ministry_leader: { Args: { ministry_uuid: string }; Returns: boolean }
       is_ministry_member: { Args: { ministry_uuid: string }; Returns: boolean }
       is_supervisor_casa_refugio: { Args: never; Returns: boolean }
+      pastor_auxiliar_has_permission: {
+        Args: { modulo_check: string; pa_user_id: string }
+        Returns: boolean
+      }
       to_title_case_pt: { Args: { text_input: string }; Returns: string }
     }
     Enums: {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound } from "lucide-react";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -15,6 +15,7 @@ import IgrejaTab from "@/components/cadastros/IgrejaTab";
 import AprovacaoUsuariosTab from "@/components/cadastros/AprovacaoUsuariosTab";
 import SolicitacoesMembrosTab from "@/components/cadastros/SolicitacoesMembrosTab";
 import VisitantesTab from "@/components/cadastros/VisitantesTab";
+import PastorAuxiliarPermissoesTab from "@/components/cadastros/PastorAuxiliarPermissoesTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -118,7 +119,7 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-8">
+          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-9">
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
@@ -175,6 +176,15 @@ const Cadastros = () => {
               <UserCheck className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Aprovações</span>
             </TabsTrigger>
+            {isMaster && (
+              <TabsTrigger 
+                value="permissoes" 
+                className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              >
+                <Shield className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Permissões</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="membros">
@@ -208,6 +218,12 @@ const Cadastros = () => {
           <TabsContent value="aprovacoes">
             <AprovacaoUsuariosTab />
           </TabsContent>
+
+          {isMaster && (
+            <TabsContent value="permissoes">
+              <PastorAuxiliarPermissoesTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>

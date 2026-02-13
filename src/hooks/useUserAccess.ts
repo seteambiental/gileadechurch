@@ -30,9 +30,11 @@ const LEADER_ROLES = [
 export interface UserAccess {
   isAdmin: boolean;
   isLeader: boolean;
+  isPastorAuxiliar: boolean;
   roles: string[];
   functions: string[];
   hasLeaderAccess: boolean;
+  pastorAuxiliarModules: string[];
   loading: boolean;
 }
 
@@ -44,9 +46,11 @@ export const useUserAccess = (userId: string | undefined) => {
         return {
           isAdmin: false,
           isLeader: false,
+          isPastorAuxiliar: false,
           roles: [],
           functions: [],
           hasLeaderAccess: false,
+          pastorAuxiliarModules: [],
         };
 
       // Verificar se é admin na tabela user_roles
@@ -56,7 +60,8 @@ export const useUserAccess = (userId: string | undefined) => {
         .eq("user_id", userId);
 
       const roles = roleData?.map((r) => r.role) || [];
-      const isAdmin = roles.some((r) => ["admin", "pastor_geral", "pastor_auxiliar"].includes(r));
+      const isAdmin = roles.some((r) => ["admin", "pastor_geral"].includes(r));
+      const isPastorAuxiliar = roles.includes("pastor_auxiliar");
       const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
       // Verificar se tem função de liderança na member_functions
@@ -76,13 +81,26 @@ export const useUserAccess = (userId: string | undefined) => {
       const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
       const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
+      // Buscar módulos autorizados do pastor auxiliar
+      let pastorAuxiliarModules: string[] = [];
+      if (isPastorAuxiliar) {
+        const { data: permData } = await supabase
+          .from("pastor_auxiliar_permissoes")
+          .select("modulo")
+          .eq("user_id", userId)
+          .eq("ativo", true);
+        pastorAuxiliarModules = permData?.map((p) => p.modulo) || [];
+      }
+
       return {
-        isAdmin,
+        isAdmin: isAdmin || isPastorAuxiliar, // mantém compatibilidade mas com granularidade
         // isLeader = acesso ao portal de líderes (não confundir com admin)
         isLeader: hasLeaderAccess,
+        isPastorAuxiliar,
         roles,
         functions,
         hasLeaderAccess,
+        pastorAuxiliarModules,
       };
     },
     enabled: !!userId,
@@ -92,9 +110,11 @@ export const useUserAccess = (userId: string | undefined) => {
   return {
     isAdmin: data?.isAdmin ?? false,
     isLeader: data?.isLeader ?? false,
+    isPastorAuxiliar: data?.isPastorAuxiliar ?? false,
     roles: data?.roles ?? [],
     functions: data?.functions ?? [],
     hasLeaderAccess: data?.hasLeaderAccess ?? false,
+    pastorAuxiliarModules: data?.pastorAuxiliarModules ?? [],
     loading: isLoading,
   };
 };
@@ -108,7 +128,8 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
     .eq("user_id", userId);
 
   const roles = roleData?.map((r) => r.role) || [];
-  const isAdmin = roles.some((r) => ["admin", "pastor_geral", "pastor_auxiliar"].includes(r));
+  const isAdmin = roles.some((r) => ["admin", "pastor_geral"].includes(r));
+  const isPastorAuxiliar = roles.includes("pastor_auxiliar");
   const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
   // Verificar se tem função de liderança na member_functions
@@ -128,11 +149,23 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
   const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
   const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
+  let pastorAuxiliarModules: string[] = [];
+  if (isPastorAuxiliar) {
+    const { data: permData } = await supabase
+      .from("pastor_auxiliar_permissoes")
+      .select("modulo")
+      .eq("user_id", userId)
+      .eq("ativo", true);
+    pastorAuxiliarModules = permData?.map((p) => p.modulo) || [];
+  }
+
   return {
-    isAdmin,
+    isAdmin: isAdmin || isPastorAuxiliar,
     isLeader: hasLeaderAccess,
+    isPastorAuxiliar,
     roles,
     functions,
     hasLeaderAccess,
+    pastorAuxiliarModules,
   };
 };
