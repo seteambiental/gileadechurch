@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 import Header from "@/components/Header";
@@ -13,7 +13,10 @@ import heroImage from "@/assets/hero-grapes.jpg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
 import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation } from "lucide-react";
+import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation, Trash2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUserAccess } from "@/hooks/useUserAccess";
+
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Link } from "react-router-dom";
@@ -23,6 +26,9 @@ const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta",
 const Index = () => {
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  const { user } = useAuth();
+  const { isAdmin } = useUserAccess(user?.id);
+  const queryClient = useQueryClient();
 
   // Buscar imagens do carrossel
   const { data: carrosselImages } = useQuery({
@@ -179,6 +185,7 @@ const Index = () => {
     if (!avisosDb || avisosDb.length === 0) {
       return [
         {
+          id: "default",
           title: "Bem-vindo à Gileade",
           description: "Venha nos visitar e conhecer nossa comunidade!",
           type: "info" as const,
@@ -186,6 +193,7 @@ const Index = () => {
       ];
     }
     return avisosDb.map((aviso) => ({
+      id: aviso.id,
       title: aviso.titulo,
       description: aviso.descricao,
       date: aviso.data || undefined,
@@ -194,67 +202,60 @@ const Index = () => {
     }));
   }, [avisosDb]);
 
-  // Formatar programação
+  // Mutation para excluir aviso da homepage
+  const deleteAvisoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("homepage_avisos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
+    },
+  });
+
+  // Formatar programação - apenas Culto de Celebração e Quarta com Propósito (1 de cada)
   const scheduleItems = useMemo(() => {
     if (!eventosRecorrentes || eventosRecorrentes.length === 0) {
       return [
-        { day: "Domingo", time: "09h", event: "Culto da Família" },
-        { day: "Domingo", time: "19h", event: "Culto de Celebração" },
-        { day: "Quarta", time: "19h30", event: "Culto de Ensino" },
+        { day: "Domingo", time: "09:00", event: "Culto de Celebração" },
+        { day: "Quarta", time: "19:30", event: "Quarta com Propósito" },
       ];
     }
 
-    // Separar eventos de ceia (mensais) dos demais
-    const ceiaKeywords = ["ceia", "santa ceia"];
     const celebracaoKeywords = ["celebração", "celebracao"];
-    
-    const eventosCeia = eventosRecorrentes.filter(
-      (e) => e.tipo_recorrencia === "mensal" && ceiaKeywords.some((k) => e.titulo.toLowerCase().includes(k))
+    const quartaKeywords = ["quarta com propósito", "quarta com proposito"];
+
+    const celebracao = eventosRecorrentes.find((e) =>
+      celebracaoKeywords.some((k) => e.titulo.toLowerCase().includes(k))
     );
-    const ceiaByDay: Record<number, typeof eventosCeia[0]> = {};
-    eventosCeia.forEach((c) => {
-      if (c.dia_semana != null) ceiaByDay[c.dia_semana] = c;
-    });
+    const quarta = eventosRecorrentes.find((e) =>
+      quartaKeywords.some((k) => e.titulo.toLowerCase().includes(k))
+    );
 
-    // IDs dos eventos de ceia para excluí-los da lista principal
-    const ceiaIds = new Set(eventosCeia.map((c) => c.id));
+    const items: { day: string; time: string; event: string }[] = [];
 
-    const items = eventosRecorrentes
-      .filter((e) => !ceiaIds.has(e.id))
-      .map((evento) => {
-        let day = diasSemana[evento.dia_semana ?? 0];
-        let title = evento.titulo;
-
-        // Se for evento mensal, adicionar indicação de qual semana
-        if (evento.tipo_recorrencia === "mensal" && evento.semana_mes) {
-          const semanaLabels: Record<number, string> = {
-            1: "1º",
-            2: "2º",
-            3: "3º",
-            4: "4º",
-            5: "Último",
-          };
-          day = `${semanaLabels[evento.semana_mes] || ""} ${day} do mês`;
-        }
-
-        // Se é um culto de celebração e existe ceia no mesmo dia, unificar como "Culto de Ceia"
-        if (
-          evento.tipo_recorrencia === "semanal" &&
-          celebracaoKeywords.some((k) => evento.titulo.toLowerCase().includes(k)) &&
-          evento.dia_semana != null &&
-          ceiaByDay[evento.dia_semana]
-        ) {
-          const ceia = ceiaByDay[evento.dia_semana];
-          const semanaLabel = ceia.semana_mes ? `${ceia.semana_mes}º` : "2º";
-          title = `Culto de Ceia (${semanaLabel} ${diasSemana[evento.dia_semana]})`;
-        }
-
-        return {
-          day,
-          time: evento.hora_inicio ? evento.hora_inicio.slice(0, 5) : "—",
-          event: title,
-        };
+    if (celebracao) {
+      items.push({
+        day: diasSemana[celebracao.dia_semana ?? 0],
+        time: celebracao.hora_inicio ? celebracao.hora_inicio.slice(0, 5) : "—",
+        event: celebracao.titulo,
       });
+    }
+
+    if (quarta) {
+      items.push({
+        day: diasSemana[quarta.dia_semana ?? 0],
+        time: quarta.hora_inicio ? quarta.hora_inicio.slice(0, 5) : "—",
+        event: quarta.titulo,
+      });
+    }
+
+    if (items.length === 0) {
+      return [
+        { day: "Domingo", time: "09:00", event: "Culto de Celebração" },
+        { day: "Quarta", time: "19:30", event: "Quarta com Propósito" },
+      ];
+    }
 
     return items;
   }, [eventosRecorrentes]);
@@ -394,11 +395,21 @@ const Index = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {announcements.map((announcement, index) => (
-              <AnnouncementCard
-                key={`${announcement.title}-${index}`}
-                {...announcement}
-                delay={index * 100}
-              />
+              <div key={`${announcement.title}-${index}`} className="relative">
+                <AnnouncementCard
+                  {...announcement}
+                  delay={index * 100}
+                />
+                {isAdmin && announcement.id !== "default" && (
+                  <button
+                    onClick={() => deleteAvisoMutation.mutate(announcement.id)}
+                    className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors z-10"
+                    title="Excluir aviso"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>

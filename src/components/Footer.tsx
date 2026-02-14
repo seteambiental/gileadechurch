@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Twitter, Globe, MessageCircle } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
-const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
 
 const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
   ({ className, ...props }, ref) => {
@@ -36,7 +36,7 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
       },
     });
 
-    // Buscar horários de culto (eventos recorrentes do tipo culto)
+    // Buscar horários de culto (eventos recorrentes)
     const { data: cultosRecorrentes } = useQuery({
       queryKey: ["cultos-footer"],
       queryFn: async () => {
@@ -45,34 +45,53 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
           .select("id, titulo, hora_inicio, dia_semana, tipo_evento")
           .eq("ativo", true)
           .eq("recorrente", true)
-          .in("tipo_evento", ["culto", "culto_jovens", "culto_teens", "culto_celebracao", "culto_ensino"])
-          .order("dia_semana", { ascending: true })
-          .limit(6);
+          .order("dia_semana", { ascending: true });
         if (error) return [];
         return data;
       },
     });
 
-    // Agrupar cultos por dia
-    const cultosPorDia = React.useMemo(() => {
+    // Filtrar apenas Culto de Celebração e Quarta com Propósito
+    const cultosFiltrados = React.useMemo(() => {
       if (!cultosRecorrentes || cultosRecorrentes.length === 0) {
-        return {
-          Domingo: ["Manhã: 09h", "Noite: 19h"],
-          "Quarta-feira": ["Culto de Ensino: 19h30"],
-          "Sexta-feira": ["Arena Jovem: 20h"],
-        };
+        return [
+          { titulo: "Culto de Celebração", horario: "09:00" },
+          { titulo: "Quarta com Propósito", horario: "19:30" },
+        ];
       }
 
-      const agrupados: Record<string, string[]> = {};
-      cultosRecorrentes.forEach((culto) => {
-        const dia = diasSemana[culto.dia_semana ?? 0];
-        const diaFormatado = dia === "Quarta" ? "Quarta-feira" : dia === "Sexta" ? "Sexta-feira" : dia;
-        if (!agrupados[diaFormatado]) {
-          agrupados[diaFormatado] = [];
-        }
-        agrupados[diaFormatado].push(`${culto.titulo}: ${culto.hora_inicio || "—"}`);
-      });
-      return agrupados;
+      const celebracaoKeywords = ["celebração", "celebracao"];
+      const quartaKeywords = ["quarta com propósito", "quarta com proposito"];
+
+      const celebracao = cultosRecorrentes.find((c) =>
+        celebracaoKeywords.some((k) => c.titulo.toLowerCase().includes(k))
+      );
+      const quarta = cultosRecorrentes.find((c) =>
+        quartaKeywords.some((k) => c.titulo.toLowerCase().includes(k))
+      );
+
+      const items: { titulo: string; horario: string }[] = [];
+      if (celebracao) {
+        items.push({
+          titulo: celebracao.titulo,
+          horario: celebracao.hora_inicio ? celebracao.hora_inicio.slice(0, 5) : "—",
+        });
+      }
+      if (quarta) {
+        items.push({
+          titulo: quarta.titulo,
+          horario: quarta.hora_inicio ? quarta.hora_inicio.slice(0, 5) : "—",
+        });
+      }
+
+      if (items.length === 0) {
+        return [
+          { titulo: "Culto de Celebração", horario: "09:00" },
+          { titulo: "Quarta com Propósito", horario: "19:30" },
+        ];
+      }
+
+      return items;
     }, [cultosRecorrentes]);
 
     const lema = homepageConfig?.lema || "Um lugar de cura e restauração";
@@ -170,12 +189,10 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
             <div className="space-y-4">
               <h4 className="font-heading font-bold text-lg text-secondary">Nossos Cultos</h4>
               <div className="space-y-3 text-sm text-primary-foreground/80">
-                {Object.entries(cultosPorDia).map(([dia, horarios]) => (
-                  <div key={dia}>
-                    <p className="font-medium text-primary-foreground">{dia}</p>
-                    {horarios.map((horario, idx) => (
-                      <p key={idx}>{horario}</p>
-                    ))}
+                {cultosFiltrados.map((culto, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="font-medium text-primary-foreground">{culto.titulo}:</span>
+                    <span>{culto.horario}</span>
                   </div>
                 ))}
               </div>
