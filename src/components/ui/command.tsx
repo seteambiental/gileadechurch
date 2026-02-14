@@ -5,13 +5,23 @@ import { Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { normalizeText } from "@/lib/text-utils";
+
+// Filtro global insensível a acentos para todos os Command components
+const accentInsensitiveFilter = (value: string, search: string) => {
+  const normalizedValue = normalizeText(value);
+  const normalizedSearch = normalizeText(search);
+  if (normalizedValue.includes(normalizedSearch)) return 1;
+  return 0;
+};
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
+>(({ className, filter, ...props }, ref) => (
   <CommandPrimitive
     ref={ref}
+    filter={filter ?? accentInsensitiveFilter}
     className={cn(
       "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
       className,
