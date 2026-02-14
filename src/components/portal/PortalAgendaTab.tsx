@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeText } from "@/lib/text-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,7 +109,7 @@ export const PortalAgendaTab = () => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [publicoFiltro, setPublicoFiltro] = useState<PublicoFiltro>("todos");
-  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("mes");
+  const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("semana");
   const [compartilharEvento, setCompartilharEvento] = useState<{
     id: string;
     titulo: string;
@@ -274,6 +275,32 @@ export const PortalAgendaTab = () => {
       if (!grupos[key]) grupos[key] = [];
       grupos[key].push(evento);
     });
+
+    // Deduplicação por dia
+    for (const key of Object.keys(grupos)) {
+      let eventosNoDia = grupos[key];
+
+      // Se há Culto de Ceia, remover Culto de Celebração do mesmo dia
+      const temCeia = eventosNoDia.some(e => e.tipo_evento === "ceia" || normalizeText(e.titulo).includes("ceia"));
+      if (temCeia) {
+        eventosNoDia = eventosNoDia.filter(e => {
+          if (e.tipo_evento === "culto" && normalizeText(e.titulo).includes("celebracao")) return false;
+          return true;
+        });
+      }
+
+      // Remover duplicatas por título normalizado no mesmo dia
+      const vistos = new Set<string>();
+      eventosNoDia = eventosNoDia.filter(e => {
+        const tituloKey = normalizeText(e.titulo);
+        if (vistos.has(tituloKey)) return false;
+        vistos.add(tituloKey);
+        return true;
+      });
+
+      grupos[key] = eventosNoDia;
+    }
+
     return grupos;
   }, [eventosExpandidos]);
 
