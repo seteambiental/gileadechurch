@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,18 @@ import {
   FileDown,
   XCircle,
   ArrowRightLeft,
+  Filter,
+  X,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/search-input";
+import { includesNormalized } from "@/lib/text-utils";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { format, parseISO, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,6 +86,11 @@ export const PortalLideresCasaRefugio = ({
     dataEncontro: string;
   } | null>(null);
   const ENCONTROS_PER_PAGE = 5;
+
+  // Filtros para listagem de casas (pastores e síndicos)
+  const [condominioFilter, setCondominioFilter] = useState("all");
+  const [supervisorFilter, setSupervisorFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const sindicoCondominios = portalAccess?.sindicoCondominios || [];
   const supervisorCondominios = portalAccess?.supervisorCondominios || [];
@@ -126,6 +142,64 @@ export const PortalLideresCasaRefugio = ({
       return data;
     },
   });
+
+  // Filtros: mostrar para pastores e síndicos
+  const showFilters = isFullAccess || isSindico;
+
+  // Lista de condomínios únicos das casas carregadas
+  const condominios = useMemo(() => {
+    const unique = [...new Set(casas.map((c) => c.condominio).filter(Boolean))];
+    return unique.sort();
+  }, [casas]);
+
+  // Lista de supervisores filtrada pelo condomínio selecionado
+  const supervisoresList = useMemo(() => {
+    const map = new Map<string, string>();
+    const casasFiltradas = condominioFilter === "all" 
+      ? casas 
+      : casas.filter(c => c.condominio === condominioFilter);
+    
+    casasFiltradas.forEach((casa: any) => {
+      if (casa.supervisor?.full_name) {
+        map.set(casa.supervisor.full_name, casa.supervisor.full_name);
+      }
+    });
+    return Array.from(map.values()).sort();
+  }, [casas, condominioFilter]);
+
+  // Reset supervisor filter when condomínio changes
+  useEffect(() => {
+    setSupervisorFilter("all");
+  }, [condominioFilter]);
+
+  // Casas filtradas
+  const filteredCasas = useMemo(() => {
+    return casas.filter((casa: any) => {
+      const matchesSearch =
+        !searchTerm ||
+        includesNormalized(casa.name, searchTerm) ||
+        includesNormalized(casa.condominio || "", searchTerm) ||
+        includesNormalized(casa.supervisor?.full_name || casa.supervisores || "", searchTerm) ||
+        includesNormalized(casa.lider?.full_name || casa.lideres || "", searchTerm);
+
+      const matchesCondominio =
+        condominioFilter === "all" || casa.condominio === condominioFilter;
+
+      const supervisorName = casa.supervisor?.full_name || casa.supervisores || null;
+      const matchesSupervisor =
+        supervisorFilter === "all" || supervisorName === supervisorFilter;
+
+      return matchesSearch && matchesCondominio && matchesSupervisor;
+    });
+  }, [casas, searchTerm, condominioFilter, supervisorFilter]);
+
+  const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all" || searchTerm !== "";
+
+  const clearListFilters = () => {
+    setCondominioFilter("all");
+    setSupervisorFilter("all");
+    setSearchTerm("");
+  };
 
   const { data: encontros = [], isLoading: loadingEncontros } = useQuery({
     queryKey: ["portal-lideres-encontros-casa", selectedCasa],
@@ -450,7 +524,7 @@ export const PortalLideresCasaRefugio = ({
             <div>
               <h2 className="font-heading font-bold text-xl">Casas Refúgio</h2>
               <p className="text-sm text-muted-foreground">
-                {casas.length} casa(s) sob sua responsabilidade
+                {filteredCasas.length} de {casas.length} casa(s) {showFilters ? "" : "sob sua responsabilidade"}
               </p>
             </div>
             {!canEdit && (
@@ -461,9 +535,71 @@ export const PortalLideresCasaRefugio = ({
             )}
           </div>
 
+          {/* Filtros para pastores e síndicos */}
+          {showFilters && !selectedCasa && (
+            <div className="space-y-3">
+              <SearchInput
+                placeholder="Buscar por nome, líder ou supervisor..."
+                value={searchTerm}
+                onChange={setSearchTerm}
+                className="bg-card border-border"
+              />
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Filtros:</span>
+                </div>
+
+                {/* Condomínio filter - only for pastors (full access) */}
+                {isFullAccess && (
+                  <Select value={condominioFilter} onValueChange={setCondominioFilter}>
+                    <SelectTrigger className="w-[160px] bg-card border-border">
+                      <SelectValue placeholder="Condomínio" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos Condomínios</SelectItem>
+                      {condominios.map((cond) => (
+                        <SelectItem key={cond} value={cond!}>
+                          {cond}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                {/* Supervisor filter - for pastors and síndicos */}
+                <Select value={supervisorFilter} onValueChange={setSupervisorFilter}>
+                  <SelectTrigger className="w-[200px] bg-card border-border">
+                    <SelectValue placeholder="Supervisor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Supervisores</SelectItem>
+                    {supervisoresList.map((sup) => (
+                      <SelectItem key={sup} value={sup}>
+                        {sup}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {hasActiveFilters && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearListFilters}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {!selectedCasa ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {casas.map((casa) => {
+              {filteredCasas.map((casa: any) => {
                 const canEditThis = canEditCasa(casa.id);
                 return (
                   <Card
@@ -491,7 +627,7 @@ export const PortalLideresCasaRefugio = ({
                         {canEditThis && <Badge variant="outline">Editar</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {getLideresNome(casa)}
+                        {getLideresNome(casa)} {casa.supervisor?.full_name ? `• Sup: ${casa.supervisor.full_name.split(" ")[0]}` : ""}
                       </p>
                     </CardContent>
                   </Card>
