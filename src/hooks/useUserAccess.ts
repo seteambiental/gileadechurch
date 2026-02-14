@@ -67,19 +67,25 @@ export const useUserAccess = (userId: string | undefined) => {
       const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
       // Verificar se tem função de liderança na member_functions
-      const { data: memberData } = await supabase
+      const { data: memberRows } = await supabase
         .from("members")
         .select("id, member_functions(function_type)")
-        .eq("user_id", userId)
-        .maybeSingle();
+        .eq("user_id", userId);
 
       const functions: string[] = [];
-      if (memberData?.member_functions) {
-        memberData.member_functions.forEach((fn: { function_type: string }) => {
-          functions.push(fn.function_type);
+      if (memberRows && memberRows.length > 0) {
+        memberRows.forEach((member: any) => {
+          if (member.member_functions) {
+            member.member_functions.forEach((fn: { function_type: string }) => {
+              if (!functions.includes(fn.function_type)) {
+                functions.push(fn.function_type);
+              }
+            });
+          }
         });
       }
 
+      const hasMemberProfile = !!memberRows && memberRows.length > 0;
       const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
       const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
@@ -98,7 +104,7 @@ export const useUserAccess = (userId: string | undefined) => {
         isAdmin: isAdmin || isPastorAuxiliar,
         isLeader: hasLeaderAccess,
         isPastorAuxiliar,
-        hasMemberProfile: !!memberData,
+        hasMemberProfile,
         roles,
         functions,
         hasLeaderAccess,
@@ -136,19 +142,25 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
   const hasLeaderRole = roles.some((r) => LEADER_ROLES.includes(r));
 
   // Verificar se tem função de liderança na member_functions
-  const { data: memberData } = await supabase
+  const { data: memberRows } = await supabase
     .from("members")
     .select("id, member_functions(function_type)")
-    .eq("user_id", userId)
-    .maybeSingle();
+    .eq("user_id", userId);
 
   const functions: string[] = [];
-  if (memberData?.member_functions) {
-    memberData.member_functions.forEach((fn: { function_type: string }) => {
-      functions.push(fn.function_type);
+  if (memberRows && memberRows.length > 0) {
+    memberRows.forEach((member: any) => {
+      if (member.member_functions) {
+        member.member_functions.forEach((fn: { function_type: string }) => {
+          if (!functions.includes(fn.function_type)) {
+            functions.push(fn.function_type);
+          }
+        });
+      }
     });
   }
 
+  const hasMemberProfile = !!memberRows && memberRows.length > 0;
   const hasLeaderFunction = functions.some((fn) => LEADER_FUNCTION_TYPES.includes(fn));
   const hasLeaderAccess = hasLeaderRole || hasLeaderFunction;
 
@@ -166,7 +178,7 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
     isAdmin: isAdmin || isPastorAuxiliar,
     isLeader: hasLeaderAccess,
     isPastorAuxiliar,
-    hasMemberProfile: !!memberData,
+    hasMemberProfile,
     roles,
     functions,
     hasLeaderAccess,
