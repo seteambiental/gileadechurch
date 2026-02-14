@@ -57,8 +57,19 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId }: ImpactoIns
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name, whatsapp, email, genero")
+        .select("id, full_name, whatsapp, email, genero, casa_refugio_id")
         .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas-refugio-list"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name");
       if (error) throw error;
       return data;
     },
@@ -233,34 +244,48 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId }: ImpactoIns
                 />
               </>
             ) : (
-              <FormField
-                control={form.control}
-                name="member_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Membro *</FormLabel>
-                    <Select
-                      value={field.value || "none"}
-                      onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o membro" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">Selecione...</SelectItem>
-                        {members?.map((m) => (
-                          <SelectItem key={m.id} value={m.id}>
-                            {m.full_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="member_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Membro *</FormLabel>
+                      <Select
+                        value={field.value || "none"}
+                        onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o membro" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">Selecione...</SelectItem>
+                          {members?.map((m) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {(() => {
+                  const selectedMember = members?.find((m) => m.id === selectedMemberId);
+                  const casaRefugio = selectedMember?.casa_refugio_id
+                    ? casasRefugio.find((c) => c.id === selectedMember.casa_refugio_id)
+                    : null;
+                  return casaRefugio ? (
+                    <div className="p-3 bg-secondary/10 rounded-lg">
+                      <p className="text-xs text-muted-foreground">Casa Refúgio</p>
+                      <p className="text-sm font-medium">{casaRefugio.name}</p>
+                    </div>
+                  ) : null;
+                })()}
+              </>
             )}
 
             <FormField
