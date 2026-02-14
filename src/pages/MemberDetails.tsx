@@ -15,6 +15,7 @@ import {
   Edit2,
   Church,
   MessageCircle,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +64,7 @@ interface Member {
   state: string | null;
   created_at: string;
   updated_at: string;
+  responsavel_id: string | null;
   member_functions?: MemberFunction[];
 }
 
@@ -105,6 +107,21 @@ const MemberDetails = () => {
       return data as Member | null;
     },
     enabled: !!id && (bypass || !!user),
+  });
+
+  // Buscar responsável se existir
+  const { data: responsavel } = useQuery({
+    queryKey: ["member-responsavel", member?.responsavel_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp")
+        .eq("id", member!.responsavel_id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!member?.responsavel_id,
   });
 
 
@@ -338,6 +355,18 @@ const MemberDetails = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Data de Nascimento</p>
                     <p className="text-foreground">{formatDateBR(member.birth_date)}</p>
+                  </div>
+                </div>
+              )}
+              {responsavel && (
+                <div className="flex items-start gap-3">
+                  <Users className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Responsável</p>
+                    <p className="text-foreground font-medium">{responsavel.full_name}</p>
+                    {responsavel.whatsapp && (
+                      <p className="text-sm text-muted-foreground">{formatPhone(responsavel.whatsapp)}</p>
+                    )}
                   </div>
                 </div>
               )}

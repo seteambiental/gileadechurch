@@ -69,7 +69,7 @@ const KidsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero")
+        .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero, responsavel_id")
         .not("birth_date", "is", null);
       
       if (error) throw error;
@@ -166,6 +166,17 @@ const KidsPage = () => {
         const respVinculo = responsaveis?.find(r => r.crianca_member_id === member.id);
         const resp = respVinculo?.responsavel as Responsavel | null;
         
+        // Fallback: usar responsavel_id do cadastro do membro
+        let responsavelNome = resp?.full_name || null;
+        let responsavelWhatsapp = resp?.whatsapp || null;
+        if (!responsavelNome && member.responsavel_id) {
+          const respMember = members?.find(m => m.id === member.responsavel_id);
+          if (respMember) {
+            responsavelNome = respMember.full_name;
+            responsavelWhatsapp = respMember.whatsapp;
+          }
+        }
+        
         resultado[turma.turma].push({
           id: member.id,
           nome: member.full_name,
@@ -174,8 +185,8 @@ const KidsPage = () => {
           whatsapp: member.whatsapp,
           foto: member.photo_url,
           tipo: "membro",
-          responsavelNome: resp?.full_name || null,
-          responsavelWhatsapp: resp?.whatsapp || null,
+          responsavelNome,
+          responsavelWhatsapp,
           kidsNumero: member.kids_numero || null,
         });
       }
