@@ -50,9 +50,11 @@ export function CameraPhotoInput({
       });
       
       setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      });
     } catch (err) {
       console.error("Erro ao acessar câmera:", err);
       setCameraError("Não foi possível acessar a câmera. Verifique as permissões.");
@@ -67,8 +69,37 @@ export function CameraPhotoInput({
   };
 
   const handleOpenCamera = async () => {
-    setIsCameraOpen(true);
-    await startCamera();
+    try {
+      setCameraError(null);
+      
+      // Stop existing stream
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      // CRITICAL: getUserMedia must be called directly in click handler
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+      });
+      
+      setStream(mediaStream);
+      setIsCameraOpen(true);
+      
+      // Assign stream to video after dialog opens
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      });
+    } catch (err) {
+      console.error("Erro ao acessar câmera:", err);
+      setIsCameraOpen(true);
+      setCameraError("Não foi possível acessar a câmera. Verifique as permissões.");
+    }
   };
 
   const handleCloseCamera = () => {
