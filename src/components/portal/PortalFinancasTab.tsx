@@ -7,6 +7,7 @@ import { DollarSign, Copy, Check, QrCode, Loader2, Building2 } from "lucide-reac
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
+import qrcodePixImage from "@/assets/qrcode-pix.png";
 
 export const PortalFinancasTab = () => {
   const { toast } = useToast();
@@ -169,12 +170,11 @@ export const PortalFinancasTab = () => {
 
                 {/* QR Code */}
                 {showQrCode === pix.id && (
-                  <div className="flex justify-center p-4 bg-white rounded-lg">
-                    <QRCodeSVG
-                      value={pix.chave}
-                      size={180}
-                      level="M"
-                      includeMargin
+                  <div className="flex justify-center p-4 bg-background rounded-lg">
+                    <img
+                      src={qrcodePixImage}
+                      alt="QR Code PIX"
+                      className="w-[180px] h-[180px] object-contain"
                     />
                   </div>
                 )}
