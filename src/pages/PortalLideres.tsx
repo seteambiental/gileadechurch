@@ -13,6 +13,7 @@ import {
   HandHeart,
   Building2,
   ClipboardCheck,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +30,7 @@ import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLider
 import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLideresCasaRefugio";
 import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLideresCondominio";
 import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLideresAprovacoes";
+import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 
 // Roles que têm acesso ao portal de líderes
 const LEADER_ROLES: PortalRole[] = [
@@ -224,6 +226,9 @@ const PortalLideres = () => {
     availableTabs.push({ id: "aprovacoes", label: "Aprovações", icon: ClipboardCheck });
   }
 
+  // Finanças - disponível para todos os líderes
+  availableTabs.push({ id: "financas", label: "Finanças", icon: DollarSign });
+
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
   return (
@@ -317,6 +322,10 @@ const PortalLideres = () => {
 
           <TabsContent value="aprovacoes">
             <PortalLideresAprovacoes portalAccess={portalAccess} memberId={memberProfile.id} />
+          </TabsContent>
+
+          <TabsContent value="financas">
+            <PortalFinancasTab />
           </TabsContent>
 
           {memberMinistries.map((ministry) => {
