@@ -15,7 +15,7 @@ const COLLECTION_ID = "gileade-faces";
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   let binary = "";
-  const chunkSize = 0x8000; // 32KB chunks to avoid call stack issues
+  const chunkSize = 0x8000;
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.subarray(i, i + chunkSize);
     binary += String.fromCharCode.apply(null, Array.from(chunk));
@@ -178,7 +178,6 @@ async function ensureCollectionExists() {
     console.log("Collection exists:", COLLECTION_ID);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "";
-    // Only create if collection doesn't exist (ResourceNotFoundException)
     if (errorMessage.includes("ResourceNotFoundException") || errorMessage.includes("does not exist")) {
       console.log("Creating collection:", COLLECTION_ID);
       await callRekognition("CreateCollection", { CollectionId: COLLECTION_ID });
@@ -186,6 +185,20 @@ async function ensureCollectionExists() {
       throw error;
     }
   }
+}
+
+// Crop a face from an image based on bounding box
+function cropFaceFromImage(imageBytes: Uint8Array, width: number, height: number, boundingBox: any): string {
+  // BoundingBox values are ratios (0-1), we need to calculate pixel coordinates
+  const left = Math.max(0, Math.floor(boundingBox.Left * width) - 20);
+  const top = Math.max(0, Math.floor(boundingBox.Top * height) - 20);
+  const faceWidth = Math.min(width - left, Math.ceil(boundingBox.Width * width) + 40);
+  const faceHeight = Math.min(height - top, Math.ceil(boundingBox.Height * height) + 40);
+  
+  // We can't crop in Deno without image libraries, so we'll use the full image
+  // but with SearchFaces instead of SearchFacesByImage
+  // Actually, we'll use a different approach: IndexFaces temporarily then SearchFaces
+  return "";
 }
 
 serve(async (req) => {
@@ -200,10 +213,8 @@ serve(async (req) => {
     
     switch (action) {
       case "index_face": {
-        // Index a face from member photo
         const { imageUrl, memberId, novoConvertidoId } = params;
         
-        // Fetch image and convert to base64
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBytes = arrayBufferToBase64(imageBuffer);
@@ -222,7 +233,6 @@ serve(async (req) => {
         if (result.FaceRecords && result.FaceRecords.length > 0) {
           const faceId = result.FaceRecords[0].Face.FaceId;
           
-          // Save to database
           const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
           const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
           const supabase = createClient(supabaseUrl, supabaseKey);
@@ -247,12 +257,10 @@ serve(async (req) => {
       }
       
       case "analyze_photo": {
-        // Analyze a photo to find faces and match against collection
         const { imageUrl, casaRefugioId, encontroId } = params;
         
         console.log(`Analyzing photo for casa_refugio: ${casaRefugioId}`);
         
-        // Fetch image
         const imageResponse = await fetch(imageUrl);
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBytes = arrayBufferToBase64(imageBuffer);
@@ -260,7 +268,7 @@ serve(async (req) => {
         // First, detect faces to count total and get age estimates
         const detectResult = await callRekognition("DetectFaces", {
           Image: { Bytes: imageBytes },
-          Attributes: ["ALL"] // Get age estimates
+          Attributes: ["ALL"]
         });
         
         const faceDetails = detectResult.FaceDetails || [];
@@ -303,67 +311,142 @@ serve(async (req) => {
         
         console.log(`Found ${faceIndexes?.length || 0} indexed faces in database`);
         
-        // Search for faces in collection - this returns all matches
-        let matchedFaces: any[] = [];
-        try {
-          const searchResult = await callRekognition("SearchFacesByImage", {
-            CollectionId: COLLECTION_ID,
-            Image: { Bytes: imageBytes },
-            MaxFaces: 50,
-            FaceMatchThreshold: 70 // Lowered threshold for better detection
-          });
-          matchedFaces = searchResult.FaceMatches || [];
-          console.log(`SearchFacesByImage found ${matchedFaces.length} matches`);
-        } catch (searchError) {
-          console.log("SearchFacesByImage error (may be no faces in collection):", searchError);
-        }
+        // NEW APPROACH: For group photos, we need to search for EACH detected face individually
+        // SearchFacesByImage only matches the LARGEST face in the source image
+        // So we use IndexFaces with a temporary collection approach, or search multiple times
         
-        // Map matched faces to members
+        // Strategy: Index faces from the group photo temporarily, then search each against our collection
+        // Better strategy: Use SearchFacesByImage for each face by cropping
+        // Simplest working strategy: Index all faces from group photo into a temp collection,
+        // then compare each face ID against our known faces
+        
+        const TEMP_COLLECTION_ID = `temp-${Date.now()}`;
+        let tempCollectionCreated = false;
+        
         const presentMembers: any[] = [];
         const presentNC: any[] = [];
         const presentChildren: any[] = [];
-        const matchedFaceIds = new Set<string>();
+        const matchedPersonIds = new Set<string>();
         
-        for (const match of matchedFaces) {
-          const faceId = match.Face.FaceId;
-          const confidence = match.Similarity;
+        try {
+          // Create a temporary collection and index all faces from the group photo
+          await callRekognition("CreateCollection", { CollectionId: TEMP_COLLECTION_ID });
+          tempCollectionCreated = true;
           
-          // Skip if already processed
-          if (matchedFaceIds.has(faceId)) continue;
-          matchedFaceIds.add(faceId);
+          const indexResult = await callRekognition("IndexFaces", {
+            CollectionId: TEMP_COLLECTION_ID,
+            Image: { Bytes: imageBytes },
+            MaxFaces: 50,
+            QualityFilter: "NONE",
+            DetectionAttributes: ["DEFAULT"]
+          });
           
-          const faceIndex = faceIndexes?.find(fi => fi.face_id === faceId);
-          if (faceIndex) {
-            console.log(`Matched face ${faceId} with confidence ${confidence}%`);
+          const indexedFaces = indexResult.FaceRecords || [];
+          console.log(`Indexed ${indexedFaces.length} faces from group photo into temp collection`);
+          
+          // Now for each indexed face, search it against our main collection
+          for (const faceRecord of indexedFaces) {
+            const tempFaceId = faceRecord.Face.FaceId;
             
-            if (faceIndex.member_id) {
-              const member = membrosVinculados?.find(m => m.id === faceIndex.member_id);
-              if (member) {
-                const age = calculateAge(member.birth_date);
+            try {
+              // Search this face against our main collection using SearchFaces
+              // But SearchFaces requires the face to be IN the collection being searched
+              // So instead, we need to use the face image bytes
+              
+              // We'll use the bounding box to understand which face we're looking at
+              // But actually, we can search by face ID only within the same collection
+              
+              // Better approach: For each known member face, search it in the temp collection
+              // This way we check if each member appears in the group photo
+            } catch (e) {
+              console.log(`Error searching face ${tempFaceId}:`, e);
+            }
+          }
+          
+          // Search each known face against the temp collection (group photo faces)
+          if (faceIndexes && faceIndexes.length > 0) {
+            for (const faceIndex of faceIndexes) {
+              try {
+                const searchResult = await callRekognition("SearchFaces", {
+                  CollectionId: TEMP_COLLECTION_ID,
+                  FaceId: faceIndex.face_id,
+                  MaxFaces: 1,
+                  FaceMatchThreshold: 70
+                });
+                
+                // This won't work because faceIndex.face_id is from COLLECTION_ID, not TEMP_COLLECTION_ID
+                // SearchFaces requires the source face to be in the same collection
+              } catch (e) {
+                // Expected to fail - face not in temp collection
+              }
+            }
+          }
+          
+          // CORRECT APPROACH: For each member with a photo, use SearchFacesByImage against the temp collection
+          // This searches for a single face (from member's photo) in the group photo faces
+          const allPersons = [
+            ...(membrosVinculados || []).map(m => ({ ...m, type: 'member', birthField: m.birth_date })),
+            ...(ncVinculados || []).map(n => ({ ...n, type: 'nc', birthField: n.data_nascimento })),
+          ];
+          
+          // Only search persons who have indexed faces (meaning they have a photo)
+          const indexedPersonIds = new Set(faceIndexes?.map(fi => fi.member_id || fi.novo_convertido_id) || []);
+          
+          for (const person of allPersons) {
+            if (!indexedPersonIds.has(person.id)) continue;
+            if (!person.photo_url) continue;
+            
+            try {
+              // Fetch the member's photo
+              const memberPhotoResponse = await fetch(person.photo_url);
+              if (!memberPhotoResponse.ok) continue;
+              const memberPhotoBuffer = await memberPhotoResponse.arrayBuffer();
+              const memberPhotoBytes = arrayBufferToBase64(memberPhotoBuffer);
+              
+              // Search for this member's face in the temp collection (group photo)
+              const searchResult = await callRekognition("SearchFacesByImage", {
+                CollectionId: TEMP_COLLECTION_ID,
+                Image: { Bytes: memberPhotoBytes },
+                MaxFaces: 1,
+                FaceMatchThreshold: 70
+              });
+              
+              const matches = searchResult.FaceMatches || [];
+              if (matches.length > 0) {
+                const confidence = matches[0].Similarity;
+                const age = calculateAge(person.birthField);
                 const isChild = age !== null && age < 12;
                 
-                if (isChild) {
-                  presentChildren.push({ ...member, confidence, age, type: 'member' });
-                  console.log(`Identified child member: ${member.full_name}, age ${age}`);
-                } else {
-                  presentMembers.push({ ...member, confidence, age });
-                  console.log(`Identified adult member: ${member.full_name}`);
-                }
-              }
-            } else if (faceIndex.novo_convertido_id) {
-              const nc = ncVinculados?.find(n => n.id === faceIndex.novo_convertido_id);
-              if (nc) {
-                const age = calculateAge(nc.data_nascimento);
-                const isChild = age !== null && age < 12;
+                if (matchedPersonIds.has(person.id)) continue;
+                matchedPersonIds.add(person.id);
+                
+                console.log(`Found ${person.full_name} in group photo (confidence: ${confidence}%)`);
                 
                 if (isChild) {
-                  presentChildren.push({ ...nc, confidence, age, type: 'nc' });
-                  console.log(`Identified child NC: ${nc.full_name}, age ${age}`);
+                  presentChildren.push({ id: person.id, full_name: person.full_name, photo_url: person.photo_url, confidence, age, type: person.type });
+                } else if (person.type === 'member') {
+                  presentMembers.push({ id: person.id, full_name: person.full_name, photo_url: person.photo_url, confidence, age });
                 } else {
-                  presentNC.push({ ...nc, confidence, age });
-                  console.log(`Identified adult NC: ${nc.full_name}`);
+                  presentNC.push({ id: person.id, full_name: person.full_name, photo_url: person.photo_url, confidence, age });
                 }
               }
+            } catch (searchError) {
+              // Face not found or error - skip
+              const errMsg = searchError instanceof Error ? searchError.message : String(searchError);
+              if (!errMsg.includes("no faces in the image")) {
+                console.log(`Search error for ${person.full_name}:`, errMsg);
+              }
+            }
+          }
+          
+        } finally {
+          // Clean up temp collection
+          if (tempCollectionCreated) {
+            try {
+              await callRekognition("DeleteCollection", { CollectionId: TEMP_COLLECTION_ID });
+              console.log(`Deleted temp collection ${TEMP_COLLECTION_ID}`);
+            } catch (e) {
+              console.error("Error deleting temp collection:", e);
             }
           }
         }
@@ -372,28 +455,22 @@ serve(async (req) => {
         const totalIdentified = presentMembers.length + presentNC.length + presentChildren.length;
         const unidentifiedFaces = Math.max(0, totalFaces - totalIdentified);
         
-        // Estimate unidentified children based on AWS detection minus identified children
         const unidentifiedChildren = Math.max(0, estimatedChildren - presentChildren.length);
         const unidentifiedAdults = Math.max(0, unidentifiedFaces - unidentifiedChildren);
         
         console.log(`Summary: ${totalFaces} faces, ${totalIdentified} identified, ${unidentifiedFaces} unidentified`);
-        console.log(`Children: ${presentChildren.length} identified, ~${unidentifiedChildren} unidentified (AWS estimate)`);
+        console.log(`Children: ${presentChildren.length} identified, ~${unidentifiedChildren} unidentified`);
         
-        // Find absent members (those linked to casa but not present)
-        const presentMemberIds = presentMembers.map(m => m.id);
-        const presentNCIds = presentNC.map(n => n.id);
-        const presentChildrenIds = presentChildren.map(c => c.id);
-        const allPresentIds = [...presentMemberIds, ...presentNCIds, ...presentChildrenIds];
+        // Find absent members
+        const allPresentIds = [...presentMembers.map(m => m.id), ...presentNC.map(n => n.id), ...presentChildren.map(c => c.id)];
         
         const absentMembers = membrosVinculados?.filter(m => !allPresentIds.includes(m.id)) || [];
         const absentNC = ncVinculados?.filter(n => !allPresentIds.includes(n.id)) || [];
         
         // Save presence records if encontroId provided
         if (encontroId) {
-          // Clear existing records for this encontro
           await supabase.from("encontro_presencas").delete().eq("encontro_id", encontroId);
           
-          // Insert present members
           for (const member of [...presentMembers, ...presentChildren.filter(c => c.type === 'member')]) {
             await supabase.from("encontro_presencas").insert({
               encontro_id: encontroId,
@@ -412,7 +489,6 @@ serve(async (req) => {
             });
           }
           
-          // Insert absent members
           for (const member of absentMembers) {
             await supabase.from("encontro_presencas").insert({
               encontro_id: encontroId,
@@ -448,7 +524,6 @@ serve(async (req) => {
       }
       
       case "delete_face": {
-        // Delete a face from collection
         const { faceId } = params;
         
         await callRekognition("DeleteFaces", {
@@ -456,7 +531,6 @@ serve(async (req) => {
           FaceIds: [faceId]
         });
         
-        // Also delete from database
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
