@@ -679,7 +679,7 @@ export const PortalLideresCasaRefugio = ({
                                               </Button>
                                               {canEditSelected && (
                                                 <>
-                                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingEncontro(encontro)} title="Editar">
+                                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditingEncontro(encontro); setShowEncontroDialog(true); }} title="Editar">
                                                     <Pencil className="w-4 h-4" />
                                                   </Button>
                                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeletingEncontroId(encontro.id)} title="Excluir">
