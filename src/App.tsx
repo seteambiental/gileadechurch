@@ -24,6 +24,8 @@ import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
 import PortalLideres from "./pages/PortalLideres";
 import NotFound from "./pages/NotFound";
+import TermosPage from "./pages/TermosPage";
+import PrivacidadePage from "./pages/PrivacidadePage";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,8 @@ const App = () => (
             <Route path="/casa-refugio/:id" element={<CasaRefugioDetalhes />} />
             <Route path="/supervisor/:nome" element={<SupervisorDetalhes />} />
             <Route path="/condominio/:nome" element={<CondominioDetalhes />} />
+            <Route path="/termos" element={<TermosPage />} />
+            <Route path="/privacidade" element={<PrivacidadePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
