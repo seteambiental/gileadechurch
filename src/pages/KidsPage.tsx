@@ -17,7 +17,7 @@ import {
   Bell,
   ArrowLeft,
   Settings,
-  CalendarDays
+  CalendarDays,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
@@ -28,6 +28,7 @@ import { KidsEscalasTab } from "@/components/kids/KidsEscalasTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
 
 interface TurmaConfig {
   id: string;
@@ -242,6 +243,18 @@ const KidsPage = () => {
     );
   }, [criancasPorTurma]);
 
+  // Dados para exportação geral (todas as turmas)
+  const allCriancasExport = useMemo(() => {
+    if (!turmasConfig) return [];
+    const result: Array<{ turma: string } & (typeof criancasPorTurma)[string][number]> = [];
+    turmasConfig.forEach((t) => {
+      (criancasPorTurma[t.turma] || []).forEach((c) => {
+        result.push({ ...c, turma: t.nome_exibicao });
+      });
+    });
+    return result.sort((a, b) => a.turma.localeCompare(b.turma) || a.nome.localeCompare(b.nome));
+  }, [turmasConfig, criancasPorTurma]);
+
   const isLoading = loadingTurmas || loadingMembers || loadingNovos;
 
   if (isLoading) {
@@ -286,6 +299,21 @@ const KidsPage = () => {
           </div>
           <div className="flex items-center gap-3">
             <CriancaVisitanteFormDialog />
+            <ExportButton
+              data={allCriancasExport}
+              columns={[
+                { header: "Turma", accessor: "turma" },
+                { header: "Nome", accessor: "nome" },
+                { header: "Idade", accessor: (r) => `${r.idade} anos` },
+                { header: "Gênero", accessor: (r) => r.genero === "masculino" ? "Menino" : r.genero === "feminino" ? "Menina" : "-" },
+                { header: "Responsável", accessor: "responsavelNome" },
+                { header: "WhatsApp Responsável", accessor: "responsavelWhatsapp" },
+                { header: "Status", accessor: (r) => r.tipo === "membro" ? "Membro" : "Visitante" },
+              ]}
+              filename="kids-relatorio-geral"
+              title="Ministério Kids - Relatório Geral"
+              sheetName="Todas as Turmas"
+            />
             <Badge className="text-lg px-4 py-2 bg-white/80 text-gray-700 hover:bg-white shadow-sm">
               🌟 {totalCriancas} crianças cadastradas
             </Badge>
