@@ -50,7 +50,8 @@ export const PortalLideresAprovacoes = ({
     portalAccess?.role === "pastor_geral" ||
     portalAccess?.role === "pastor_auxiliar" ||
     portalAccess?.role === "sindico_condominio" ||
-    portalAccess?.role === "supervisor_condominio";
+    portalAccess?.role === "supervisor_condominio" ||
+    portalAccess?.role === "supervisor_casa_refugio";
 
   // Buscar mudanças pendentes
   const { data: mudancasPendentes = [], isLoading } = useQuery({
