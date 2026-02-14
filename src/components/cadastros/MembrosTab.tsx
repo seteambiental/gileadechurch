@@ -82,6 +82,17 @@ interface Member {
   created_at: string;
   member_since: string | null;
   member_functions?: MemberFunction[];
+  genero: string | null;
+  estado_civil: string | null;
+  cpf: string | null;
+  rg: string | null;
+  address: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  cep: string | null;
+  casa_refugio_id: string | null;
+  kids_numero: number | null;
 }
 
 const functionTypeLabels: Record<string, string> = {
@@ -379,11 +390,11 @@ const MembrosTab = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => exportToExcel(filteredMembers, "membros", faceIndexes)}>
+                <DropdownMenuItem onClick={() => exportToExcel(filteredMembers, "membros", faceIndexes, casasRefugio)}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Excel (.xlsx)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportToPDF(filteredMembers, "membros", faceIndexes)}>
+                <DropdownMenuItem onClick={() => exportToPDF(filteredMembers, "membros", faceIndexes, casasRefugio)}>
                   <FileText className="w-4 h-4 mr-2" />
                   PDF
                 </DropdownMenuItem>

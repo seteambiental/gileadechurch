@@ -1,7 +1,8 @@
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { formatPhone, formatDateBR } from "./masks";
+import { formatPhone, formatDateBR, formatCPF } from "./masks";
+import { calculateAge } from "./age-utils";
 
 interface MemberFunction {
   id: string;
@@ -26,10 +27,26 @@ interface Member {
   created_at: string;
   member_since: string | null;
   member_functions?: MemberFunction[];
+  genero: string | null;
+  estado_civil: string | null;
+  cpf: string | null;
+  rg: string | null;
+  address: string | null;
+  number: string | null;
+  complement: string | null;
+  neighborhood: string | null;
+  cep: string | null;
+  casa_refugio_id: string | null;
+  kids_numero: number | null;
 }
 
 interface FaceIndex {
   member_id: string | null;
+}
+
+interface CasaRefugio {
+  id: string;
+  name: string;
 }
 
 const functionTypeLabels: Record<string, string> = {
@@ -64,17 +81,73 @@ const formatMemberFunctions = (member: Member): string => {
   return member.member_functions.map(getFunctionDisplay).join("; ");
 };
 
-export const exportToExcel = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = []) => {
+const formatGenero = (genero: string | null): string => {
+  if (!genero) return "-";
+  const map: Record<string, string> = { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" };
+  return map[genero] || genero;
+};
+
+const formatEstadoCivil = (ec: string | null): string => {
+  if (!ec) return "-";
+  const map: Record<string, string> = {
+    solteiro: "Solteiro(a)",
+    casado: "Casado(a)",
+    divorciado: "Divorciado(a)",
+    viuvo: "Viúvo(a)",
+    separado: "Separado(a)",
+    uniao_estavel: "União Estável",
+  };
+  return map[ec] || ec;
+};
+
+const getAge = (birthDate: string | null): string => {
+  if (!birthDate) return "-";
+  const { years } = calculateAge(birthDate);
+  return `${years}`;
+};
+
+const getCasaRefugioName = (casaRefugioId: string | null, casasRefugio: CasaRefugio[]): string => {
+  if (!casaRefugioId) return "-";
+  const casa = casasRefugio.find(c => c.id === casaRefugioId);
+  return casa?.name || "-";
+};
+
+const formatAddress = (member: Member): string => {
+  const parts = [
+    member.address,
+    member.number ? `nº ${member.number}` : null,
+    member.complement,
+    member.neighborhood,
+    member.city && member.state ? `${member.city}/${member.state}` : member.city || member.state,
+    member.cep,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(", ") : "-";
+};
+
+export const exportToExcel = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
   const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
   
   const data = members.map((member) => ({
     Nome: member.full_name,
+    Gênero: formatGenero(member.genero),
+    "Data Nascimento": formatDateBR(member.birth_date),
+    Idade: getAge(member.birth_date),
+    "Estado Civil": formatEstadoCivil(member.estado_civil),
+    CPF: member.cpf || "-",
+    RG: member.rg || "-",
     WhatsApp: member.whatsapp ? formatPhone(member.whatsapp) : "-",
     Email: member.email || "-",
+    Endereço: member.address || "-",
+    Número: member.number || "-",
+    Complemento: member.complement || "-",
+    Bairro: member.neighborhood || "-",
     Cidade: member.city || "-",
     Estado: member.state || "-",
+    CEP: member.cep || "-",
+    "Casa Refúgio": getCasaRefugioName(member.casa_refugio_id, casasRefugio),
     "Membro Desde": formatDateBR(member.member_since),
-    "Foto": member.photo_url ? "Sim" : "Não",
+    "Nº Kids": member.kids_numero != null ? String(member.kids_numero) : "-",
+    Foto: member.photo_url ? "Sim" : "Não",
     "Reconhecimento Facial": indexedMemberIds.has(member.id) ? "Indexado" : "Não indexado",
     Funções: formatMemberFunctions(member),
   }));
@@ -99,7 +172,7 @@ export const exportToExcel = (members: Member[], filename: string = "membros", f
   XLSX.writeFile(workbook, `${filename}.xlsx`);
 };
 
-export const exportToPDF = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = []) => {
+export const exportToPDF = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
   const doc = new jsPDF({ orientation: "landscape" });
   const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
 
@@ -115,21 +188,24 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
   // Table data
   const tableData = members.map((member) => [
     member.full_name,
+    formatGenero(member.genero),
+    getAge(member.birth_date),
+    formatEstadoCivil(member.estado_civil),
     member.whatsapp ? formatPhone(member.whatsapp) : "-",
-    member.city && member.state ? `${member.city}/${member.state}` : "-",
+    member.email || "-",
+    getCasaRefugioName(member.casa_refugio_id, casasRefugio),
+    formatAddress(member),
     formatDateBR(member.member_since),
-    member.photo_url ? "Sim" : "Não",
-    indexedMemberIds.has(member.id) ? "✓" : "-",
     formatMemberFunctions(member),
   ]);
 
   autoTable(doc, {
-    head: [["Nome", "WhatsApp", "Cidade/UF", "Membro Desde", "Foto", "RF", "Funções"]],
+    head: [["Nome", "Gênero", "Idade", "Estado Civil", "WhatsApp", "Email", "Casa Refúgio", "Endereço", "Membro Desde", "Funções"]],
     body: tableData,
     startY: 42,
     styles: {
-      fontSize: 7,
-      cellPadding: 2,
+      fontSize: 6,
+      cellPadding: 1.5,
     },
     headStyles: {
       fillColor: [220, 53, 69],
@@ -140,13 +216,16 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
       fillColor: [248, 249, 250],
     },
     columnStyles: {
-      0: { cellWidth: 40 },
-      1: { cellWidth: 28 },
-      2: { cellWidth: 25 },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 12 },
-      5: { cellWidth: 10 },
-      6: { cellWidth: "auto" },
+      0: { cellWidth: 32 },
+      1: { cellWidth: 16 },
+      2: { cellWidth: 10 },
+      3: { cellWidth: 18 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 30 },
+      6: { cellWidth: 24 },
+      7: { cellWidth: "auto" },
+      8: { cellWidth: 18 },
+      9: { cellWidth: "auto" },
     },
   });
 
