@@ -499,12 +499,12 @@ const Index = () => {
                   <h3 className="text-lg font-heading font-semibold text-foreground mb-4">
                     Próximos Eventos
                   </h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="flex gap-3 overflow-x-auto pb-2">
                     {eventosComFlyer.map((evento, index) => (
                       <Link
                         key={evento.id}
                         to={`/inscricao/${evento.id}`}
-                        className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
+                        className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card flex-shrink-0 w-48 md:w-56"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <img
