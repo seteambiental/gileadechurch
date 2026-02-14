@@ -3,7 +3,8 @@
  import { Card, CardContent } from "@/components/ui/card";
  import { Badge } from "@/components/ui/badge";
  import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
- import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
+  import { ChevronLeft, ChevronRight, Clock, Plus } from "lucide-react";
+import { normalizeText } from "@/lib/text-utils";
 import {
   format,
   startOfWeek,
@@ -117,7 +118,7 @@ interface AgendaCalendarProps {
       if (temQuartaPrestacao) {
         return eventosFiltrados.filter(e => {
           // Remove cultos cujo título contenha "propósito" (ex: "Quarta com Propósito", "Culto de Quarta com Propósito")
-          if (e.tipo_evento === "culto" && e.titulo.toLowerCase().includes("propósito")) return false;
+          if (e.tipo_evento === "culto" && normalizeText(e.titulo).includes("proposito")) return false;
           return true;
         });
       }

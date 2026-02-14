@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Phone, Mail, MapPin, Instagram, Facebook, Youtube, Twitter, Globe, MessageCircle } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import { normalizeText } from "@/lib/text-utils";
 
 
 
@@ -60,14 +61,14 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
         ];
       }
 
-      const celebracaoKeywords = ["celebração", "celebracao"];
-      const quartaKeywords = ["quarta com propósito", "quarta com proposito"];
+      const celebracaoKeywords = ["celebracao"];
+      const quartaKeywords = ["quarta com proposito"];
 
       const celebracao = cultosRecorrentes.find((c) =>
-        celebracaoKeywords.some((k) => c.titulo.toLowerCase().includes(k))
+        celebracaoKeywords.some((k) => normalizeText(c.titulo).includes(k))
       );
       const quarta = cultosRecorrentes.find((c) =>
-        quartaKeywords.some((k) => c.titulo.toLowerCase().includes(k))
+        quartaKeywords.some((k) => normalizeText(c.titulo).includes(k))
       );
 
       const items: { titulo: string; horario: string }[] = [];

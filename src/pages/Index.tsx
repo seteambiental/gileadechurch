@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
+import { normalizeText } from "@/lib/text-utils";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AnnouncementCard from "@/components/AnnouncementCard";
@@ -222,14 +223,14 @@ const Index = () => {
       ];
     }
 
-    const celebracaoKeywords = ["celebração", "celebracao"];
-    const quartaKeywords = ["quarta com propósito", "quarta com proposito"];
+    const celebracaoKeywords = ["celebracao"];
+    const quartaKeywords = ["quarta com proposito"];
 
     const celebracao = eventosRecorrentes.find((e) =>
-      celebracaoKeywords.some((k) => e.titulo.toLowerCase().includes(k))
+      celebracaoKeywords.some((k) => normalizeText(e.titulo).includes(k))
     );
     const quarta = eventosRecorrentes.find((e) =>
-      quartaKeywords.some((k) => e.titulo.toLowerCase().includes(k))
+      quartaKeywords.some((k) => normalizeText(e.titulo).includes(k))
     );
 
     const items: { day: string; time: string; event: string }[] = [];
