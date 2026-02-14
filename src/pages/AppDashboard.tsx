@@ -126,8 +126,8 @@ const AppDashboard = () => {
 
   const handleSignOut = async () => {
     setAuthBypassed(false);
-    await signOut();
     navigate("/");
+    await signOut();
   };
 
   if (loading) {
