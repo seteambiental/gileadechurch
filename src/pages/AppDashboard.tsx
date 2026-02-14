@@ -76,7 +76,7 @@ const allOtherModules = [
   { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true, moduleKey: "cadastros" },
   { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true, moduleKey: "homepage" },
   { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false, moduleKey: "agenda" },
-  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", adminOnly: true, moduleKey: "financeiro" },
+  { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", path: "/financeiro", adminOnly: true, moduleKey: "financeiro" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
 ];
 
