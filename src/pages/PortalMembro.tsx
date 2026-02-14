@@ -44,8 +44,8 @@ const PortalMembro = () => {
   }, [user, authLoading, navigate]);
 
   const handleSignOut = async () => {
-    await signOut();
     navigate("/");
+    await signOut();
   };
 
   if (authLoading || loadingProfile) {

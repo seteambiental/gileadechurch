@@ -26,8 +26,8 @@ const Cadastros = () => {
   
   const handleSignOut = async () => {
     setAuthBypassed(false);
-    await signOut();
     navigate("/");
+    await signOut();
   };
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
