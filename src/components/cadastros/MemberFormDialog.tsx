@@ -462,6 +462,25 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         if (funcError) throw funcError;
       }
 
+      // Sincronizar responsável com kids_responsaveis (para menores de 12)
+      if (data.responsavel_id) {
+        // Remove vínculos anteriores como principal
+        await supabase
+          .from("kids_responsaveis")
+          .delete()
+          .eq("crianca_member_id", memberId)
+          .eq("principal", true);
+
+        // Insere novo vínculo
+        await supabase.from("kids_responsaveis").insert({
+          crianca_member_id: memberId,
+          responsavel_member_id: data.responsavel_id,
+          parentesco: "responsavel",
+          principal: true,
+          notificar_ausencia: true,
+        });
+      }
+
       // Criar usuário do sistema automaticamente se tiver email (novo membro ou membro sem user_id)
       const shouldCreateUser = data.email && (!member || !member.user_id);
       
