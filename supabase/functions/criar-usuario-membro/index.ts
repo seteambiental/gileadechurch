@@ -107,8 +107,8 @@ Deno.serve(async (req) => {
     );
 
     // Verificar se já existe usuário com este email
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find((u) => u.email === email);
+    const { data: existingUserData } = await supabaseAdmin.auth.admin.getUserByEmail(email);
+    const existingUser = existingUserData?.user || null;
 
     if (existingUser) {
       // Usuário já existe, apenas vincular ao membro
