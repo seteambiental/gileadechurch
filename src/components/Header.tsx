@@ -87,9 +87,9 @@ const Header = () => {
             <Button
               variant="secondary"
               className="font-heading font-semibold shadow-red ml-4"
-              onClick={() => navigate(user ? "/portal" : "/auth")}
+              onClick={() => navigate("/auth")}
             >
-              {user ? "Meu Portal" : "Entrar"}
+              Entrar
             </Button>
           </nav>
         </div>
@@ -116,10 +116,10 @@ const Header = () => {
                   className="mt-2 font-heading font-semibold shadow-red"
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    navigate(user ? "/portal" : "/auth");
+                    navigate("/auth");
                   }}
                 >
-                  {user ? "Meu Portal" : "Entrar"}
+                  Entrar
                 </Button>
               </div>
             </div>
