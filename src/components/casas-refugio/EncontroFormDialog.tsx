@@ -24,7 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, ScanFace, Check, AlertCircle, User } from "lucide-react";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, ScanFace, Check, AlertCircle, User, RotateCcw } from "lucide-react";
 import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
@@ -126,8 +126,15 @@ export const EncontroFormDialog = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+
+  // Camera state
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Fetch leaders linked to this casa
   const { data: lideres = [] } = useQuery({
@@ -159,6 +166,21 @@ export const EncontroFormDialog = ({
       return data;
     },
     enabled: !!casa?.id && open,
+  });
+
+  // Fetch existing presencas when editing
+  const { data: existingPresencas } = useQuery({
+    queryKey: ["encontro-presencas", editingEncontro?.id],
+    queryFn: async () => {
+      if (!editingEncontro?.id) return [];
+      const { data, error } = await supabase
+        .from("encontro_presencas")
+        .select("member_id, novo_convertido_id, presente, confidence")
+        .eq("encontro_id", editingEncontro.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!editingEncontro?.id && open && !(editingEncontro as any)?.isNew,
   });
 
   const form = useForm<FormData>({
@@ -220,9 +242,25 @@ export const EncontroFormDialog = ({
         setPhotoPreview(null);
       }
       setRecognitionResult(null);
-      setPresencas({});
+      if (!isEditing) {
+        setPresencas({});
+      }
     }
   }, [open, form, editingEncontro, isEditing, isNewFromBlank]);
+
+  // Load existing presencas when editing
+  useEffect(() => {
+    if (isEditing && existingPresencas && existingPresencas.length > 0) {
+      const loaded: Record<string, boolean> = {};
+      existingPresencas.forEach((p) => {
+        const id = p.member_id || p.novo_convertido_id;
+        if (id) {
+          loaded[id] = p.presente;
+        }
+      });
+      setPresencas(loaded);
+    }
+  }, [existingPresencas, isEditing]);
 
   // Update presencas when recognition result changes
   useEffect(() => {
@@ -235,9 +273,9 @@ export const EncontroFormDialog = ({
     }
   }, [recognitionResult]);
 
-  // Recalculate counts when presencas change
+  // Recalculate counts when presencas change (only if not editing or if recognition was run)
   useEffect(() => {
-    if (membrosVinculados.length > 0) {
+    if (membrosVinculados.length > 0 && recognitionResult) {
       const liderIds = lideres.map((l: any) => l?.id);
       const presenteIds = Object.entries(presencas)
         .filter(([_, presente]) => presente)
@@ -249,7 +287,7 @@ export const EncontroFormDialog = ({
       form.setValue("qtd_lideres", lideresPresentes);
       form.setValue("qtd_membros", membrosPresentes);
     }
-  }, [presencas, membrosVinculados, lideres, form]);
+  }, [presencas, membrosVinculados, lideres, form, recognitionResult]);
 
   const togglePresenca = (memberId: string) => {
     setPresencas((prev) => ({
@@ -257,6 +295,113 @@ export const EncontroFormDialog = ({
       [memberId]: !prev[memberId],
     }));
   };
+
+  // Camera functions
+  const handleOpenCamera = async () => {
+    try {
+      setCameraError(null);
+      
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+
+      // CRITICAL: getUserMedia must be called directly in click handler
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+      });
+      
+      setCameraStream(mediaStream);
+      setIsCameraOpen(true);
+      
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      });
+    } catch (err) {
+      console.error("Erro ao acessar câmera:", err);
+      setIsCameraOpen(true);
+      setCameraError("Não foi possível acessar a câmera. Verifique as permissões.");
+    }
+  };
+
+  const handleCloseCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+    setCameraError(null);
+  };
+
+  const handleSwitchCamera = async () => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(newMode);
+    
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+    }
+
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: newMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      setCameraStream(mediaStream);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+      });
+    } catch (err) {
+      console.error("Erro ao trocar câmera:", err);
+    }
+  };
+
+  const handleCapturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(
+      async (blob) => {
+        if (blob) {
+          const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
+          setPhoto(file);
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPhotoPreview(reader.result as string);
+          };
+          reader.readAsDataURL(file);
+          handleCloseCamera();
+          
+          // Trigger recognition
+          await analyzePhoto(file);
+        }
+      },
+      "image/jpeg",
+      0.9
+    );
+  };
+
+  // Cleanup camera on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [cameraStream]);
 
   const analyzePhoto = async (photoFile: File) => {
     if (!casa?.id) return;
@@ -406,6 +551,8 @@ export const EncontroFormDialog = ({
         justificativa: isNewFromBlank && editingEncontro?.justificativa ? editingEncontro.justificativa : null,
       };
 
+      let encontroId: string;
+
       if (isEditing && editingEncontro) {
         // Update existing
         const { error } = await supabase
@@ -413,13 +560,40 @@ export const EncontroFormDialog = ({
           .update(payload)
           .eq("id", editingEncontro.id);
         if (error) throw error;
+        encontroId = editingEncontro.id;
       } else {
         // Insert new
-        const { error } = await supabase.from("encontros_casa_refugio").insert({
+        const { data: insertedData, error } = await supabase.from("encontros_casa_refugio").insert({
           ...payload,
           casa_refugio_id: casa.id,
-        });
+        }).select("id").single();
         if (error) throw error;
+        encontroId = insertedData.id;
+      }
+
+      // Save presencas
+      if (Object.keys(presencas).length > 0) {
+        // Clear existing
+        await supabase.from("encontro_presencas").delete().eq("encontro_id", encontroId);
+        
+        // Insert all
+        const presencaRecords = Object.entries(presencas).map(([id, presente]) => {
+          const isMember = membrosVinculados.some(m => m.id === id);
+          return {
+            encontro_id: encontroId,
+            member_id: isMember ? id : null,
+            novo_convertido_id: !isMember ? id : null,
+            presente,
+            confidence: recognitionResult?.presentMembers?.find(m => m.id === id)?.confidence || null,
+          };
+        });
+        
+        if (presencaRecords.length > 0) {
+          const { error: presError } = await supabase
+            .from("encontro_presencas")
+            .insert(presencaRecords);
+          if (presError) console.error("Error saving presencas:", presError);
+        }
       }
     },
     onSuccess: () => {
@@ -447,12 +621,10 @@ export const EncontroFormDialog = ({
     onChange: (value: number) => void
   ) => {
     const rawValue = e.target.value;
-    // Allow empty input or "0" 
     if (rawValue === "" || rawValue === "0") {
       onChange(0);
       return;
     }
-    // Remove leading zeros for other numbers
     const value = rawValue.replace(/^0+/, "");
     onChange(parseInt(value, 10) || 0);
   };
@@ -479,10 +651,6 @@ export const EncontroFormDialog = ({
     onChange(`${formattedInt},${decPart}`);
   };
 
-  const handleTakePhoto = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -502,9 +670,6 @@ export const EncontroFormDialog = ({
     setPhoto(null);
     setPhotoPreview(null);
     setRecognitionResult(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   };
 
   const getInitials = (name: string) => {
@@ -581,14 +746,6 @@ export const EncontroFormDialog = ({
               </span>
               
               <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-              <input
                 ref={uploadInputRef}
                 type="file"
                 accept="image/*"
@@ -601,7 +758,7 @@ export const EncontroFormDialog = ({
                   <img
                     src={photoPreview}
                     alt="Foto do encontro"
-                    className="w-full h-40 object-cover rounded-lg border border-border"
+                    className="w-full max-h-64 object-contain rounded-lg border border-border bg-muted/30"
                   />
                   {isAnalyzing && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
@@ -628,7 +785,7 @@ export const EncontroFormDialog = ({
                     type="button"
                     variant="outline"
                     className="flex-1 h-24 border-dashed"
-                    onClick={handleTakePhoto}
+                    onClick={handleOpenCamera}
                   >
                     <div className="flex flex-col items-center gap-2">
                       <Camera className="w-6 h-6 text-muted-foreground" />
@@ -649,6 +806,67 @@ export const EncontroFormDialog = ({
                 </div>
               )}
             </div>
+
+            {/* Camera Dialog */}
+            <Dialog open={isCameraOpen} onOpenChange={handleCloseCamera}>
+              <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
+                <DialogHeader className="p-4 pb-0">
+                  <DialogTitle className="flex items-center gap-2">
+                    <Camera className="w-5 h-5" />
+                    Tirar Foto
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="relative bg-black">
+                  {cameraError ? (
+                    <div className="flex items-center justify-center h-64 text-white text-center p-4">
+                      <p>{cameraError}</p>
+                    </div>
+                  ) : (
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-auto max-h-[60vh]"
+                      style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
+                    />
+                  )}
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
+
+                <div className="flex justify-center gap-4 p-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleSwitchCamera}
+                    disabled={!!cameraError}
+                    title="Alternar câmera"
+                  >
+                    <RotateCcw className="w-5 h-5" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={handleCapturePhoto}
+                    disabled={!!cameraError}
+                    className="w-16 h-16 rounded-full"
+                  >
+                    <Camera className="w-8 h-8" />
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCloseCamera}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Recognition Results */}
             {recognitionResult && recognitionResult.success && (
