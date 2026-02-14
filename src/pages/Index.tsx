@@ -214,7 +214,7 @@ const Index = () => {
     },
   });
 
-  // Formatar programação - apenas Culto de Celebração e Quarta com Propósito (1 de cada)
+  // Formatar programação - eventos recorrentes dos próximos 7 dias, sem repetições
   const scheduleItems = useMemo(() => {
     if (!eventosRecorrentes || eventosRecorrentes.length === 0) {
       return [
@@ -223,33 +223,77 @@ const Index = () => {
       ];
     }
 
-    const celebracaoKeywords = ["celebracao"];
-    const quartaKeywords = ["quarta com proposito"];
+    const today = new Date();
+    const todayDow = today.getDay(); // 0=Dom, 6=Sab
 
-    const celebracao = eventosRecorrentes.find((e) =>
-      celebracaoKeywords.some((k) => normalizeText(e.titulo).includes(k))
-    );
-    const quarta = eventosRecorrentes.find((e) =>
-      quartaKeywords.some((k) => normalizeText(e.titulo).includes(k))
-    );
-
-    const items: { day: string; time: string; event: string }[] = [];
-
-    if (celebracao) {
-      items.push({
-        day: diasSemana[celebracao.dia_semana ?? 0],
-        time: celebracao.hora_inicio ? celebracao.hora_inicio.slice(0, 5) : "—",
-        event: celebracao.titulo,
-      });
+    // Calcular quais dias da semana caem nos próximos 7 dias
+    const next7DaysDow = new Set<number>();
+    for (let i = 0; i < 7; i++) {
+      next7DaysDow.add((todayDow + i) % 7);
     }
 
-    if (quarta) {
-      items.push({
-        day: diasSemana[quarta.dia_semana ?? 0],
-        time: quarta.hora_inicio ? quarta.hora_inicio.slice(0, 5) : "—",
-        event: quarta.titulo,
-      });
-    }
+    // Filtrar eventos que caem nos próximos 7 dias
+    const eventosDaSemana = eventosRecorrentes.filter(
+      (e) => e.dia_semana != null && next7DaysDow.has(e.dia_semana)
+    );
+
+    // Deduplicação: se houver Culto de Ceia no mesmo dia do Culto de Celebração, remove o Celebração
+    const ceiaEvento = eventosDaSemana.find((e) =>
+      normalizeText(e.titulo).includes("ceia")
+    );
+    const quartaPCEvento = eventosDaSemana.find((e) =>
+      normalizeText(e.titulo).includes("prestacao de contas")
+    );
+
+    const filtrados = eventosDaSemana.filter((e) => {
+      const tituloNorm = normalizeText(e.titulo);
+      // Se existe Ceia e este é o Celebração no mesmo dia, ocultar
+      if (ceiaEvento && tituloNorm.includes("celebracao") && e.dia_semana === ceiaEvento.dia_semana) {
+        return false;
+      }
+      // Se existe Prestação de Contas e este é o culto regular de quarta com propósito
+      if (quartaPCEvento && e.id !== quartaPCEvento.id && e.tipo_evento === "culto" && tituloNorm.includes("proposito") && e.dia_semana === quartaPCEvento.dia_semana) {
+        return false;
+      }
+      return true;
+    });
+
+    // Remover duplicatas por título (manter apenas 1 ocorrência de cada)
+    const vistos = new Set<string>();
+    const unicos = filtrados.filter((e) => {
+      const key = normalizeText(e.titulo);
+      if (vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+
+    // Ordenar por dia da semana relativo a hoje
+    const sorted = [...unicos].sort((a, b) => {
+      const diaA = ((a.dia_semana ?? 0) - todayDow + 7) % 7;
+      const diaB = ((b.dia_semana ?? 0) - todayDow + 7) % 7;
+      if (diaA !== diaB) return diaA - diaB;
+      return (a.hora_inicio || "").localeCompare(b.hora_inicio || "");
+    });
+
+    const items = sorted.map((e) => {
+      // Calcular a data real do evento
+      const diffDays = ((e.dia_semana ?? 0) - todayDow + 7) % 7;
+      const eventDate = new Date(today);
+      eventDate.setDate(today.getDate() + diffDays);
+
+      let titulo = e.titulo;
+      // Se é Ceia, renomear
+      if (ceiaEvento && e.id === ceiaEvento.id) {
+        const weekNum = Math.ceil(eventDate.getDate() / 7);
+        titulo = `Culto de Ceia (${weekNum}º Domingo)`;
+      }
+
+      return {
+        day: diasSemana[e.dia_semana ?? 0],
+        time: e.hora_inicio ? e.hora_inicio.slice(0, 5) : "—",
+        event: titulo,
+      };
+    });
 
     if (items.length === 0) {
       return [
