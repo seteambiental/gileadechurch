@@ -585,7 +585,7 @@ const MinistryPage = () => {
                   <MinisterioMembrosTab
                     ministerioSlug={slug!}
                     ministerioTitle={ministry.title}
-                    idadeMinima={isGT ? 11 : 18}
+                    idadeMinima={isGT ? 12 : 18}
                     idadeMaxima={isGT ? 17 : 120}
                     generoFiltro={isHomens ? "masculino" : isMulheres ? "feminino" : null}
                     estadoCivilFiltro={isFlow ? "solteiro" : (isHomens || isMulheres) ? "casado" : null}
