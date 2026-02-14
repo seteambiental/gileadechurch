@@ -81,6 +81,8 @@ interface EventoFormDialogProps {
   evento?: Evento | null;
   selectedDate?: Date | null;
   mode?: "evento" | "compromisso";
+  approvalMode?: boolean;
+  solicitanteId?: string;
 }
 
 const CORES = [
@@ -134,6 +136,8 @@ export const EventoFormDialog = ({
   evento,
   selectedDate,
   mode = "evento",
+  approvalMode = false,
+  solicitanteId,
 }: EventoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -458,9 +462,10 @@ export const EventoFormDialog = ({
         comentarios_custo: formData.comentarios_custo || null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
+        ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
       };
 
-      const label = mode === "compromisso" ? "Compromisso" : "Evento";
+      const label = approvalMode ? "Solicitação de evento" : (mode === "compromisso" ? "Compromisso" : "Evento");
 
       if (evento) {
         const { error } = await supabase
@@ -472,13 +477,15 @@ export const EventoFormDialog = ({
       } else {
         const { error } = await supabase.from("agenda_igreja").insert(payload);
         if (error) throw error;
-        toast({ title: `${label} criado!` });
+        toast({ title: approvalMode ? "Solicitação enviada para aprovação!" : `${label} criado!` });
       }
 
       queryClient.invalidateQueries({ queryKey: ["agenda-recorrentes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-igreja"] });
       queryClient.invalidateQueries({ queryKey: ["eventos-recorrentes-homepage"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-pendentes-lideres"] });
+      queryClient.invalidateQueries({ queryKey: ["meus-eventos-solicitados"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -515,9 +522,11 @@ export const EventoFormDialog = ({
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {evento 
-                ? (mode === "compromisso" ? "Editar Compromisso" : "Editar Evento") 
-                : (mode === "compromisso" ? "Novo Compromisso" : "Novo Evento")}
+              {approvalMode 
+                ? "Solicitar Evento"
+                : evento 
+                  ? (mode === "compromisso" ? "Editar Compromisso" : "Editar Evento") 
+                  : (mode === "compromisso" ? "Novo Compromisso" : "Novo Evento")}
             </DialogTitle>
           </DialogHeader>
 
@@ -1369,7 +1378,7 @@ export const EventoFormDialog = ({
                 </Button>
                 <Button type="submit" variant="secondary" disabled={isLoading}>
                   {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  {evento ? "Salvar" : "Criar"}
+                  {approvalMode ? "Solicitar Aprovação" : (evento ? "Salvar" : "Criar")}
                 </Button>
               </div>
             </div>

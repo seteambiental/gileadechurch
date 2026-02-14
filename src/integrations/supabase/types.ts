@@ -346,9 +346,12 @@ export type Database = {
           idade_minima: number | null
           limite_vagas: number | null
           local: string | null
+          motivo_rejeicao: string | null
           observacoes: string | null
           recorrente: boolean | null
           semana_mes: number | null
+          solicitante_id: string | null
+          status: string
           tem_custo: boolean | null
           tem_refeicao: boolean | null
           tipo_evento: string
@@ -377,9 +380,12 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           local?: string | null
+          motivo_rejeicao?: string | null
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
+          solicitante_id?: string | null
+          status?: string
           tem_custo?: boolean | null
           tem_refeicao?: boolean | null
           tipo_evento: string
@@ -408,9 +414,12 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           local?: string | null
+          motivo_rejeicao?: string | null
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
+          solicitante_id?: string | null
+          status?: string
           tem_custo?: boolean | null
           tem_refeicao?: boolean | null
           tipo_evento?: string
@@ -419,7 +428,22 @@ export type Database = {
           updated_at?: string
           valor_custo?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agenda_igreja_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_igreja_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       aniversarios_enviados: {
         Row: {
