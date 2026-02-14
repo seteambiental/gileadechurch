@@ -106,30 +106,20 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Verificar se já existe usuário com este email
-    const { data: existingUserData } = await supabaseAdmin.auth.admin.getUserByEmail(email);
-    const existingUser = existingUserData?.user || null;
-
-    if (existingUser) {
-      // Usuário já existe, apenas vincular ao membro
-      const { error: updateError } = await supabaseAdmin
-        .from("members")
-        .update({ user_id: existingUser.id })
-        .eq("id", member_id);
-
-      if (updateError) {
-        console.error("Erro ao vincular usuário existente:", updateError);
-        return new Response(
-          JSON.stringify({ error: "Erro ao vincular usuário existente", details: updateError.message }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
+    // Verificar se membro já tem user_id vinculado
+    const { data: usersByEmail } = await supabaseAdmin
+      .from("members")
+      .select("user_id")
+      .eq("id", member_id)
+      .single();
+    
+    if (usersByEmail?.user_id) {
+      // Membro já tem user_id vinculado
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: "Usuário já existia e foi vinculado ao membro",
-          user_id: existingUser.id,
+          message: "Membro já possui usuário vinculado",
+          user_id: usersByEmail.user_id,
           was_existing: true
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -140,7 +130,7 @@ Deno.serve(async (req) => {
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: email,
       password: defaultPassword,
-      email_confirm: true, // Auto confirmar email
+      email_confirm: true,
       user_metadata: {
         member_id: member_id,
         perfil: perfil || "membro",
@@ -148,6 +138,26 @@ Deno.serve(async (req) => {
     });
 
     if (createError) {
+      // Se o email já existe no auth, tentar buscar e vincular
+      if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
+        // Buscar todos os users e encontrar pelo email
+        let page = 1;
+        let found = null;
+        while (!found) {
+          const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 50 });
+          if (!usersPage?.users?.length) break;
+          found = usersPage.users.find((u: any) => u.email === email);
+          if (usersPage.users.length < 50) break;
+          page++;
+        }
+        if (found) {
+          await supabaseAdmin.from("members").update({ user_id: found.id }).eq("id", member_id);
+          return new Response(
+            JSON.stringify({ success: true, message: "Usuário já existia e foi vinculado", user_id: found.id, was_existing: true }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
       console.error("Erro ao criar usuário:", createError);
       return new Response(
         JSON.stringify({ error: "Erro ao criar usuário", details: createError.message }),
