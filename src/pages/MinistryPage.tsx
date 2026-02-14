@@ -595,11 +595,7 @@ const MinistryPage = () => {
             ) : (
               <>
                 <TabsContent value="equipe">
-                  {isDanca ? (
-                    <DancaEquipesTab ministryId={ministryFromDb!.id} />
-                  ) : (
-                    <MinisterioEquipeTab ministryId={ministryFromDb!.id} ministryName={ministry.title} />
-                  )}
+                  <MinisterioEquipeTab ministryId={ministryFromDb!.id} ministryName={ministry.title} />
                 </TabsContent>
 
                 <TabsContent value="escalas">
