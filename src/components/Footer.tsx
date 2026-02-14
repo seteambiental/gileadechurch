@@ -263,6 +263,11 @@ const Footer = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
           {/* Bottom Bar */}
           <div className="mt-12 pt-8 border-t border-primary-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/60">
             <p>© {new Date().getFullYear()} {igrejaConfig?.nome_fantasia || "Gileade Church"}. Todos os direitos reservados.</p>
+            <div className="flex items-center gap-4">
+              <a href="/termos" className="hover:text-secondary transition-colors">Termos de Uso</a>
+              <span>|</span>
+              <a href="/privacidade" className="hover:text-secondary transition-colors">Política de Privacidade</a>
+            </div>
             <p className="flex items-center gap-2">
               Feito com <span className="text-secondary">♥</span> para a glória de Deus
             </p>
