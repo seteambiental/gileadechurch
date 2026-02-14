@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight, Church, Baby } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -129,7 +129,7 @@ const Auth = () => {
 
   // Estado para controle de seleção de portal (quando usuário tem múltiplos acessos)
   const [showPortalChoice, setShowPortalChoice] = useState(false);
-  const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean } | null>(null);
+  const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean; hasMemberProfile: boolean } | null>(null);
 
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
@@ -215,9 +215,15 @@ const Auth = () => {
       const { checkUserAccess } = await import("@/hooks/useUserAccess");
       const access = await checkUserAccess(user.id);
 
-      // Se o usuário é Admin + Líder, mostrar a escolha SEM redirecionar antes
-      if (access.isAdmin && access.isLeader) {
-        setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
+      // Contar quantos portais o usuário tem acesso
+      const portals: string[] = [];
+      if (access.isAdmin) portals.push("admin");
+      if (access.isLeader) portals.push("lideres");
+      if (access.hasMemberProfile) portals.push("membro");
+
+      // Se tem múltiplos portais, mostrar escolha
+      if (portals.length > 1) {
+        setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
         setShowPortalChoice(true);
         return;
       }
@@ -230,8 +236,16 @@ const Auth = () => {
         return;
       }
 
-      // Caso padrão: direcionamento para dashboard principal
-      navigate("/app");
+      // Redirecionar para o único portal disponível
+      if (access.isAdmin) {
+        navigate("/app");
+      } else if (access.isLeader) {
+        navigate("/lideres");
+      } else if (access.hasMemberProfile) {
+        navigate("/portal");
+      } else {
+        navigate("/app");
+      }
     })().catch((err) => {
       console.error("Erro ao processar acesso pós-login:", err);
       // Permitir nova tentativa se algo falhar
@@ -449,9 +463,15 @@ const Auth = () => {
           const { checkUserAccess } = await import("@/hooks/useUserAccess");
           const access = await checkUserAccess(data.user.id);
 
-          // Se o usuário é Admin + Líder, mostrar a escolha
-          if (access.isAdmin && access.isLeader) {
-            setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader });
+          // Contar quantos portais o usuário tem acesso
+          const portals: string[] = [];
+          if (access.isAdmin) portals.push("admin");
+          if (access.isLeader) portals.push("lideres");
+          if (access.hasMemberProfile) portals.push("membro");
+
+          // Se tem múltiplos portais, mostrar escolha
+          if (portals.length > 1) {
+            setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
             setShowPortalChoice(true);
             hasProcessedAuthRef.current = true;
             return;
@@ -466,9 +486,17 @@ const Auth = () => {
             return;
           }
 
-          // Caso padrão: direcionamento para dashboard principal
+          // Redirecionar para o único portal disponível
           hasProcessedAuthRef.current = true;
-          navigate("/app");
+          if (access.isAdmin) {
+            navigate("/app");
+          } else if (access.isLeader) {
+            navigate("/lideres");
+          } else if (access.hasMemberProfile) {
+            navigate("/portal");
+          } else {
+            navigate("/app");
+          }
         } catch (accessErr) {
           console.error("Erro ao verificar acesso:", accessErr);
           navigate("/");
@@ -483,11 +511,12 @@ const Auth = () => {
     }
   };
 
-  const handlePortalChoice = (portal: "admin" | "lideres") => {
+  const handlePortalChoice = (portal: "admin" | "lideres" | "membro") => {
     setShowPortalChoice(false);
     setPendingUserAccess(null);
-    // Sempre redirecionar para o dashboard principal
-    navigate("/app");
+    if (portal === "admin") navigate("/app");
+    else if (portal === "lideres") navigate("/lideres");
+    else navigate("/portal");
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -756,7 +785,7 @@ const Auth = () => {
     );
   }
 
-  // Portal choice modal (for users with both Admin and Leader roles)
+  // Portal choice modal (for users with multiple access levels)
   if (showPortalChoice) {
     return (
       <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
@@ -774,23 +803,37 @@ const Auth = () => {
               </CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              className="w-full h-16 text-lg"
-              variant="secondary"
-              onClick={() => handlePortalChoice("admin")}
-            >
-              <Church className="w-6 h-6 mr-3" />
-              Portal de Administração
-            </Button>
-            <Button
-              className="w-full h-16 text-lg"
-              variant="outline"
-              onClick={() => handlePortalChoice("lideres")}
-            >
-              <Baby className="w-6 h-6 mr-3" />
-              Portal de Líderes
-            </Button>
+          <CardContent className="space-y-3">
+            {pendingUserAccess?.hasMemberProfile && (
+              <Button
+                className="w-full h-14 text-lg"
+                variant="outline"
+                onClick={() => handlePortalChoice("membro")}
+              >
+                <Users className="w-5 h-5 mr-3" />
+                Membro
+              </Button>
+            )}
+            {pendingUserAccess?.isLeader && (
+              <Button
+                className="w-full h-14 text-lg"
+                variant="outline"
+                onClick={() => handlePortalChoice("lideres")}
+              >
+                <Shield className="w-5 h-5 mr-3" />
+                Líder
+              </Button>
+            )}
+            {pendingUserAccess?.isAdmin && (
+              <Button
+                className="w-full h-14 text-lg"
+                variant="secondary"
+                onClick={() => handlePortalChoice("admin")}
+              >
+                <Church className="w-5 h-5 mr-3" />
+                Administração
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

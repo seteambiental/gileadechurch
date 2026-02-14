@@ -1,22 +1,17 @@
 import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserAccess } from "@/hooks/useUserAccess";
-import { Menu, X, Shield, Users } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Usar o novo hook centralizado para verificar acesso
-  const { isAdmin, isLeader, loading: accessLoading } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -49,7 +44,6 @@ const Header = () => {
   ];
 
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
-  const isPublicHome = location.pathname === "/";
 
   return (
     <header
@@ -89,48 +83,14 @@ const Header = () => {
               </a>
             ))}
             
-            {/* Na home pública: botão de acesso sempre visível */}
-            {isPublicHome ? (
-              <Button
-                variant="secondary"
-                className="font-heading font-semibold shadow-red ml-4"
-                onClick={() => navigate(user ? "/portal" : "/auth")}
-              >
-                {user ? "Meu Portal" : "Entrar"}
-              </Button>
-            ) : user && !authLoading && !accessLoading ? (
-              <div className="flex items-center gap-2 ml-4">
-                {isAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                    onClick={() => navigate("/cadastros")}
-                  >
-                    <Shield className="w-4 h-4 mr-1" />
-                    Admin
-                  </Button>
-                )}
-                {isLeader && !isAdmin && (
-                  <Button
-                    variant="secondary"
-                    className="font-heading font-semibold shadow-red"
-                    onClick={() => navigate("/lideres")}
-                  >
-                    <Users className="w-4 h-4 mr-1" />
-                    Portal de Líderes
-                  </Button>
-                )}
-              </div>
-            ) : !user && !authLoading ? (
-              <Button
-                variant="secondary"
-                className="font-heading font-semibold shadow-red ml-4"
-                onClick={() => navigate("/auth")}
-              >
-                Entrar
-              </Button>
-            ) : null}
+            {/* Botão de acesso */}
+            <Button
+              variant="secondary"
+              className="font-heading font-semibold shadow-red ml-4"
+              onClick={() => navigate(user ? "/portal" : "/auth")}
+            >
+              {user ? "Meu Portal" : "Entrar"}
+            </Button>
           </nav>
         </div>
 
@@ -150,59 +110,17 @@ const Header = () => {
                   </a>
                 ))}
                 
-                {/* Na home pública: botão de acesso sempre visível */}
-                {isPublicHome ? (
-                  <Button
-                    variant="secondary"
-                    className="mt-2 font-heading font-semibold shadow-red"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      navigate(user ? "/portal" : "/auth");
-                    }}
-                  >
-                    {user ? "Meu Portal" : "Entrar"}
-                  </Button>
-                ) : user && !authLoading && !accessLoading ? (
-                  <div className="flex flex-col gap-2 mt-2">
-                    {isAdmin && (
-                      <Button
-                        variant="outline"
-                        className="font-heading font-semibold border-primary-foreground/30 text-primary-foreground"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          navigate("/cadastros");
-                        }}
-                      >
-                        <Shield className="w-4 h-4 mr-2" />
-                        Administração
-                      </Button>
-                    )}
-                    {isLeader && !isAdmin && (
-                      <Button
-                        variant="secondary"
-                        className="font-heading font-semibold shadow-red"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          navigate("/lideres");
-                        }}
-                      >
-                        <Users className="w-4 h-4 mr-2" />
-                        Portal de Líderes
-                      </Button>
-                    )}
-                  </div>
-                ) : !user && !authLoading ? (
-                  <Button
-                    variant="secondary"
-                    className="mt-2 font-heading font-semibold shadow-red"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      navigate("/auth");
-                    }}
-                  >
-                    Entrar
-                  </Button>
-                ) : null}
+                {/* Botão de acesso */}
+                <Button
+                  variant="secondary"
+                  className="mt-2 font-heading font-semibold shadow-red"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    navigate(user ? "/portal" : "/auth");
+                  }}
+                >
+                  {user ? "Meu Portal" : "Entrar"}
+                </Button>
               </div>
             </div>
           </nav>

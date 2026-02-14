@@ -241,28 +241,8 @@ const AppDashboard = () => {
           ))}
         </div>
 
-        {/* Links rápidos de portais */}
+        {/* Links rápidos */}
         <div className="mt-6 flex flex-wrap gap-3 justify-center">
-          {hasLeaderAccess && (
-            <Button
-              variant="secondary"
-              onClick={() => navigate("/lideres")}
-              className="gap-2"
-            >
-              <Shield className="w-4 h-4" />
-              Portal de Líderes
-            </Button>
-          )}
-          {user && (
-            <Button
-              variant="outline"
-              onClick={() => navigate("/portal")}
-              className="gap-2"
-            >
-              <Users className="w-4 h-4" />
-              Portal do Membro
-            </Button>
-          )}
           <Button
             variant="outline"
             onClick={() => setAniversariantesOpen(true)}
