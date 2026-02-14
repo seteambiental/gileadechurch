@@ -9,15 +9,37 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserPlus, User } from "lucide-react";
-import { includesNormalized } from "@/lib/text-utils";
+import { Loader2, UserPlus, User, AlertTriangle, Home } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useMudancasPendentes, getAprovadorId } from "@/hooks/useMudancasPendentes";
 
 interface VincularMembroDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   casaRefugioId: string;
   casaRefugioName: string;
+  solicitanteId?: string;
+}
+
+interface MembroComConflito {
+  id: string;
+  full_name: string;
+  whatsapp: string | null;
+  email: string | null;
+  casa_refugio_id: string | null;
+  casa_refugio?: { name: string } | null;
+  funcoes: { function_type: string; casa_refugio_id: string | null }[];
 }
 
 export const VincularMembroDialog = ({
@@ -25,51 +47,161 @@ export const VincularMembroDialog = ({
   onOpenChange,
   casaRefugioId,
   casaRefugioName,
+  solicitanteId,
 }: VincularMembroDialogProps) => {
   const [search, setSearch] = useState("");
   const [isLinking, setIsLinking] = useState<string | null>(null);
+  const [conflictMember, setConflictMember] = useState<MembroComConflito | null>(null);
+  const [conflictMessage, setConflictMessage] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { createMudanca, isCreating } = useMudancasPendentes();
 
-  // Fetch members without a casa refugio
+  // Fetch ALL members (not just unlinked)
   const { data: membrosDisponiveis = [], isLoading } = useQuery({
-    queryKey: ["membros-disponiveis", search],
+    queryKey: ["membros-vincular-todos", search],
     queryFn: async () => {
       let query = supabase
         .from("members")
-        .select("id, full_name, whatsapp, email")
-        .is("casa_refugio_id", null)
+        .select("id, full_name, whatsapp, email, casa_refugio_id")
         .order("full_name");
 
       if (search.trim()) {
         query = query.ilike("full_name", `%${search}%`);
       }
 
-      const { data, error } = await query.limit(20);
+      const { data, error } = await query.limit(50);
       if (error) throw error;
-      return data;
+
+      // Fetch member functions for conflict detection
+      const memberIds = data?.map((m) => m.id) || [];
+      if (memberIds.length === 0) return [];
+
+      const { data: funcoes } = await supabase
+        .from("member_functions")
+        .select("member_id, function_type, casa_refugio_id")
+        .in("member_id", memberIds);
+
+      // Fetch casa refugio names for members already linked
+      const casaIds = data
+        ?.filter((m) => m.casa_refugio_id)
+        .map((m) => m.casa_refugio_id!)
+        .filter((id, i, arr) => arr.indexOf(id) === i) || [];
+
+      let casasMap: Record<string, string> = {};
+      if (casaIds.length > 0) {
+        const { data: casas } = await supabase
+          .from("casas_refugio")
+          .select("id, name")
+          .in("id", casaIds);
+        casas?.forEach((c) => (casasMap[c.id] = c.name));
+      }
+
+      return (data || []).map((m) => ({
+        ...m,
+        casa_refugio: m.casa_refugio_id ? { name: casasMap[m.casa_refugio_id] || "Outra casa" } : null,
+        funcoes: (funcoes || []).filter((f) => f.member_id === m.id),
+      })) as MembroComConflito[];
     },
     enabled: open,
   });
 
-  const handleVincular = async (membroId: string, membroNome: string) => {
-    setIsLinking(membroId);
+  // Already linked to THIS casa
+  const { data: membrosJaVinculados = [] } = useQuery({
+    queryKey: ["membros-casa-ids", casaRefugioId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("id")
+        .eq("casa_refugio_id", casaRefugioId);
+      return data?.map((m) => m.id) || [];
+    },
+    enabled: open,
+  });
+
+  const getConflicts = (membro: MembroComConflito): string[] => {
+    const conflicts: string[] = [];
+
+    // Already linked to another casa
+    if (membro.casa_refugio_id && membro.casa_refugio_id !== casaRefugioId) {
+      conflicts.push(`Já está vinculado à Casa Refúgio "${membro.casa_refugio?.name || "outra"}"`);
+    }
+
+    // Has leadership roles in casas refugio
+    const leadershipRoles = membro.funcoes.filter(
+      (f) =>
+        ["lider_casa_refugio", "supervisor_casa_refugio"].includes(f.function_type) &&
+        f.casa_refugio_id &&
+        f.casa_refugio_id !== casaRefugioId
+    );
+    if (leadershipRoles.length > 0) {
+      const roleLabels: Record<string, string> = {
+        lider_casa_refugio: "Líder",
+        supervisor_casa_refugio: "Supervisor",
+      };
+      leadershipRoles.forEach((r) => {
+        conflicts.push(`É ${roleLabels[r.function_type] || r.function_type} em outra Casa Refúgio`);
+      });
+    }
+
+    // Sindico
+    const sindicoRoles = membro.funcoes.filter((f) => f.function_type === "sindico_condominio");
+    if (sindicoRoles.length > 0) {
+      conflicts.push("É Síndico de Condomínio");
+    }
+
+    return conflicts;
+  };
+
+  const handleVincular = async (membro: MembroComConflito) => {
+    const conflicts = getConflicts(membro);
+    const isAlreadyLinked = membrosJaVinculados.includes(membro.id);
+
+    if (isAlreadyLinked) {
+      toast({
+        variant: "destructive",
+        title: "Membro já vinculado",
+        description: `${membro.full_name} já está vinculado a esta Casa Refúgio.`,
+      });
+      return;
+    }
+
+    if (conflicts.length > 0) {
+      setConflictMember(membro);
+      setConflictMessage(conflicts.join(". ") + ".");
+      return;
+    }
+
+    // No conflicts and no existing casa - link directly if has no casa, or request approval
+    if (membro.casa_refugio_id) {
+      // Has existing casa - need approval
+      setConflictMember(membro);
+      setConflictMessage(`Já está vinculado à Casa Refúgio "${membro.casa_refugio?.name || "outra"}".`);
+      return;
+    }
+
+    await doVincular(membro);
+  };
+
+  const doVincular = async (membro: MembroComConflito) => {
+    setIsLinking(membro.id);
     try {
       const { error } = await supabase
         .from("members")
         .update({ casa_refugio_id: casaRefugioId })
-        .eq("id", membroId)
-        .is("casa_refugio_id", null); // Extra check to ensure not already linked
+        .eq("id", membro.id);
 
       if (error) throw error;
 
       toast({
         title: "Membro vinculado!",
-        description: `${membroNome} foi vinculado à ${casaRefugioName}`,
+        description: `${membro.full_name} foi vinculado à ${casaRefugioName}`,
       });
 
       queryClient.invalidateQueries({ queryKey: ["membros-casa", casaRefugioId] });
-      queryClient.invalidateQueries({ queryKey: ["membros-disponiveis"] });
+      queryClient.invalidateQueries({ queryKey: ["membros-vincular-todos"] });
+      queryClient.invalidateQueries({ queryKey: ["membros-casa-ids", casaRefugioId] });
+      queryClient.invalidateQueries({ queryKey: ["membros-vinculados-stats-portal", casaRefugioId] });
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -81,71 +213,225 @@ export const VincularMembroDialog = ({
     }
   };
 
+  const handleRequestApproval = async () => {
+    if (!conflictMember || !solicitanteId) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível identificar o solicitante.",
+      });
+      setConflictMember(null);
+      return;
+    }
+
+    setIsLinking(conflictMember.id);
+    try {
+      // Get the supervisor of this casa refugio as the approver
+      const aprovadorId = await getAprovadorForVinculacao(casaRefugioId);
+
+      if (!aprovadorId) {
+        toast({
+          variant: "destructive",
+          title: "Aprovador não encontrado",
+          description: "Não foi possível identificar o supervisor/aprovador para esta solicitação.",
+        });
+        return;
+      }
+
+      createMudanca({
+        solicitante_id: solicitanteId,
+        aprovador_id: aprovadorId,
+        tipo_mudanca: "vincular_membro_casa_refugio",
+        acao: "adicionar",
+        casa_refugio_id: casaRefugioId,
+        membro_id: conflictMember.id,
+      });
+
+      setConflictMember(null);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao solicitar aprovação",
+        description: error.message,
+      });
+    } finally {
+      setIsLinking(null);
+    }
+  };
+
+  // Determine approver: Líder -> Supervisor, Supervisor -> Síndico, Síndico -> Pastor
+  const getAprovadorForVinculacao = async (casaId: string): Promise<string | null> => {
+    const { data: casa } = await supabase
+      .from("casas_refugio")
+      .select("supervisor_id, condominio")
+      .eq("id", casaId)
+      .single();
+
+    if (!casa) return null;
+
+    // If solicitante is the leader, supervisor approves
+    if (casa.supervisor_id) return casa.supervisor_id;
+
+    // Fallback: get sindico of condominio
+    if (casa.condominio) {
+      const { data: cond } = await supabase
+        .from("condominios")
+        .select("sindico_id")
+        .eq("name", casa.condominio)
+        .single();
+      if (cond?.sindico_id) return cond.sindico_id;
+    }
+
+    // Fallback: pastor geral
+    const { data: pastor } = await supabase
+      .from("member_functions")
+      .select("member_id")
+      .eq("function_type", "pastor_geral")
+      .limit(1)
+      .single();
+    return pastor?.member_id || null;
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-destructive" />
-            Vincular Membro
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-destructive" />
+              Vincular Membro
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          <SearchInput
-            placeholder="Buscar membro pelo nome..."
-            value={search}
-            onChange={setSearch}
-          />
+          <div className="space-y-4">
+            <SearchInput
+              placeholder="Buscar membro pelo nome..."
+              value={search}
+              onChange={setSearch}
+            />
 
-          <p className="text-xs text-muted-foreground">
-            Apenas membros sem Casa Refúgio vinculada são exibidos. Para cadastrar um novo membro, acesse <strong>Cadastros → Membros</strong>.
-          </p>
+            <p className="text-xs text-muted-foreground">
+              Busque e vincule membros à <strong>{casaRefugioName}</strong>. Membros com conflitos precisarão de aprovação.
+            </p>
 
-          <div className="max-h-[300px] overflow-y-auto space-y-2">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 text-destructive animate-spin" />
-              </div>
-            ) : membrosDisponiveis.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground text-sm">
-                {search ? "Nenhum membro encontrado" : "Nenhum membro disponível para vincular"}
-              </div>
-            ) : (
-              membrosDisponiveis.map((membro) => (
-                <div
-                  key={membro.id}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-foreground">{membro.full_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {membro.whatsapp || membro.email || "Sem contato"}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleVincular(membro.id, membro.full_name)}
-                    disabled={isLinking === membro.id}
-                  >
-                    {isLinking === membro.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      "Vincular"
-                    )}
-                  </Button>
+            <div className="max-h-[300px] overflow-y-auto space-y-2">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-6 h-6 text-destructive animate-spin" />
                 </div>
-              ))
-            )}
+              ) : membrosDisponiveis.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">
+                  {search ? "Nenhum membro encontrado" : "Nenhum membro disponível"}
+                </div>
+              ) : (
+                membrosDisponiveis.map((membro) => {
+                  const isAlreadyHere = membrosJaVinculados.includes(membro.id);
+                  const conflicts = getConflicts(membro);
+                  const hasConflict = conflicts.length > 0 || (membro.casa_refugio_id && membro.casa_refugio_id !== casaRefugioId);
+
+                  return (
+                    <div
+                      key={membro.id}
+                      className={`flex items-center justify-between p-3 rounded-lg ${
+                        isAlreadyHere
+                          ? "bg-muted/30 opacity-60"
+                          : hasConflict
+                          ? "bg-amber-500/5 border border-amber-500/20"
+                          : "bg-muted/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          hasConflict ? "bg-amber-500/10" : "bg-primary/10"
+                        }`}>
+                          {hasConflict ? (
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          ) : (
+                            <User className="w-4 h-4 text-primary" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm text-foreground truncate">{membro.full_name}</p>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <p className="text-xs text-muted-foreground">
+                              {membro.whatsapp || membro.email || "Sem contato"}
+                            </p>
+                            {isAlreadyHere && (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                Já vinculado
+                              </Badge>
+                            )}
+                            {!isAlreadyHere && membro.casa_refugio_id && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-700">
+                                <Home className="w-3 h-3 mr-0.5" />
+                                {membro.casa_refugio?.name || "Outra CR"}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={hasConflict && !isAlreadyHere ? "outline" : "secondary"}
+                        onClick={() => handleVincular(membro)}
+                        disabled={isLinking === membro.id || isAlreadyHere || isCreating}
+                        className="flex-shrink-0 ml-2"
+                      >
+                        {isLinking === membro.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : isAlreadyHere ? (
+                          "Vinculado"
+                        ) : hasConflict ? (
+                          "Solicitar"
+                        ) : (
+                          "Vincular"
+                        )}
+                      </Button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Conflict Confirmation Dialog */}
+      <AlertDialog open={!!conflictMember} onOpenChange={() => setConflictMember(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Conflito Detectado
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                <strong>{conflictMember?.full_name}</strong> possui impedimento(s):
+              </p>
+              <p className="text-amber-700 font-medium">{conflictMessage}</p>
+              <p>
+                Deseja enviar uma solicitação de aprovação para vincular este membro à{" "}
+                <strong>{casaRefugioName}</strong>?
+              </p>
+              <p className="text-xs text-muted-foreground">
+                A solicitação será enviada ao gestor responsável na cadeia de aprovação.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRequestApproval}
+              disabled={isCreating}
+            >
+              {isCreating ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              ) : null}
+              Solicitar Aprovação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
