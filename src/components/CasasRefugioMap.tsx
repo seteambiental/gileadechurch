@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Users, Calendar, Filter, Home, Loader2 } from "lucide-react";
+import { MapPin, Users, Calendar, Filter, Home, Loader2, Navigation } from "lucide-react";
 
 interface CasaRefugio {
   id: string;
@@ -271,6 +271,17 @@ const CasasRefugioMap = () => {
                             </Badge>
                           )}
                         </p>
+                      )}
+                      {casa.latitude && casa.longitude && (
+                        <a
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${casa.latitude},${casa.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-secondary hover:underline mt-2"
+                        >
+                          <Navigation className="w-3 h-3" />
+                          Traçar rota
+                        </a>
                       )}
                     </div>
                   </div>
