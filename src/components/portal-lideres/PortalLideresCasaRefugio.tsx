@@ -49,12 +49,14 @@ interface PortalLideresCasaRefugioProps {
   portalAccess: PortalAccess | null;
   memberCasasRefugio: { id: string; name: string; isLider: boolean }[];
   canEdit: boolean;
+  memberId?: string;
 }
 
 export const PortalLideresCasaRefugio = ({
   portalAccess,
   memberCasasRefugio,
   canEdit,
+  memberId,
 }: PortalLideresCasaRefugioProps) => {
   const queryClient = useQueryClient();
   const [selectedCasa, setSelectedCasa] = useState<string | null>(null);
@@ -827,6 +829,7 @@ export const PortalLideresCasaRefugio = ({
                   onOpenChange={setShowVincularDialog}
                   casaRefugioId={selectedCasa}
                   casaRefugioName={casaSelecionada.name}
+                  solicitanteId={memberId}
                 />
               )}
 

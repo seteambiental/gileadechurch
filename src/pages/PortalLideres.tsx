@@ -307,6 +307,7 @@ const PortalLideres = () => {
               portalAccess={portalAccess}
               memberCasasRefugio={memberCasasRefugio}
               canEdit={canEdit}
+              memberId={memberProfile.id}
             />
           </TabsContent>
 

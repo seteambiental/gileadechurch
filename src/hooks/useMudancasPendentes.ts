@@ -43,6 +43,7 @@ export const tipoMudancaLabels: Record<string, string> = {
   anfitriao_esposa_casa_refugio: "Anfitrião de Casa Refúgio",
   sindico_condominio: "Síndico de Condomínio",
   sindico_esposa_condominio: "Síndico de Condomínio",
+  vincular_membro_casa_refugio: "Vincular Membro à Casa Refúgio",
 };
 
 export const acaoLabels: Record<string, string> = {
