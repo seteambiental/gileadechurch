@@ -24,7 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 // Componentes das abas
-import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
+import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
 import { PortalLideresIndicadores } from "@/components/portal-lideres/PortalLideresIndicadores";
 import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLideresMinisterio";
 import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLideresCasaRefugio";
@@ -300,7 +300,7 @@ const PortalLideres = () => {
           </div>
 
           <TabsContent value="programacao">
-            <PortalAgendaTab />
+            <PortalLideresAgendaTab portalAccess={portalAccess} memberId={memberProfile.id} />
           </TabsContent>
 
           <TabsContent value="indicadores">

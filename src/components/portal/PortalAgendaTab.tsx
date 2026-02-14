@@ -127,6 +127,7 @@ export const PortalAgendaTab = () => {
         .from("agenda_igreja")
         .select("*")
         .eq("ativo", true)
+        .eq("status", "aprovado")
         .order("data_evento");
       if (error) throw error;
       return data as Evento[];
