@@ -31,6 +31,7 @@ export interface UserAccess {
   isAdmin: boolean;
   isLeader: boolean;
   isPastorAuxiliar: boolean;
+  hasMemberProfile: boolean;
   roles: string[];
   functions: string[];
   hasLeaderAccess: boolean;
@@ -47,6 +48,7 @@ export const useUserAccess = (userId: string | undefined) => {
           isAdmin: false,
           isLeader: false,
           isPastorAuxiliar: false,
+          hasMemberProfile: false,
           roles: [],
           functions: [],
           hasLeaderAccess: false,
@@ -93,10 +95,10 @@ export const useUserAccess = (userId: string | undefined) => {
       }
 
       return {
-        isAdmin: isAdmin || isPastorAuxiliar, // mantém compatibilidade mas com granularidade
-        // isLeader = acesso ao portal de líderes (não confundir com admin)
+        isAdmin: isAdmin || isPastorAuxiliar,
         isLeader: hasLeaderAccess,
         isPastorAuxiliar,
+        hasMemberProfile: !!memberData,
         roles,
         functions,
         hasLeaderAccess,
@@ -111,6 +113,7 @@ export const useUserAccess = (userId: string | undefined) => {
     isAdmin: data?.isAdmin ?? false,
     isLeader: data?.isLeader ?? false,
     isPastorAuxiliar: data?.isPastorAuxiliar ?? false,
+    hasMemberProfile: data?.hasMemberProfile ?? false,
     roles: data?.roles ?? [],
     functions: data?.functions ?? [],
     hasLeaderAccess: data?.hasLeaderAccess ?? false,
@@ -163,6 +166,7 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
     isAdmin: isAdmin || isPastorAuxiliar,
     isLeader: hasLeaderAccess,
     isPastorAuxiliar,
+    hasMemberProfile: !!memberData,
     roles,
     functions,
     hasLeaderAccess,
