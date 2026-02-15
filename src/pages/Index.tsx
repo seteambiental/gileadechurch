@@ -126,9 +126,11 @@ const Index = () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, flyer_url, data_evento, data_fim, limite_vagas")
+        .select("id, titulo, flyer_url, data_evento, data_fim, limite_vagas, visibilidade")
         .eq("ativo", true)
         .eq("recorrente", false)
+        .eq("visibilidade", "publico")
+        .eq("status", "aprovado")
         .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
