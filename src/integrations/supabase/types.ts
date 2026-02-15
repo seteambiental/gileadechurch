@@ -359,6 +359,7 @@ export type Database = {
           titulo: string
           updated_at: string
           valor_custo: number | null
+          visibilidade: string
         }
         Insert: {
           ativo?: boolean | null
@@ -393,6 +394,7 @@ export type Database = {
           titulo: string
           updated_at?: string
           valor_custo?: number | null
+          visibilidade?: string
         }
         Update: {
           ativo?: boolean | null
@@ -427,6 +429,7 @@ export type Database = {
           titulo?: string
           updated_at?: string
           valor_custo?: number | null
+          visibilidade?: string
         }
         Relationships: [
           {
