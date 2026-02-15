@@ -126,6 +126,8 @@ const AgendaPage = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-public"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-admin"] });
       toast({ title: "Evento excluído com sucesso" });
       setEventoParaExcluir(null);
     },
