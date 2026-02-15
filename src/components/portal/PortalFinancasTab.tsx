@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, Copy, Check, QrCode, Loader2, Building2 } from "lucide-react";
+import { DollarSign, Copy, Check, Loader2, Building2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
@@ -12,7 +12,7 @@ import qrcodePixImage from "@/assets/qrcode-pix.png";
 export const PortalFinancasTab = () => {
   const { toast } = useToast();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [showQrCode, setShowQrCode] = useState<string | null>(null);
+  
 
   const { data: pixConfigs = [], isLoading } = useQuery({
     queryKey: ["igreja-pix"],
@@ -139,13 +139,7 @@ export const PortalFinancasTab = () => {
                       </p>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowQrCode(showQrCode === pix.id ? null : pix.id)}
-                  >
-                    <QrCode className="w-5 h-5" />
-                  </Button>
+                  
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -168,16 +162,14 @@ export const PortalFinancasTab = () => {
                   </Button>
                 </div>
 
-                {/* QR Code */}
-                {showQrCode === pix.id && (
-                  <div className="flex justify-center p-4 bg-background rounded-lg">
-                    <img
-                      src={qrcodePixImage}
-                      alt="QR Code PIX"
-                      className="w-[180px] h-[180px] object-contain"
-                    />
-                  </div>
-                )}
+                {/* QR Code ampliado */}
+                <div className="flex justify-center p-4 bg-background rounded-lg border border-border">
+                  <img
+                    src={qrcodePixImage}
+                    alt="QR Code PIX"
+                    className="w-[280px] h-[280px] object-contain"
+                  />
+                </div>
 
                 {pix.cidade && (
                   <p className="text-xs text-muted-foreground text-center">
