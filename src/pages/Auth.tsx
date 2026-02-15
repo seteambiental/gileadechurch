@@ -597,10 +597,16 @@ const Auth = () => {
         estado_civil: preCheckEstadoCivil || null,
       };
 
-      const { error: requestError } = await supabase.from("member_requests").insert(requestPayload);
+      const { data: created, error: requestError } = await supabase.functions.invoke(
+        "criar-solicitacao-membro",
+        { body: requestPayload },
+      );
       
       if (requestError) {
         throw requestError;
+      }
+      if (!created?.success) {
+        throw new Error(created?.error || "Não foi possível criar a solicitação.");
       }
 
       if (needsManualApproval) {
