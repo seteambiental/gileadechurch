@@ -92,7 +92,7 @@ interface AgendaCalendarProps {
       const eventosFiltrados = eventos.filter((evento) => {
         if (evento.recorrente) {
           if (evento.dia_semana !== diaSemana) return false;
-          if (evento.semana_mes !== null && evento.semana_mes !== undefined) {
+          if (evento.semana_mes !== null && evento.semana_mes !== undefined && evento.semana_mes > 0) {
             return evento.semana_mes === semanaDoMes;
           }
           return true;

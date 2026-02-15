@@ -543,6 +543,7 @@ export const EventoFormDialog = ({
       queryClient.invalidateQueries({ queryKey: ["eventos-recorrentes-homepage"] });
       queryClient.invalidateQueries({ queryKey: ["eventos-pendentes-lideres"] });
       queryClient.invalidateQueries({ queryKey: ["meus-eventos-solicitados"] });
+      queryClient.invalidateQueries({ queryKey: ["reservas-ambientes"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
