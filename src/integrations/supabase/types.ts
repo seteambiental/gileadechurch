@@ -327,7 +327,10 @@ export type Database = {
       }
       agenda_igreja: {
         Row: {
+          ambiente_id: string | null
           ativo: boolean | null
+          bloqueio_fim: string | null
+          bloqueio_inicio: string | null
           comentarios_custo: string | null
           comentarios_refeicao: string | null
           cor: string | null
@@ -346,6 +349,7 @@ export type Database = {
           idade_minima: number | null
           limite_vagas: number | null
           local: string | null
+          local_tipo: string
           motivo_rejeicao: string | null
           observacoes: string | null
           recorrente: boolean | null
@@ -362,7 +366,10 @@ export type Database = {
           visibilidade: string
         }
         Insert: {
+          ambiente_id?: string | null
           ativo?: boolean | null
+          bloqueio_fim?: string | null
+          bloqueio_inicio?: string | null
           comentarios_custo?: string | null
           comentarios_refeicao?: string | null
           cor?: string | null
@@ -381,6 +388,7 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           local?: string | null
+          local_tipo?: string
           motivo_rejeicao?: string | null
           observacoes?: string | null
           recorrente?: boolean | null
@@ -397,7 +405,10 @@ export type Database = {
           visibilidade?: string
         }
         Update: {
+          ambiente_id?: string | null
           ativo?: boolean | null
+          bloqueio_fim?: string | null
+          bloqueio_inicio?: string | null
           comentarios_custo?: string | null
           comentarios_refeicao?: string | null
           cor?: string | null
@@ -416,6 +427,7 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           local?: string | null
+          local_tipo?: string
           motivo_rejeicao?: string | null
           observacoes?: string | null
           recorrente?: boolean | null
@@ -432,6 +444,13 @@ export type Database = {
           visibilidade?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "agenda_igreja_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "agenda_igreja_solicitante_id_fkey"
             columns: ["solicitante_id"]

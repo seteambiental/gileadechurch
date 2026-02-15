@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +129,9 @@ const TIPOS_COMPROMISSO = [
   { value: "cursos", label: "Cursos" },
   { value: "aulas", label: "Aulas" },
   { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
+  { value: "casamento", label: "Casamento" },
+  { value: "confraternizacao", label: "Confraternização" },
+  { value: "churrasco", label: "Churrasco" },
 ];
 
 export const EventoFormDialog = ({
@@ -163,6 +166,12 @@ export const EventoFormDialog = ({
     hora_inicio: "",
     hora_fim: "",
     local: "Igreja Gileade",
+    local_tipo: "na_igreja" as "na_igreja" | "fora",
+    ambiente_id: "",
+    bloqueio_inicio_data: "",
+    bloqueio_inicio_hora: "",
+    bloqueio_fim_data: "",
+    bloqueio_fim_hora: "",
     tipo_evento: "evento",
     genero_alvo: "todos",
     cor: "#dc2626",
@@ -184,9 +193,23 @@ export const EventoFormDialog = ({
 
   const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
 
+  const { data: ambientes = [] } = useQuery({
+    queryKey: ["ambientes-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ambientes")
+        .select("id, nome")
+        .eq("ativo", true)
+        .order("nome");
+      if (error) throw error;
+      return data;
+    },
+  });
   useEffect(() => {
     if (open) {
       if (evento) {
+        const bloqueioInicio = (evento as any).bloqueio_inicio ? new Date((evento as any).bloqueio_inicio) : null;
+        const bloqueioFim = (evento as any).bloqueio_fim ? new Date((evento as any).bloqueio_fim) : null;
         setFormData({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
@@ -195,6 +218,12 @@ export const EventoFormDialog = ({
           hora_inicio: evento.hora_inicio?.substring(0, 5) || "",
           hora_fim: evento.hora_fim?.substring(0, 5) || "",
           local: evento.local || "Igreja Gileade",
+          local_tipo: ((evento as any).local_tipo as "na_igreja" | "fora") || "na_igreja",
+          ambiente_id: (evento as any).ambiente_id || "",
+          bloqueio_inicio_data: bloqueioInicio ? format(bloqueioInicio, "yyyy-MM-dd") : "",
+          bloqueio_inicio_hora: bloqueioInicio ? format(bloqueioInicio, "HH:mm") : "",
+          bloqueio_fim_data: bloqueioFim ? format(bloqueioFim, "yyyy-MM-dd") : "",
+          bloqueio_fim_hora: bloqueioFim ? format(bloqueioFim, "HH:mm") : "",
           tipo_evento: evento.tipo_evento || "evento",
           genero_alvo: evento.genero_alvo || "todos",
           cor: evento.cor || "#dc2626",
@@ -226,6 +255,12 @@ export const EventoFormDialog = ({
           hora_inicio: "",
           hora_fim: "",
           local: "Igreja Gileade",
+          local_tipo: "na_igreja",
+          ambiente_id: "",
+          bloqueio_inicio_data: "",
+          bloqueio_inicio_hora: "",
+          bloqueio_fim_data: "",
+          bloqueio_fim_hora: "",
           tipo_evento: isCompromisso ? "culto" : "evento",
           genero_alvo: "todos",
           cor: "#dc2626",
@@ -440,6 +475,19 @@ export const EventoFormDialog = ({
 
     setIsLoading(true);
     try {
+      // Build bloqueio timestamps
+      const bloqueioInicio = formData.bloqueio_inicio_data && formData.bloqueio_inicio_hora
+        ? new Date(`${formData.bloqueio_inicio_data}T${formData.bloqueio_inicio_hora}:00`).toISOString()
+        : null;
+      const bloqueioFim = formData.bloqueio_fim_data && formData.bloqueio_fim_hora
+        ? new Date(`${formData.bloqueio_fim_data}T${formData.bloqueio_fim_hora}:00`).toISOString()
+        : null;
+
+      // Determine local text
+      const localText = formData.local_tipo === "na_igreja"
+        ? (ambientes.find(a => a.id === formData.ambiente_id)?.nome || "Igreja Gileade")
+        : formData.local || null;
+
       const payload = {
         titulo: formData.titulo.trim(),
         descricao: formData.descricao || null,
@@ -447,7 +495,11 @@ export const EventoFormDialog = ({
         data_fim: formData.data_fim || null,
         hora_inicio: formData.hora_inicio || null,
         hora_fim: formData.hora_fim || null,
-        local: formData.local || null,
+        local: localText,
+        local_tipo: formData.local_tipo,
+        ambiente_id: formData.local_tipo === "na_igreja" && formData.ambiente_id ? formData.ambiente_id : null,
+        bloqueio_inicio: bloqueioInicio,
+        bloqueio_fim: bloqueioFim,
         tipo_evento: formData.tipo_evento,
         genero_alvo: formData.genero_alvo,
         cor: formData.cor,
@@ -808,13 +860,153 @@ export const EventoFormDialog = ({
               </div>
             )}
 
-            <div>
-              <Label htmlFor="local">Local</Label>
-              <Input
-                id="local"
-                value={formData.local}
-                onChange={(e) => setFormData({ ...formData, local: e.target.value })}
-              />
+            {/* Local do Evento */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <Label className="font-medium">Local de Realização *</Label>
+              <RadioGroup
+                value={formData.local_tipo}
+                onValueChange={(v) => {
+                  const tipo = v as "na_igreja" | "fora";
+                  setFormData({
+                    ...formData,
+                    local_tipo: tipo,
+                    local: tipo === "na_igreja" ? "Igreja Gileade" : "",
+                    ambiente_id: "",
+                    bloqueio_inicio_data: "",
+                    bloqueio_inicio_hora: "",
+                    bloqueio_fim_data: "",
+                    bloqueio_fim_hora: "",
+                  });
+                }}
+                className="flex gap-4"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="na_igreja" id="local-igreja" />
+                  <Label htmlFor="local-igreja" className="cursor-pointer">Na Igreja</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="fora" id="local-fora" />
+                  <Label htmlFor="local-fora" className="cursor-pointer">Fora da Igreja</Label>
+                </div>
+              </RadioGroup>
+
+              {formData.local_tipo === "na_igreja" ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Ambiente</Label>
+                    <Select
+                      value={formData.ambiente_id}
+                      onValueChange={(v) => setFormData({ ...formData, ambiente_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o ambiente" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ambientes.map((amb) => (
+                          <SelectItem key={amb.id} value={amb.id}>{amb.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.ambiente_id && (
+                    <div className="space-y-2 p-2 bg-background rounded border">
+                      <Label className="text-sm font-medium">Período de Bloqueio do Ambiente</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">De (data)</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal h-9 text-sm",
+                                  !formData.bloqueio_inicio_data && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                {formData.bloqueio_inicio_data 
+                                  ? format(parseISO(formData.bloqueio_inicio_data), "dd/MM/yyyy", { locale: ptBR }) 
+                                  : "DD/MM/AAAA"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={formData.bloqueio_inicio_data ? parseISO(formData.bloqueio_inicio_data) : undefined}
+                                onSelect={(date) => setFormData({ ...formData, bloqueio_inicio_data: date ? format(date, "yyyy-MM-dd") : "" })}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                                locale={ptBR}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Às (hora)</Label>
+                          <Input
+                            type="time"
+                            className="h-9"
+                            value={formData.bloqueio_inicio_hora}
+                            onChange={(e) => setFormData({ ...formData, bloqueio_inicio_hora: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Até (data)</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  "w-full justify-start text-left font-normal h-9 text-sm",
+                                  !formData.bloqueio_fim_data && "text-muted-foreground"
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                {formData.bloqueio_fim_data 
+                                  ? format(parseISO(formData.bloqueio_fim_data), "dd/MM/yyyy", { locale: ptBR }) 
+                                  : "DD/MM/AAAA"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={formData.bloqueio_fim_data ? parseISO(formData.bloqueio_fim_data) : undefined}
+                                onSelect={(date) => setFormData({ ...formData, bloqueio_fim_data: date ? format(date, "yyyy-MM-dd") : "" })}
+                                disabled={(date) => formData.bloqueio_inicio_data ? date < parseISO(formData.bloqueio_inicio_data) : false}
+                                initialFocus
+                                className="p-3 pointer-events-auto"
+                                locale={ptBR}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Às (hora)</Label>
+                          <Input
+                            type="time"
+                            className="h-9"
+                            value={formData.bloqueio_fim_hora}
+                            onChange={(e) => setFormData({ ...formData, bloqueio_fim_hora: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="local-endereco">Endereço completo</Label>
+                  <Input
+                    id="local-endereco"
+                    placeholder="Rua, número, bairro, cidade..."
+                    value={formData.local}
+                    onChange={(e) => setFormData({ ...formData, local: e.target.value })}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Refeição */}

@@ -87,6 +87,9 @@ const tipoEventoLabels: Record<string, string> = {
   cursos: "Cursos",
   aulas: "Aulas",
   apresentacao_criancas: "Apresentação de Crianças",
+  casamento: "Casamento",
+  confraternizacao: "Confraternização",
+  churrasco: "Churrasco",
 };
 
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
@@ -156,6 +159,7 @@ const AgendaPage = () => {
   const TIPOS_COMPROMISSO = [
     "culto", "ceia", "conexao_lider", "quarta_proposito",
     "quarta_proposito_prestacao", "cursos", "aulas", "apresentacao_criancas",
+    "casamento", "confraternizacao", "churrasco",
   ];
 
   // Query para eventos únicos (eventos) - ordenados por data crescente
