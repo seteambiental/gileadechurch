@@ -351,16 +351,23 @@ const HomepageAvisosTab = () => {
                       size="icon"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                       onClick={async () => {
-                        const { error } = await supabase
-                          .from("agenda_igreja")
-                          .update({ flyer_url: null })
-                          .eq("id", evento.id);
-                        if (error) {
-                          toast.error("Erro ao remover flyer");
-                        } else {
-                          toast.success("Flyer removido da homepage");
-                          queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-admin"] });
-                          queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-public"] });
+                        try {
+                          const { error, count } = await supabase
+                            .from("agenda_igreja")
+                            .update({ flyer_url: null as string | null })
+                            .eq("id", evento.id)
+                            .select();
+                          if (error) {
+                            console.error("Erro ao remover flyer:", error);
+                            toast.error("Erro ao remover flyer: " + error.message);
+                          } else {
+                            toast.success("Flyer removido da homepage");
+                            queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-admin"] });
+                            queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-public"] });
+                          }
+                        } catch (err: any) {
+                          console.error("Erro inesperado:", err);
+                          toast.error("Erro inesperado ao remover flyer");
                         }
                       }}
                     >
