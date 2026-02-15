@@ -48,7 +48,7 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
 
 function gerarMensagemBoasVindasMembro(nome: string, email: string, senha: string) {
   const primeiroNome = nome.split(' ')[0];
-  
+
   return `🎉 *Bem-vindo(a) à Igreja Gileade, ${primeiroNome}!*
 
 Seu cadastro foi realizado com sucesso! 🙏
@@ -58,13 +58,45 @@ Seu cadastro foi realizado com sucesso! 🙏
 
 🔐 *Seus dados de acesso:*
 📧 Email: ${email}
-🔑 Senha: ${senha}
+🔑 Senha temporária: ${senha}
 
-⚠️ *Importante:* Sua senha é "Cpf@" seguido dos 6 primeiros dígitos do seu CPF. Recomendamos que você altere sua senha no primeiro acesso.
+⚠️ *Importante:* por segurança, altere sua senha imediatamente após o primeiro acesso.
 
 Estamos muito felizes em ter você conosco!
 
 _Igreja Gileade_ 💙`;
+}
+
+function generateSecurePassword(length = 14): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghjkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%";
+  const all = upper + lower + digits + symbols;
+
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+
+  // Ensure at least one char from each set
+  const pick = (set: string, b: number) => set[b % set.length];
+  const pwdChars: string[] = [
+    pick(upper, bytes[0]),
+    pick(lower, bytes[1]),
+    pick(digits, bytes[2]),
+    pick(symbols, bytes[3]),
+  ];
+
+  for (let i = pwdChars.length; i < length; i++) {
+    pwdChars.push(pick(all, bytes[i]));
+  }
+
+  // Shuffle
+  for (let i = pwdChars.length - 1; i > 0; i--) {
+    const j = bytes[i] % (i + 1);
+    [pwdChars[i], pwdChars[j]] = [pwdChars[j], pwdChars[i]];
+  }
+
+  return pwdChars.join("");
 }
 
 Deno.serve(async (req) => {
@@ -85,7 +117,16 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { email, cpf, member_id, perfil } = await req.json() as RequestBody;
+    const { email, cpf: _cpf, member_id, perfil } = await req.json() as RequestBody;
+
+    // Authorization: only admins/pastoral staff can create accounts
+    const { data: hasAccess, error: accessErr } = await _authClient.rpc('has_full_access');
+    if (accessErr || !hasAccess) {
+      return new Response(JSON.stringify({ error: 'Proibido' }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!email) {
       return new Response(
@@ -101,9 +142,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Gerar senha padrão: 6 primeiros dígitos do CPF ou 123456
-    const cpfDigits = cpf ? cpf.replace(/\D/g, "") : "";
-    const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.substring(0, 6) : "123456";
+    // Gerar senha temporária segura (não previsível)
+    const defaultPassword = generateSecurePassword(14);
 
     // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
@@ -219,7 +259,6 @@ Deno.serve(async (req) => {
         success: true, 
         message: "Usuário criado com sucesso",
         user_id: newUser.user.id,
-        default_password: defaultPassword,
         was_existing: false
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
