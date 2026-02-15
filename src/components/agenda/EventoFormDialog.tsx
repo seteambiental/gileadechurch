@@ -894,39 +894,37 @@ export const EventoFormDialog = ({
               </p>
             </div>
 
-            {/* Visibilidade - exibir sempre, mas destacar no modo aprovação */}
-            {approvalMode && (
-              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <Label className="font-medium">Visibilidade da Agenda *</Label>
-                <RadioGroup
-                  value={formData.visibilidade}
-                  onValueChange={(v) => setFormData({ ...formData, visibilidade: v })}
-                  className="space-y-2"
-                >
-                  <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
-                    <RadioGroupItem value="publico" id="vis-publico" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="vis-publico" className="font-medium cursor-pointer">Evento Público</Label>
-                      <p className="text-xs text-muted-foreground">Aberto a todos. Aparece na aba de Eventos após aprovação.</p>
-                    </div>
+            {/* Visibilidade - exibir sempre */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <Label className="font-medium">Visibilidade da Agenda *</Label>
+              <RadioGroup
+                value={formData.visibilidade}
+                onValueChange={(v) => setFormData({ ...formData, visibilidade: v })}
+                className="space-y-2"
+              >
+                <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
+                  <RadioGroupItem value="publico" id="vis-publico" className="mt-0.5" />
+                  <div>
+                    <Label htmlFor="vis-publico" className="font-medium cursor-pointer">Evento Público</Label>
+                    <p className="text-xs text-muted-foreground">Aberto a todos. Aparece na aba de Eventos após aprovação.</p>
                   </div>
-                  <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
-                    <RadioGroupItem value="interno" id="vis-interno" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="vis-interno" className="font-medium cursor-pointer">Interno</Label>
-                      <p className="text-xs text-muted-foreground">Restrito à igreja. Aparece apenas na Programação após aprovação.</p>
-                    </div>
+                </div>
+                <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
+                  <RadioGroupItem value="interno" id="vis-interno" className="mt-0.5" />
+                  <div>
+                    <Label htmlFor="vis-interno" className="font-medium cursor-pointer">Interno</Label>
+                    <p className="text-xs text-muted-foreground">Restrito à igreja. Aparece apenas na Programação após aprovação.</p>
                   </div>
-                  <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
-                    <RadioGroupItem value="casa_refugio" id="vis-cr" className="mt-0.5" />
-                    <div>
-                      <Label htmlFor="vis-cr" className="font-medium cursor-pointer">Casa Refúgio</Label>
-                      <p className="text-xs text-muted-foreground">Apenas para o seu grupo. Aparece na Programação após aprovação.</p>
-                    </div>
+                </div>
+                <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
+                  <RadioGroupItem value="casa_refugio" id="vis-cr" className="mt-0.5" />
+                  <div>
+                    <Label htmlFor="vis-cr" className="font-medium cursor-pointer">Casa Refúgio</Label>
+                    <p className="text-xs text-muted-foreground">Apenas para o seu grupo. Aparece na Programação após aprovação.</p>
                   </div>
-                </RadioGroup>
-              </div>
-            )}
+                </div>
+              </RadioGroup>
+            </div>
 
             <div>
               <Label>Público Alvo</Label>
