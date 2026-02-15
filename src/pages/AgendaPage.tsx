@@ -337,6 +337,16 @@ const AgendaPage = () => {
                             <Badge variant={evento.ativo ? "outline" : "secondary"} className="text-xs">
                               {evento.ativo ? (tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento) : "Inativo"}
                             </Badge>
+                            {(evento as any).visibilidade && (evento as any).visibilidade !== "publico" && (
+                              <Badge variant="secondary" className="text-xs">
+                                {(evento as any).visibilidade === "interno" ? "Interno" : "Casa Refúgio"}
+                              </Badge>
+                            )}
+                            {(evento as any).visibilidade === "publico" && (
+                              <Badge variant="outline" className="text-xs border-green-300 text-green-700">
+                                Externo
+                              </Badge>
+                            )}
                             {isPast && evento.ativo && (
                               <Badge variant="secondary" className="text-xs">Encerrado</Badge>
                             )}
