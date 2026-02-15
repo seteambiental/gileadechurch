@@ -190,22 +190,32 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate, redirectTo]);
 
+  // Flag para indicar que o login foi concluído explicitamente nesta página
+  const loginCompletedRef = useRef(false);
+
   useEffect(() => {
     // Reset quando não há usuário (ex: logout)
     if (!user) {
       hasProcessedAuthRef.current = false;
+      loginCompletedRef.current = false;
       return;
     }
 
     // NÃO processar se ainda está carregando OU se um login está em progresso
-    // Isso evita redirecionamentos prematuros antes de completar o login
     if (loading) return;
     if (isRecovery) return;
     if (hasProcessedAuthRef.current) return;
-    
-    // Só processar redirecionamento se o login foi explicitamente concluído
-    // O flag isLoginInProgressRef é setado false no handleLogin após sucesso
     if (isLoginInProgressRef.current) return;
+
+    // Se o login NÃO foi feito explicitamente nesta página, fazer logout
+    // para forçar o usuário a se autenticar novamente
+    const params = new URLSearchParams(window.location.search);
+    const hasRedirect = params.has("redirect");
+    if (!loginCompletedRef.current && !hasRedirect) {
+      // Sessão residual — deslogar silenciosamente
+      supabase.auth.signOut({ scope: "local" });
+      return;
+    }
 
     // Marcar como processado para evitar navegações duplicadas em StrictMode
     hasProcessedAuthRef.current = true;
@@ -457,6 +467,7 @@ const Auth = () => {
         // Resetar as flags para permitir que o useEffect processe
         hasProcessedAuthRef.current = false;
         isLoginInProgressRef.current = false;
+        loginCompletedRef.current = true;
         
         // Verificar acesso e redirecionar imediatamente aqui (mais estável)
         try {
