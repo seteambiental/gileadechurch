@@ -155,17 +155,17 @@ export const PortalLideresAgendaTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Botão Solicitar Evento */}
+      {/* Botão Criar Agenda */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading font-bold text-xl">Programação</h2>
           <p className="text-sm text-muted-foreground">
-            Agenda da igreja e solicitação de eventos
+            Agenda da igreja e criação de eventos
           </p>
         </div>
         <Button onClick={() => setShowEventoForm(true)} className="gap-2">
           <Plus className="w-4 h-4" />
-          Solicitar Evento
+          Criar Agenda
         </Button>
       </div>
 
@@ -186,11 +186,16 @@ export const PortalLideresAgendaTab = ({
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h4 className="font-semibold text-foreground">{evento.titulo}</h4>
                           <Badge variant="outline" className="text-xs">
                             {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
                           </Badge>
+                          {evento.visibilidade && (
+                            <Badge variant="secondary" className="text-xs">
+                              {evento.visibilidade === "publico" ? "Público" : evento.visibilidade === "interno" ? "Interno" : "Casa Refúgio"}
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-2">
