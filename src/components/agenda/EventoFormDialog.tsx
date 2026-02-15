@@ -1107,14 +1107,7 @@ export const EventoFormDialog = ({
                     <Label htmlFor="vis-interno" className="font-medium cursor-pointer">Interno</Label>
                     <p className="text-xs text-muted-foreground">Restrito à igreja. Aparece apenas na Programação após aprovação.</p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3 p-2 rounded-md hover:bg-muted/80">
-                  <RadioGroupItem value="casa_refugio" id="vis-cr" className="mt-0.5" />
-                  <div>
-                    <Label htmlFor="vis-cr" className="font-medium cursor-pointer">Casa Refúgio</Label>
-                    <p className="text-xs text-muted-foreground">Apenas para o seu grupo. Aparece na Programação após aprovação.</p>
-                  </div>
-                </div>
+              </div>
               </RadioGroup>
             </div>
 
@@ -1464,6 +1457,7 @@ export const EventoFormDialog = ({
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="0">Todos</SelectItem>
                             <SelectItem value="1">Primeiro</SelectItem>
                             <SelectItem value="2">Segundo</SelectItem>
                             <SelectItem value="3">Terceiro</SelectItem>
