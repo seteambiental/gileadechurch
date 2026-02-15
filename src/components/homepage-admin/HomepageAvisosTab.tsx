@@ -339,11 +339,33 @@ const HomepageAvisosTab = () => {
                     alt={evento.titulo}
                     className="w-full h-auto object-contain"
                   />
-                  <div className="p-3">
-                    <p className="font-medium text-sm truncate">{evento.titulo}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
-                    </p>
+                  <div className="p-3 flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{evento.titulo}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={async () => {
+                        const { error } = await supabase
+                          .from("agenda_igreja")
+                          .update({ flyer_url: null })
+                          .eq("id", evento.id);
+                        if (error) {
+                          toast.error("Erro ao remover flyer");
+                        } else {
+                          toast.success("Flyer removido da homepage");
+                          queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-admin"] });
+                          queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-public"] });
+                        }
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               ))}
