@@ -448,6 +448,42 @@ export type Database = {
           },
         ]
       }
+      ambientes: {
+        Row: {
+          ativo: boolean
+          capacidade: number | null
+          created_at: string
+          descricao: string | null
+          foto_url: string | null
+          id: string
+          nome: string
+          recursos: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          capacidade?: number | null
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          recursos?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          capacidade?: number | null
+          created_at?: string
+          descricao?: string | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          recursos?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       aniversarios_enviados: {
         Row: {
           created_at: string
@@ -4012,6 +4048,99 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reservas_ambientes: {
+        Row: {
+          ambiente_id: string
+          aprovador_id: string | null
+          created_at: string
+          data_fim_recorrencia: string | null
+          data_reserva: string
+          descricao: string | null
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          motivo_rejeicao: string | null
+          recorrente: boolean
+          solicitante_id: string | null
+          status: string
+          tipo_recorrencia: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ambiente_id: string
+          aprovador_id?: string | null
+          created_at?: string
+          data_fim_recorrencia?: string | null
+          data_reserva: string
+          descricao?: string | null
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          motivo_rejeicao?: string | null
+          recorrente?: boolean
+          solicitante_id?: string | null
+          status?: string
+          tipo_recorrencia?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ambiente_id?: string
+          aprovador_id?: string | null
+          created_at?: string
+          data_fim_recorrencia?: string | null
+          data_reserva?: string
+          descricao?: string | null
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          motivo_rejeicao?: string | null
+          recorrente?: boolean
+          solicitante_id?: string | null
+          status?: string
+          tipo_recorrencia?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservas_ambientes_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservas_ambientes_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservas_ambientes_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservas_ambientes_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservas_ambientes_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       servico_tarefa_voluntarios: {
         Row: {

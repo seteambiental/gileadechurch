@@ -35,6 +35,7 @@ import {
   Trash2,
   Edit,
   Share2,
+  DoorOpen,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +43,8 @@ import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
- import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -214,7 +216,7 @@ const AgendaPage = () => {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="indicadores" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               <span className="hidden sm:inline">Indicadores</span>
@@ -226,6 +228,10 @@ const AgendaPage = () => {
             <TabsTrigger value="eventos" className="gap-2">
               <PartyPopper className="w-4 h-4" />
               <span className="hidden sm:inline">Eventos</span>
+            </TabsTrigger>
+            <TabsTrigger value="reservas" className="gap-2">
+              <DoorOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">Reservas</span>
             </TabsTrigger>
           </TabsList>
 
@@ -430,8 +436,14 @@ const AgendaPage = () => {
               </div>
             )}
           </TabsContent>
+
+          {/* Aba Reservas */}
+          <TabsContent value="reservas" className="space-y-6">
+            <AgendaReservasTab />
+          </TabsContent>
         </Tabs>
       </main>
+
 
       <EventoFormDialog
         open={showEventoForm}
