@@ -37,6 +37,33 @@ const CasaRefugioDetalhes = () => {
   const bypass = isAuthBypassed();
   const { isAdmin } = useUserAccess(user?.id);
 
+  // Verificar se o usuário é líder do Ministério de Finanças
+  const { data: isFinanceLeader = false } = useQuery({
+    queryKey: ["is-finance-leader", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data: memberRows } = await supabase
+        .from("members")
+        .select("id")
+        .eq("user_id", user.id);
+      if (!memberRows || memberRows.length === 0) return false;
+      const memberIds = memberRows.map((m) => m.id);
+      const FINANCE_MINISTRY_ID = "cf8abff3-0268-41d0-be3b-ff4540a886ac";
+      const { data: funcs } = await supabase
+        .from("member_functions")
+        .select("id")
+        .in("member_id", memberIds)
+        .eq("function_type", "lider_ministerio")
+        .eq("ministry_id", FINANCE_MINISTRY_ID)
+        .limit(1);
+      return !!funcs && funcs.length > 0;
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const canConferir = isAdmin || isFinanceLeader;
+
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [encontrosPage, setEncontrosPage] = useState(1);
@@ -626,8 +653,8 @@ const CasaRefugioDetalhes = () => {
                                   size="icon"
                                   className={`h-7 w-7 ${(encontro as any).conferido ? "text-green-600" : "text-muted-foreground/30"}`}
                                   onClick={() => {
-                                    if (!isAdmin) {
-                                      toast.error("Apenas o departamento financeiro pode conferir encontros.");
+                                    if (!canConferir) {
+                                      toast.error("Apenas os líderes do Ministério de Finanças podem conferir encontros.");
                                       return;
                                     }
                                     conferidoMutation.mutate({
@@ -635,7 +662,7 @@ const CasaRefugioDetalhes = () => {
                                       conferido: !(encontro as any).conferido,
                                     });
                                   }}
-                                  title={(encontro as any).conferido ? "Conferido" : (isAdmin ? "Marcar como conferido" : "Apenas financeiro pode conferir")}
+                                  title={(encontro as any).conferido ? "Conferido" : (canConferir ? "Marcar como conferido" : "Apenas líderes de Finanças podem conferir")}
                                   disabled={conferidoMutation.isPending}
                                 >
                                   <CheckCircle2 className="w-5 h-5" />
