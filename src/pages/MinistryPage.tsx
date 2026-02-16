@@ -44,7 +44,7 @@ import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTa
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
 import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
 import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
-import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
+
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
