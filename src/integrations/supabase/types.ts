@@ -325,6 +325,48 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_ambientes: {
+        Row: {
+          agenda_id: string
+          ambiente_id: string
+          bloqueio_fim: string | null
+          bloqueio_inicio: string | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          agenda_id: string
+          ambiente_id: string
+          bloqueio_fim?: string | null
+          bloqueio_inicio?: string | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          agenda_id?: string
+          ambiente_id?: string
+          bloqueio_fim?: string | null
+          bloqueio_inicio?: string | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_ambientes_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_ambientes_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agenda_igreja: {
         Row: {
           ambiente_id: string | null
