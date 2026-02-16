@@ -294,7 +294,7 @@ export const PortalLideresAgendaTab = ({
       )}
 
       {/* Agenda normal (somente eventos aprovados) */}
-      <PortalAgendaTab />
+      <PortalAgendaTab incluirSomenteConvidados />
 
       {/* Dialog de criação de evento (modo aprovação) */}
       <EventoFormDialog

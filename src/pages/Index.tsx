@@ -112,6 +112,7 @@ const Index = () => {
         .select("*")
         .eq("ativo", true)
         .eq("recorrente", true)
+        .neq("genero_alvo", "somente_convidados")
         .order("dia_semana", { ascending: true });
       if (error) return [];
       return data;
@@ -131,6 +132,7 @@ const Index = () => {
         .eq("recorrente", false)
         .eq("visibilidade", "publico")
         .eq("status", "aprovado")
+        .neq("genero_alvo", "somente_convidados")
         .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })

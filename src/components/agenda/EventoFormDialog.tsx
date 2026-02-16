@@ -1299,6 +1299,7 @@ export const EventoFormDialog = ({
                   <SelectItem value="jovens">Jovens</SelectItem>
                   <SelectItem value="adolescentes">Adolescentes</SelectItem>
                   <SelectItem value="criancas">Crianças</SelectItem>
+                  <SelectItem value="somente_convidados">Somente Convidados</SelectItem>
                 </SelectContent>
               </Select>
             </div>

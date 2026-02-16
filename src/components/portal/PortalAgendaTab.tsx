@@ -105,7 +105,7 @@ const tipoEventoLabels: Record<string, string> = {
   evento: "Evento",
 };
 
-export const PortalAgendaTab = () => {
+export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirSomenteConvidados?: boolean }) => {
   const navigate = useNavigate();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [publicoFiltro, setPublicoFiltro] = useState<PublicoFiltro>("todos");
@@ -121,14 +121,17 @@ export const PortalAgendaTab = () => {
   } | null>(null);
 
   const { data: eventos = [], isLoading } = useQuery({
-    queryKey: ["portal-agenda"],
+    queryKey: ["portal-agenda", incluirSomenteConvidados],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("agenda_igreja")
         .select("*")
         .eq("ativo", true)
-        .eq("status", "aprovado")
-        .order("data_evento");
+        .eq("status", "aprovado");
+      if (!incluirSomenteConvidados) {
+        query = query.neq("genero_alvo", "somente_convidados");
+      }
+      const { data, error } = await query.order("data_evento");
       if (error) throw error;
       return data as Evento[];
     },
