@@ -654,16 +654,34 @@ export type Database = {
       }
       casais_inscritos: {
         Row: {
+          bairro: string | null
+          casa_refugio_id: string | null
+          cep: string | null
           certificado_emitido: boolean | null
+          cidade: string | null
+          complemento: string | null
+          congrega_gileade: boolean | null
           created_at: string
           data_casamento: string | null
           data_certificado: string | null
+          data_modalidade: string | null
+          email_feminino: string | null
+          email_masculino: string | null
+          endereco: string | null
+          estado: string | null
+          estado_civil: string | null
           id: string
+          ja_foi_casado: boolean | null
           membro_feminino_id: string | null
           membro_masculino_id: string | null
+          modalidade_casamento: string | null
           nome_feminino: string | null
           nome_masculino: string | null
+          numero_endereco: string | null
           observacoes: string | null
+          qtd_filhos_meninas: number | null
+          qtd_filhos_meninos: number | null
+          quantas_vezes_casado: number | null
           status: string | null
           tempo_casamento: string | null
           turma_id: string
@@ -672,16 +690,34 @@ export type Database = {
           whatsapp_masculino: string | null
         }
         Insert: {
+          bairro?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
           certificado_emitido?: boolean | null
+          cidade?: string | null
+          complemento?: string | null
+          congrega_gileade?: boolean | null
           created_at?: string
           data_casamento?: string | null
           data_certificado?: string | null
+          data_modalidade?: string | null
+          email_feminino?: string | null
+          email_masculino?: string | null
+          endereco?: string | null
+          estado?: string | null
+          estado_civil?: string | null
           id?: string
+          ja_foi_casado?: boolean | null
           membro_feminino_id?: string | null
           membro_masculino_id?: string | null
+          modalidade_casamento?: string | null
           nome_feminino?: string | null
           nome_masculino?: string | null
+          numero_endereco?: string | null
           observacoes?: string | null
+          qtd_filhos_meninas?: number | null
+          qtd_filhos_meninos?: number | null
+          quantas_vezes_casado?: number | null
           status?: string | null
           tempo_casamento?: string | null
           turma_id: string
@@ -690,16 +726,34 @@ export type Database = {
           whatsapp_masculino?: string | null
         }
         Update: {
+          bairro?: string | null
+          casa_refugio_id?: string | null
+          cep?: string | null
           certificado_emitido?: boolean | null
+          cidade?: string | null
+          complemento?: string | null
+          congrega_gileade?: boolean | null
           created_at?: string
           data_casamento?: string | null
           data_certificado?: string | null
+          data_modalidade?: string | null
+          email_feminino?: string | null
+          email_masculino?: string | null
+          endereco?: string | null
+          estado?: string | null
+          estado_civil?: string | null
           id?: string
+          ja_foi_casado?: boolean | null
           membro_feminino_id?: string | null
           membro_masculino_id?: string | null
+          modalidade_casamento?: string | null
           nome_feminino?: string | null
           nome_masculino?: string | null
+          numero_endereco?: string | null
           observacoes?: string | null
+          qtd_filhos_meninas?: number | null
+          qtd_filhos_meninos?: number | null
+          quantas_vezes_casado?: number | null
           status?: string | null
           tempo_casamento?: string | null
           turma_id?: string
@@ -708,6 +762,13 @@ export type Database = {
           whatsapp_masculino?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "casais_inscritos_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "casais_inscritos_membro_feminino_id_fkey"
             columns: ["membro_feminino_id"]
@@ -741,6 +802,58 @@ export type Database = {
             columns: ["turma_id"]
             isOneToOne: false
             referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_inscritos_filhos: {
+        Row: {
+          created_at: string
+          genero: string | null
+          id: string
+          idade: number | null
+          inscricao_id: string
+          member_id: string | null
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          genero?: string | null
+          id?: string
+          idade?: number | null
+          inscricao_id: string
+          member_id?: string | null
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          genero?: string | null
+          id?: string
+          idade?: number | null
+          inscricao_id?: string
+          member_id?: string | null
+          nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_inscritos_filhos_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "casais_inscritos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_inscritos_filhos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_inscritos_filhos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]

@@ -40,6 +40,7 @@ import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
 import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
+import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
@@ -439,6 +440,10 @@ const MinistryPage = () => {
                     <Users className="w-4 h-4" />
                     <span className="hidden sm:inline">Casais</span>
                   </TabsTrigger>
+                  <TabsTrigger value="inscricoes" className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="hidden sm:inline">Inscrições</span>
+                  </TabsTrigger>
                   <TabsTrigger value="professores" className="flex items-center gap-2">
                     <Award className="w-4 h-4" />
                     <span className="hidden sm:inline">Professores</span>
@@ -566,6 +571,9 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="casais">
                   <CasaisCasaisTab />
+                </TabsContent>
+                <TabsContent value="inscricoes">
+                  <CasaisInscricoesTab />
                 </TabsContent>
                 <TabsContent value="professores">
                   <CasaisProfessoresTab />
