@@ -6,10 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, AlertCircle } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { BLOQUEIOS_CULTOS } from "./OcupacaoAmbienteDialog";
 
 interface ReservaFormDialogProps {
   open: boolean;
@@ -31,6 +33,8 @@ export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }
   const [recorrente, setRecorrente] = useState(false);
   const [tipoRecorrencia, setTipoRecorrencia] = useState("");
   const [dataFimRecorrencia, setDataFimRecorrencia] = useState("");
+  const [conflito, setConflito] = useState<string | null>(null);
+  const [checkingConflict, setCheckingConflict] = useState(false);
 
   const { data: ambientes = [] } = useQuery({
     queryKey: ["ambientes"],
@@ -56,7 +60,120 @@ export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }
       setAmbienteId(""); setTitulo(""); setDescricao(""); setDataReserva(""); 
       setHoraInicio(""); setHoraFim(""); setRecorrente(false); setTipoRecorrencia(""); setDataFimRecorrencia("");
     }
+    setConflito(null);
   }, [reserva, open]);
+
+  // Check conflicts whenever ambiente, date, or time changes
+  useEffect(() => {
+    if (!ambienteId || !dataReserva || !horaInicio || !horaFim) {
+      setConflito(null);
+      return;
+    }
+    checkConflicts();
+  }, [ambienteId, dataReserva, horaInicio, horaFim]);
+
+  const checkConflicts = async () => {
+    if (!ambienteId || !dataReserva || !horaInicio || !horaFim) return;
+    
+    setCheckingConflict(true);
+    setConflito(null);
+
+    try {
+      const ambienteNome = ambientes.find((a: any) => a.id === ambienteId)?.nome || "";
+
+      // 1. Check fixed culto blocks
+      const date = new Date(dataReserva + "T12:00:00");
+      const diaSemana = date.getDay();
+      
+      for (const bloqueio of BLOQUEIOS_CULTOS) {
+        const aplica = bloqueio.todosAmbientes || 
+          (bloqueio.ambienteNome && ambienteNome.toLowerCase().includes(bloqueio.ambienteNome.toLowerCase()));
+        
+        if (aplica && bloqueio.diaSemana === diaSemana) {
+          // Check time overlap
+          if (horaInicio < bloqueio.horaFim && horaFim > bloqueio.horaInicio) {
+            setConflito(`Conflito com ${bloqueio.titulo}: ${["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"][bloqueio.diaSemana]} ${bloqueio.horaInicio}–${bloqueio.horaFim}. Todos os ambientes ficam bloqueados neste horário.`);
+            setCheckingConflict(false);
+            return;
+          }
+        }
+      }
+
+      // 2. Check existing reservations
+      const { data: existingReservas } = await supabase
+        .from("reservas_ambientes")
+        .select("id, titulo, hora_inicio, hora_fim")
+        .eq("ambiente_id", ambienteId)
+        .eq("data_reserva", dataReserva)
+        .in("status", ["pendente", "aprovado"])
+        .neq("id", reserva?.id || "00000000-0000-0000-0000-000000000000");
+
+      if (existingReservas && existingReservas.length > 0) {
+        for (const r of existingReservas) {
+          const rInicio = r.hora_inicio?.substring(0, 5) || "";
+          const rFim = r.hora_fim?.substring(0, 5) || "";
+          if (horaInicio < rFim && horaFim > rInicio) {
+            setConflito(`Conflito com reserva "${r.titulo}" (${rInicio}–${rFim}).`);
+            setCheckingConflict(false);
+            return;
+          }
+        }
+      }
+
+      // 3. Check agenda events blocking this ambiente
+      const { data: agendaEvents } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, bloqueio_inicio, bloqueio_fim")
+        .eq("ambiente_id", ambienteId)
+        .eq("ativo", true)
+        .neq("status", "rejeitado")
+        .not("bloqueio_inicio", "is", null)
+        .not("bloqueio_fim", "is", null);
+
+      if (agendaEvents) {
+        const reservaInicio = new Date(`${dataReserva}T${horaInicio}:00`).getTime();
+        const reservaFim = new Date(`${dataReserva}T${horaFim}:00`).getTime();
+        
+        for (const evt of agendaEvents) {
+          const evtInicio = new Date(evt.bloqueio_inicio).getTime();
+          const evtFim = new Date(evt.bloqueio_fim).getTime();
+          if (reservaInicio < evtFim && reservaFim > evtInicio) {
+            setConflito(`Conflito com evento "${evt.titulo}" na agenda.`);
+            setCheckingConflict(false);
+            return;
+          }
+        }
+      }
+
+      // 4. Check junction table agenda_ambientes
+      const { data: junctionEvents } = await supabase
+        .from("agenda_ambientes")
+        .select("bloqueio_inicio, bloqueio_fim, agenda:agenda_igreja(titulo)")
+        .eq("ambiente_id", ambienteId)
+        .not("bloqueio_inicio", "is", null)
+        .not("bloqueio_fim", "is", null);
+
+      if (junctionEvents) {
+        const reservaInicio = new Date(`${dataReserva}T${horaInicio}:00`).getTime();
+        const reservaFim = new Date(`${dataReserva}T${horaFim}:00`).getTime();
+        
+        for (const j of junctionEvents) {
+          const jInicio = new Date(j.bloqueio_inicio).getTime();
+          const jFim = new Date(j.bloqueio_fim).getTime();
+          if (reservaInicio < jFim && reservaFim > jInicio) {
+            setConflito(`Conflito com evento "${(j as any).agenda?.titulo}" na agenda.`);
+            setCheckingConflict(false);
+            return;
+          }
+        }
+      }
+
+    } catch (err) {
+      console.error("Erro ao verificar conflitos:", err);
+    } finally {
+      setCheckingConflict(false);
+    }
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -89,7 +206,7 @@ export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }
     onError: (e: any) => toast({ variant: "destructive", title: "Erro", description: e.message }),
   });
 
-  const valid = ambienteId && titulo.trim() && dataReserva && horaInicio && horaFim;
+  const valid = ambienteId && titulo.trim() && dataReserva && horaInicio && horaFim && !conflito;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,6 +250,20 @@ export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }
               <Input type="time" value={horaFim} onChange={(e) => setHoraFim(e.target.value)} />
             </div>
           </div>
+
+          {/* Conflict alert */}
+          {checkingConflict && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-4 h-4 animate-spin" /> Verificando disponibilidade...
+            </div>
+          )}
+          {conflito && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{conflito}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center gap-3">
             <Switch checked={recorrente} onCheckedChange={setRecorrente} />
             <Label>Reserva recorrente</Label>

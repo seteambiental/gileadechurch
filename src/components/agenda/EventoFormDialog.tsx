@@ -47,6 +47,14 @@ interface HorarioDia {
   hora_fim: string;
 }
 
+interface AmbienteExtra {
+  ambiente_id: string;
+  bloqueio_inicio_data: string;
+  bloqueio_inicio_hora: string;
+  bloqueio_fim_data: string;
+  bloqueio_fim_hora: string;
+}
+
 interface Evento {
   id: string;
   titulo: string;
@@ -191,6 +199,8 @@ export const EventoFormDialog = ({
     visibilidade: "publico",
   });
 
+  const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
+
   const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
 
   const { data: ambientes = [] } = useQuery({
@@ -207,6 +217,31 @@ export const EventoFormDialog = ({
   });
   useEffect(() => {
     if (open) {
+      // Load extra ambientes for existing events
+      if (evento?.id) {
+        supabase.from("agenda_ambientes")
+          .select("ambiente_id, bloqueio_inicio, bloqueio_fim")
+          .eq("agenda_id", evento.id)
+          .then(({ data }) => {
+            if (data && data.length > 0) {
+              setAmbientesExtras(data.map((d: any) => {
+                const bi = d.bloqueio_inicio ? new Date(d.bloqueio_inicio) : null;
+                const bf = d.bloqueio_fim ? new Date(d.bloqueio_fim) : null;
+                return {
+                  ambiente_id: d.ambiente_id,
+                  bloqueio_inicio_data: bi ? format(bi, "yyyy-MM-dd") : "",
+                  bloqueio_inicio_hora: bi ? format(bi, "HH:mm") : "",
+                  bloqueio_fim_data: bf ? format(bf, "yyyy-MM-dd") : "",
+                  bloqueio_fim_hora: bf ? format(bf, "HH:mm") : "",
+                };
+              }));
+            } else {
+              setAmbientesExtras([]);
+            }
+          });
+      } else {
+        setAmbientesExtras([]);
+      }
       if (evento) {
         const bloqueioInicio = (evento as any).bloqueio_inicio ? new Date((evento as any).bloqueio_inicio) : null;
         const bloqueioFim = (evento as any).bloqueio_fim ? new Date((evento as any).bloqueio_fim) : null;
@@ -279,6 +314,7 @@ export const EventoFormDialog = ({
           limite_vagas: "",
           visibilidade: "publico",
         });
+        setAmbientesExtras([]);
         setHorariosPorDia([]);
         setFlyerUrl(null);
         setFlyerPendente(null);
@@ -524,6 +560,8 @@ export const EventoFormDialog = ({
 
       const label = approvalMode ? "Agenda" : (mode === "compromisso" ? "Compromisso" : "Evento");
 
+      let agendaId = evento?.id;
+
       if (evento) {
         const { error } = await supabase
           .from("agenda_igreja")
@@ -532,9 +570,36 @@ export const EventoFormDialog = ({
         if (error) throw error;
         toast({ title: `${label} atualizado!` });
       } else {
-        const { error } = await supabase.from("agenda_igreja").insert(payload);
+        const { data: inserted, error } = await supabase.from("agenda_igreja").insert(payload).select("id").single();
         if (error) throw error;
+        agendaId = inserted.id;
         toast({ title: approvalMode ? "Agenda criada e enviada para aprovação!" : `${label} criado!` });
+      }
+
+      // Save extra ambientes
+      if (agendaId) {
+        // Delete existing extras
+        await supabase.from("agenda_ambientes").delete().eq("agenda_id", agendaId);
+        
+        // Insert new extras
+        if (ambientesExtras.length > 0) {
+          const extras = ambientesExtras
+            .filter(ae => ae.ambiente_id)
+            .map(ae => ({
+              agenda_id: agendaId!,
+              ambiente_id: ae.ambiente_id,
+              bloqueio_inicio: ae.bloqueio_inicio_data && ae.bloqueio_inicio_hora
+                ? new Date(`${ae.bloqueio_inicio_data}T${ae.bloqueio_inicio_hora}:00`).toISOString()
+                : null,
+              bloqueio_fim: ae.bloqueio_fim_data && ae.bloqueio_fim_hora
+                ? new Date(`${ae.bloqueio_fim_data}T${ae.bloqueio_fim_hora}:00`).toISOString()
+                : null,
+            }));
+          if (extras.length > 0) {
+            const { error: extError } = await supabase.from("agenda_ambientes").insert(extras);
+            if (extError) console.error("Erro ao salvar ambientes extras:", extError);
+          }
+        }
       }
 
       queryClient.invalidateQueries({ queryKey: ["agenda-recorrentes"] });
@@ -996,6 +1061,86 @@ export const EventoFormDialog = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Ambientes extras */}
+                  {ambientesExtras.map((ae, idx) => (
+                    <div key={idx} className="space-y-2 p-2 bg-background rounded border mt-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Ambiente Extra {idx + 1}</Label>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0"
+                          onClick={() => setAmbientesExtras(ambientesExtras.filter((_, i) => i !== idx))}>
+                          <X className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <Select
+                        value={ae.ambiente_id}
+                        onValueChange={(v) => {
+                          const updated = [...ambientesExtras];
+                          updated[idx] = { ...updated[idx], ambiente_id: v };
+                          setAmbientesExtras(updated);
+                        }}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione o ambiente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ambientes
+                            .filter(a => a.id !== formData.ambiente_id && !ambientesExtras.some((other, i) => i !== idx && other.ambiente_id === a.id))
+                            .map((a) => (
+                              <SelectItem key={a.id} value={a.id}>{a.nome}</SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                      {ae.ambiente_id && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Bloqueio de</Label>
+                            <Input type="date" className="h-8 text-xs" value={ae.bloqueio_inicio_data}
+                              onChange={(e) => {
+                                const updated = [...ambientesExtras];
+                                updated[idx] = { ...updated[idx], bloqueio_inicio_data: e.target.value };
+                                setAmbientesExtras(updated);
+                              }} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Às</Label>
+                            <Input type="time" className="h-8 text-xs" value={ae.bloqueio_inicio_hora}
+                              onChange={(e) => {
+                                const updated = [...ambientesExtras];
+                                updated[idx] = { ...updated[idx], bloqueio_inicio_hora: e.target.value };
+                                setAmbientesExtras(updated);
+                              }} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Até</Label>
+                            <Input type="date" className="h-8 text-xs" value={ae.bloqueio_fim_data}
+                              onChange={(e) => {
+                                const updated = [...ambientesExtras];
+                                updated[idx] = { ...updated[idx], bloqueio_fim_data: e.target.value };
+                                setAmbientesExtras(updated);
+                              }} />
+                          </div>
+                          <div>
+                            <Label className="text-xs">Às</Label>
+                            <Input type="time" className="h-8 text-xs" value={ae.bloqueio_fim_hora}
+                              onChange={(e) => {
+                                const updated = [...ambientesExtras];
+                                updated[idx] = { ...updated[idx], bloqueio_fim_hora: e.target.value };
+                                setAmbientesExtras(updated);
+                              }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  <Button type="button" variant="outline" size="sm" className="mt-2 gap-1.5"
+                    onClick={() => setAmbientesExtras([...ambientesExtras, {
+                      ambiente_id: "", bloqueio_inicio_data: "", bloqueio_inicio_hora: "",
+                      bloqueio_fim_data: "", bloqueio_fim_hora: "",
+                    }])}>
+                    <Plus className="w-3.5 h-3.5" /> Ambientes
+                  </Button>
                 </div>
               ) : (
                 <div>

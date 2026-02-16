@@ -13,12 +13,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Edit, Trash2, Loader2, DoorOpen, CalendarIcon, Clock, Check, X, Users, Monitor,
-  AlertCircle,
+  Search,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { AmbienteFormDialog } from "./AmbienteFormDialog";
 import { ReservaFormDialog } from "./ReservaFormDialog";
+import { OcupacaoAmbienteDialog } from "./OcupacaoAmbienteDialog";
 
 export const AgendaReservasTab = () => {
   const { toast } = useToast();
@@ -31,6 +31,7 @@ export const AgendaReservasTab = () => {
   const [deletingAmbiente, setDeletingAmbiente] = useState<any>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
+  const [ocupacaoAmbiente, setOcupacaoAmbiente] = useState<any>(null);
 
   // Fetch ambientes
   const { data: ambientes = [], isLoading: loadingAmbientes } = useQuery({
@@ -54,6 +55,11 @@ export const AgendaReservasTab = () => {
       return data;
     },
   });
+
+  // Count reservas per ambiente
+  const reservasPorAmbiente = (ambienteId: string) => {
+    return reservas.filter((r: any) => r.ambiente_id === ambienteId && (r.status === "pendente" || r.status === "aprovado")).length;
+  };
 
   // Delete ambiente
   const deleteAmbienteMutation = useMutation({
@@ -125,6 +131,7 @@ export const AgendaReservasTab = () => {
 
   const reservasPendentes = reservas.filter((r: any) => r.status === "pendente");
   const reservasAtivas = reservas.filter((r: any) => r.status !== "cancelado");
+  const ambientesAtivos = ambientes.filter((a: any) => a.ativo);
 
   return (
     <div className="space-y-6">
@@ -155,83 +162,174 @@ export const AgendaReservasTab = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Sub-aba Reservas */}
+        {/* Sub-aba Reservas — Lista de ambientes com ocupação */}
         <TabsContent value="reservas" className="space-y-4 mt-4">
-          {loadingReservas ? (
+          {loadingAmbientes || loadingReservas ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-          ) : reservasAtivas.length === 0 ? (
+          ) : ambientesAtivos.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
-                <CalendarIcon className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="font-semibold mb-2">Nenhuma reserva</h3>
-                <p className="text-sm text-muted-foreground">Solicite a reserva de um ambiente.</p>
+                <DoorOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                <h3 className="font-semibold mb-2">Nenhum ambiente cadastrado</h3>
+                <p className="text-sm text-muted-foreground">Cadastre ambientes na aba Ambientes primeiro.</p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-3">
-              {reservasAtivas.map((reserva: any) => (
-                <Card key={reserva.id} className={reserva.status === "pendente" ? "border-yellow-300" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h4 className="font-semibold">{reserva.titulo}</h4>
-                          {getStatusBadge(reserva.status)}
-                          {reserva.recorrente && (
-                            <Badge variant="outline" className="text-xs">
-                              {recorrenciaLabel[reserva.tipo_recorrencia] || "Recorrente"}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
-                          <span className="flex items-center gap-1">
-                            <DoorOpen className="w-3.5 h-3.5" />
-                            {reserva.ambiente?.nome || "—"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <CalendarIcon className="w-3.5 h-3.5" />
-                            {format(parseISO(reserva.data_reserva), "dd/MM/yyyy")}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {reserva.hora_inicio?.substring(0, 5)} - {reserva.hora_fim?.substring(0, 5)}
-                          </span>
-                        </div>
-                        {reserva.solicitante?.full_name && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Solicitado por: <span className="font-medium">{reserva.solicitante.full_name}</span>
-                          </p>
-                        )}
-                        {reserva.status === "rejeitado" && reserva.motivo_rejeicao && (
-                          <p className="text-sm text-destructive mt-1">Motivo: {reserva.motivo_rejeicao}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        {reserva.status === "pendente" && (
-                          <>
-                            <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 gap-1"
-                              onClick={() => aprovarMutation.mutate(reserva.id)} disabled={aprovarMutation.isPending}>
-                              <Check className="w-4 h-4" /> Aprovar
-                            </Button>
-                            <Button size="sm" variant="destructive" className="gap-1"
-                              onClick={() => setRejectingId(reserva.id)}>
-                              <X className="w-4 h-4" /> Rejeitar
-                            </Button>
-                          </>
-                        )}
-                        {reserva.status === "aprovado" && (
-                          <Button size="sm" variant="outline" onClick={() => cancelarMutation.mutate(reserva.id)}>
-                            Cancelar
+              {/* Lista de ambientes */}
+              <div className="grid gap-3">
+                {ambientesAtivos.map((amb: any) => {
+                  const count = reservasPorAmbiente(amb.id);
+                  return (
+                    <Card key={amb.id} className="hover:shadow-sm transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <DoorOpen className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-foreground">{amb.nome}</h4>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                                {amb.capacidade && (
+                                  <span className="flex items-center gap-1">
+                                    <Users className="w-3 h-3" /> {amb.capacidade} pessoas
+                                  </span>
+                                )}
+                                {count > 0 && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {count} reserva{count > 1 ? "s" : ""} ativa{count > 1 ? "s" : ""}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => setOcupacaoAmbiente(amb)}
+                          >
+                            <Search className="w-4 h-4" />
+                            Ocupação
                           </Button>
-                        )}
-                        <Button size="icon" variant="ghost" onClick={() => { setEditingReserva(reserva); setShowReservaForm(true); }}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Reservas pendentes */}
+              {reservasPendentes.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                    Reservas Pendentes ({reservasPendentes.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {reservasPendentes.map((reserva: any) => (
+                      <Card key={reserva.id} className="border-yellow-300">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <h4 className="font-semibold">{reserva.titulo}</h4>
+                                {getStatusBadge(reserva.status)}
+                                {reserva.recorrente && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {recorrenciaLabel[reserva.tipo_recorrencia] || "Recorrente"}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
+                                <span className="flex items-center gap-1">
+                                  <DoorOpen className="w-3.5 h-3.5" />
+                                  {reserva.ambiente?.nome || "—"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <CalendarIcon className="w-3.5 h-3.5" />
+                                  {format(parseISO(reserva.data_reserva), "dd/MM/yyyy")}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {reserva.hora_inicio?.substring(0, 5)} - {reserva.hora_fim?.substring(0, 5)}
+                                </span>
+                              </div>
+                              {reserva.solicitante?.full_name && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Solicitado por: <span className="font-medium">{reserva.solicitante.full_name}</span>
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 gap-1"
+                                onClick={() => aprovarMutation.mutate(reserva.id)} disabled={aprovarMutation.isPending}>
+                                <Check className="w-4 h-4" /> Aprovar
+                              </Button>
+                              <Button size="sm" variant="destructive" className="gap-1"
+                                onClick={() => setRejectingId(reserva.id)}>
+                                <X className="w-4 h-4" /> Rejeitar
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Todas as reservas ativas (não pendentes) */}
+              {reservasAtivas.filter((r: any) => r.status !== "pendente").length > 0 && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-semibold text-muted-foreground mb-3">
+                    Reservas Aprovadas/Rejeitadas
+                  </h3>
+                  <div className="space-y-2">
+                    {reservasAtivas.filter((r: any) => r.status !== "pendente").map((reserva: any) => (
+                      <Card key={reserva.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap mb-1">
+                                <h4 className="font-semibold">{reserva.titulo}</h4>
+                                {getStatusBadge(reserva.status)}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
+                                <span className="flex items-center gap-1">
+                                  <DoorOpen className="w-3.5 h-3.5" />
+                                  {reserva.ambiente?.nome || "—"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <CalendarIcon className="w-3.5 h-3.5" />
+                                  {format(parseISO(reserva.data_reserva), "dd/MM/yyyy")}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {reserva.hora_inicio?.substring(0, 5)} - {reserva.hora_fim?.substring(0, 5)}
+                                </span>
+                              </div>
+                              {reserva.status === "rejeitado" && reserva.motivo_rejeicao && (
+                                <p className="text-sm text-destructive mt-1">Motivo: {reserva.motivo_rejeicao}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {reserva.status === "aprovado" && (
+                                <Button size="sm" variant="outline" onClick={() => cancelarMutation.mutate(reserva.id)}>
+                                  Cancelar
+                                </Button>
+                              )}
+                              <Button size="icon" variant="ghost" onClick={() => { setEditingReserva(reserva); setShowReservaForm(true); }}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
@@ -302,6 +400,7 @@ export const AgendaReservasTab = () => {
       {/* Dialogs */}
       <AmbienteFormDialog open={showAmbienteForm} onOpenChange={setShowAmbienteForm} ambiente={editingAmbiente} />
       <ReservaFormDialog open={showReservaForm} onOpenChange={setShowReservaForm} reserva={editingReserva} />
+      <OcupacaoAmbienteDialog open={!!ocupacaoAmbiente} onOpenChange={(open) => !open && setOcupacaoAmbiente(null)} ambiente={ocupacaoAmbiente} />
 
       {/* Delete ambiente dialog */}
       <AlertDialog open={!!deletingAmbiente} onOpenChange={(open) => !open && setDeletingAmbiente(null)}>
