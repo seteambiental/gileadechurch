@@ -6,8 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download } from "lucide-react";
+import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { resizeForCarousel } from "@/lib/image-resize";
 import {
   Dialog,
   DialogContent,
@@ -172,12 +173,18 @@ const HomepageCarrosselTab = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `carrossel/${Date.now()}.${fileExt}`;
+      // Redimensionar para 16:9 (1920x1080) otimizado para carrossel
+      toast.info("Processando imagem para 16:9...");
+      const { file: resizedFile } = await resizeForCarousel(file);
+
+      const fileName = `carrossel/${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from("encontros-fotos")
-        .upload(fileName, file);
+        .upload(fileName, resizedFile, {
+          contentType: "image/jpeg",
+          cacheControl: "3600",
+        });
 
       if (uploadError) throw uploadError;
 
@@ -186,7 +193,7 @@ const HomepageCarrosselTab = () => {
         .getPublicUrl(fileName);
 
       setImagemUrl(urlData.publicUrl);
-      toast.success("Imagem enviada!");
+      toast.success("Imagem processada e enviada (1920×1080)!");
     } catch (error) {
       console.error("Erro no upload:", error);
       toast.error("Erro ao enviar imagem");

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { resizeKeepAspect } from "@/lib/image-resize";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -332,12 +333,16 @@ export const EventoFormDialog = ({
 
     setIsUploadingFlyer(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `flyer-${Date.now()}.${fileExt}`;
+      // Redimensionar mantendo proporção, max 1200px largura
+      const { file: resizedFile } = await resizeKeepAspect(file, 1200);
+      const fileName = `flyer-${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('encontros-fotos')
-        .upload(`flyers/${fileName}`, file);
+        .upload(`flyers/${fileName}`, resizedFile, {
+          contentType: "image/jpeg",
+          cacheControl: "3600",
+        });
 
       if (uploadError) throw uploadError;
 
@@ -346,7 +351,7 @@ export const EventoFormDialog = ({
         .getPublicUrl(`flyers/${fileName}`);
 
       setFlyerUrl(urlData.publicUrl);
-      toast({ title: "Flyer carregado!" });
+      toast({ title: "Flyer processado e carregado!" });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro no upload", description: error.message });
     } finally {
