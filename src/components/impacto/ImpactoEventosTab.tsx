@@ -96,14 +96,23 @@ const ImpactoEventosTab = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setInscricoesEvento(evento)}
-                        >
-                          <ClipboardList className="w-3 h-3 mr-1" />
-                          Inscrições
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setInscricoesEvento(evento)}
+                          >
+                            <ClipboardList className="w-3 h-3 mr-1" />
+                            Inscrições
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => window.open(`/inscricao/${evento.id}`, '_blank')}
+                          >
+                            + Inscrição
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
