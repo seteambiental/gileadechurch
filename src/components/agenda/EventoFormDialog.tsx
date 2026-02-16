@@ -626,14 +626,21 @@ export const EventoFormDialog = ({
 
     setIsDeleting(true);
     try {
+      // Primeiro excluir registros dependentes
+      await supabase.from("inscricoes_eventos").delete().eq("evento_id", evento.id);
+      await supabase.from("agenda_ambientes").delete().eq("agenda_id", evento.id);
+      
       const { error } = await supabase
         .from("agenda_igreja")
-        .update({ ativo: false })
+        .delete()
         .eq("id", evento.id);
       if (error) throw error;
 
       toast({ title: "Evento removido!" });
       queryClient.invalidateQueries({ queryKey: ["agenda-igreja"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-public"] });
+      queryClient.invalidateQueries({ queryKey: ["eventos-com-flyer-admin"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
