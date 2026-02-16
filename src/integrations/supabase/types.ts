@@ -1416,6 +1416,9 @@ export type Database = {
       encontros_casa_refugio: {
         Row: {
           casa_refugio_id: string
+          conferido: boolean
+          conferido_em: string | null
+          conferido_por: string | null
           created_at: string
           data_encontro: string
           data_esperada: string | null
@@ -1436,6 +1439,9 @@ export type Database = {
         }
         Insert: {
           casa_refugio_id: string
+          conferido?: boolean
+          conferido_em?: string | null
+          conferido_por?: string | null
           created_at?: string
           data_encontro: string
           data_esperada?: string | null
@@ -1456,6 +1462,9 @@ export type Database = {
         }
         Update: {
           casa_refugio_id?: string
+          conferido?: boolean
+          conferido_em?: string | null
+          conferido_por?: string | null
           created_at?: string
           data_encontro?: string
           data_esperada?: string | null
@@ -1480,6 +1489,20 @@ export type Database = {
             columns: ["casa_refugio_id"]
             isOneToOne: false
             referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encontros_casa_refugio_conferido_por_fkey"
+            columns: ["conferido_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "encontros_casa_refugio_conferido_por_fkey"
+            columns: ["conferido_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]

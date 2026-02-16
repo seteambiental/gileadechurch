@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight, XCircle, ArrowRightLeft } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { useUserAccess } from "@/hooks/useUserAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -34,6 +35,7 @@ const CasaRefugioDetalhes = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const bypass = isAuthBypassed();
+  const { isAdmin } = useUserAccess(user?.id);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -315,6 +317,27 @@ const CasaRefugioDetalhes = () => {
     },
   });
 
+  // Toggle conferido
+  const conferidoMutation = useMutation({
+    mutationFn: async ({ encontroId, conferido }: { encontroId: string; conferido: boolean }) => {
+      const { error } = await supabase
+        .from("encontros_casa_refugio")
+        .update({
+          conferido,
+          conferido_em: conferido ? new Date().toISOString() : null,
+        } as any)
+        .eq("id", encontroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["encontros-casa", id] });
+      toast.success("Status de conferência atualizado!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar conferência");
+    },
+  });
+
   // Quick action: mark as "não houve encontro" or "transferido"
   const quickCancelMutation = useMutation({
     mutationFn: async ({ dataEncontro, justificativa }: { dataEncontro: string; justificativa: string }) => {
@@ -554,6 +577,7 @@ const CasaRefugioDetalhes = () => {
                         <TableHead className="text-center">Total</TableHead>
                         <TableHead className="text-center">Kilos</TableHead>
                         <TableHead className="text-center">Ofertas</TableHead>
+                        <TableHead className="text-center">Conf.</TableHead>
                         <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -594,6 +618,29 @@ const CasaRefugioDetalhes = () => {
                             </TableCell>
                             <TableCell className={`text-center whitespace-nowrap ${blankCellClass} ${cancelledCellClass}`}>
                               {isBlank || isCancelled ? "—" : `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {isBlank || isCancelled ? "—" : (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={`h-7 w-7 ${(encontro as any).conferido ? "text-green-600" : "text-muted-foreground/30"}`}
+                                  onClick={() => {
+                                    if (!isAdmin) {
+                                      toast.error("Apenas o departamento financeiro pode conferir encontros.");
+                                      return;
+                                    }
+                                    conferidoMutation.mutate({
+                                      encontroId: encontro.id,
+                                      conferido: !(encontro as any).conferido,
+                                    });
+                                  }}
+                                  title={(encontro as any).conferido ? "Conferido" : (isAdmin ? "Marcar como conferido" : "Apenas financeiro pode conferir")}
+                                  disabled={conferidoMutation.isPending}
+                                >
+                                  <CheckCircle2 className="w-5 h-5" />
+                                </Button>
+                              )}
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center justify-end gap-1">
