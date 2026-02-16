@@ -61,6 +61,7 @@ export function InscricaoCompletaFormDialog({
   const [qtdMeninas, setQtdMeninas] = useState("");
   const [filhos, setFilhos] = useState<Filho[]>([]);
   const [congregaGileade, setCongregaGileade] = useState("sim");
+  const [ondeCongrega, setOndeCongrega] = useState("");
   const [cep, setCep] = useState("");
   const [endereco, setEndereco] = useState("");
   const [numero, setNumero] = useState("");
@@ -207,6 +208,7 @@ export function InscricaoCompletaFormDialog({
     setQtdMeninas("");
     setFilhos([]);
     setCongregaGileade("sim");
+    setOndeCongrega("");
     setCep("");
     setEndereco("");
     setNumero("");
@@ -246,6 +248,7 @@ export function InscricaoCompletaFormDialog({
         qtd_filhos_meninos: parseInt(qtdMeninos) || 0,
         qtd_filhos_meninas: parseInt(qtdMeninas) || 0,
         congrega_gileade: congregaGileade === "sim",
+        onde_congrega: congregaGileade === "nao" ? (ondeCongrega || null) : null,
         cep: cep || null,
         endereco: endereco || null,
         numero_endereco: numero || null,
@@ -329,6 +332,7 @@ export function InscricaoCompletaFormDialog({
       setQtdMeninos(String((data as any).qtd_filhos_meninos || ""));
       setQtdMeninas(String((data as any).qtd_filhos_meninas || ""));
       setCongregaGileade((data as any).congrega_gileade !== false ? "sim" : "nao");
+      setOndeCongrega((data as any).onde_congrega || "");
       setCep((data as any).cep || "");
       setEndereco((data as any).endereco || "");
       setNumero((data as any).numero_endereco || "");
@@ -564,7 +568,7 @@ export function InscricaoCompletaFormDialog({
           {/* Congrega em Gileade */}
           <div className="space-y-3">
             <h3 className="font-semibold text-base">Congrega em Gileade?</h3>
-            <RadioGroup value={congregaGileade} onValueChange={setCongregaGileade} className="flex gap-6">
+            <RadioGroup value={congregaGileade} onValueChange={(v) => { setCongregaGileade(v); if (v === "sim") setOndeCongrega(""); }} className="flex gap-6">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="sim" id="cg-sim" />
                 <Label htmlFor="cg-sim">Sim</Label>
@@ -574,6 +578,12 @@ export function InscricaoCompletaFormDialog({
                 <Label htmlFor="cg-nao">Não</Label>
               </div>
             </RadioGroup>
+            {congregaGileade === "nao" && (
+              <div className="max-w-md space-y-2">
+                <Label>Onde congrega?</Label>
+                <Input value={ondeCongrega} onChange={(e) => setOndeCongrega(e.target.value)} placeholder="Informe a igreja..." />
+              </div>
+            )}
           </div>
 
           <Separator />

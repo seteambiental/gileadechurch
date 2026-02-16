@@ -1,0 +1,1 @@
+ALTER TABLE public.casais_inscritos ADD COLUMN onde_congrega text;
