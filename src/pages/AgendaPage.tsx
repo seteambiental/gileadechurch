@@ -484,7 +484,7 @@ const AgendaPage = () => {
         />
       )}
 
-      <AlertDialog open={!!eventoParaExcluir} onOpenChange={(open) => !open && setEventoParaExcluir(null)}>
+      <AlertDialog open={!!eventoParaExcluir} onOpenChange={(open) => !open && !excluirEventoMutation.isPending && setEventoParaExcluir(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir evento</AlertDialogTitle>
@@ -496,7 +496,12 @@ const AgendaPage = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => eventoParaExcluir && excluirEventoMutation.mutate(eventoParaExcluir.id)}
+              onClick={(e) => {
+                e.preventDefault();
+                if (eventoParaExcluir) {
+                  excluirEventoMutation.mutate(eventoParaExcluir.id);
+                }
+              }}
             >
               {excluirEventoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Excluir"}
             </AlertDialogAction>
