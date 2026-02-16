@@ -197,6 +197,7 @@ export const EventoFormDialog = ({
     comentarios_custo: "",
     limite_vagas: "",
     visibilidade: "publico",
+    necessita_inscricao: false,
   });
 
   const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
@@ -276,6 +277,7 @@ export const EventoFormDialog = ({
           comentarios_custo: evento.comentarios_custo || "",
           limite_vagas: evento.limite_vagas?.toString() || "",
           visibilidade: (evento as any).visibilidade || "publico",
+          necessita_inscricao: (evento as any).necessita_inscricao || false,
         });
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
@@ -313,6 +315,7 @@ export const EventoFormDialog = ({
           comentarios_custo: "",
           limite_vagas: "",
           visibilidade: "publico",
+          necessita_inscricao: false,
         });
         setAmbientesExtras([]);
         setHorariosPorDia([]);
@@ -555,6 +558,7 @@ export const EventoFormDialog = ({
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
+        necessita_inscricao: formData.necessita_inscricao,
         ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
       };
 
@@ -1153,6 +1157,21 @@ export const EventoFormDialog = ({
                   />
                 </div>
               )}
+            </div>
+
+            {/* Inscrição antecipada */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="necessita_inscricao"
+                  checked={formData.necessita_inscricao}
+                  onCheckedChange={(c) => setFormData({ ...formData, necessita_inscricao: !!c })}
+                />
+                <Label htmlFor="necessita_inscricao" className="cursor-pointer flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4" />
+                  Necessita inscrição antecipada
+                </Label>
+              </div>
             </div>
 
             {/* Refeição */}

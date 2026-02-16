@@ -178,9 +178,9 @@ const AgendaPage = () => {
     },
   });
 
-  // Filtrar: apenas eventos reais (não compromissos) para exibir como cards
+  // Filtrar: apenas eventos que necessitam inscrição para exibir como cards
   const eventosParaCards = eventosUnicos.filter(
-    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento)
+    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento) && (e as any).necessita_inscricao === true
   );
 
   // Agrupar eventos recorrentes por dia da semana
@@ -270,7 +270,7 @@ const AgendaPage = () => {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="font-heading font-bold text-xl">Eventos</h2>
-                <p className="text-sm text-muted-foreground">Conferências, retiros, impactos e mais</p>
+                <p className="text-sm text-muted-foreground">Eventos que necessitam inscrição antecipada</p>
               </div>
               <Button variant="secondary" onClick={() => {
                 setEditingEvento(null);

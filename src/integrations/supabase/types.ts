@@ -393,6 +393,7 @@ export type Database = {
           local: string | null
           local_tipo: string
           motivo_rejeicao: string | null
+          necessita_inscricao: boolean
           observacoes: string | null
           recorrente: boolean | null
           semana_mes: number | null
@@ -432,6 +433,7 @@ export type Database = {
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null
+          necessita_inscricao?: boolean
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
@@ -471,6 +473,7 @@ export type Database = {
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null
+          necessita_inscricao?: boolean
           observacoes?: string | null
           recorrente?: boolean | null
           semana_mes?: number | null
