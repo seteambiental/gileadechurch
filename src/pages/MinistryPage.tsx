@@ -39,6 +39,7 @@ import { DancaEscalasTab } from "@/components/ministerio/DancaEscalasTab";
 import { CasaisTurmasTab } from "@/components/casais/CasaisTurmasTab";
 import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
+import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
@@ -364,7 +365,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-5' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -437,6 +438,10 @@ const MinistryPage = () => {
                   <TabsTrigger value="casais" className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
                     <span className="hidden sm:inline">Casais</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="professores" className="flex items-center gap-2">
+                    <Award className="w-4 h-4" />
+                    <span className="hidden sm:inline">Professores</span>
                   </TabsTrigger>
                   <TabsTrigger value="materiais" className="flex items-center gap-2">
                     <BookOpenIcon className="w-4 h-4" />
@@ -561,6 +566,9 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="casais">
                   <CasaisCasaisTab />
+                </TabsContent>
+                <TabsContent value="professores">
+                  <CasaisProfessoresTab />
                 </TabsContent>
                 <TabsContent value="materiais">
                   <CasaisMateriaisTab />
