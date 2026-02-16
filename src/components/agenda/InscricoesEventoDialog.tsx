@@ -126,9 +126,8 @@ export const InscricoesEventoDialog = ({
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
-  const [filterGenero, setFilterGenero] = useState<string>("todos");
-  const [filterMenor, setFilterMenor] = useState<string>("todos");
-  const [filterListaEspera, setFilterListaEspera] = useState<string>("todos");
+  const [filterCondominio, setFilterCondominio] = useState<string>("todos");
+  const [filterCasaRefugio, setFilterCasaRefugio] = useState<string>("todos");
 
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["inscricoes-evento", eventoId],
@@ -151,13 +150,29 @@ export const InscricoesEventoDialog = ({
     queryKey: ["member-casas-refugio-inscricoes", eventoId, memberIds],
     queryFn: async () => {
       if (memberIds.length === 0) return [];
-      const { data, error } = await supabase
+      // First get member casa_refugio_ids
+      const { data: membersData, error: mErr } = await supabase
         .from("members")
-        .select("id, casa_refugio_id, casas_refugio:casas_refugio(id, name, condominio)")
+        .select("id, casa_refugio_id")
         .in("id", memberIds)
         .not("casa_refugio_id", "is", null);
-      if (error) throw error;
-      return data as { id: string; casa_refugio_id: string; casas_refugio: { id: string; name: string; condominio: string | null } | null }[];
+      if (mErr) throw mErr;
+      if (!membersData || membersData.length === 0) return [];
+      
+      // Then get casas_refugio details
+      const crIds = [...new Set(membersData.map(m => m.casa_refugio_id).filter(Boolean))] as string[];
+      const { data: crsData, error: crErr } = await supabase
+        .from("casas_refugio")
+        .select("id, name, condominio")
+        .in("id", crIds);
+      if (crErr) throw crErr;
+      
+      const crMap = new Map((crsData || []).map(cr => [cr.id, cr]));
+      return membersData.map(m => ({
+        id: m.id,
+        casa_refugio_id: m.casa_refugio_id,
+        casas_refugio: crMap.get(m.casa_refugio_id!) || null,
+      }));
     },
     enabled: memberIds.length > 0,
   });
@@ -205,14 +220,10 @@ export const InscricoesEventoDialog = ({
   const inscricoesFiltradas = inscricoes.filter((i) => {
     const matchSearch = includesNormalized(i.nome_participante, searchTerm);
     const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-    const matchGenero = filterGenero === "todos" || i.genero === filterGenero;
-    const matchMenor = filterMenor === "todos" || 
-      (filterMenor === "sim" && i.is_menor) || 
-      (filterMenor === "nao" && !i.is_menor);
-    const matchListaEspera = filterListaEspera === "todos" || 
-      (filterListaEspera === "sim" && i.lista_espera) || 
-      (filterListaEspera === "nao" && !i.lista_espera);
-    return matchSearch && matchStatus && matchGenero && matchMenor && matchListaEspera;
+    const crData = getMemberCasaRefugio(i.member_id);
+    const matchCondominio = filterCondominio === "todos" || (crData?.condominio || "") === filterCondominio;
+    const matchCR = filterCasaRefugio === "todos" || (crData?.name || "") === filterCasaRefugio;
+    return matchSearch && matchStatus && matchCondominio && matchCR;
   });
 
   // Contagens
@@ -361,12 +372,11 @@ export const InscricoesEventoDialog = ({
   const clearFilters = () => {
     setSearchTerm("");
     setFilterStatus("todos");
-    setFilterGenero("todos");
-    setFilterMenor("todos");
-    setFilterListaEspera("todos");
+    setFilterCondominio("todos");
+    setFilterCasaRefugio("todos");
   };
 
-  const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterGenero !== "todos" || filterMenor !== "todos" || filterListaEspera !== "todos";
+  const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterCondominio !== "todos" || filterCasaRefugio !== "todos";
 
   const totalInscritos = inscricoes.length;
   const confirmados = inscricoes.filter(i => i.status_pagamento === "confirmado").length;
@@ -419,7 +429,7 @@ export const InscricoesEventoDialog = ({
                 </Button>
               )}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <SearchInput
                 placeholder="Buscar por nome..."
                 value={searchTerm}
@@ -437,34 +447,30 @@ export const InscricoesEventoDialog = ({
                   <SelectItem value="cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterGenero} onValueChange={setFilterGenero}>
+              <Select value={filterCondominio} onValueChange={(v) => { setFilterCondominio(v); setFilterCasaRefugio("todos"); }}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Gênero" />
+                  <SelectValue placeholder="Condomínio" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos gêneros</SelectItem>
-                  <SelectItem value="masculino">Masculino</SelectItem>
-                  <SelectItem value="feminino">Feminino</SelectItem>
+                  <SelectItem value="todos">Todos condomínios</SelectItem>
+                  {[...new Set(memberCasasRefugio.map(m => m.casas_refugio?.condominio).filter(Boolean))].sort().map(cond => (
+                    <SelectItem key={cond} value={cond!}>{cond}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Select value={filterMenor} onValueChange={setFilterMenor}>
+              <Select value={filterCasaRefugio} onValueChange={setFilterCasaRefugio}>
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Menores" />
+                  <SelectValue placeholder="Casa Refúgio" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="sim">Menores de idade</SelectItem>
-                  <SelectItem value="nao">Maiores de idade</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterListaEspera} onValueChange={setFilterListaEspera}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Lista Espera" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  <SelectItem value="sim">Lista de espera</SelectItem>
-                  <SelectItem value="nao">Inscritos</SelectItem>
+                  <SelectItem value="todos">Todas CRs</SelectItem>
+                  {[...new Set(memberCasasRefugio
+                    .filter(m => filterCondominio === "todos" || m.casas_refugio?.condominio === filterCondominio)
+                    .map(m => m.casas_refugio?.name)
+                    .filter(Boolean)
+                  )].sort().map(cr => (
+                    <SelectItem key={cr} value={cr!}>{cr}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
