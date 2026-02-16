@@ -514,6 +514,34 @@ export const EventoFormDialog = ({
 
     setIsLoading(true);
     try {
+      const dataEvento = formData.data_evento || new Date().toISOString().split("T")[0];
+      const localCheck = formData.local_tipo === "na_igreja"
+        ? (ambientes.find(a => a.id === formData.ambiente_id)?.nome || "Igreja Gileade")
+        : formData.local || null;
+
+      if (localCheck && !formData.recorrente) {
+        let conflictQuery = supabase
+          .from("agenda_igreja")
+          .select("id, titulo")
+          .eq("ativo", true)
+          .eq("local", localCheck)
+          .or(`and(data_evento.lte.${dataEvento},or(data_fim.gte.${dataEvento},data_fim.is.null,data_evento.eq.${dataEvento}))`);
+
+        if (evento?.id) {
+          conflictQuery = conflictQuery.neq("id", evento.id);
+        }
+
+        const { data: conflitos } = await conflictQuery;
+        if (conflitos && conflitos.length > 0) {
+          toast({
+            variant: "destructive",
+            title: "Conflito de agenda",
+            description: `Já existe "${conflitos[0].titulo}" agendado para este local na mesma data.`,
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
       // Build bloqueio timestamps
       const bloqueioInicio = formData.bloqueio_inicio_data && formData.bloqueio_inicio_hora
         ? new Date(`${formData.bloqueio_inicio_data}T${formData.bloqueio_inicio_hora}:00`).toISOString()
