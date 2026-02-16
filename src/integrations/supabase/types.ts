@@ -896,6 +896,81 @@ export type Database = {
           },
         ]
       }
+      casais_professores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dia_semana: string
+          esposa_id: string | null
+          horario: string
+          id: string
+          marido_id: string | null
+          observacoes: string | null
+          turma_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dia_semana: string
+          esposa_id?: string | null
+          horario: string
+          id?: string
+          marido_id?: string | null
+          observacoes?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dia_semana?: string
+          esposa_id?: string | null
+          horario?: string
+          id?: string
+          marido_id?: string | null
+          observacoes?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_professores_esposa_id_fkey"
+            columns: ["esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_professores_esposa_id_fkey"
+            columns: ["esposa_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_professores_marido_id_fkey"
+            columns: ["marido_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_professores_marido_id_fkey"
+            columns: ["marido_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_professores_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       casais_turmas: {
         Row: {
           ativo: boolean | null
