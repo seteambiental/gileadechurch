@@ -178,9 +178,9 @@ const AgendaPage = () => {
     },
   });
 
-  // Filtrar: apenas eventos que necessitam inscrição para exibir como cards
+  // Filtrar: apenas eventos reais (não compromissos) para exibir como cards
   const eventosParaCards = eventosUnicos.filter(
-    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento) && (e as any).necessita_inscricao === true
+    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento)
   );
 
   // Agrupar eventos recorrentes por dia da semana
@@ -361,6 +361,11 @@ const AgendaPage = () => {
                             )}
                             {isPast && evento.ativo && (
                               <Badge variant="secondary" className="text-xs">Encerrado</Badge>
+                            )}
+                            {(evento as any).necessita_inscricao && (
+                              <Badge variant="outline" className="text-xs border-destructive text-destructive">
+                                Inscrição
+                              </Badge>
                             )}
                           </div>
                         </div>
