@@ -359,20 +359,20 @@ const Index = () => {
 
           {/* Slides do carrossel (índices 1+) - Fullscreen esticado */}
           {carrosselImages && carrosselImages.map((img, index) => (
-            <div
-              key={img.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              <img
-                src={img.imagem_url}
-                alt={img.titulo}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                decoding="async"
-              />
-            </div>
+              <div
+                key={img.id}
+                className={`absolute inset-0 transition-opacity duration-1000 bg-black ${
+                  index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <img
+                  src={img.imagem_url}
+                  alt={img.titulo}
+                  className="w-full h-full object-contain"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
           ))}
         </div>
 
