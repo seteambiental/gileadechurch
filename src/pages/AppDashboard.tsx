@@ -56,7 +56,7 @@ const ministries = [
   { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
-  { icon: Zap, title: "Impacto", description: "Evangelismo", path: "/ministerio/impacto" },
+  { icon: Zap, title: "Eventos e Impacto", description: "Eventos com inscrição", path: "/ministerio/impacto" },
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },

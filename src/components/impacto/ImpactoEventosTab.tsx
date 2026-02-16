@@ -46,6 +46,21 @@ const ImpactoEventosTab = () => {
     },
   });
 
+  // Buscar eventos da agenda que necessitam inscrição
+  const { data: eventosAgenda = [] } = useQuery({
+    queryKey: ["agenda-eventos-inscricao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, descricao, data_evento, data_fim, hora_inicio, hora_fim, local, tipo_evento, cor, flyer_url, limite_vagas, ativo, necessita_inscricao")
+        .eq("necessita_inscricao", true)
+        .eq("recorrente", false)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: inscricoesCount } = useQuery({
     queryKey: ["impacto-inscricoes-count"],
     queryFn: async () => {
@@ -90,6 +105,54 @@ const ImpactoEventosTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Eventos da Agenda com inscrição */}
+      {eventosAgenda.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-heading font-bold">Eventos com Inscrição</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {eventosAgenda.map((evento) => (
+              <Card key={evento.id} className="relative overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: evento.cor || "hsl(var(--destructive))" }} />
+                {evento.flyer_url && (
+                  <div className="aspect-[16/9] overflow-hidden">
+                    <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">{evento.titulo}</CardTitle>
+                    <Badge variant={evento.ativo ? "outline" : "secondary"}>
+                      {evento.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    <span>
+                      {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                      {evento.data_fim && ` - ${format(new Date(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}`}
+                    </span>
+                  </div>
+                  {evento.local && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="w-4 h-4" />
+                      <span>{evento.local}</span>
+                    </div>
+                  )}
+                  {evento.limite_vagas && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span>{evento.limite_vagas} vagas</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-heading font-bold">Agenda de Impactos</h2>
         <div className="flex gap-2">

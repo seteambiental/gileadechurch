@@ -233,11 +233,11 @@ const ministriesData: Record<string, MinistryInfo> = {
     isHomens: true,
   },
   impacto: {
-    title: "Impacto",
-    description: "Eventos especiais",
+    title: "Eventos e Impacto",
+    description: "Eventos com inscrição",
     icon: Zap,
     fullDescription:
-      "Ministério responsável pela organização de retiros e eventos de impacto para diferentes públicos: mulheres, homens, crianças, jovens, adolescentes e casais.",
+      "Ministério responsável pela organização de retiros, eventos de impacto e todos os eventos que necessitam de inscrição antecipada.",
     isImpacto: true,
   },
   "missoes-mocambique": {
