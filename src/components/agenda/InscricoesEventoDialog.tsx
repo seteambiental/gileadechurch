@@ -96,13 +96,16 @@ interface InscricoesEventoDialogProps {
 
 const formaPagamentoLabels: Record<string, string> = {
   pix: "PIX",
-  cartao_credito: "Cartão de Crédito",
-  cartao_debito: "Cartão de Débito",
+  credito: "Crédito",
+  debito: "Débito",
+  dinheiro: "Dinheiro",
+  cartao_credito: "Crédito",
+  cartao_debito: "Débito",
 };
 
 const statusPagamentoLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pendente: { label: "Pendente", variant: "secondary" },
-  confirmado: { label: "Confirmado", variant: "default" },
+  pendente: { label: "A pagar", variant: "secondary" },
+  confirmado: { label: "Pago", variant: "default" },
   cancelado: { label: "Cancelado", variant: "destructive" },
 };
 
@@ -132,14 +135,54 @@ export const InscricoesEventoDialog = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("*")
+        .select("*, casa_refugio:casas_refugio(id, name, condominio)")
         .eq("evento_id", eventoId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Inscricao[];
+      return data as (Inscricao & { casa_refugio: { id: string; name: string; condominio: string | null } | null })[];
     },
     enabled: open && !!eventoId,
   });
+
+  // Fetch member functions for all member_ids in inscriptions
+  const memberIds = inscricoes.filter(i => i.member_id).map(i => i.member_id!);
+  const { data: memberFunctions = [] } = useQuery({
+    queryKey: ["member-functions-inscricoes", eventoId, memberIds],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("member_functions")
+        .select("member_id, function_type, subfuncao")
+        .in("member_id", memberIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: memberIds.length > 0,
+  });
+
+  const getFuncaoLabel = (memberId: string | null) => {
+    if (!memberId) return "-";
+    const funcs = memberFunctions.filter(f => f.member_id === memberId);
+    if (funcs.length === 0) return "-";
+    return funcs.map(f => {
+      const labels: Record<string, string> = {
+        pastor_geral: "Pastor Geral",
+        pastor_auxiliar: "Pastor Auxiliar",
+        lider: "Líder",
+        lider_esposa: "Líder (Esposa)",
+        supervisor: "Supervisor",
+        supervisor_esposa: "Supervisor (Esposa)",
+        anfitriao: "Anfitrião",
+        anfitriao_esposa: "Anfitrião (Esposa)",
+        sindico: "Síndico",
+        sindico_esposa: "Síndico (Esposa)",
+        lider_ministerio: "Líder Ministério",
+        vice_lider_ministerio: "Vice-Líder Ministério",
+        membro_ministerio: "Membro Ministério",
+      };
+      return labels[f.function_type] || f.function_type;
+    }).join(", ");
+  };
 
   // Filtered inscriptions
   const inscricoesFiltradas = inscricoes.filter((i) => {
@@ -170,6 +213,23 @@ export const InscricoesEventoDialog = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
       toast({ title: "Status atualizado!" });
+    },
+    onError: (error: Error) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
+  const updateFormaPagamentoMutation = useMutation({
+    mutationFn: async ({ id, forma }: { id: string; forma: string }) => {
+      const { error } = await supabase
+        .from("inscricoes_eventos")
+        .update({ forma_pagamento: forma })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      toast({ title: "Forma de pagamento atualizada!" });
     },
     onError: (error: Error) => {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -265,17 +325,12 @@ export const InscricoesEventoDialog = ({
     const dataExport = inscricoesFiltradas.map((i, idx) => ({
       "#": idx + 1,
       "Nome": i.nome_participante,
-      "Gênero": i.genero === "masculino" ? "M" : i.genero === "feminino" ? "F" : "-",
+      "Condomínio": i.casa_refugio?.condominio || "-",
+      "Casa Refúgio": i.casa_refugio?.name || "-",
+      "Função": getFuncaoLabel(i.member_id),
       "Telefone": i.telefone_contato,
-      "Tel. Emergência": i.telefone_emergencia || "-",
-      "Menor": i.is_menor ? "Sim" : "Não",
-      "Responsável": i.nome_responsavel || "-",
-      "Tel. Responsável": i.telefone_responsavel || "-",
-      "Beliche": i.preferencia_beliche === "cima" ? "Cima" : i.preferencia_beliche === "baixo" ? "Baixo" : "Indiferente",
-      "Alergia": i.tem_alergia_alimentar ? i.descricao_alergia : "Não",
-      "Medicamento": i.toma_medicamento ? i.descricao_medicamento : "Não",
-      "Pagamento": formaPagamentoLabels[i.forma_pagamento] || i.forma_pagamento,
-      "Status": statusPagamentoLabels[i.status_pagamento]?.label || i.status_pagamento,
+      "Forma Pagamento": formaPagamentoLabels[i.forma_pagamento] || i.forma_pagamento || "-",
+      "Situação": statusPagamentoLabels[i.status_pagamento]?.label || i.status_pagamento,
       "Data Inscrição": format(parseISO(i.created_at), "dd/MM/yyyy HH:mm"),
     }));
 
@@ -435,11 +490,12 @@ export const InscricoesEventoDialog = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Info</TableHead>
+                    <TableHead>Condomínio</TableHead>
+                    <TableHead>Casa Refúgio</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead>Telefone</TableHead>
                     <TableHead>Pagamento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Observações</TableHead>
+                    <TableHead>Situação</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -448,74 +504,51 @@ export const InscricoesEventoDialog = ({
                     <TableRow key={inscricao.id}>
                       <TableCell>
                         <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{inscricao.nome_participante}</p>
-                            {inscricao.lista_espera && (
-                              <Badge variant="outline" className="text-xs text-orange-500 border-orange-300">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Espera
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground">
-                            {inscricao.genero === "masculino" ? "Masculino" : inscricao.genero === "feminino" ? "Feminino" : "-"}
-                            {inscricao.is_menor && (
-                              <span className="ml-2 text-orange-500">• Menor</span>
-                            )}
-                          </p>
-                          {inscricao.is_menor && inscricao.nome_responsavel && (
-                            <p className="text-xs text-muted-foreground">
-                              Resp: {inscricao.nome_responsavel}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {inscricao.telefone_contato}
-                          </p>
-                          {inscricao.telefone_emergencia && (
-                            <p className="text-xs text-muted-foreground">
-                              Emerg: {inscricao.telefone_emergencia}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {inscricao.preferencia_beliche && inscricao.preferencia_beliche !== "indiferente" && (
-                            <Badge variant="outline" className="text-xs">
-                              Beliche: {inscricao.preferencia_beliche}
-                            </Badge>
-                          )}
-                          {inscricao.tem_alergia_alimentar && (
-                            <Badge variant="outline" className="text-xs text-red-500 border-red-200">
-                              <AlertTriangle className="w-3 h-3 mr-1" />
-                              Alergia
-                            </Badge>
-                          )}
-                          {inscricao.toma_medicamento && (
-                            <Badge variant="outline" className="text-xs text-blue-500 border-blue-200">
-                              <Pill className="w-3 h-3 mr-1" />
-                              Medicamento
+                          <p className="font-medium">{inscricao.nome_participante}</p>
+                          {inscricao.lista_espera && (
+                            <Badge variant="outline" className="text-xs text-orange-500 border-orange-300 mt-1">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Espera
                             </Badge>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <CreditCard className="w-3 h-3" />
-                          {formaPagamentoLabels[inscricao.forma_pagamento] || inscricao.forma_pagamento}
-                        </div>
+                        <span className="text-sm">{inscricao.casa_refugio?.condominio || "-"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{inscricao.casa_refugio?.name || "-"}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{getFuncaoLabel(inscricao.member_id)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <p className="text-sm">{inscricao.telefone_contato}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={inscricao.forma_pagamento || "none"}
+                          onValueChange={(value) => updateFormaPagamentoMutation.mutate({ id: inscricao.id, forma: value === "none" ? "" : value })}
+                        >
+                          <SelectTrigger className="w-28 h-8">
+                            <SelectValue placeholder="Selecione">
+                              {formaPagamentoLabels[inscricao.forma_pagamento] || inscricao.forma_pagamento || "-"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pix">PIX</SelectItem>
+                            <SelectItem value="credito">Crédito</SelectItem>
+                            <SelectItem value="debito">Débito</SelectItem>
+                            <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell>
                         <Select
                           value={inscricao.status_pagamento}
                           onValueChange={(value) => updateStatusMutation.mutate({ id: inscricao.id, status: value })}
                         >
-                          <SelectTrigger className="w-32 h-8">
+                          <SelectTrigger className="w-28 h-8">
                             <Badge variant={statusPagamentoLabels[inscricao.status_pagamento]?.variant || "secondary"}>
                               {statusPagamentoLabels[inscricao.status_pagamento]?.label || inscricao.status_pagamento}
                             </Badge>
@@ -524,70 +557,17 @@ export const InscricoesEventoDialog = ({
                             <SelectItem value="pendente">
                               <span className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-yellow-500" />
-                                Pendente
+                                A pagar
                               </span>
                             </SelectItem>
                             <SelectItem value="confirmado">
                               <span className="flex items-center gap-2">
                                 <Check className="w-3 h-3 text-green-500" />
-                                Confirmado
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="cancelado">
-                              <span className="flex items-center gap-2">
-                                <X className="w-3 h-3 text-red-500" />
-                                Cancelado
+                                Pago
                               </span>
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                      </TableCell>
-                      <TableCell>
-                        {editingObservacoes?.id === inscricao.id ? (
-                          <div className="space-y-2 min-w-[200px]">
-                            <Textarea
-                              value={editingObservacoes.value}
-                              onChange={(e) => setEditingObservacoes({ ...editingObservacoes, value: e.target.value })}
-                              className="text-xs h-16"
-                              placeholder="Adicionar observação..."
-                            />
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                className="h-6 text-xs"
-                                onClick={() => updateObservacoesMutation.mutate({ 
-                                  id: inscricao.id, 
-                                  observacoes: editingObservacoes.value 
-                                })}
-                                disabled={updateObservacoesMutation.isPending}
-                              >
-                                {updateObservacoesMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : "Salvar"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 text-xs"
-                                onClick={() => setEditingObservacoes(null)}
-                              >
-                                Cancelar
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div 
-                            className="flex items-start gap-1 cursor-pointer hover:bg-muted/50 p-1 rounded min-w-[150px]"
-                            onClick={() => setEditingObservacoes({ id: inscricao.id, value: inscricao.observacoes || "" })}
-                          >
-                            {inscricao.observacoes ? (
-                              <p className="text-xs text-muted-foreground line-clamp-2">{inscricao.observacoes}</p>
-                            ) : (
-                              <span className="text-xs text-muted-foreground/50 flex items-center gap-1">
-                                <Edit2 className="w-3 h-3" />
-                                Adicionar nota
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </TableCell>
                       <TableCell>
                         <Button
