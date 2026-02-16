@@ -14,9 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Calendar, MapPin, Users, Trash2, Edit, Eye } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Calendar, MapPin, Users, Trash2, Edit, Eye, ClipboardList } from "lucide-react";
 import ImpactoEventoFormDialog from "./ImpactoEventoFormDialog";
 import ImpactoEventoDetalhesDialog from "./ImpactoEventoDetalhesDialog";
+import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 
 const TIPOS_IMPACTO: Record<string, { label: string; color: string }> = {
   mulheres: { label: "Mulheres", color: "bg-pink-500" },
@@ -33,6 +42,7 @@ const ImpactoEventosTab = () => {
   const [editingEvento, setEditingEvento] = useState<any>(null);
   const [selectedEvento, setSelectedEvento] = useState<any>(null);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
+  const [inscricoesEvento, setInscricoesEvento] = useState<any>(null);
 
   const { data: eventos, isLoading } = useQuery({
     queryKey: ["impacto-eventos"],
@@ -55,9 +65,25 @@ const ImpactoEventosTab = () => {
         .select("id, titulo, descricao, data_evento, data_fim, hora_inicio, hora_fim, local, tipo_evento, cor, flyer_url, limite_vagas, ativo, necessita_inscricao")
         .eq("necessita_inscricao", true)
         .eq("recorrente", false)
-        .order("data_evento", { ascending: false });
+        .order("data_evento", { ascending: true });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Contar inscrições por evento da agenda
+  const { data: inscricoesAgendaCount } = useQuery({
+    queryKey: ["inscricoes-eventos-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("inscricoes_eventos")
+        .select("evento_id");
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data?.forEach((i) => {
+        counts[i.evento_id] = (counts[i.evento_id] || 0) + 1;
+      });
+      return counts;
     },
   });
 
@@ -105,53 +131,67 @@ const ImpactoEventosTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Eventos da Agenda com inscrição */}
-      {eventosAgenda.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-heading font-bold">Eventos com Inscrição</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {eventosAgenda.map((evento) => (
-              <Card key={evento.id} className="relative overflow-hidden">
-                <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: evento.cor || "hsl(var(--destructive))" }} />
-                {evento.flyer_url && (
-                  <div className="aspect-[16/9] overflow-hidden">
-                    <img src={evento.flyer_url} alt={evento.titulo} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-lg">{evento.titulo}</CardTitle>
-                    <Badge variant={evento.ativo ? "outline" : "secondary"}>
-                      {evento.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
-                      {evento.data_fim && ` - ${format(new Date(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}`}
-                    </span>
-                  </div>
-                  {evento.local && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      <span>{evento.local}</span>
-                    </div>
-                  )}
-                  {evento.limite_vagas && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="w-4 h-4" />
-                      <span>{evento.limite_vagas} vagas</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Eventos da Agenda com inscrição - formato lista */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-heading font-bold">Eventos com Inscrição</h2>
+        {eventosAgenda.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Nenhum evento com inscrição cadastrado.
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Evento</TableHead>
+                    <TableHead className="text-center">Inscritos</TableHead>
+                    <TableHead className="text-center">Vagas</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="w-24"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {eventosAgenda.map((evento) => {
+                    const inscritos = inscricoesAgendaCount?.[evento.id] || 0;
+                    return (
+                      <TableRow key={evento.id}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                          {evento.data_fim && (
+                            <span className="text-muted-foreground"> - {format(new Date(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{evento.titulo}</TableCell>
+                        <TableCell className="text-center">{inscritos}</TableCell>
+                        <TableCell className="text-center">{evento.limite_vagas || "—"}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={evento.ativo ? "outline" : "secondary"} className="text-xs">
+                            {evento.ativo ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setInscricoesEvento(evento)}
+                          >
+                            <ClipboardList className="w-3 h-3 mr-1" />
+                            Inscrições
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-heading font-bold">Agenda de Impactos</h2>
@@ -280,6 +320,18 @@ const ImpactoEventosTab = () => {
           open={!!selectedEvento}
           onOpenChange={(open) => !open && setSelectedEvento(null)}
           evento={selectedEvento}
+        />
+      )}
+
+      {inscricoesEvento && (
+        <InscricoesEventoDialog
+          open={!!inscricoesEvento}
+          onOpenChange={(open) => !open && setInscricoesEvento(null)}
+          eventoId={inscricoesEvento.id}
+          eventoTitulo={inscricoesEvento.titulo}
+          eventoLocal={inscricoesEvento.local}
+          eventoData={inscricoesEvento.data_evento}
+          limiteVagas={inscricoesEvento.limite_vagas}
         />
       )}
     </div>
