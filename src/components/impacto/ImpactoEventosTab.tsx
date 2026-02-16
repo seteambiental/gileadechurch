@@ -14,11 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
+import InscricaoRapidaDialog from "./InscricaoRapidaDialog";
 
 const ImpactoEventosTab = () => {
   const [inscricoesEvento, setInscricoesEvento] = useState<any>(null);
+  const [inscricaoRapidaEvento, setInscricaoRapidaEvento] = useState<any>(null);
 
   const { data: eventosAgenda = [], isLoading } = useQuery({
     queryKey: ["agenda-eventos-inscricao"],
@@ -108,9 +110,10 @@ const ImpactoEventosTab = () => {
                           <Button
                             size="sm"
                             variant="default"
-                            onClick={() => window.open(`/inscricao/${evento.id}`, '_blank')}
+                            onClick={() => setInscricaoRapidaEvento(evento)}
                           >
-                            + Inscrição
+                            <Plus className="w-3 h-3 mr-1" />
+                            Inscrição
                           </Button>
                         </div>
                       </TableCell>
@@ -132,6 +135,14 @@ const ImpactoEventosTab = () => {
           eventoLocal={inscricoesEvento.local}
           eventoData={inscricoesEvento.data_evento}
           limiteVagas={inscricoesEvento.limite_vagas}
+        />
+      )}
+      {inscricaoRapidaEvento && (
+        <InscricaoRapidaDialog
+          open={!!inscricaoRapidaEvento}
+          onOpenChange={(open) => !open && setInscricaoRapidaEvento(null)}
+          eventoId={inscricaoRapidaEvento.id}
+          eventoTitulo={inscricaoRapidaEvento.titulo}
         />
       )}
     </div>
