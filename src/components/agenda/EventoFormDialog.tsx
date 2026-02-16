@@ -117,30 +117,30 @@ const CORES = [
 ];
 
 const TIPOS_EVENTO = [
-  { value: "culto", label: "Culto" },
-  { value: "ceia", label: "Santa Ceia" },
   { value: "batismo", label: "Batismo" },
-  { value: "impacto", label: "Impacto" },
-  { value: "retiro", label: "Retiro" },
-  { value: "conferencia", label: "Conferência" },
   { value: "casa_refugio", label: "Casa Refúgio" },
+  { value: "conferencia", label: "Conferência" },
+  { value: "culto", label: "Culto" },
   { value: "gileade_fest", label: "Gileade Fest" },
-  { value: "retiro_kids", label: "Retiro Kids" },
+  { value: "impacto", label: "Impacto" },
   { value: "evento", label: "Outro Evento" },
+  { value: "retiro", label: "Retiro" },
+  { value: "retiro_kids", label: "Retiro Kids" },
+  { value: "ceia", label: "Santa Ceia" },
 ];
 
 const TIPOS_COMPROMISSO = [
+  { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
+  { value: "aulas", label: "Aulas" },
+  { value: "casamento", label: "Casamento" },
+  { value: "churrasco", label: "Churrasco" },
+  { value: "conexao_lider", label: "Conexão Líder" },
+  { value: "confraternizacao", label: "Confraternização" },
   { value: "culto", label: "Culto" },
   { value: "ceia", label: "Culto de Ceia" },
-  { value: "conexao_lider", label: "Conexão Líder" },
+  { value: "cursos", label: "Cursos" },
   { value: "quarta_proposito", label: "Quarta com Propósito" },
   { value: "quarta_proposito_prestacao", label: "Quarta com Propósito - Prestação de Contas" },
-  { value: "cursos", label: "Cursos" },
-  { value: "aulas", label: "Aulas" },
-  { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
-  { value: "casamento", label: "Casamento" },
-  { value: "confraternizacao", label: "Confraternização" },
-  { value: "churrasco", label: "Churrasco" },
 ];
 
 export const EventoFormDialog = ({
