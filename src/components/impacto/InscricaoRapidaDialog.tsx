@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SearchInput } from "@/components/ui/search-input";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { includesNormalized } from "@/lib/text-utils";
 import { formatNameField } from "@/lib/text-utils";
 
@@ -30,6 +31,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualPhoneEmergencia, setManualPhoneEmergencia] = useState("");
+  const [manualIgreja, setManualIgreja] = useState("");
+  const [manualMinisterio, setManualMinisterio] = useState("");
+  const [manualCpf, setManualCpf] = useState("");
+  const [manualRg, setManualRg] = useState("");
 
   const { data: members } = useQuery({
     queryKey: ["members-list"],
@@ -56,6 +62,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           evento_id: eventoId,
           nome_participante: formatNameField(manualName),
           telefone_contato: manualPhone || "N/A",
+          telefone_emergencia: manualPhoneEmergencia || null,
+          igreja_congrega: manualIgreja || null,
+          ministerio_igreja: manualMinisterio || null,
+          cpf: manualCpf || null,
+          rg: manualRg || null,
         });
         if (error) throw error;
       } else {
@@ -88,6 +99,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     setSelectedMember(null);
     setManualName("");
     setManualPhone("");
+    setManualPhoneEmergencia("");
+    setManualIgreja("");
+    setManualMinisterio("");
+    setManualCpf("");
+    setManualRg("");
     setIsManual(false);
     onOpenChange(false);
   };
@@ -116,24 +132,68 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           </div>
 
           {isManual ? (
-            <>
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
               <div className="space-y-2">
-                <Label>Nome *</Label>
+                <Label>Nome completo (sem abreviaturas) *</Label>
                 <Input
                   placeholder="Nome completo"
                   value={manualName}
                   onChange={(e) => setManualName(e.target.value)}
                 />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>WhatsApp *</Label>
+                  <MaskedInput
+                    mask="phone"
+                    value={manualPhone}
+                    onChange={(v) => setManualPhone(v)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tel. Emergência</Label>
+                  <MaskedInput
+                    mask="phone"
+                    value={manualPhoneEmergencia}
+                    onChange={(v) => setManualPhoneEmergencia(v)}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label>Telefone</Label>
+                <Label>Igreja onde congrega</Label>
                 <Input
-                  placeholder="(00) 00000-0000"
-                  value={manualPhone}
-                  onChange={(e) => setManualPhone(e.target.value)}
+                  placeholder="Nome da igreja"
+                  value={manualIgreja}
+                  onChange={(e) => setManualIgreja(e.target.value)}
                 />
               </div>
-            </>
+              <div className="space-y-2">
+                <Label>É parte de um ministério na igreja que congrega?</Label>
+                <Input
+                  placeholder="Ex: Louvor, Dança, etc."
+                  value={manualMinisterio}
+                  onChange={(e) => setManualMinisterio(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>CPF</Label>
+                  <MaskedInput
+                    mask="cpf"
+                    value={manualCpf}
+                    onChange={(v) => setManualCpf(v)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>RG</Label>
+                  <MaskedInput
+                    mask="rg"
+                    value={manualRg}
+                    onChange={(v) => setManualRg(v)}
+                  />
+                </div>
+              </div>
+            </div>
           ) : (
             <div className="space-y-2">
               <Label>Buscar membro *</Label>

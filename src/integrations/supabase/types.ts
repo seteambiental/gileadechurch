@@ -2149,9 +2149,11 @@ export type Database = {
           forma_pagamento: string | null
           genero: string | null
           id: string
+          igreja_congrega: string | null
           is_menor: boolean | null
           lista_espera: boolean | null
           member_id: string | null
+          ministerio_igreja: string | null
           nome_participante: string
           nome_responsavel: string | null
           novo_convertido_id: string | null
@@ -2176,9 +2178,11 @@ export type Database = {
           forma_pagamento?: string | null
           genero?: string | null
           id?: string
+          igreja_congrega?: string | null
           is_menor?: boolean | null
           lista_espera?: boolean | null
           member_id?: string | null
+          ministerio_igreja?: string | null
           nome_participante: string
           nome_responsavel?: string | null
           novo_convertido_id?: string | null
@@ -2203,9 +2207,11 @@ export type Database = {
           forma_pagamento?: string | null
           genero?: string | null
           id?: string
+          igreja_congrega?: string | null
           is_menor?: boolean | null
           lista_espera?: boolean | null
           member_id?: string | null
+          ministerio_igreja?: string | null
           nome_participante?: string
           nome_responsavel?: string | null
           novo_convertido_id?: string | null
