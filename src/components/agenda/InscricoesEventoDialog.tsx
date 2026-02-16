@@ -135,17 +135,33 @@ export const InscricoesEventoDialog = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("*, casa_refugio:casas_refugio(id, name, condominio)")
+        .select("*")
         .eq("evento_id", eventoId)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as (Inscricao & { casa_refugio: { id: string; name: string; condominio: string | null } | null })[];
+      return data as Inscricao[];
     },
     enabled: open && !!eventoId,
   });
 
-  // Fetch member functions for all member_ids in inscriptions
+  // Fetch member casa_refugio data for all member_ids
   const memberIds = inscricoes.filter(i => i.member_id).map(i => i.member_id!);
+  
+  const { data: memberCasasRefugio = [] } = useQuery({
+    queryKey: ["member-casas-refugio-inscricoes", eventoId, memberIds],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, casa_refugio_id, casas_refugio:casas_refugio(id, name, condominio)")
+        .in("id", memberIds)
+        .not("casa_refugio_id", "is", null);
+      if (error) throw error;
+      return data as { id: string; casa_refugio_id: string; casas_refugio: { id: string; name: string; condominio: string | null } | null }[];
+    },
+    enabled: memberIds.length > 0,
+  });
+
   const { data: memberFunctions = [] } = useQuery({
     queryKey: ["member-functions-inscricoes", eventoId, memberIds],
     queryFn: async () => {
@@ -160,28 +176,29 @@ export const InscricoesEventoDialog = ({
     enabled: memberIds.length > 0,
   });
 
+  const getMemberCasaRefugio = (memberId: string | null) => {
+    if (!memberId) return null;
+    return memberCasasRefugio.find(m => m.id === memberId)?.casas_refugio || null;
+  };
+
+  const funcaoLabels: Record<string, string> = {
+    pastor_geral: "Pastor Geral",
+    pastor_auxiliar: "Pastor Auxiliar",
+    sindico_condominio: "Síndico",
+    supervisor_condominio: "Supervisor Condomínio",
+    supervisor_casa_refugio: "Supervisor CR",
+    lider_casa_refugio: "Líder CR",
+    lider_ministerio: "Líder Ministério",
+    integrante_ministerio: "Integrante Ministério",
+  };
+
   const getFuncaoLabel = (memberId: string | null) => {
     if (!memberId) return "-";
     const funcs = memberFunctions.filter(f => f.member_id === memberId);
     if (funcs.length === 0) return "-";
-    return funcs.map(f => {
-      const labels: Record<string, string> = {
-        pastor_geral: "Pastor Geral",
-        pastor_auxiliar: "Pastor Auxiliar",
-        lider: "Líder",
-        lider_esposa: "Líder (Esposa)",
-        supervisor: "Supervisor",
-        supervisor_esposa: "Supervisor (Esposa)",
-        anfitriao: "Anfitrião",
-        anfitriao_esposa: "Anfitrião (Esposa)",
-        sindico: "Síndico",
-        sindico_esposa: "Síndico (Esposa)",
-        lider_ministerio: "Líder Ministério",
-        vice_lider_ministerio: "Vice-Líder Ministério",
-        membro_ministerio: "Membro Ministério",
-      };
-      return labels[f.function_type] || f.function_type;
-    }).join(", ");
+    // Deduplicate by function_type
+    const uniqueTypes = [...new Set(funcs.map(f => f.function_type))];
+    return uniqueTypes.map(ft => funcaoLabels[ft] || ft).join(", ");
   };
 
   // Filtered inscriptions
@@ -325,8 +342,8 @@ export const InscricoesEventoDialog = ({
     const dataExport = inscricoesFiltradas.map((i, idx) => ({
       "#": idx + 1,
       "Nome": i.nome_participante,
-      "Condomínio": i.casa_refugio?.condominio || "-",
-      "Casa Refúgio": i.casa_refugio?.name || "-",
+      "Condomínio": getMemberCasaRefugio(i.member_id)?.condominio || "-",
+      "Casa Refúgio": getMemberCasaRefugio(i.member_id)?.name || "-",
       "Função": getFuncaoLabel(i.member_id),
       "Telefone": i.telefone_contato,
       "Forma Pagamento": formaPagamentoLabels[i.forma_pagamento] || i.forma_pagamento || "-",
@@ -514,10 +531,10 @@ export const InscricoesEventoDialog = ({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">{inscricao.casa_refugio?.condominio || "-"}</span>
+                        <span className="text-sm">{getMemberCasaRefugio(inscricao.member_id)?.condominio || "-"}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">{inscricao.casa_refugio?.name || "-"}</span>
+                        <span className="text-sm">{getMemberCasaRefugio(inscricao.member_id)?.name || "-"}</span>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm">{getFuncaoLabel(inscricao.member_id)}</span>
