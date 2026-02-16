@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
+import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -291,6 +291,28 @@ const HomepageCarrosselTab = () => {
                       toggleAtivoMutation.mutate({ id: item.id, ativo: checked })
                     }
                   />
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Baixar imagem"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(item.imagem_url);
+                        const blob = await response.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${item.titulo.replace(/\s+/g, "-")}.${blob.type.split("/")[1] || "png"}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      } catch {
+                        toast.error("Erro ao baixar imagem");
+                      }
+                    }}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
 
                   <Button
                     variant="ghost"
