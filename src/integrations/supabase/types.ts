@@ -679,6 +679,7 @@ export type Database = {
           nome_masculino: string | null
           numero_endereco: string | null
           observacoes: string | null
+          onde_congrega: string | null
           qtd_filhos_meninas: number | null
           qtd_filhos_meninos: number | null
           quantas_vezes_casado: number | null
@@ -715,6 +716,7 @@ export type Database = {
           nome_masculino?: string | null
           numero_endereco?: string | null
           observacoes?: string | null
+          onde_congrega?: string | null
           qtd_filhos_meninas?: number | null
           qtd_filhos_meninos?: number | null
           quantas_vezes_casado?: number | null
@@ -751,6 +753,7 @@ export type Database = {
           nome_masculino?: string | null
           numero_endereco?: string | null
           observacoes?: string | null
+          onde_congrega?: string | null
           qtd_filhos_meninas?: number | null
           qtd_filhos_meninos?: number | null
           quantas_vezes_casado?: number | null
