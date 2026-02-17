@@ -205,12 +205,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     setFormOpen(true);
   };
 
-  const printCrachas = () => {
+  const printCrachas = async () => {
     const selected = inscricoes.filter((i) => selectedIds.includes(i.id));
     if (selected.length === 0) {
       toast.error("Selecione pelo menos uma inscrição");
       return;
     }
+
+    // Fetch church logo
+    const { data: configData } = await supabase
+      .from("igreja_config")
+      .select("logo_url, logo_dark_url")
+      .limit(1)
+      .single();
+    const logoUrl = configData?.logo_dark_url || configData?.logo_url || "";
 
     const evento = eventos?.find((e) => e.id === selectedEventoId);
     const printWindow = window.open("", "_blank");
@@ -218,6 +226,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
 
     const crachasHtml = selected.map((inscricao) => `
       <div class="cracha">
+        ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="Logo" />` : ''}
         <div class="evento">${evento?.titulo || "Impacto"}</div>
         <div class="nome">${inscricao.nome}</div>
         ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
@@ -232,6 +241,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         .container { display: flex; flex-wrap: wrap; gap: 10px; }
         .cracha { width: 85mm; height: 55mm; border: 2px solid #333; border-radius: 8px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-inside: avoid; }
+        .logo { max-width: 60px; max-height: 30px; object-fit: contain; margin-bottom: 4px; }
         .evento { font-size: 10px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
         .nome { font-size: 18px; font-weight: bold; margin: 10px 0; }
         .ref { font-size: 12px; font-weight: bold; color: #444; letter-spacing: 1px; }
