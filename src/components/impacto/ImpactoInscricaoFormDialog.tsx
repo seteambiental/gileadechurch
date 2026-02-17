@@ -65,10 +65,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [observacoes, setObservacoes] = useState("");
   const [statusPagamento, setStatusPagamento] = useState("pendente");
   const [formaPagamento, setFormaPagamento] = useState("");
-  const [valorPago, setValorPago] = useState("");
+  const [valorPago, setValorPago] = useState("0");
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [usarMisto, setUsarMisto] = useState(false);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
+  const [valorInscricao, setValorInscricao] = useState("");
 
   const { data: evento } = useQuery({
     queryKey: ["impacto-evento", eventoId],
@@ -122,8 +123,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTipoInscricao(inscricao.tipo_inscricao || "membro");
       setStatusPagamento(inscricao.status_pagamento || "pendente");
       setFormaPagamento(inscricao.forma_pagamento || "");
-      setValorPago(inscricao.valor_pago?.toString() || "");
-
+      setValorPago(inscricao.valor_pago?.toString() || "0");
+      setValorInscricao(inscricao.valor_inscricao?.toString() || "");
       const existingPagamentos = inscricao.pagamentos as Pagamento[] | null;
       if (existingPagamentos && existingPagamentos.length > 0) {
         setPagamentos(existingPagamentos.map((p: any) => ({ tipo: p.tipo, valor: p.valor?.toString() || "" })));
@@ -143,9 +144,10 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTipoInscricao(tiposPermitidos[0] || "membro");
       setStatusPagamento("pendente");
       setFormaPagamento("");
-      setValorPago("");
+      setValorPago("0");
       setPagamentos([]);
       setUsarMisto(false);
+      setValorInscricao("");
     }
   }, [open, inscricao]);
 
@@ -209,6 +211,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         genero: finalGenero || null,
         observacoes: observacoes || null,
         tipo_inscricao: tipoInscricao || "membro",
+        valor_inscricao: parseFloat(valorInscricao) || null,
         status_pagamento: statusPagamento,
         forma_pagamento: usarMisto ? "misto" : (formaPagamento || null),
         valor_pago: totalPago || null,
@@ -346,15 +349,13 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               <Label>Tipo de Inscrição *</Label>
               <Select value={tipoInscricao} onValueChange={(v) => {
                 setTipoInscricao(v);
-                // Auto-fill valor_pago based on type
+                // Auto-fill valorInscricao (not valorPago) based on type
                 const vpt = evento?.valores_por_tipo as Record<string, string> | null;
                 const hasVpt = vpt && Object.keys(vpt).length > 0;
                 const valorTipo = hasVpt ? vpt[v] : null;
                 const valorBase = evento?.valor_inscricao;
                 const valorFinal = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
-                if (valorFinal && valorFinal > 0) {
-                  setValorPago(valorFinal.toString());
-                }
+                setValorInscricao(valorFinal && valorFinal > 0 ? valorFinal.toString() : "");
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
@@ -367,18 +368,17 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   ))}
                 </SelectContent>
               </Select>
-              {(() => {
-                const vpt = evento?.valores_por_tipo as Record<string, string> | null;
-                const hasVpt = vpt && Object.keys(vpt).length > 0;
-                const valorTipo = hasVpt ? vpt[tipoInscricao] : null;
-                const valorBase = evento?.valor_inscricao;
-                const valorExibir = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
-                return valorExibir && valorExibir > 0 ? (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Valor configurado: <strong>R$ {Number(valorExibir).toFixed(2).replace(".", ",")}</strong>
-                  </p>
-                ) : null;
-              })()}
+              <div className="mt-2">
+                <Label className="text-xs text-muted-foreground">Valor da Inscrição (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={valorInscricao}
+                  onChange={(e) => setValorInscricao(e.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
             </div>
           )}
 

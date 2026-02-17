@@ -2306,6 +2306,7 @@ export type Database = {
           telefone: string | null
           tipo_inscricao: string | null
           updated_at: string
+          valor_inscricao: number | null
           valor_pago: number | null
         }
         Insert: {
@@ -2325,6 +2326,7 @@ export type Database = {
           telefone?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
+          valor_inscricao?: number | null
           valor_pago?: number | null
         }
         Update: {
@@ -2344,6 +2346,7 @@ export type Database = {
           telefone?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
+          valor_inscricao?: number | null
           valor_pago?: number | null
         }
         Relationships: [

@@ -1,0 +1,1 @@
+ALTER TABLE public.impacto_inscricoes ADD COLUMN IF NOT EXISTS valor_inscricao numeric DEFAULT NULL;
