@@ -2242,6 +2242,7 @@ export type Database = {
           limite_vagas: number | null
           local: string | null
           tipo: string
+          tipos_inscricao: string[] | null
           titulo: string
           updated_at: string
           valor_inscricao: number | null
@@ -2256,6 +2257,7 @@ export type Database = {
           limite_vagas?: number | null
           local?: string | null
           tipo: string
+          tipos_inscricao?: string[] | null
           titulo: string
           updated_at?: string
           valor_inscricao?: number | null
@@ -2270,6 +2272,7 @@ export type Database = {
           limite_vagas?: number | null
           local?: string | null
           tipo?: string
+          tipos_inscricao?: string[] | null
           titulo?: string
           updated_at?: string
           valor_inscricao?: number | null
@@ -2292,6 +2295,7 @@ export type Database = {
           pagamentos: Json | null
           status_pagamento: string
           telefone: string | null
+          tipo_inscricao: string | null
           updated_at: string
           valor_pago: number | null
         }
@@ -2310,6 +2314,7 @@ export type Database = {
           pagamentos?: Json | null
           status_pagamento?: string
           telefone?: string | null
+          tipo_inscricao?: string | null
           updated_at?: string
           valor_pago?: number | null
         }
@@ -2328,6 +2333,7 @@ export type Database = {
           pagamentos?: Json | null
           status_pagamento?: string
           telefone?: string | null
+          tipo_inscricao?: string | null
           updated_at?: string
           valor_pago?: number | null
         }
