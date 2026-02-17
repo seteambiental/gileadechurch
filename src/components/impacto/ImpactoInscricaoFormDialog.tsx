@@ -28,6 +28,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não membro",
   familia: "Família",
+  equipe: "Equipe (apoio/serviço)",
 };
 
 const FORMAS_PAGAMENTO = [
