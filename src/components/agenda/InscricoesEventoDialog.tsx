@@ -104,6 +104,13 @@ const formaPagamentoLabels: Record<string, string> = {
   cartao_debito: "Débito",
 };
 
+const tipoInscricaoLabels: Record<string, string> = {
+  membro: "Membro",
+  nao_membro: "Não Membro",
+  familia: "Família",
+  equipe: "Equipe",
+};
+
 const statusPagamentoLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pendente: { label: "A pagar", variant: "secondary" },
   confirmado: { label: "Pago", variant: "default" },
@@ -140,6 +147,21 @@ export const InscricoesEventoDialog = ({
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Inscricao[];
+    },
+    enabled: open && !!eventoId,
+  });
+
+  // Fetch event config for valores_por_tipo
+  const { data: eventoConfig } = useQuery({
+    queryKey: ["evento-config", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("tem_custo, valor_custo, valores_por_tipo")
+        .eq("id", eventoId)
+        .single();
+      if (error) throw error;
+      return data;
     },
     enabled: open && !!eventoId,
   });
@@ -261,6 +283,31 @@ export const InscricoesEventoDialog = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
       toast({ title: "Forma de pagamento atualizada!" });
+    },
+    onError: (error: Error) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
+  const updateTipoInscricaoMutation = useMutation({
+    mutationFn: async ({ id, tipo }: { id: string; tipo: string }) => {
+      // Get the value for this tipo from event config
+      const valoresPorTipo = eventoConfig?.valores_por_tipo as Record<string, string> | null;
+      const valorTipo = valoresPorTipo?.[tipo] || null;
+      const valorFinal = valorTipo ? parseFloat(valorTipo) : (eventoConfig?.valor_custo || null);
+      
+      const { error } = await supabase
+        .from("inscricoes_eventos")
+        .update({ 
+          tipo_inscricao: tipo,
+          valor_inscricao: eventoConfig?.tem_custo ? valorFinal : null 
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      toast({ title: "Tipo de inscrição atualizado!" });
     },
     onError: (error: Error) => {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -514,12 +561,13 @@ export const InscricoesEventoDialog = ({
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
+                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Condomínio</TableHead>
                     <TableHead>Casa Refúgio</TableHead>
                     <TableHead>Função</TableHead>
                     <TableHead>Telefone</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Pagamento</TableHead>
                     <TableHead>Situação</TableHead>
                     <TableHead className="w-12"></TableHead>
@@ -550,6 +598,29 @@ export const InscricoesEventoDialog = ({
                       </TableCell>
                       <TableCell>
                         <p className="text-sm">{inscricao.telefone_contato}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={(inscricao as any).tipo_inscricao || "membro"}
+                          onValueChange={(value) => updateTipoInscricaoMutation.mutate({ id: inscricao.id, tipo: value })}
+                        >
+                          <SelectTrigger className="w-28 h-8">
+                            <SelectValue>
+                              {tipoInscricaoLabels[(inscricao as any).tipo_inscricao || "membro"]}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="membro">Membro</SelectItem>
+                            <SelectItem value="nao_membro">Não Membro</SelectItem>
+                            <SelectItem value="familia">Família</SelectItem>
+                            <SelectItem value="equipe">Equipe</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {(inscricao as any).valor_inscricao && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            R$ {Number((inscricao as any).valor_inscricao).toFixed(2)}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Select

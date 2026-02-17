@@ -406,6 +406,7 @@ export type Database = {
           titulo: string
           updated_at: string
           valor_custo: number | null
+          valores_por_tipo: Json | null
           visibilidade: string
         }
         Insert: {
@@ -446,6 +447,7 @@ export type Database = {
           titulo: string
           updated_at?: string
           valor_custo?: number | null
+          valores_por_tipo?: Json | null
           visibilidade?: string
         }
         Update: {
@@ -486,6 +488,7 @@ export type Database = {
           titulo?: string
           updated_at?: string
           valor_custo?: number | null
+          valores_por_tipo?: Json | null
           visibilidade?: string
         }
         Relationships: [
@@ -2394,8 +2397,10 @@ export type Database = {
           telefone_emergencia: string | null
           telefone_responsavel: string | null
           tem_alergia_alimentar: boolean | null
+          tipo_inscricao: string | null
           toma_medicamento: boolean | null
           updated_at: string
+          valor_inscricao: number | null
         }
         Insert: {
           casa_refugio_id?: string | null
@@ -2423,8 +2428,10 @@ export type Database = {
           telefone_emergencia?: string | null
           telefone_responsavel?: string | null
           tem_alergia_alimentar?: boolean | null
+          tipo_inscricao?: string | null
           toma_medicamento?: boolean | null
           updated_at?: string
+          valor_inscricao?: number | null
         }
         Update: {
           casa_refugio_id?: string | null
@@ -2452,8 +2459,10 @@ export type Database = {
           telefone_emergencia?: string | null
           telefone_responsavel?: string | null
           tem_alergia_alimentar?: boolean | null
+          tipo_inscricao?: string | null
           toma_medicamento?: boolean | null
           updated_at?: string
+          valor_inscricao?: number | null
         }
         Relationships: [
           {
