@@ -92,6 +92,8 @@ const MembrosExcluidosTab = () => {
       await supabase.from("encontro_presencas").delete().eq("member_id", id);
       await supabase.from("kids_presencas").delete().eq("member_id", id);
       await supabase.from("member_requests").delete().eq("member_id", id);
+      await supabase.from("impacto_inscricoes").delete().eq("member_id", id);
+      await supabase.from("impacto_equipe_membros").delete().eq("member_id", id);
       
       // Then delete the member
       const { error } = await supabase.from("members").delete().eq("id", id);
