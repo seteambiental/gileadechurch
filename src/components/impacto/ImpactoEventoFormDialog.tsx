@@ -68,8 +68,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const TIPOS_IMPACTO = [
-  { value: "mulheres", label: "Mulheres" },
-  { value: "homens", label: "Homens" },
+  { value: "mulheres", label: "Impacto Feminino" },
+  { value: "homens", label: "Impacto Masculino" },
   { value: "criancas", label: "Crianças" },
   { value: "jovens", label: "Jovens" },
   { value: "adolescentes", label: "Adolescentes" },
