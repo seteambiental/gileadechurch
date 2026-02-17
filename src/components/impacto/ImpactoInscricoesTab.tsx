@@ -57,7 +57,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         .from("impacto_inscricoes")
         .select(`
           *,
-          member:members(id, full_name, photo_url)
+          member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)
         `)
         .eq("evento_id", selectedEventoId)
         .order("created_at", { ascending: false });
@@ -66,6 +66,78 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     },
     enabled: !!selectedEventoId,
   });
+
+  // Fetch casas refugio for name/condominio lookup
+  const { data: casasRefugio = [] } = useQuery({
+    queryKey: ["casas-refugio-lookup"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio")
+        .select("id, name, condominio");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch member functions for supervisor/sindico identification
+  const { data: memberFunctions = [] } = useQuery({
+    queryKey: ["member-functions-supervisores"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_functions")
+        .select("member_id, function_type, casa_refugio_id, condominio_id")
+        .in("function_type", ["supervisor_casa_refugio", "sindico_condominio"]);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch condominios for sindico lookup
+  const { data: condominios = [] } = useQuery({
+    queryKey: ["condominios-lookup"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("condominios")
+        .select("id, name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const getLocationLabel = (inscricao: any) => {
+    const member = inscricao.member;
+    if (!member) return "-";
+    
+    // Check if member is a sindico
+    const sindicoFunc = memberFunctions.find(
+      (mf) => mf.member_id === member.id && mf.function_type === "sindico_condominio"
+    );
+    if (sindicoFunc?.condominio_id) {
+      const cond = condominios.find((c) => c.id === sindicoFunc.condominio_id);
+      if (cond) return cond.name;
+    }
+    
+    // Check if member is a supervisor - show condominio from their casa_refugio
+    const supervisorFunc = memberFunctions.find(
+      (mf) => mf.member_id === member.id && mf.function_type === "supervisor_casa_refugio"
+    );
+    if (supervisorFunc?.casa_refugio_id) {
+      const cr = casasRefugio.find((c) => c.id === supervisorFunc.casa_refugio_id);
+      if (cr?.condominio) return cr.condominio;
+    }
+    
+    // Regular member - show casa refugio name
+    if (member.casa_refugio_id) {
+      const cr = casasRefugio.find((c) => c.id === member.casa_refugio_id);
+      if (cr) return cr.name;
+    }
+    
+    return "-";
+  };
+
+  const getPhone = (inscricao: any) => {
+    return inscricao.telefone || inscricao.member?.whatsapp || "-";
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -285,6 +357,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                 </TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Telefone</TableHead>
+                <TableHead>Casa Refúgio / Condomínio</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="w-12"></TableHead>
@@ -300,7 +373,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                     />
                   </TableCell>
                   <TableCell className="font-medium">{inscricao.nome}</TableCell>
-                  <TableCell>{inscricao.telefone || "-"}</TableCell>
+                  <TableCell>{getPhone(inscricao)}</TableCell>
+                  <TableCell>{getLocationLabel(inscricao)}</TableCell>
                   <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
                   <TableCell>
                     {format(new Date(inscricao.created_at), "dd/MM/yyyy", { locale: ptBR })}
