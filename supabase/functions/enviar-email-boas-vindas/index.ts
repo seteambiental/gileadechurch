@@ -23,7 +23,7 @@ async function enviarEmailBoasVindas(email: string, nome: string, senha: string)
   const primeiroNome = nome.split(' ')[0];
 
   const emailResponse = await resend.emails.send({
-    from: "Igreja Gileade <noreply@gileadechurch.com.br>",
+    from: "Igreja Gileade <onboarding@resend.dev>",
     to: [email],
     subject: "Bem-vindo(a) à Igreja Gileade! 🙏",
     html: `

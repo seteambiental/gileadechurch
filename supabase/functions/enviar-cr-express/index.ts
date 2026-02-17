@@ -240,7 +240,7 @@ serve(async (req) => {
           try {
             console.log(`Enviando email para: ${member.full_name} (${member.email})`);
             const sendResult = await resend.emails.send({
-              from: 'Igreja Gileade <noreply@gileadechurch.com.br>',
+              from: 'Igreja Gileade <onboarding@resend.dev>',
               to: [member.email],
               subject: `Casa Refúgio Express Nro. ${crExpress.numero} – ${crExpress.tema}`,
               html: emailHTML,
