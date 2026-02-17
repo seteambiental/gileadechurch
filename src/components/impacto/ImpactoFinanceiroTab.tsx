@@ -74,6 +74,28 @@ const ImpactoFinanceiroTab = () => {
   const parciais = inscricoes?.filter((i) => i.status_pagamento === "parcial").length || 0;
   const pendentes = inscricoes?.filter((i) => i.status_pagamento === "pendente").length || 0;
 
+  // Calculate totals by payment method
+  const totalByPaymentMethod = inscricoes?.reduce((acc, i) => {
+    const pagamentosArr = i.pagamentos as Array<{ tipo: string; valor: string | number }> | null;
+    if (pagamentosArr && Array.isArray(pagamentosArr) && pagamentosArr.length > 0) {
+      pagamentosArr.forEach((p) => {
+        if (p.tipo && parseFloat(String(p.valor)) > 0) {
+          acc[p.tipo] = (acc[p.tipo] || 0) + parseFloat(String(p.valor));
+        }
+      });
+    } else if (i.forma_pagamento && (i.valor_pago || 0) > 0) {
+      acc[i.forma_pagamento] = (acc[i.forma_pagamento] || 0) + (i.valor_pago || 0);
+    }
+    return acc;
+  }, {} as Record<string, number>) || {};
+
+  const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
+    pix: "PIX",
+    dinheiro: "Dinheiro",
+    credito: "Cartão Crédito",
+    debito: "Cartão Débito",
+  };
+
   // Count by type
   const countByType = inscricoes?.reduce((acc, i) => {
     const tipo = i.tipo_inscricao || "membro";
@@ -153,7 +175,25 @@ const ImpactoFinanceiroTab = () => {
                 <DollarSign className="w-4 h-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPago)}</div>
+                {Object.keys(totalByPaymentMethod).length > 0 && (
+                  <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
+                    {Object.entries(totalByPaymentMethod)
+                      .sort(([, a], [, b]) => b - a)
+                      .map(([method, value]) => (
+                        <div key={method} className="flex justify-between">
+                          <span>{FORMAS_PAGAMENTO_LABELS[method] || method}</span>
+                          <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                        </div>
+                      ))}
+                    <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-foreground">
+                      <span>Total</span>
+                      <span className="text-green-600">{formatCurrency(totalPago)}</span>
+                    </div>
+                  </div>
+                )}
+                {Object.keys(totalByPaymentMethod).length === 0 && (
+                  <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPago)}</div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   {pagos} pagos{parciais > 0 ? `, ${parciais} parciais` : ""}
                 </p>
