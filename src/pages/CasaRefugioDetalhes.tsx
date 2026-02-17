@@ -662,7 +662,7 @@ const CasaRefugioDetalhes = () => {
                                       conferido: !(encontro as any).conferido,
                                     });
                                   }}
-                                  title={(encontro as any).conferido ? "Conferido" : (canConferir ? "Marcar como conferido" : "Apenas líderes de Finanças podem conferir")}
+                                  title={(encontro as any).conferido ? (canConferir ? "Clique para desmarcar conferido" : "Conferido") : (canConferir ? "Marcar como conferido" : "Apenas líderes de Finanças podem conferir")}
                                   disabled={conferidoMutation.isPending}
                                 >
                                   <CheckCircle2 className="w-5 h-5" />
