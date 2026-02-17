@@ -102,13 +102,40 @@ serve(async (req) => {
       }
     }
 
+    // Helper to format date YYYY-MM-DD -> DD/MM/AAAA
+    const formatDateBR = (d: string) => {
+      const [y, m, day] = d.split("-");
+      return `${day}/${m}/${y}`;
+    };
+
     const eventosText = eventos?.map(e => 
-      `- ${e.titulo} em ${e.data_evento}${e.hora_inicio ? ` às ${e.hora_inicio}` : ""}${e.local ? ` no ${e.local}` : ""}`
+      `- ${e.titulo} em ${formatDateBR(e.data_evento)}${e.hora_inicio ? ` às ${e.hora_inicio.substring(0, 5)}` : ""}${e.local ? ` no ${e.local}` : ""}`
     ).join("\n") || "Nenhum evento próximo.";
 
     const programacaoText = programacao?.map(e =>
-      `- ${e.titulo} (${e.tipo_evento}) em ${e.data_evento}${e.hora_inicio ? ` às ${e.hora_inicio}` : ""}`
+      `- ${e.titulo} (${e.tipo_evento}) em ${formatDateBR(e.data_evento)}${e.hora_inicio ? ` às ${e.hora_inicio.substring(0, 5)}` : ""}`
     ).join("\n") || "Sem programação especial.";
+
+    // Build structured avisos data for the frontend
+    const avisosEstruturados = {
+      programacao_igreja: programacao?.map(e => ({
+        evento: e.titulo,
+        data: e.data_evento,
+        hora: e.hora_inicio,
+      })) || [],
+      proximos_eventos_agenda: eventos?.map(e => ({
+        evento: e.titulo,
+        data: e.data_evento,
+        hora: e.hora_inicio,
+        local: e.local,
+      })) || [],
+      lembretes_fixos: [
+        "Oferta para missões (meta da CR – R$ 50,00)",
+        "pix@gileade.com.br",
+        "Quilo do Amor (meta da CR – 28 kgs)",
+        "Reforçar importância da participação nos cultos e programações da Igreja.",
+      ],
+    };
 
     const systemPrompt = `Você é um assistente da igreja que cria resumos de pregações para as Casas Refúgio (células/pequenos grupos).
 Gere um documento chamado "Casa Refúgio Express" seguindo este formato exato:
@@ -225,7 +252,7 @@ Todos os campos devem ser strings com o texto formatado.`;
         introducao: parsed.introducao || "",
         desenvolvimento: parsed.desenvolvimento || "",
         conclusao: parsed.conclusao || "",
-        avisos_importantes: parsed.avisos_importantes || "",
+        avisos_importantes: JSON.stringify(avisosEstruturados),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
