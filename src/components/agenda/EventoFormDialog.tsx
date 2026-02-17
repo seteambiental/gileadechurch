@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getCorPorTipo } from "@/lib/event-colors";
 import {
   Dialog,
   DialogContent,
@@ -263,7 +264,7 @@ export const EventoFormDialog = ({
           bloqueio_fim_hora: bloqueioFim ? format(bloqueioFim, "HH:mm") : "",
           tipo_evento: evento.tipo_evento || "evento",
           genero_alvo: evento.genero_alvo || "todos",
-          cor: evento.cor || "#dc2626",
+          cor: evento.cor || getCorPorTipo(evento.tipo_evento || "evento"),
           recorrente: evento.recorrente || false,
           tipo_recorrencia: evento.tipo_recorrencia || "",
           dia_semana: evento.dia_semana?.toString() || "",
@@ -301,7 +302,7 @@ export const EventoFormDialog = ({
           bloqueio_fim_hora: "",
           tipo_evento: isCompromisso ? "culto" : "evento",
           genero_alvo: "todos",
-          cor: "#dc2626",
+          cor: getCorPorTipo(isCompromisso ? "culto" : "evento"),
           recorrente: isCompromisso,
           tipo_recorrencia: isCompromisso ? "semanal" : "",
           dia_semana: "",
@@ -713,7 +714,7 @@ export const EventoFormDialog = ({
                 <Label>{mode === "compromisso" ? "Tipo de Compromisso" : "Tipo de Evento"}</Label>
                 <Select
                   value={formData.tipo_evento}
-                  onValueChange={(v) => setFormData({ ...formData, tipo_evento: v })}
+                  onValueChange={(v) => setFormData({ ...formData, tipo_evento: v, cor: getCorPorTipo(v) })}
                 >
                   <SelectTrigger>
                     <SelectValue />
