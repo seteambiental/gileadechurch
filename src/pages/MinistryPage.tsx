@@ -46,6 +46,7 @@ import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTa
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
 import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
 import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
+import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
 
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
@@ -388,6 +389,10 @@ const MinistryPage = () => {
                     <CalendarDays className="w-4 h-4" />
                     <span className="hidden sm:inline">Eventos</span>
                   </TabsTrigger>
+                  <TabsTrigger value="inscricoes-impacto" className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="hidden sm:inline">Inscrições</span>
+                  </TabsTrigger>
                   <TabsTrigger value="financeiro" className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
                     <span className="hidden sm:inline">Financeiro</span>
@@ -529,6 +534,9 @@ const MinistryPage = () => {
               <>
                 <TabsContent value="eventos">
                   <ImpactoEventosTab />
+                </TabsContent>
+                <TabsContent value="inscricoes-impacto">
+                  <ImpactoInscricoesTab />
                 </TabsContent>
                 <TabsContent value="financeiro">
                   <ImpactoFinanceiroTab />
