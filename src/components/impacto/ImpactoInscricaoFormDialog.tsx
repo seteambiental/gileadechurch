@@ -24,6 +24,12 @@ import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2 } from "lucide-react";
 import { formatNameField } from "@/lib/text-utils";
 
+const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
+  membro: "Membro",
+  nao_membro: "Não membro",
+  familia: "Família",
+};
+
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
   { value: "dinheiro", label: "Dinheiro" },
@@ -61,6 +67,23 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [valorPago, setValorPago] = useState("");
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([]);
   const [usarMisto, setUsarMisto] = useState(false);
+  const [tipoInscricao, setTipoInscricao] = useState("membro");
+
+  const { data: evento } = useQuery({
+    queryKey: ["impacto-evento", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_eventos")
+        .select("tipos_inscricao")
+        .eq("id", eventoId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!eventoId,
+  });
+
+  const tiposPermitidos: string[] = (evento?.tipos_inscricao as string[] | null) || ["membro", "nao_membro", "familia"];
 
   const { data: members } = useQuery({
     queryKey: ["members-list"],
@@ -95,6 +118,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail(inscricao.email || "");
       setGenero(inscricao.genero || "");
       setObservacoes(inscricao.observacoes || "");
+      setTipoInscricao(inscricao.tipo_inscricao || "membro");
       setStatusPagamento(inscricao.status_pagamento || "pendente");
       setFormaPagamento(inscricao.forma_pagamento || "");
       setValorPago(inscricao.valor_pago?.toString() || "");
@@ -115,6 +139,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail("");
       setGenero("");
       setObservacoes("");
+      setTipoInscricao(tiposPermitidos[0] || "membro");
       setStatusPagamento("pendente");
       setFormaPagamento("");
       setValorPago("");
@@ -182,6 +207,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         email: finalEmail || null,
         genero: finalGenero || null,
         observacoes: observacoes || null,
+        tipo_inscricao: tipoInscricao || "membro",
         status_pagamento: statusPagamento,
         forma_pagamento: usarMisto ? "misto" : (formaPagamento || null),
         valor_pago: totalPago || null,
@@ -312,6 +338,24 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </div>
               )}
             </>
+          )}
+
+          {tiposPermitidos.length > 1 && (
+            <div>
+              <Label>Tipo de Inscrição *</Label>
+              <Select value={tipoInscricao} onValueChange={setTipoInscricao}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tiposPermitidos.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {TIPOS_INSCRICAO_LABELS[t] || t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
           <div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -29,6 +29,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+const TIPOS_INSCRICAO = [
+  { value: "membro", label: "Membro" },
+  { value: "nao_membro", label: "Não membro" },
+  { value: "familia", label: "Família" },
+];
 
 const formSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório"),
@@ -39,6 +47,7 @@ const formSchema = z.object({
   descricao: z.string().optional(),
   valor_inscricao: z.string().optional(),
   limite_vagas: z.string().optional(),
+  tipos_inscricao: z.array(z.string()).min(1, "Selecione pelo menos um tipo de inscrição"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -73,6 +82,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       descricao: "",
       valor_inscricao: "",
       limite_vagas: "",
+      tipos_inscricao: ["membro", "nao_membro", "familia"],
     },
   });
 
@@ -87,6 +97,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: evento.descricao || "",
         valor_inscricao: evento.valor_inscricao?.toString() || "",
         limite_vagas: evento.limite_vagas?.toString() || "",
+        tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia"],
       });
     } else if (open && !evento) {
       form.reset({
@@ -98,6 +109,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: "",
         valor_inscricao: "",
         limite_vagas: "",
+        tipos_inscricao: ["membro", "nao_membro", "familia"],
       });
     }
   }, [open, evento, form]);
@@ -113,6 +125,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: values.descricao || null,
         valor_inscricao: values.valor_inscricao ? parseFloat(values.valor_inscricao) : 0,
         limite_vagas: values.limite_vagas ? parseInt(values.limite_vagas) : null,
+        tipos_inscricao: values.tipos_inscricao,
       };
 
       if (isEditing) {
@@ -272,6 +285,38 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
                   <FormControl>
                     <Textarea placeholder="Descrição do evento..." {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tipos_inscricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipos de Inscrição Permitidos *</FormLabel>
+                  <div className="space-y-2">
+                    {TIPOS_INSCRICAO.map((tipo) => (
+                      <div key={tipo.value} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`tipo_insc_${tipo.value}`}
+                          checked={field.value?.includes(tipo.value)}
+                          onCheckedChange={(checked) => {
+                            const current = field.value || [];
+                            if (checked) {
+                              field.onChange([...current, tipo.value]);
+                            } else {
+                              field.onChange(current.filter((v: string) => v !== tipo.value));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`tipo_insc_${tipo.value}`} className="cursor-pointer text-sm">
+                          {tipo.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

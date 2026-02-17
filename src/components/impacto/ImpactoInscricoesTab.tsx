@@ -40,6 +40,12 @@ const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
   misto: "Misto",
 };
 
+const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
+  membro: "Membro",
+  nao_membro: "Não membro",
+  familia: "Família",
+};
+
 const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) => {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -350,6 +356,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                   />
                 </TableHead>
                 <TableHead>Nome</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Casa Refúgio / Condomínio</TableHead>
                 <TableHead>Pagamento</TableHead>
@@ -370,6 +377,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                       />
                     </TableCell>
                     <TableCell className="font-medium">{inscricao.nome}</TableCell>
+                    <TableCell className="text-sm">
+                      {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
+                    </TableCell>
                     <TableCell>{getPhone(inscricao)}</TableCell>
                     <TableCell>{getLocationLabel(inscricao)}</TableCell>
                     <TableCell className="text-sm">
