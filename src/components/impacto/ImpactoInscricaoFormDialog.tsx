@@ -75,7 +75,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_eventos")
-        .select("tipos_inscricao")
+        .select("tipos_inscricao, tem_custo, valor_inscricao, valores_por_tipo")
         .eq("id", eventoId)
         .single();
       if (error) throw error;
@@ -84,7 +84,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     enabled: !!eventoId,
   });
 
-  const tiposPermitidos: string[] = (evento?.tipos_inscricao as string[] | null) || ["membro", "nao_membro", "familia"];
+  const tiposPermitidos: string[] = (evento?.tipos_inscricao as string[] | null) || ["membro", "nao_membro", "familia", "equipe"];
 
   const { data: members } = useQuery({
     queryKey: ["members-list"],
@@ -356,6 +356,16 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   ))}
                 </SelectContent>
               </Select>
+              {(() => {
+                const valoresPorTipo = evento?.valores_por_tipo as Record<string, string> | null;
+                const valorTipo = valoresPorTipo?.[tipoInscricao];
+                const valorExibir = valorTipo ? parseFloat(valorTipo) : (evento?.valor_inscricao || null);
+                return evento?.tem_custo && valorExibir ? (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Valor: <strong>R$ {Number(valorExibir).toFixed(2).replace(".", ",")}</strong>
+                  </p>
+                ) : null;
+              })()}
             </div>
           )}
 
