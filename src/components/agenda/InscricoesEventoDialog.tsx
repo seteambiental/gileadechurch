@@ -99,6 +99,7 @@ const formaPagamentoLabels: Record<string, string> = {
   credito: "Crédito",
   debito: "Débito",
   dinheiro: "Dinheiro",
+  misto: "Multi (Misto)",
   cartao_credito: "Crédito",
   cartao_debito: "Débito",
 };
@@ -216,15 +217,17 @@ export const InscricoesEventoDialog = ({
     return uniqueTypes.map(ft => funcaoLabels[ft] || ft).join(", ");
   };
 
-  // Filtered inscriptions
-  const inscricoesFiltradas = inscricoes.filter((i) => {
-    const matchSearch = includesNormalized(i.nome_participante, searchTerm);
-    const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-    const crData = getMemberCasaRefugio(i.member_id);
-    const matchCondominio = filterCondominio === "todos" || (crData?.condominio || "") === filterCondominio;
-    const matchCR = filterCasaRefugio === "todos" || (crData?.name || "") === filterCasaRefugio;
-    return matchSearch && matchStatus && matchCondominio && matchCR;
-  });
+  // Filtered and sorted inscriptions
+  const inscricoesFiltradas = inscricoes
+    .filter((i) => {
+      const matchSearch = includesNormalized(i.nome_participante, searchTerm);
+      const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
+      const crData = getMemberCasaRefugio(i.member_id);
+      const matchCondominio = filterCondominio === "todos" || (crData?.condominio || "") === filterCondominio;
+      const matchCR = filterCasaRefugio === "todos" || (crData?.name || "") === filterCasaRefugio;
+      return matchSearch && matchStatus && matchCondominio && matchCR;
+    })
+    .sort((a, b) => a.nome_participante.localeCompare(b.nome_participante, "pt-BR"));
 
   // Contagens
   const inscricoesConfirmadas = inscricoes.filter(i => !i.lista_espera && i.status_pagamento !== "cancelado");
@@ -563,6 +566,7 @@ export const InscricoesEventoDialog = ({
                             <SelectItem value="credito">Crédito</SelectItem>
                             <SelectItem value="debito">Débito</SelectItem>
                             <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                            <SelectItem value="misto">Multi (Misto)</SelectItem>
                           </SelectContent>
                         </Select>
                       </TableCell>
@@ -593,14 +597,24 @@ export const InscricoesEventoDialog = ({
                         </Select>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => setDeleteId(inscricao.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => window.open(`/inscricao/${eventoId}?edit=${inscricao.id}`, '_blank')}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteId(inscricao.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
