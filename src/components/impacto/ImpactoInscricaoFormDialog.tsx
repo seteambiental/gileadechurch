@@ -495,23 +495,35 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   Adicionar forma de pagamento
                 </Button>
                 {totalPagamentos > 0 && (
-                  <div className="p-2 bg-muted/50 rounded text-sm font-medium">
-                    Total pago: R$ {totalPagamentos.toFixed(2)}
+                  <div className="p-2 bg-muted/50 rounded text-sm space-y-1">
+                    <div className="font-medium">Total pago: R$ {totalPagamentos.toFixed(2)}</div>
+                    {parseFloat(valorInscricao) > 0 && (
+                      <div className={`font-medium ${(parseFloat(valorInscricao) - totalPagamentos) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                        Saldo a pagar: R$ {Math.max(0, parseFloat(valorInscricao) - totalPagamentos).toFixed(2)}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
             {!usarMisto && (
-              <div>
-                <Label>Valor Pago (R$)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={valorPago}
-                  onChange={(e) => setValorPago(e.target.value)}
-                  placeholder="0,00"
-                />
+              <div className="space-y-2">
+                <div>
+                  <Label>Valor Pago (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={valorPago}
+                    onChange={(e) => setValorPago(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+                {parseFloat(valorInscricao) > 0 && (
+                  <div className={`p-2 bg-muted/50 rounded text-sm font-medium ${(parseFloat(valorInscricao) - (parseFloat(valorPago) || 0)) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
+                    Saldo a pagar: R$ {Math.max(0, parseFloat(valorInscricao) - (parseFloat(valorPago) || 0)).toFixed(2)}
+                  </div>
+                )}
               </div>
             )}
           </div>
