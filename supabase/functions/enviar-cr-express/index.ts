@@ -247,6 +247,8 @@ serve(async (req) => {
             });
             console.log(`Email enviado para ${member.email}:`, JSON.stringify(sendResult));
             resultados.email.enviados++;
+            // Delay de 600ms para respeitar limite de 2 req/s do Resend
+            await new Promise(resolve => setTimeout(resolve, 600));
           } catch (err: any) {
             console.error(`Erro email para ${member.full_name} (${member.email}):`, err?.message || err);
             resultados.email.erros++;
