@@ -200,6 +200,10 @@ export const EventoFormDialog = ({
     limite_vagas: "",
     visibilidade: "publico",
     necessita_inscricao: false,
+    valor_membro: "",
+    valor_nao_membro: "",
+    valor_familia: "",
+    valor_equipe: "",
   });
 
   const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
@@ -248,6 +252,7 @@ export const EventoFormDialog = ({
       if (evento) {
         const bloqueioInicio = (evento as any).bloqueio_inicio ? new Date((evento as any).bloqueio_inicio) : null;
         const bloqueioFim = (evento as any).bloqueio_fim ? new Date((evento as any).bloqueio_fim) : null;
+        const valoresPorTipo = (evento as any).valores_por_tipo as Record<string, string> | null;
         setFormData({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
@@ -280,6 +285,10 @@ export const EventoFormDialog = ({
           limite_vagas: evento.limite_vagas?.toString() || "",
           visibilidade: (evento as any).visibilidade || "publico",
           necessita_inscricao: (evento as any).necessita_inscricao || false,
+          valor_membro: valoresPorTipo?.membro || "",
+          valor_nao_membro: valoresPorTipo?.nao_membro || "",
+          valor_familia: valoresPorTipo?.familia || "",
+          valor_equipe: valoresPorTipo?.equipe || "",
         });
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
@@ -318,6 +327,10 @@ export const EventoFormDialog = ({
           limite_vagas: "",
           visibilidade: "publico",
           necessita_inscricao: false,
+          valor_membro: "",
+          valor_nao_membro: "",
+          valor_familia: "",
+          valor_equipe: "",
         });
         setAmbientesExtras([]);
         setHorariosPorDia([]);
@@ -589,6 +602,12 @@ export const EventoFormDialog = ({
         tem_custo: formData.tem_custo,
         valor_custo: formData.valor_custo ? parseFloat(formData.valor_custo) : null,
         comentarios_custo: formData.comentarios_custo || null,
+        valores_por_tipo: formData.tem_custo ? {
+          membro: formData.valor_membro || null,
+          nao_membro: formData.valor_nao_membro || null,
+          familia: formData.valor_familia || null,
+          equipe: formData.valor_equipe || null,
+        } : null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
@@ -1254,9 +1273,9 @@ export const EventoFormDialog = ({
               </div>
               
               {formData.tem_custo && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div>
-                    <Label htmlFor="valor_custo">Valor (R$)</Label>
+                    <Label htmlFor="valor_custo">Valor Padrão (R$)</Label>
                     <Input
                       id="valor_custo"
                       type="number"
@@ -1266,6 +1285,29 @@ export const EventoFormDialog = ({
                       value={formData.valor_custo}
                       onChange={(e) => setFormData({ ...formData, valor_custo: e.target.value })}
                     />
+                  </div>
+                  <div className="p-3 bg-background rounded border space-y-2">
+                    <Label className="text-sm font-medium">Valores por Tipo de Inscrição</Label>
+                    <p className="text-xs text-muted-foreground">Deixe vazio para usar o valor padrão</p>
+                    {[
+                      { key: "membro", label: "Membro" },
+                      { key: "nao_membro", label: "Não Membro" },
+                      { key: "familia", label: "Família" },
+                      { key: "equipe", label: "Equipe (Apoio/Serviço)" },
+                    ].map((tipo) => (
+                      <div key={tipo.key} className="flex items-center gap-2">
+                        <Label className="w-40 text-sm">{tipo.label}</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Valor padrão"
+                          className="h-8"
+                          value={(formData as any)[`valor_${tipo.key}`] || ""}
+                          onChange={(e) => setFormData({ ...formData, [`valor_${tipo.key}`]: e.target.value })}
+                        />
+                      </div>
+                    ))}
                   </div>
                   <Textarea
                     placeholder="Detalhes sobre o custo (formas de pagamento, o que inclui...)"
