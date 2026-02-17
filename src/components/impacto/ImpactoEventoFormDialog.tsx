@@ -39,6 +39,17 @@ const TIPOS_INSCRICAO = [
   { value: "equipe", label: "Equipe (apoio/serviço)" },
 ];
 
+const PREFIXOS_REFERENCIA: Record<string, string> = {
+  "MAN": "Manaim",
+  "IMF": "Impacto Feminino",
+  "IMM": "Impacto Masculino",
+  "IMJ": "Impacto Jovem",
+  "ACK": "Acampa Kids",
+  "RTK": "Retiro Kids",
+  "RGT": "Retiro GT",
+  "RJO": "Retiro Jovem",
+};
+
 const formSchema = z.object({
   titulo: z.string().min(1, "Título é obrigatório"),
   data_inicio: z.string().min(1, "Data de início é obrigatória"),
@@ -51,6 +62,7 @@ const formSchema = z.object({
   tipos_inscricao: z.array(z.string()).min(1, "Selecione pelo menos um tipo de inscrição"),
   tem_custo: z.boolean().optional(),
   valores_por_tipo: z.record(z.string(), z.string()).optional(),
+  prefixo_referencia: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -88,6 +100,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
       tem_custo: false,
       valores_por_tipo: {},
+      prefixo_referencia: "",
     },
   });
 
@@ -105,6 +118,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia", "equipe"],
         tem_custo: evento.tem_custo || false,
         valores_por_tipo: evento.valores_por_tipo || {},
+        prefixo_referencia: evento.prefixo_referencia || "",
       });
     } else if (open && !evento) {
       form.reset({
@@ -119,6 +133,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
         tem_custo: false,
         valores_por_tipo: {},
+        prefixo_referencia: "",
       });
     }
   }, [open, evento, form]);
@@ -137,6 +152,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tipos_inscricao: values.tipos_inscricao,
         tem_custo: values.tem_custo || false,
         valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
+        prefixo_referencia: values.prefixo_referencia || null,
       };
 
       if (isEditing) {
@@ -267,6 +283,31 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
                     <FormControl>
                       <Input type="number" placeholder="Ilimitado" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="prefixo_referencia"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prefixo Referência</FormLabel>
+                    <Select value={field.value || "none"} onValueChange={(v) => field.onChange(v === "none" ? "" : v)}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        {Object.entries(PREFIXOS_REFERENCIA).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {key} — {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

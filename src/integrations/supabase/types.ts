@@ -2244,6 +2244,7 @@ export type Database = {
           id: string
           limite_vagas: number | null
           local: string | null
+          prefixo_referencia: string | null
           tem_custo: boolean | null
           tipo: string
           tipos_inscricao: string[] | null
@@ -2261,6 +2262,7 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           local?: string | null
+          prefixo_referencia?: string | null
           tem_custo?: boolean | null
           tipo: string
           tipos_inscricao?: string[] | null
@@ -2278,6 +2280,7 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           local?: string | null
+          prefixo_referencia?: string | null
           tem_custo?: boolean | null
           tipo?: string
           tipos_inscricao?: string[] | null
@@ -2302,6 +2305,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           pagamentos: Json | null
+          referencia: string | null
           status_pagamento: string
           telefone: string | null
           tipo_inscricao: string | null
@@ -2322,6 +2326,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           pagamentos?: Json | null
+          referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
           tipo_inscricao?: string | null
@@ -2342,6 +2347,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           pagamentos?: Json | null
+          referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
           tipo_inscricao?: string | null

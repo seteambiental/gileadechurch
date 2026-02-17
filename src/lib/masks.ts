@@ -71,6 +71,12 @@ export const formatCNPJ = (value: string): string => {
   return `${numbers.slice(0, 2)}.${numbers.slice(2, 5)}.${numbers.slice(5, 8)}/${numbers.slice(8, 12)}-${numbers.slice(12, 14)}`;
 };
 
+// Format number as Brazilian currency: R$ 1.234,00
+export const formatCurrency = (value: number | null | undefined): string => {
+  if (value === null || value === undefined) return "R$ 0,00";
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
 // Parse date string (YYYY-MM-DD) without timezone issues
 export const formatDateBR = (dateString: string | null): string => {
   if (!dateString) return "-";

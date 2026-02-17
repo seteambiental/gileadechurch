@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatCurrency } from "@/lib/masks";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -496,10 +497,10 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </Button>
                 {totalPagamentos > 0 && (
                   <div className="p-2 bg-muted/50 rounded text-sm space-y-1">
-                    <div className="font-medium">Total pago: R$ {totalPagamentos.toFixed(2)}</div>
+                    <div className="font-medium">Total pago: {formatCurrency(totalPagamentos)}</div>
                     {parseFloat(valorInscricao) > 0 && (
                       <div className={`font-medium ${(parseFloat(valorInscricao) - totalPagamentos) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                        Saldo a pagar: R$ {Math.max(0, parseFloat(valorInscricao) - totalPagamentos).toFixed(2)}
+                        Saldo a pagar: {formatCurrency(Math.max(0, parseFloat(valorInscricao) - totalPagamentos))}
                       </div>
                     )}
                   </div>
@@ -521,7 +522,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </div>
                 {parseFloat(valorInscricao) > 0 && (
                   <div className={`p-2 bg-muted/50 rounded text-sm font-medium ${(parseFloat(valorInscricao) - (parseFloat(valorPago) || 0)) > 0 ? 'text-yellow-600' : 'text-green-600'}`}>
-                    Saldo a pagar: R$ {Math.max(0, parseFloat(valorInscricao) - (parseFloat(valorPago) || 0)).toFixed(2)}
+                    Saldo a pagar: {formatCurrency(Math.max(0, parseFloat(valorInscricao) - (parseFloat(valorPago) || 0)))}
                   </div>
                 )}
               </div>

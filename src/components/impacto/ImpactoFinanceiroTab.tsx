@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +51,7 @@ const ImpactoFinanceiroTab = () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at")
+        .select("id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia")
         .eq("evento_id", selectedEventoId)
         .order("nome");
       if (error) throw error;
@@ -139,7 +140,7 @@ const ImpactoFinanceiroTab = () => {
                 <TrendingUp className="w-4 h-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">R$ {totalPrevisao.toFixed(2)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(totalPrevisao)}</div>
                 <p className="text-xs text-muted-foreground">
                   Soma dos valores de inscrição
                 </p>
@@ -152,7 +153,7 @@ const ImpactoFinanceiroTab = () => {
                 <DollarSign className="w-4 h-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">R$ {totalPago.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPago)}</div>
                 <p className="text-xs text-muted-foreground">
                   {pagos} pagos{parciais > 0 ? `, ${parciais} parciais` : ""}
                 </p>
@@ -165,7 +166,7 @@ const ImpactoFinanceiroTab = () => {
                 <Clock className="w-4 h-4 text-yellow-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-yellow-600">R$ {totalAReceber.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-yellow-600">{formatCurrency(totalAReceber)}</div>
                 <p className="text-xs text-muted-foreground">
                   {pendentes} pendentes
                 </p>
@@ -204,10 +205,10 @@ const ImpactoFinanceiroTab = () => {
                       <TableRow key={inscricao.id}>
                         <TableCell className="font-medium">{inscricao.nome}</TableCell>
                         <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>
-                        <TableCell>R$ {valorInsc.toFixed(2)}</TableCell>
-                        <TableCell className="text-green-600 font-medium">R$ {valorPg.toFixed(2)}</TableCell>
+                        <TableCell>{formatCurrency(valorInsc)}</TableCell>
+                        <TableCell className="text-green-600 font-medium">{formatCurrency(valorPg)}</TableCell>
                         <TableCell className={saldo > 0 ? "text-yellow-600 font-medium" : "text-green-600 font-medium"}>
-                          R$ {saldo.toFixed(2)}
+                          {formatCurrency(saldo)}
                         </TableCell>
                         <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>
                         <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
