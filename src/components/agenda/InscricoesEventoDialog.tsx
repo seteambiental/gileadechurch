@@ -292,15 +292,16 @@ export const InscricoesEventoDialog = ({
   const updateTipoInscricaoMutation = useMutation({
     mutationFn: async ({ id, tipo }: { id: string; tipo: string }) => {
       // Get the value for this tipo from event config
-      const valoresPorTipo = eventoConfig?.valores_por_tipo as Record<string, string> | null;
-      const valorTipo = valoresPorTipo?.[tipo] || null;
+      const vpt = eventoConfig?.valores_por_tipo as Record<string, string> | null;
+      const hasVpt = vpt && Object.keys(vpt).length > 0;
+      const valorTipo = hasVpt ? vpt[tipo] : null;
       const valorFinal = valorTipo ? parseFloat(valorTipo) : (eventoConfig?.valor_custo || null);
       
       const { error } = await supabase
         .from("inscricoes_eventos")
         .update({ 
           tipo_inscricao: tipo,
-          valor_inscricao: eventoConfig?.tem_custo ? valorFinal : null 
+          valor_inscricao: valorFinal 
         })
         .eq("id", id);
       if (error) throw error;

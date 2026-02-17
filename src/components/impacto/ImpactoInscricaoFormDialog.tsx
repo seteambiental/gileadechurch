@@ -347,8 +347,9 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               <Select value={tipoInscricao} onValueChange={(v) => {
                 setTipoInscricao(v);
                 // Auto-fill valor_pago based on type
-                const valoresPorTipo = evento?.valores_por_tipo as Record<string, string> | null;
-                const valorTipo = valoresPorTipo?.[v];
+                const vpt = evento?.valores_por_tipo as Record<string, string> | null;
+                const hasVpt = vpt && Object.keys(vpt).length > 0;
+                const valorTipo = hasVpt ? vpt[v] : null;
                 const valorBase = evento?.valor_inscricao;
                 const valorFinal = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
                 if (valorFinal && valorFinal > 0) {
@@ -367,8 +368,9 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </SelectContent>
               </Select>
               {(() => {
-                const valoresPorTipo = evento?.valores_por_tipo as Record<string, string> | null;
-                const valorTipo = valoresPorTipo?.[tipoInscricao];
+                const vpt = evento?.valores_por_tipo as Record<string, string> | null;
+                const hasVpt = vpt && Object.keys(vpt).length > 0;
+                const valorTipo = hasVpt ? vpt[tipoInscricao] : null;
                 const valorBase = evento?.valor_inscricao;
                 const valorExibir = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
                 return valorExibir && valorExibir > 0 ? (
