@@ -2289,6 +2289,7 @@ export type Database = {
           member_id: string | null
           nome: string
           observacoes: string | null
+          pagamentos: Json | null
           status_pagamento: string
           telefone: string | null
           updated_at: string
@@ -2306,6 +2307,7 @@ export type Database = {
           member_id?: string | null
           nome: string
           observacoes?: string | null
+          pagamentos?: Json | null
           status_pagamento?: string
           telefone?: string | null
           updated_at?: string
@@ -2323,6 +2325,7 @@ export type Database = {
           member_id?: string | null
           nome?: string
           observacoes?: string | null
+          pagamentos?: Json | null
           status_pagamento?: string
           telefone?: string | null
           updated_at?: string
