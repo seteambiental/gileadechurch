@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/masks";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -219,6 +220,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       <div class="cracha">
         <div class="evento">${evento?.titulo || "Impacto"}</div>
         <div class="nome">${inscricao.nome}</div>
+        ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
         ${inscricao.genero ? `<div class="info">${inscricao.genero === 'M' ? 'Masculino' : 'Feminino'}</div>` : ''}
       </div>
     `).join("");
@@ -232,6 +234,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         .cracha { width: 85mm; height: 55mm; border: 2px solid #333; border-radius: 8px; padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-inside: avoid; }
         .evento { font-size: 10px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
         .nome { font-size: 18px; font-weight: bold; margin: 10px 0; }
+        .ref { font-size: 12px; font-weight: bold; color: #444; letter-spacing: 1px; }
         .info { font-size: 12px; color: #666; }
       </style></head><body>
       <div class="container">${crachasHtml}</div>
@@ -255,6 +258,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     const etiquetasHtml = selected.map((inscricao) => `
       <div class="etiqueta">
         <div class="nome">${inscricao.nome}</div>
+        ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
         <div class="evento">${evento?.titulo || "Impacto"}</div>
         <div class="data">${evento?.data_inicio ? format(new Date(evento.data_inicio), "dd/MM/yyyy") : ''}</div>
       </div>
@@ -268,6 +272,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         .container { display: flex; flex-wrap: wrap; }
         .etiqueta { width: 63.5mm; height: 38.1mm; border: 1px dashed #ccc; padding: 5mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; page-break-inside: avoid; }
         .nome { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+        .ref { font-size: 11px; font-weight: bold; color: #444; letter-spacing: 1px; margin-bottom: 2px; }
         .evento { font-size: 11px; color: #333; }
         .data { font-size: 10px; color: #666; }
       </style></head><body>
@@ -356,6 +361,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
+                <TableHead>Ref.</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -377,6 +383,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         onCheckedChange={(checked) => handleSelect(inscricao.id, !!checked)}
                       />
                     </TableCell>
+                    <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>
                     <TableCell className="font-medium">{inscricao.nome}</TableCell>
                     <TableCell className="text-sm">
                       {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
@@ -389,7 +396,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         : "—"}
                     </TableCell>
                     <TableCell className="text-sm">
-                      {valorPago > 0 ? `R$ ${valorPago.toFixed(2)}` : "—"}
+                      {valorPago > 0 ? formatCurrency(valorPago) : "—"}
                     </TableCell>
                     <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
                     <TableCell>
