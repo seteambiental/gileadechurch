@@ -34,6 +34,7 @@ interface Evento {
   tem_custo: boolean | null;
   valor_custo: number | null;
   limite_vagas: number | null;
+  valores_por_tipo: Record<string, string> | null;
 }
 
 interface PessoaBusca {
@@ -77,6 +78,7 @@ const InscricaoEvento = () => {
   const [cpf, setCpf] = useState("");
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
+  const [tipoInscricao, setTipoInscricao] = useState("membro");
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
@@ -205,6 +207,13 @@ const InscricaoEvento = () => {
         observacoesMinisterio = "Não é membro de nenhum ministério";
       }
 
+      // Calculate valor_inscricao based on tipo
+      const valoresPorTipo = evento?.valores_por_tipo;
+      const valorTipo = valoresPorTipo?.[tipoInscricao];
+      const valorInscricao = evento?.tem_custo
+        ? (valorTipo ? parseFloat(valorTipo) : (evento?.valor_custo || null))
+        : null;
+
       const payload = {
         evento_id: eventoId,
         member_id: selectedPerson?.type === "member" ? selectedPerson.id : null,
@@ -226,6 +235,8 @@ const InscricaoEvento = () => {
         observacoes: observacoesMinisterio || null,
         cpf: cpf ? cpf.replace(/\D/g, "") : null,
         casa_refugio_id: casaRefugioId,
+        tipo_inscricao: tipoInscricao,
+        valor_inscricao: valorInscricao,
       };
 
       const { data: inscricaoData, error } = await supabase
@@ -717,6 +728,31 @@ const InscricaoEvento = () => {
                       </div>
                     )}
 
+                    {/* Tipo de Inscrição */}
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Tipo de Inscrição</Label>
+                      <Select value={tipoInscricao} onValueChange={(v) => setTipoInscricao(v)}>
+                        <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="membro" className="text-base md:text-lg py-2 md:py-3">Membro</SelectItem>
+                          <SelectItem value="nao_membro" className="text-base md:text-lg py-2 md:py-3">Não Membro</SelectItem>
+                          <SelectItem value="familia" className="text-base md:text-lg py-2 md:py-3">Família</SelectItem>
+                          <SelectItem value="equipe" className="text-base md:text-lg py-2 md:py-3">Equipe (Apoio/Serviço)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {evento.tem_custo && (() => {
+                        const valorTipo = evento.valores_por_tipo?.[tipoInscricao];
+                        const valorExibir = valorTipo ? parseFloat(valorTipo) : evento.valor_custo;
+                        return valorExibir ? (
+                          <p className="text-sm md:text-base text-muted-foreground">
+                            Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong>
+                          </p>
+                        ) : null;
+                      })()}
+                    </div>
+
                     {/* Forma de pagamento */}
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Forma de Pagamento *</Label>
@@ -732,6 +768,10 @@ const InscricaoEvento = () => {
                         <div className="flex items-center space-x-2 md:space-x-3">
                           <RadioGroupItem value="cartao_debito" id="debito" className="w-4 h-4 md:w-6 md:h-6" />
                           <Label htmlFor="debito" className="font-normal text-base md:text-lg">Cartão de Débito</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 md:space-x-3">
+                          <RadioGroupItem value="dinheiro" id="dinheiro" className="w-4 h-4 md:w-6 md:h-6" />
+                          <Label htmlFor="dinheiro" className="font-normal text-base md:text-lg">Dinheiro</Label>
                         </div>
                       </RadioGroup>
                     </div>
