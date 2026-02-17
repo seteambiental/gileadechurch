@@ -572,7 +572,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                           variant="ghost"
                           size="sm"
                           title="Enviar por E-mail"
-                          disabled={sending === `email-${cr.id}`}
+                          disabled={!!sending}
                           onClick={() => handleEnviar(cr.id, 'email')}
                         >
                           {sending === `email-${cr.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4 text-blue-600" />}
@@ -581,7 +581,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                           variant="ghost"
                           size="sm"
                           title="Enviar por WhatsApp"
-                          disabled={sending === `whatsapp-${cr.id}`}
+                          disabled={!!sending}
                           onClick={() => handleEnviar(cr.id, 'whatsapp')}
                         >
                           {sending === `whatsapp-${cr.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 text-green-600" />}
