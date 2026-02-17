@@ -341,10 +341,20 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             </>
           )}
 
-          {tiposPermitidos.length > 1 && (
+          {tiposPermitidos.length > 0 && (
             <div>
               <Label>Tipo de Inscrição *</Label>
-              <Select value={tipoInscricao} onValueChange={setTipoInscricao}>
+              <Select value={tipoInscricao} onValueChange={(v) => {
+                setTipoInscricao(v);
+                // Auto-fill valor_pago based on type
+                const valoresPorTipo = evento?.valores_por_tipo as Record<string, string> | null;
+                const valorTipo = valoresPorTipo?.[v];
+                const valorBase = evento?.valor_inscricao;
+                const valorFinal = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
+                if (valorFinal && valorFinal > 0) {
+                  setValorPago(valorFinal.toString());
+                }
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -359,10 +369,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               {(() => {
                 const valoresPorTipo = evento?.valores_por_tipo as Record<string, string> | null;
                 const valorTipo = valoresPorTipo?.[tipoInscricao];
-                const valorExibir = valorTipo ? parseFloat(valorTipo) : (evento?.valor_inscricao || null);
-                return evento?.tem_custo && valorExibir ? (
+                const valorBase = evento?.valor_inscricao;
+                const valorExibir = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
+                return valorExibir && valorExibir > 0 ? (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Valor: <strong>R$ {Number(valorExibir).toFixed(2).replace(".", ",")}</strong>
+                    Valor configurado: <strong>R$ {Number(valorExibir).toFixed(2).replace(".", ",")}</strong>
                   </p>
                 ) : null;
               })()}
