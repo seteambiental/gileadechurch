@@ -387,25 +387,41 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Forma de Pagamento</Label>
+                <Select
+                  value={usarMisto ? "misto" : (formaPagamento || "none")}
+                  onValueChange={(v) => {
+                    if (v === "misto") {
+                      setUsarMisto(true);
+                      setFormaPagamento("");
+                      if (pagamentos.length === 0) {
+                        setPagamentos([{ tipo: "", valor: "" }]);
+                      }
+                    } else {
+                      setUsarMisto(false);
+                      setPagamentos([]);
+                      setFormaPagamento(v === "none" ? "" : v);
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não informado</SelectItem>
+                    {FORMAS_PAGAMENTO.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="misto">Multi (Misto)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="usar_misto"
-                checked={usarMisto}
-                onCheckedChange={(v) => {
-                  setUsarMisto(!!v);
-                  if (v && pagamentos.length === 0) {
-                    setPagamentos([{ tipo: "", valor: "" }]);
-                  }
-                }}
-              />
-              <Label htmlFor="usar_misto" className="cursor-pointer text-sm">
-                Pagamento misto (múltiplas formas)
-              </Label>
-            </div>
-
-            {usarMisto ? (
+            {usarMisto && (
               <div className="space-y-3">
                 {pagamentos.map((pag, index) => (
                   <div key={index} className="flex items-end gap-2">
@@ -460,35 +476,18 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Forma de Pagamento</Label>
-                  <Select value={formaPagamento || "none"} onValueChange={(v) => setFormaPagamento(v === "none" ? "" : v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Não informado</SelectItem>
-                      {FORMAS_PAGAMENTO.map((f) => (
-                        <SelectItem key={f.value} value={f.value}>
-                          {f.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Valor Pago (R$)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={valorPago}
-                    onChange={(e) => setValorPago(e.target.value)}
-                    placeholder="0,00"
-                  />
-                </div>
+            )}
+            {!usarMisto && (
+              <div>
+                <Label>Valor Pago (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={valorPago}
+                  onChange={(e) => setValorPago(e.target.value)}
+                  placeholder="0,00"
+                />
               </div>
             )}
           </div>
