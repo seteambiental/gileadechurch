@@ -36,6 +36,7 @@ const TIPOS_INSCRICAO = [
   { value: "membro", label: "Membro" },
   { value: "nao_membro", label: "Não membro" },
   { value: "familia", label: "Família" },
+  { value: "equipe", label: "Equipe (apoio/serviço)" },
 ];
 
 const formSchema = z.object({
@@ -82,7 +83,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       descricao: "",
       valor_inscricao: "",
       limite_vagas: "",
-      tipos_inscricao: ["membro", "nao_membro", "familia"],
+      tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
     },
   });
 
@@ -97,7 +98,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: evento.descricao || "",
         valor_inscricao: evento.valor_inscricao?.toString() || "",
         limite_vagas: evento.limite_vagas?.toString() || "",
-        tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia"],
+        tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia", "equipe"],
       });
     } else if (open && !evento) {
       form.reset({
@@ -109,7 +110,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: "",
         valor_inscricao: "",
         limite_vagas: "",
-        tipos_inscricao: ["membro", "nao_membro", "familia"],
+        tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
       });
     }
   }, [open, evento, form]);
