@@ -480,7 +480,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   };
 
   const handleEnviar = async (crId: string, action: 'email' | 'whatsapp') => {
-    setSending(action);
+    setSending(`${action}-${crId}`);
     try {
       const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
         body: { action, crExpressId: crId },
@@ -572,19 +572,19 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                           variant="ghost"
                           size="sm"
                           title="Enviar por E-mail"
-                          disabled={sending === 'email'}
+                          disabled={sending === `email-${cr.id}`}
                           onClick={() => handleEnviar(cr.id, 'email')}
                         >
-                          {sending === 'email' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4 text-blue-600" />}
+                          {sending === `email-${cr.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4 text-blue-600" />}
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           title="Enviar por WhatsApp"
-                          disabled={sending === 'whatsapp'}
+                          disabled={sending === `whatsapp-${cr.id}`}
                           onClick={() => handleEnviar(cr.id, 'whatsapp')}
                         >
-                          {sending === 'whatsapp' ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 text-green-600" />}
+                          {sending === `whatsapp-${cr.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 text-green-600" />}
                         </Button>
                       </>
                     )}
