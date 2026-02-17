@@ -804,19 +804,19 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={sending === 'email'}
+                        disabled={!!sending}
                         onClick={() => handleEnviar(showPreviewDialog.id, 'email')}
                       >
-                        {sending === 'email' ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
+                        {sending === `email-${showPreviewDialog.id}` ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Mail className="w-4 h-4 mr-1" />}
                         E-mail
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={sending === 'whatsapp'}
+                        disabled={!!sending}
                         onClick={() => handleEnviar(showPreviewDialog.id, 'whatsapp')}
                       >
-                        {sending === 'whatsapp' ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <MessageCircle className="w-4 h-4 mr-1" />}
+                        {sending === `whatsapp-${showPreviewDialog.id}` ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <MessageCircle className="w-4 h-4 mr-1" />}
                         WhatsApp
                       </Button>
                     </>

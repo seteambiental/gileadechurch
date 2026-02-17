@@ -228,20 +228,27 @@ serve(async (req) => {
 
     if (action === 'email' || action === 'ambos') {
       const resendKey = Deno.env.get('RESEND_API_KEY');
+      console.log('Action:', action, '| RESEND_API_KEY configurada:', !!resendKey);
+      console.log('Total membros para envio:', members.length);
       if (resendKey) {
         const resend = new Resend(resendKey);
         for (const member of members) {
-          if (!member.email) continue;
+          if (!member.email) {
+            console.log(`Membro ${member.full_name} sem email, pulando`);
+            continue;
+          }
           try {
-            await resend.emails.send({
+            console.log(`Enviando email para: ${member.full_name} (${member.email})`);
+            const sendResult = await resend.emails.send({
               from: 'Igreja Gileade <noreply@gileadechurch.com.br>',
               to: [member.email],
               subject: `Casa Refúgio Express Nro. ${crExpress.numero} – ${crExpress.tema}`,
               html: emailHTML,
             });
+            console.log(`Email enviado para ${member.email}:`, JSON.stringify(sendResult));
             resultados.email.enviados++;
-          } catch (err) {
-            console.error(`Erro email para ${member.full_name}:`, err);
+          } catch (err: any) {
+            console.error(`Erro email para ${member.full_name} (${member.email}):`, err?.message || err);
             resultados.email.erros++;
           }
         }
