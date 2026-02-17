@@ -2241,11 +2241,13 @@ export type Database = {
           id: string
           limite_vagas: number | null
           local: string | null
+          tem_custo: boolean | null
           tipo: string
           tipos_inscricao: string[] | null
           titulo: string
           updated_at: string
           valor_inscricao: number | null
+          valores_por_tipo: Json | null
         }
         Insert: {
           ativo?: boolean
@@ -2256,11 +2258,13 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           local?: string | null
+          tem_custo?: boolean | null
           tipo: string
           tipos_inscricao?: string[] | null
           titulo: string
           updated_at?: string
           valor_inscricao?: number | null
+          valores_por_tipo?: Json | null
         }
         Update: {
           ativo?: boolean
@@ -2271,11 +2275,13 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           local?: string | null
+          tem_custo?: boolean | null
           tipo?: string
           tipos_inscricao?: string[] | null
           titulo?: string
           updated_at?: string
           valor_inscricao?: number | null
+          valores_por_tipo?: Json | null
         }
         Relationships: []
       }

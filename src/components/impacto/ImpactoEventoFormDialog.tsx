@@ -49,6 +49,8 @@ const formSchema = z.object({
   valor_inscricao: z.string().optional(),
   limite_vagas: z.string().optional(),
   tipos_inscricao: z.array(z.string()).min(1, "Selecione pelo menos um tipo de inscrição"),
+  tem_custo: z.boolean().optional(),
+  valores_por_tipo: z.record(z.string(), z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,6 +86,8 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       valor_inscricao: "",
       limite_vagas: "",
       tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
+      tem_custo: false,
+      valores_por_tipo: {},
     },
   });
 
@@ -99,6 +103,8 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         valor_inscricao: evento.valor_inscricao?.toString() || "",
         limite_vagas: evento.limite_vagas?.toString() || "",
         tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia", "equipe"],
+        tem_custo: evento.tem_custo || false,
+        valores_por_tipo: evento.valores_por_tipo || {},
       });
     } else if (open && !evento) {
       form.reset({
@@ -111,13 +117,15 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         valor_inscricao: "",
         limite_vagas: "",
         tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
+        tem_custo: false,
+        valores_por_tipo: {},
       });
     }
   }, [open, evento, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: FormValues) => {
-      const payload = {
+      const payload: any = {
         titulo: values.titulo,
         data_inicio: values.data_inicio,
         data_fim: values.data_fim || null,
@@ -127,6 +135,8 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         valor_inscricao: values.valor_inscricao ? parseFloat(values.valor_inscricao) : 0,
         limite_vagas: values.limite_vagas ? parseInt(values.limite_vagas) : null,
         tipos_inscricao: values.tipos_inscricao,
+        tem_custo: values.tem_custo || false,
+        valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
       };
 
       if (isEditing) {
@@ -250,20 +260,6 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="valor_inscricao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Inscrição (R$)</FormLabel>
-                    <FormControl>
-                      <Input type="number" step="0.01" placeholder="0,00" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="limite_vagas"
                 render={({ field }) => (
                   <FormItem>
@@ -276,6 +272,56 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="tem_custo"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="cursor-pointer">$ Evento tem custo</FormLabel>
+                </FormItem>
+              )}
+            />
+
+            {form.watch("tem_custo") && (
+              <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+                <p className="text-sm font-medium text-muted-foreground">Valores por tipo de inscrição (R$)</p>
+                {TIPOS_INSCRICAO.filter(t => (form.watch("tipos_inscricao") || []).includes(t.value)).map((tipo) => (
+                  <div key={tipo.value} className="flex items-center gap-3">
+                    <Label className="min-w-[140px] text-sm">{tipo.label}</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0,00"
+                      className="max-w-[120px]"
+                      value={form.watch(`valores_por_tipo.${tipo.value}`) || ""}
+                      onChange={(e) => {
+                        const current = form.getValues("valores_por_tipo") || {};
+                        form.setValue("valores_por_tipo", { ...current, [tipo.value]: e.target.value });
+                      }}
+                    />
+                  </div>
+                ))}
+                <FormField
+                  control={form.control}
+                  name="valor_inscricao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-muted-foreground">Valor padrão (para tipos sem valor específico)</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0,00" className="max-w-[120px]" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
             <FormField
               control={form.control}
