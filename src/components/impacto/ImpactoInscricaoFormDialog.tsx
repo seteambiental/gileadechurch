@@ -39,6 +39,7 @@ const FORMAS_PAGAMENTO = [
   { value: "cartao_debito", label: "Cartão de Débito" },
   { value: "transferencia", label: "Transferência" },
   { value: "boleto", label: "Boleto" },
+  { value: "vale", label: "Vale" },
 ];
 
 interface Pagamento {
@@ -142,15 +143,26 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail("");
       setGenero("");
       setObservacoes("");
-      setTipoInscricao(tiposPermitidos[0] || "membro");
+      const defaultTipo = tiposPermitidos[0] || "membro";
+      setTipoInscricao(defaultTipo);
       setStatusPagamento("pendente");
       setFormaPagamento("");
       setValorPago("0");
       setPagamentos([]);
       setUsarMisto(false);
-      setValorInscricao("");
+      // Auto-fill valor based on event config for default type
+      if (evento?.tem_custo) {
+        const vpt = evento?.valores_por_tipo as Record<string, string> | null;
+        const hasVpt = vpt && Object.keys(vpt).length > 0;
+        const valorTipo = hasVpt ? vpt[defaultTipo] : null;
+        const valorBase = evento?.valor_inscricao;
+        const valorFinal = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
+        setValorInscricao(valorFinal && valorFinal > 0 ? valorFinal.toString() : "");
+      } else {
+        setValorInscricao("");
+      }
     }
-  }, [open, inscricao]);
+  }, [open, inscricao, evento]);
 
   const selectedMember = members?.find((m) => m.id === memberId);
   const casaRefugio = selectedMember?.casa_refugio_id
@@ -172,6 +184,33 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   };
 
   const totalPagamentos = pagamentos.reduce((sum, p) => sum + (parseFloat(p.valor) || 0), 0);
+
+  // Auto-update payment status based on amounts
+  const autoUpdateStatus = (totalPaid: number) => {
+    const inscricaoVal = parseFloat(valorInscricao) || 0;
+    if (inscricaoVal <= 0) return;
+    if (totalPaid >= inscricaoVal) {
+      setStatusPagamento("pago");
+    } else if (totalPaid > 0) {
+      setStatusPagamento("parcial");
+    } else {
+      setStatusPagamento("pendente");
+    }
+  };
+
+  // Watch valorPago changes (non-misto)
+  useEffect(() => {
+    if (!usarMisto && parseFloat(valorInscricao) > 0) {
+      autoUpdateStatus(parseFloat(valorPago) || 0);
+    }
+  }, [valorPago, valorInscricao, usarMisto]);
+
+  // Watch pagamentos changes (misto)
+  useEffect(() => {
+    if (usarMisto && parseFloat(valorInscricao) > 0) {
+      autoUpdateStatus(totalPagamentos);
+    }
+  }, [totalPagamentos, valorInscricao, usarMisto]);
 
   const mutation = useMutation({
     mutationFn: async () => {

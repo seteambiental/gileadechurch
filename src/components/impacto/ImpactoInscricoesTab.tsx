@@ -38,6 +38,7 @@ const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
   cartao_debito: "Cartão de Débito",
   transferencia: "Transferência",
   boleto: "Boleto",
+  vale: "Vale",
   misto: "Misto",
 };
 
