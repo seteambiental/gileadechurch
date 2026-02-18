@@ -27,7 +27,8 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  Link,
+   Link as LinkIcon,
+   ExternalLink,
   Users,
   BarChart3,
   CalendarDays,
@@ -390,6 +391,16 @@ const AgendaPage = () => {
                         </div>
 
                         <div className="flex gap-2 pt-3 border-t">
+                          {(evento as any).necessita_inscricao && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open(`/inscricao/${evento.id}`, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4 mr-1" />
+                              Inscrição
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
