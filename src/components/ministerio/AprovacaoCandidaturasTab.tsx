@@ -105,10 +105,26 @@ export const AprovacaoCandidaturasTab = ({ ministryId }: AprovacaoCandidaturasTa
         console.error("Erro ao adicionar função:", functionError);
       }
 
+      // Adicionar à tabela ministerio_integrantes (aba Equipe)
+      const { error: integranteError } = await supabase
+        .from("ministerio_integrantes")
+        .insert({
+          ministry_id: ministryId,
+          member_id: candidatura.member_id,
+          funcao_id: null,
+          ativo: true,
+        });
+
+      if (integranteError && !integranteError.message.includes("duplicate")) {
+        console.error("Erro ao adicionar integrante:", integranteError);
+      }
+
       return candidatura;
     },
     onSuccess: (candidatura) => {
       queryClient.invalidateQueries({ queryKey: ["candidaturas-ministerio"] });
+      queryClient.invalidateQueries({ queryKey: ["ministerio-integrantes", ministryId] });
+      queryClient.invalidateQueries({ queryKey: ["members-for-ministry", ministryId] });
       toast({
         title: "Candidatura aprovada!",
         description: `${candidatura.members?.full_name} foi adicionado(a) ao ministério.`,
