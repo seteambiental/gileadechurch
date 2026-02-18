@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { differenceInYears, parseISO } from "date-fns";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -156,7 +157,7 @@ const KidsPage = () => {
     // Processar membros
     members?.forEach((member) => {
       if (!member.birth_date) return;
-      const idade = differenceInYears(hoje, parseISO(member.birth_date));
+      const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
       
       const turma = turmasConfig.find(
         (t) => idade >= t.idade_minima && idade <= t.idade_maxima
@@ -196,7 +197,7 @@ const KidsPage = () => {
     // Processar novos convertidos
     novosConvertidos?.forEach((nc) => {
       if (!nc.data_nascimento) return;
-      const idade = differenceInYears(hoje, parseISO(nc.data_nascimento));
+      const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
       
       const turma = turmasConfig.find(
         (t) => idade >= t.idade_minima && idade <= t.idade_maxima

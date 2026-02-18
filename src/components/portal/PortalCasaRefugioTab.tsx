@@ -20,7 +20,8 @@ import {
   UserPlus,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
-import { format, parseISO, isWithinInterval } from "date-fns";
+import { format, isWithinInterval } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -112,17 +113,17 @@ export const PortalCasaRefugioTab = ({
     if (!startDate && !endDate) return encontros;
     
     return encontros.filter((encontro) => {
-      const encontroDate = parseISO(encontro.data_encontro);
+      const encontroDate = parseLocalDate(encontro.data_encontro);
       
       if (startDate && endDate) {
         return isWithinInterval(encontroDate, {
-          start: parseISO(startDate),
-          end: parseISO(endDate),
+          start: parseLocalDate(startDate),
+          end: parseLocalDate(endDate),
         });
       }
       
-      if (startDate) return encontroDate >= parseISO(startDate);
-      if (endDate) return encontroDate <= parseISO(endDate);
+      if (startDate) return encontroDate >= parseLocalDate(startDate);
+      if (endDate) return encontroDate <= parseLocalDate(endDate);
       
       return true;
     });
@@ -165,7 +166,7 @@ export const PortalCasaRefugioTab = ({
   const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
-    const dataFormatada = format(parseISO(encontro.data_encontro), "dd/MM/yyyy");
+    const dataFormatada = format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy");
     
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
@@ -193,7 +194,7 @@ export const PortalCasaRefugioTab = ({
       headStyles: { fillColor: [220, 53, 69] },
     });
     
-    doc.save(`encontro-${format(parseISO(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
+    doc.save(`encontro-${format(parseLocalDate(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
   };
 
   const clearFilters = () => {
@@ -471,7 +472,7 @@ export const PortalCasaRefugioTab = ({
                             return (
                               <TableRow key={encontro.id}>
                                 <TableCell className="font-medium whitespace-nowrap">
-                                  {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                                  {format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy")}
                                 </TableCell>
                                 <TableCell className="text-center text-blue-600">{encontro.qtd_lideres || 0}</TableCell>
                                 <TableCell className="text-center text-green-600">{encontro.qtd_membros || 0}</TableCell>

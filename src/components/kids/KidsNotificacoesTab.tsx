@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,7 @@ export const KidsNotificacoesTab = () => {
         <ExportButton
           data={notificacoes || []}
           columns={[
-            { header: "Data/Hora", accessor: (r) => format(parseISO(r.enviada_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
+            { header: "Data/Hora", accessor: (r) => format(new Date(r.enviada_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) },
             { header: "Criança", accessor: (r) => r.crianca_member?.full_name || r.crianca_nc?.full_name || "-" },
             { header: "Turma", accessor: (r) => getTurmaNome(r.turma || "") },
             { header: "Responsável", accessor: (r) => r.responsavel?.full_name || "-" },
@@ -121,7 +122,7 @@ export const KidsNotificacoesTab = () => {
                   {notificacoes.map((n) => (
                     <TableRow key={n.id}>
                       <TableCell className="text-sm">
-                        {format(parseISO(n.enviada_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                        {format(new Date(n.enviada_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </TableCell>
                       <TableCell className="font-medium">
                         {n.crianca_member?.full_name || n.crianca_nc?.full_name || "-"}

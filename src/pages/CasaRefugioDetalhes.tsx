@@ -9,7 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { format, parseISO, isWithinInterval, addWeeks, startOfDay, isBefore, isAfter, getDay } from "date-fns";
+import { format, isWithinInterval, addWeeks, startOfDay, isBefore, isAfter, getDay } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
@@ -152,7 +153,7 @@ const CasaRefugioDetalhes = () => {
       if (liderIds.includes(m.id)) return;
       
       if (m.birth_date) {
-        const nascimento = parseISO(m.birth_date);
+        const nascimento = parseLocalDate(m.birth_date);
         const idade = Math.floor((hoje.getTime() - nascimento.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         if (idade < 12) {
           criancas++;
@@ -201,7 +202,7 @@ const CasaRefugioDetalhes = () => {
 
     // Use data_inicio_cr if set, otherwise fallback to Feb 1, 2026
     const startGen = casa.data_inicio_cr 
-      ? parseISO(casa.data_inicio_cr) 
+      ? parseLocalDate(casa.data_inicio_cr) 
       : new Date(2026, 1, 1);
     const today = startOfDay(new Date());
 
@@ -280,21 +281,21 @@ const CasaRefugioDetalhes = () => {
     if (!startDate && !endDate) return mergedEncontros;
 
     return mergedEncontros.filter((encontro) => {
-      const encontroDate = parseISO(encontro.data_encontro);
+      const encontroDate = parseLocalDate(encontro.data_encontro);
 
       if (startDate && endDate) {
         return isWithinInterval(encontroDate, {
-          start: parseISO(startDate),
-          end: parseISO(endDate),
+          start: parseLocalDate(startDate),
+          end: parseLocalDate(endDate),
         });
       }
 
       if (startDate) {
-        return encontroDate >= parseISO(startDate);
+        return encontroDate >= parseLocalDate(startDate);
       }
 
       if (endDate) {
-        return encontroDate <= parseISO(endDate);
+        return encontroDate <= parseLocalDate(endDate);
       }
 
       return true;
@@ -398,7 +399,7 @@ const CasaRefugioDetalhes = () => {
   const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
-    const dataFormatada = format(parseISO(encontro.data_encontro), "dd/MM/yyyy");
+    const dataFormatada = format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy");
     
     // Title
     doc.setFontSize(16);
@@ -480,7 +481,7 @@ const CasaRefugioDetalhes = () => {
       doc.text(`Observações: ${encontro.observacoes}`, 14, finalY + 10);
     }
     
-    doc.save(`encontro-${format(parseISO(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
+    doc.save(`encontro-${format(parseLocalDate(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
   };
 
   if (authLoading || loadingCasa) {
@@ -621,7 +622,7 @@ const CasaRefugioDetalhes = () => {
                             className={isBlank ? "bg-destructive/5 hover:bg-destructive/10" : isCancelled ? "bg-muted/30" : ""}
                           >
                             <TableCell className={`whitespace-nowrap ${isBlank ? "text-destructive font-bold" : isCancelled ? "font-medium text-muted-foreground" : "font-medium"}`}>
-                              {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                              {format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy")}
                               {isBlank && <span className="ml-2 text-xs">(pendente)</span>}
                               {isCancelled && <span className="ml-2 text-xs">(não realizada)</span>}
                             </TableCell>

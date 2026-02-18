@@ -24,7 +24,8 @@ import {
 } from "recharts";
 import { Loader2, Users, CreditCard, CheckCircle, Clock, Send, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO, differenceInDays } from "date-fns";
+import { format, differenceInDays } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface Inscricao {
@@ -191,7 +192,7 @@ export const InscricoesDashboard = () => {
 
   // Check if event is upcoming (for reminder button)
   const isUpcomingEvent = eventoSelecionado 
-    ? differenceInDays(parseISO(eventoSelecionado.data_evento), new Date()) >= 0
+    ? differenceInDays(parseLocalDate(eventoSelecionado.data_evento), new Date()) >= 0
     : false;
 
   return (
@@ -210,7 +211,7 @@ export const InscricoesDashboard = () => {
                   <SelectItem value="todos">Todos os eventos</SelectItem>
                   {eventos.map(evento => (
                     <SelectItem key={evento.id} value={evento.id}>
-                      {evento.titulo} - {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
+                      {evento.titulo} - {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -244,7 +245,7 @@ export const InscricoesDashboard = () => {
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <h3 className="font-semibold">{eventoSelecionado.titulo}</h3>
               <p className="text-sm text-muted-foreground">
-                {format(parseISO(eventoSelecionado.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {format(parseLocalDate(eventoSelecionado.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 {eventoSelecionado.local && ` • ${eventoSelecionado.local}`}
               </p>
             </div>

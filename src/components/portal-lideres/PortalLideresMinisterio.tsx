@@ -18,7 +18,8 @@ import {
   Eye,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { AdicionarMembroMinisterioDialog } from "@/components/ministerio/AdicionarMembroMinisterioDialog";
 import { toast } from "sonner";
@@ -223,7 +224,7 @@ export const PortalLideresMinisterio = ({
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">
-                        {format(parseISO(escala.data_culto), "EEEE, dd/MM", {
+                        {format(parseLocalDate(escala.data_culto), "EEEE, dd/MM", {
                           locale: ptBR,
                         })}
                       </p>

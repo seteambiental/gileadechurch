@@ -38,7 +38,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
@@ -798,14 +799,14 @@ export const EventoFormDialog = ({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.data_evento 
-                        ? format(parseISO(formData.data_evento), "dd/MM/yyyy", { locale: ptBR }) 
+                        ? format(parseLocalDate(formData.data_evento), "dd/MM/yyyy", { locale: ptBR }) 
                         : "Selecione a data"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.data_evento ? parseISO(formData.data_evento) : undefined}
+                      selected={formData.data_evento ? parseLocalDate(formData.data_evento) : undefined}
                       onSelect={(date) => setFormData({ ...formData, data_evento: date ? format(date, "yyyy-MM-dd") : "" })}
                       initialFocus
                       className="p-3 pointer-events-auto"
@@ -827,16 +828,16 @@ export const EventoFormDialog = ({
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {formData.data_fim 
-                        ? format(parseISO(formData.data_fim), "dd/MM/yyyy", { locale: ptBR }) 
+                        ? format(parseLocalDate(formData.data_fim), "dd/MM/yyyy", { locale: ptBR }) 
                         : "Selecione a data"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={formData.data_fim ? parseISO(formData.data_fim) : undefined}
+                      selected={formData.data_fim ? parseLocalDate(formData.data_fim) : undefined}
                       onSelect={(date) => setFormData({ ...formData, data_fim: date ? format(date, "yyyy-MM-dd") : "" })}
-                      disabled={(date) => formData.data_evento ? date < parseISO(formData.data_evento) : false}
+                      disabled={(date) => formData.data_evento ? date < parseLocalDate(formData.data_evento) : false}
                       initialFocus
                       className="p-3 pointer-events-auto"
                       locale={ptBR}
@@ -913,8 +914,8 @@ export const EventoFormDialog = ({
                           {(() => {
                             const dates: string[] = [];
                             if (formData.data_evento && formData.data_fim) {
-                              const start = parseISO(formData.data_evento);
-                              const end = parseISO(formData.data_fim);
+                              const start = parseLocalDate(formData.data_evento);
+                              const end = parseLocalDate(formData.data_fim);
                               let current = new Date(start);
                               while (current <= end) {
                                 dates.push(format(current, "yyyy-MM-dd"));
@@ -923,7 +924,7 @@ export const EventoFormDialog = ({
                             }
                             return dates.map(d => (
                               <SelectItem key={d} value={d}>
-                                {format(parseISO(d), "EEE, dd/MM", { locale: ptBR })}
+                                {format(parseLocalDate(d), "EEE, dd/MM", { locale: ptBR })}
                               </SelectItem>
                             ));
                           })()}
@@ -1058,14 +1059,14 @@ export const EventoFormDialog = ({
                               >
                                 <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                                 {formData.bloqueio_inicio_data 
-                                  ? format(parseISO(formData.bloqueio_inicio_data), "dd/MM/yyyy", { locale: ptBR }) 
+                                  ? format(parseLocalDate(formData.bloqueio_inicio_data), "dd/MM/yyyy", { locale: ptBR }) 
                                   : "DD/MM/AAAA"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={formData.bloqueio_inicio_data ? parseISO(formData.bloqueio_inicio_data) : undefined}
+                                selected={formData.bloqueio_inicio_data ? parseLocalDate(formData.bloqueio_inicio_data) : undefined}
                                 onSelect={(date) => setFormData({ ...formData, bloqueio_inicio_data: date ? format(date, "yyyy-MM-dd") : "" })}
                                 initialFocus
                                 className="p-3 pointer-events-auto"
@@ -1098,16 +1099,16 @@ export const EventoFormDialog = ({
                               >
                                 <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                                 {formData.bloqueio_fim_data 
-                                  ? format(parseISO(formData.bloqueio_fim_data), "dd/MM/yyyy", { locale: ptBR }) 
+                                  ? format(parseLocalDate(formData.bloqueio_fim_data), "dd/MM/yyyy", { locale: ptBR }) 
                                   : "DD/MM/AAAA"}
                               </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
-                                selected={formData.bloqueio_fim_data ? parseISO(formData.bloqueio_fim_data) : undefined}
+                                selected={formData.bloqueio_fim_data ? parseLocalDate(formData.bloqueio_fim_data) : undefined}
                                 onSelect={(date) => setFormData({ ...formData, bloqueio_fim_data: date ? format(date, "yyyy-MM-dd") : "" })}
-                                disabled={(date) => formData.bloqueio_inicio_data ? date < parseISO(formData.bloqueio_inicio_data) : false}
+                                disabled={(date) => formData.bloqueio_inicio_data ? date < parseLocalDate(formData.bloqueio_inicio_data) : false}
                                 initialFocus
                                 className="p-3 pointer-events-auto"
                                 locale={ptBR}

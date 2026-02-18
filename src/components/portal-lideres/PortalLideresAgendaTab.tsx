@@ -17,7 +17,8 @@ import {
   Loader2,
   AlertCircle,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
@@ -201,7 +202,7 @@ export const PortalLideresAgendaTab = ({
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-2">
                           <span className="flex items-center gap-1">
                             <CalendarIcon className="w-3.5 h-3.5" />
-                            {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
+                            {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
                           </span>
                           {evento.hora_inicio && (
                             <span className="flex items-center gap-1">
@@ -278,7 +279,7 @@ export const PortalLideresAgendaTab = ({
                       {getStatusBadge(evento.status)}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
+                      {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
                     </p>
                     {evento.status === "rejeitado" && evento.motivo_rejeicao && (
                       <p className="text-sm text-destructive mt-1">

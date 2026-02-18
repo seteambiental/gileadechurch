@@ -46,7 +46,8 @@ import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface Evento {
@@ -308,7 +309,7 @@ const AgendaPage = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {eventosParaCards.map((evento) => {
-                  const dataEvento = parseISO(evento.data_evento);
+                  const dataEvento = parseLocalDate(evento.data_evento);
                   const isPast = dataEvento < new Date();
                   
                   return (

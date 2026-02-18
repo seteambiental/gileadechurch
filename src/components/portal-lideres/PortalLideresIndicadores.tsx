@@ -20,7 +20,8 @@ import {
   BarChart3,
   Filter,
 } from "lucide-react";
-import { startOfMonth, endOfMonth, format, parseISO } from "date-fns";
+import { startOfMonth, endOfMonth, format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart,
@@ -224,7 +225,7 @@ export const PortalLideresIndicadores = ({
       const porMes: Record<string, { pessoas: number; ofertas: number; encontros: number }> = {};
       
       data?.forEach((e) => {
-        const mes = format(parseISO(e.data_encontro), "MMM/yy", { locale: ptBR });
+        const mes = format(parseLocalDate(e.data_encontro), "MMM/yy", { locale: ptBR });
         if (!porMes[mes]) {
           porMes[mes] = { pessoas: 0, ofertas: 0, encontros: 0 };
         }

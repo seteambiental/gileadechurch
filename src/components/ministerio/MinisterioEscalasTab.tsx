@@ -33,7 +33,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -239,7 +240,7 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
 
   const handleEdit = (escala: Escala) => {
     setEditingEscala(escala);
-    setDataCulto(parseISO(escala.data_culto));
+    setDataCulto(parseLocalDate(escala.data_culto));
     setTipoCulto(escala.tipo_culto);
     setObservacoes(escala.observacoes || "");
     setSelectedIntegrantes(escala.membros.map((m) => m.integrante_id));
@@ -302,7 +303,7 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-primary" />
-                    {format(parseISO(date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                    {format(parseLocalDate(date), "EEEE, dd 'de' MMMM", { locale: ptBR })}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">

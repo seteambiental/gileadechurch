@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Check, ExternalLink, Calendar, MapPin, Clock } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface CompartilharInscricaoDialogProps {
@@ -71,7 +72,7 @@ export const CompartilharInscricaoDialog = ({
             <div className="flex flex-wrap justify-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
-                {format(parseISO(evento.data_evento), "dd 'de' MMMM", { locale: ptBR })}
+                {format(parseLocalDate(evento.data_evento), "dd 'de' MMMM", { locale: ptBR })}
               </span>
               {evento.hora_inicio && (
                 <span className="flex items-center gap-1">

@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Clock, DoorOpen, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface OcupacaoAmbienteDialogProps {
@@ -139,7 +140,7 @@ export const OcupacaoAmbienteDialog = ({ open, onOpenChange, ambiente }: Ocupaca
                       <div className="flex items-center gap-2 text-muted-foreground text-xs mt-0.5">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="w-3 h-3" />
-                          {format(parseISO(r.data_reserva), "dd/MM/yyyy")}
+                          {format(parseLocalDate(r.data_reserva), "dd/MM/yyyy")}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -170,7 +171,7 @@ export const OcupacaoAmbienteDialog = ({ open, onOpenChange, ambiente }: Ocupaca
                       <div className="flex items-center gap-2 text-muted-foreground text-xs mt-0.5">
                         <span className="flex items-center gap-1">
                           <CalendarIcon className="w-3 h-3" />
-                          {format(parseISO(e.data_evento), "dd/MM/yyyy")}
+                          {format(parseLocalDate(e.data_evento), "dd/MM/yyyy")}
                         </span>
                         {e.hora_inicio && (
                           <span className="flex items-center gap-1">

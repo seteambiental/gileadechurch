@@ -15,7 +15,8 @@ import {
   Plus, Edit, Trash2, Loader2, DoorOpen, CalendarIcon, Clock, Check, X, Users, Monitor,
   Search,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { AmbienteFormDialog } from "./AmbienteFormDialog";
 import { ReservaFormDialog } from "./ReservaFormDialog";
 import { OcupacaoAmbienteDialog } from "./OcupacaoAmbienteDialog";
@@ -248,7 +249,7 @@ export const AgendaReservasTab = () => {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <CalendarIcon className="w-3.5 h-3.5" />
-                                  {format(parseISO(reserva.data_reserva), "dd/MM/yyyy")}
+{format(parseLocalDate(reserva.data_reserva), "dd/MM/yyyy")}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-3.5 h-3.5" />
@@ -302,7 +303,7 @@ export const AgendaReservasTab = () => {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <CalendarIcon className="w-3.5 h-3.5" />
-                                  {format(parseISO(reserva.data_reserva), "dd/MM/yyyy")}
+                                  {format(parseLocalDate(reserva.data_reserva), "dd/MM/yyyy")}
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Clock className="w-3.5 h-3.5" />
