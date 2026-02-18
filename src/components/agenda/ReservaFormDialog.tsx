@@ -18,9 +18,10 @@ interface ReservaFormDialogProps {
   onOpenChange: (open: boolean) => void;
   reserva?: any;
   solicitanteId?: string;
+  isMaster?: boolean;
 }
 
-export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }: ReservaFormDialogProps) => {
+export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId, isMaster }: ReservaFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -188,7 +189,10 @@ export const ReservaFormDialog = ({ open, onOpenChange, reserva, solicitanteId }
         tipo_recorrencia: recorrente ? tipoRecorrencia : null,
         data_fim_recorrencia: recorrente && dataFimRecorrencia ? dataFimRecorrencia : null,
       };
-      if (!reserva) payload.solicitante_id = solicitanteId || null;
+      if (!reserva) {
+        payload.solicitante_id = solicitanteId || null;
+        if (isMaster) payload.status = "aprovado";
+      }
       
       if (reserva?.id) {
         const { error } = await supabase.from("reservas_ambientes").update(payload).eq("id", reserva.id);

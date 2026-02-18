@@ -399,7 +399,7 @@ export const AgendaReservasTab = () => {
 
       {/* Dialogs */}
       <AmbienteFormDialog open={showAmbienteForm} onOpenChange={setShowAmbienteForm} ambiente={editingAmbiente} />
-      <ReservaFormDialog open={showReservaForm} onOpenChange={setShowReservaForm} reserva={editingReserva} />
+      <ReservaFormDialog open={showReservaForm} onOpenChange={setShowReservaForm} reserva={editingReserva} isMaster={true} />
       <OcupacaoAmbienteDialog open={!!ocupacaoAmbiente} onOpenChange={(open) => !open && setOcupacaoAmbiente(null)} ambiente={ocupacaoAmbiente} />
 
       {/* Delete ambiente dialog */}
