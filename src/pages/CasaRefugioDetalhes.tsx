@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight, XCircle, ArrowRightLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Users, Package, DollarSign, Calendar, MapPin, Image, ScanFace, Trash2, Pencil, FileDown, ChevronLeft, ChevronRight, XCircle, ArrowRightLeft, CheckCircle2, RotateCcw } from "lucide-react";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -396,6 +396,25 @@ const CasaRefugioDetalhes = () => {
     },
   });
 
+  // Reactivate cancelled meeting (delete the cancelled record so it returns to "pendente")
+  const reactivateMutation = useMutation({
+    mutationFn: async (encontroId: string) => {
+      const { error } = await supabase
+        .from("encontros_casa_refugio")
+        .delete()
+        .eq("id", encontroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["encontros-casa", id] });
+      queryClient.invalidateQueries({ queryKey: ["encontros"] });
+      toast.success("Reunião reativada! Agora pode ser preenchida normalmente.");
+    },
+    onError: (error) => {
+      toast.error("Erro ao reativar: " + error.message);
+    },
+  });
+
   const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
@@ -719,9 +738,21 @@ const CasaRefugioDetalhes = () => {
                                     </DropdownMenu>
                                   </div>
                                 ) : isCancelled ? (
-                                  <span className="text-xs text-muted-foreground italic px-2" title={encontro.justificativa || ""}>
-                                    {encontro.justificativa ? encontro.justificativa.slice(0, 30) + (encontro.justificativa.length > 30 ? "..." : "") : "Cancelada"}
-                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs text-muted-foreground italic" title={encontro.justificativa || ""}>
+                                      {encontro.justificativa ? encontro.justificativa.slice(0, 20) + (encontro.justificativa.length > 20 ? "..." : "") : "Cancelada"}
+                                    </span>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7 text-amber-600 hover:text-amber-700"
+                                      onClick={() => reactivateMutation.mutate(encontro.id)}
+                                      disabled={reactivateMutation.isPending}
+                                      title="Reativar reunião"
+                                    >
+                                      <RotateCcw className="w-4 h-4" />
+                                    </Button>
+                                  </div>
                                 ) : (
                                   <>
                                     {encontro.photo_url && (
