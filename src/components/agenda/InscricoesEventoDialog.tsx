@@ -56,7 +56,8 @@ import {
   Edit2
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 
@@ -410,7 +411,7 @@ export const InscricoesEventoDialog = ({
       "Telefone": i.telefone_contato,
       "Forma Pagamento": formaPagamentoLabels[i.forma_pagamento] || i.forma_pagamento || "-",
       "Situação": statusPagamentoLabels[i.status_pagamento]?.label || i.status_pagamento,
-      "Data Inscrição": format(parseISO(i.created_at), "dd/MM/yyyy HH:mm"),
+      "Data Inscrição": format(new Date(i.created_at), "dd/MM/yyyy HH:mm"),
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataExport);

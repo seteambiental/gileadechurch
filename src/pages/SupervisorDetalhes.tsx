@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { parseISO, isWithinInterval } from "date-fns";
+import { isWithinInterval } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 
@@ -64,21 +65,21 @@ const SupervisorDetalhes = () => {
     if (!startDate && !endDate) return encontros;
     
     return encontros.filter((encontro) => {
-      const encontroDate = parseISO(encontro.data_encontro);
+      const encontroDate = parseLocalDate(encontro.data_encontro);
       
       if (startDate && endDate) {
         return isWithinInterval(encontroDate, {
-          start: parseISO(startDate),
-          end: parseISO(endDate),
+          start: parseLocalDate(startDate),
+          end: parseLocalDate(endDate),
         });
       }
       
       if (startDate) {
-        return encontroDate >= parseISO(startDate);
+        return encontroDate >= parseLocalDate(startDate);
       }
       
       if (endDate) {
-        return encontroDate <= parseISO(endDate);
+        return encontroDate <= parseLocalDate(endDate);
       }
       
       return true;

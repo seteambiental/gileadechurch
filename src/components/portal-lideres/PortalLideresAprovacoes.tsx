@@ -29,7 +29,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 
@@ -258,7 +259,7 @@ export const PortalLideresAprovacoes = ({
                     <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">
                         <CalendarIcon className="w-3.5 h-3.5" />
-                        {format(parseISO(evento.data_evento), "dd/MM/yyyy")}
+                        {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
                       </span>
                       {evento.hora_inicio && (
                         <span className="flex items-center gap-1">
@@ -364,7 +365,7 @@ export const PortalLideresAprovacoes = ({
                         )}
                         <p className="text-xs">
                           Solicitado por: {mudanca.solicitante?.full_name || "—"} em{" "}
-                          {format(parseISO(mudanca.created_at), "dd/MM/yyyy HH:mm", {
+                          {format(new Date(mudanca.created_at), "dd/MM/yyyy HH:mm", {
                             locale: ptBR,
                           })}
                         </p>

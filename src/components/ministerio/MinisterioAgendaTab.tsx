@@ -17,7 +17,8 @@ import {
   DollarSign,
   Users,
 } from "lucide-react";
-import { format, parseISO, isBefore, startOfDay } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
@@ -194,7 +195,7 @@ export const MinisterioAgendaTab = ({ ministerioSlug, ministerioTitle, memberId 
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {eventos.map((evento) => {
-            const dataEvento = parseISO(evento.data_evento);
+            const dataEvento = parseLocalDate(evento.data_evento);
             const jaInscrito = isInscrito(evento.id);
             const temCusto = evento.tem_custo;
             

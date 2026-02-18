@@ -18,7 +18,8 @@ import {
   Filter,
   ArrowUpDown,
 } from "lucide-react";
-import { differenceInYears, parseISO } from "date-fns";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { toast } from "sonner";
 import { VisitanteFormDialog } from "./VisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
@@ -84,7 +85,7 @@ export const MinisterioMembrosTab = ({
       return (data || [])
         .map((m) => {
           const idade = m.birth_date 
-            ? differenceInYears(hoje, parseISO(m.birth_date))
+            ? differenceInYears(hoje, parseLocalDate(m.birth_date))
             : null;
           return {
             ...m,
@@ -119,7 +120,7 @@ export const MinisterioMembrosTab = ({
       return visitantesFiltrados
         .map((v: any) => {
           const idade = v.data_nascimento 
-            ? differenceInYears(hoje, parseISO(v.data_nascimento))
+            ? differenceInYears(hoje, parseLocalDate(v.data_nascimento))
             : null;
           return {
             id: v.id,

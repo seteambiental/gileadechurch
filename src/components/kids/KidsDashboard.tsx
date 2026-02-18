@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subMonths, startOfMonth, endOfMonth, eachWeekOfInterval, parseISO } from "date-fns";
+import { format, subMonths, startOfMonth, endOfMonth, eachWeekOfInterval } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,7 +120,7 @@ export const KidsDashboard = ({ turmasConfig, criancasPorTurma }: KidsDashboardP
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-8)
       .map(([data, valores]) => ({
-        data: format(parseISO(data), "dd/MM"),
+        data: format(parseLocalDate(data), "dd/MM"),
         presentes: valores.presentes,
         total: valores.total,
         percentual: valores.total > 0 

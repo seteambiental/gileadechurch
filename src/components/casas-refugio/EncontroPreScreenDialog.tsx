@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar, MessageCircleQuestion, Loader2 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 
 type Step = "reuniao_aconteceu" | "justificativa_nao" | "ocorreu_no_dia" | "justificativa_mudanca";
 
@@ -132,7 +133,7 @@ export const EncontroPreScreenDialog = ({
 
   const dataFormatada = (() => {
     try {
-      return format(parseISO(dataEncontro), "dd/MM/yyyy");
+      return format(parseLocalDate(dataEncontro), "dd/MM/yyyy");
     } catch {
       return dataEncontro;
     }

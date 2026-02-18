@@ -175,7 +175,7 @@ export const DancaRepertorioTab = ({ ministryId }: DancaRepertorioTabProps) => {
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
                       <CardTitle className="text-base">
-                        {format(new Date(escala.data_culto), "dd/MM/yyyy")} - {TIPOS_CULTO_MAP[escala.tipo_culto] || escala.tipo_culto}
+                        {format(new Date(escala.data_culto + "T00:00:00"), "dd/MM/yyyy")} - {TIPOS_CULTO_MAP[escala.tipo_culto] || escala.tipo_culto}
                       </CardTitle>
                     </div>
                     <div className="flex items-center gap-2">

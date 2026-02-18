@@ -17,7 +17,8 @@ import {
   UserPlus,
   Eye,
 } from "lucide-react";
-import { format, parseISO, isPast } from "date-fns";
+import { format, isPast } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { TarefaFormDialog } from "./TarefaFormDialog";
@@ -177,7 +178,7 @@ export function ServicoTarefasTab() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {tarefasFiltradas.map((tarefa) => {
             const counts = voluntariosCount[tarefa.id] || { confirmados: 0, pendentes: 0 };
-            const dataTarefa = parseISO(tarefa.data_tarefa);
+            const dataTarefa = parseLocalDate(tarefa.data_tarefa);
             const passado = isPast(dataTarefa) && tarefa.status !== "concluida";
             
             return (

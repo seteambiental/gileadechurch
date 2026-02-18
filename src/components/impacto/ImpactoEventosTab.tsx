@@ -75,9 +75,9 @@ const ImpactoEventosTab = () => {
                   return (
                     <TableRow key={evento.id}>
                       <TableCell className="font-medium whitespace-nowrap">
-                        {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(new Date(evento.data_evento + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
                         {evento.data_fim && (
-                          <span className="text-muted-foreground"> - {format(new Date(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}</span>
+                          <span className="text-muted-foreground"> - {format(new Date(evento.data_fim + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</span>
                         )}
                       </TableCell>
                       <TableCell>{evento.titulo}</TableCell>

@@ -13,7 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { formatPhone, formatCPF } from "@/lib/masks";
@@ -408,9 +409,9 @@ const InscricaoEvento = () => {
             <div className="flex flex-wrap gap-3 md:gap-6 text-sm md:text-lg text-muted-foreground mt-2 md:mt-4">
               <span className="flex items-center gap-1 md:gap-2">
                 <Calendar className="w-4 h-4 md:w-6 md:h-6" />
-                {format(parseISO(evento.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                {format(parseLocalDate(evento.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 {evento.data_fim && evento.data_fim !== evento.data_evento && (
-                  <> a {format(parseISO(evento.data_fim), "dd 'de' MMMM", { locale: ptBR })}</>
+                  <> a {format(parseLocalDate(evento.data_fim), "dd 'de' MMMM", { locale: ptBR })}</>
                 )}
               </span>
               {evento.hora_inicio && (

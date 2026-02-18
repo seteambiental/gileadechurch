@@ -2,7 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -296,7 +297,7 @@ export const KidsEscalasTab = ({ turmasConfig }: KidsEscalasTabProps) => {
   const openEditDialog = (escala: Escala) => {
     setEditingEscala(escala);
     setFormData({
-      data_culto: parseISO(escala.data_culto),
+      data_culto: parseLocalDate(escala.data_culto),
       tipo_culto: escala.tipo_culto,
       turma: escala.turma,
       lider_id: escala.lider_id || "",
@@ -581,7 +582,7 @@ export const KidsEscalasTab = ({ turmasConfig }: KidsEscalasTabProps) => {
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4" />
-                  {format(parseISO(data), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                  {format(parseLocalDate(data), "EEEE, dd 'de' MMMM", { locale: ptBR })}
                   <Badge variant="outline" className="ml-2">
                     {escalasData[0].tipo_culto}
                   </Badge>

@@ -12,7 +12,8 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface Encontro {
@@ -34,7 +35,7 @@ export const EncontrosCharts = ({ encontros }: EncontrosChartsProps) => {
   const chartData = useMemo(() => {
     // Group by month
     const grouped = encontros.reduce((acc, encontro) => {
-      const date = parseISO(encontro.data_encontro);
+      const date = parseLocalDate(encontro.data_encontro);
       const monthKey = format(date, "yyyy-MM");
       const monthLabel = format(date, "MMM/yy", { locale: ptBR });
 

@@ -44,9 +44,9 @@ import {
   getDay,
   isToday,
   isSameMonth,
-  parseISO,
   isWithinInterval,
 } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
 
@@ -253,8 +253,8 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
           }
         });
       } else {
-        const dataInicio = parseISO(evento.data_evento);
-        const dataFim = evento.data_fim ? parseISO(evento.data_fim) : dataInicio;
+        const dataInicio = parseLocalDate(evento.data_evento);
+        const dataFim = evento.data_fim ? parseLocalDate(evento.data_fim) : dataInicio;
 
         days.forEach((day) => {
           if (
@@ -409,13 +409,13 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
             <div key={dateKey}>
               <div className="flex items-center gap-2 mb-3">
                 <Badge
-                  variant={isToday(parseISO(dateKey)) ? "default" : "secondary"}
+                  variant={isToday(parseLocalDate(dateKey)) ? "default" : "secondary"}
                   className="text-xs"
                 >
-                  {isToday(parseISO(dateKey)) ? "Hoje" : format(parseISO(dateKey), "EEEE", { locale: ptBR })}
+                  {isToday(parseLocalDate(dateKey)) ? "Hoje" : format(parseLocalDate(dateKey), "EEEE", { locale: ptBR })}
                 </Badge>
                 <span className="text-sm font-medium text-foreground">
-                  {format(parseISO(dateKey), "dd 'de' MMMM", { locale: ptBR })}
+                  {format(parseLocalDate(dateKey), "dd 'de' MMMM", { locale: ptBR })}
                 </span>
               </div>
 

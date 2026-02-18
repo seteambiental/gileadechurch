@@ -33,7 +33,8 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn } from "@/lib/export";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 
 interface CasaRefugioData {
   id: string;
@@ -85,8 +86,8 @@ const generateExpectedDates = (
   endDate: string,
   dayOfWeek: number
 ): string[] => {
-  const start = parseISO(startDate);
-  const end = parseISO(endDate);
+  const start = parseLocalDate(startDate);
+  const end = parseLocalDate(endDate);
   if (start > end) return [];
 
   const allDays = eachDayOfInterval({ start, end });

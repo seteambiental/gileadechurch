@@ -38,7 +38,8 @@ import {
 import { SearchInput } from "@/components/ui/search-input";
 import { includesNormalized } from "@/lib/text-utils";
 import { PortalAccess } from "@/hooks/useMemberPortal";
-import { format, parseISO, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
+import { format, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -244,7 +245,7 @@ export const PortalLideresCasaRefugio = ({
     membrosVinculados.forEach((m) => {
       if (liderIds.includes(m.id)) return;
       if (m.birth_date) {
-        const nascimento = parseISO(m.birth_date);
+        const nascimento = parseLocalDate(m.birth_date);
         const idade = Math.floor((hoje.getTime() - nascimento.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
         if (idade < 12) criancas++;
         else membrosAdultos++;
@@ -259,12 +260,12 @@ export const PortalLideresCasaRefugio = ({
   const filteredEncontros = useMemo(() => {
     if (!startDate && !endDate) return encontros;
     return encontros.filter((encontro) => {
-      const encontroDate = parseISO(encontro.data_encontro);
+      const encontroDate = parseLocalDate(encontro.data_encontro);
       if (startDate && endDate) {
-        return isWithinInterval(encontroDate, { start: parseISO(startDate), end: parseISO(endDate) });
+        return isWithinInterval(encontroDate, { start: parseLocalDate(startDate), end: parseLocalDate(endDate) });
       }
-      if (startDate) return encontroDate >= parseISO(startDate);
-      if (endDate) return encontroDate <= parseISO(endDate);
+      if (startDate) return encontroDate >= parseLocalDate(startDate);
+      if (endDate) return encontroDate <= parseLocalDate(endDate);
       return true;
     });
   }, [encontros, startDate, endDate]);
@@ -289,7 +290,7 @@ export const PortalLideresCasaRefugio = ({
     const isQuinzenal = frequencia?.toLowerCase().includes("quinzenal");
     const today = startOfDay(new Date());
     const startRef = casaSelecionada.data_inicio_cr
-      ? parseISO(casaSelecionada.data_inicio_cr)
+      ? parseLocalDate(casaSelecionada.data_inicio_cr)
       : new Date(2026, 1, 1);
 
     let current = new Date(startRef);
@@ -300,11 +301,11 @@ export const PortalLideresCasaRefugio = ({
     const expectedDates: string[] = [];
     while (!isAfter(current, today)) {
       const dateStr = format(current, "yyyy-MM-dd");
-      if (startDate && isBefore(parseISO(dateStr), parseISO(startDate))) {
+      if (startDate && isBefore(parseLocalDate(dateStr), parseLocalDate(startDate))) {
         current = addWeeks(current, isQuinzenal ? 2 : 1);
         continue;
       }
-      if (endDate && isAfter(parseISO(dateStr), parseISO(endDate))) break;
+      if (endDate && isAfter(parseLocalDate(dateStr), parseLocalDate(endDate))) break;
       expectedDates.push(dateStr);
       current = addWeeks(current, isQuinzenal ? 2 : 1);
     }
@@ -406,7 +407,7 @@ export const PortalLideresCasaRefugio = ({
   const exportEncontroPDF = async (encontro: any) => {
     const doc = new jsPDF();
     const total = (encontro.qtd_lideres || 0) + (encontro.qtd_membros || 0) + (encontro.qtd_criancas || 0) + (encontro.qtd_visitantes || 0);
-    const dataFormatada = format(parseISO(encontro.data_encontro), "dd/MM/yyyy");
+    const dataFormatada = format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy");
 
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
@@ -462,7 +463,7 @@ export const PortalLideresCasaRefugio = ({
       doc.text(`Observações: ${encontro.observacoes}`, 14, finalY + 10);
     }
 
-    doc.save(`encontro-${format(parseISO(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
+    doc.save(`encontro-${format(parseLocalDate(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
   };
 
   const clearFilters = () => {
@@ -738,7 +739,7 @@ export const PortalLideresCasaRefugio = ({
                                       className={isBlank ? "bg-destructive/5 hover:bg-destructive/10" : isCancelled ? "bg-muted/30" : ""}
                                     >
                                       <TableCell className={`whitespace-nowrap ${isBlank ? "text-destructive font-bold" : isCancelled ? "font-medium text-muted-foreground" : "font-medium"}`}>
-                                        {format(parseISO(encontro.data_encontro), "dd/MM/yyyy")}
+                                        {format(parseLocalDate(encontro.data_encontro), "dd/MM/yyyy")}
                                         {isBlank && <span className="ml-2 text-xs">(pendente)</span>}
                                         {isCancelled && <span className="ml-2 text-xs">(não realizada)</span>}
                                       </TableCell>
