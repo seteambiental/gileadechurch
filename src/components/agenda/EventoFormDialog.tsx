@@ -590,9 +590,11 @@ export const EventoFormDialog = ({
         genero_alvo: formData.genero_alvo,
         cor: formData.cor,
         recorrente: formData.recorrente,
-        tipo_recorrencia: formData.recorrente ? formData.tipo_recorrencia || null : null,
+        tipo_recorrencia: formData.recorrente 
+          ? (formData.data_fim ? "semanal" : formData.tipo_recorrencia || null) 
+          : null,
         dia_semana: formData.recorrente && formData.dia_semana ? parseInt(formData.dia_semana) : null,
-        semana_mes: formData.recorrente && formData.semana_mes ? parseInt(formData.semana_mes) : null,
+        semana_mes: formData.recorrente && !formData.data_fim && formData.semana_mes ? parseInt(formData.semana_mes) : null,
         observacoes: formData.observacoes || null,
         flyer_url: flyerUrl,
         idade_minima: formData.idade_minima ? parseInt(formData.idade_minima) : null,
@@ -1768,65 +1770,74 @@ export const EventoFormDialog = ({
                 </div>
 
                 {formData.recorrente && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Tipo de Recorrência</Label>
-                      <Select
-                        value={formData.tipo_recorrencia}
-                        onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="semanal">Semanal</SelectItem>
-                          <SelectItem value="mensal">Mensal</SelectItem>
-                          <SelectItem value="semestral">Semestral</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-3">
+                    {formData.data_fim && (
+                      <p className="text-xs text-muted-foreground">
+                        A recorrência será aplicada entre as datas de início e fim do evento. Selecione apenas o dia da semana.
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {!formData.data_fim && (
+                        <div>
+                          <Label>Tipo de Recorrência</Label>
+                          <Select
+                            value={formData.tipo_recorrencia}
+                            onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="semanal">Semanal</SelectItem>
+                              <SelectItem value="mensal">Mensal</SelectItem>
+                              <SelectItem value="semestral">Semestral</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
 
-                    <div>
-                      <Label>Dia da Semana</Label>
-                      <Select
-                        value={formData.dia_semana}
-                        onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">Domingo</SelectItem>
-                          <SelectItem value="1">Segunda</SelectItem>
-                          <SelectItem value="2">Terça</SelectItem>
-                          <SelectItem value="3">Quarta</SelectItem>
-                          <SelectItem value="4">Quinta</SelectItem>
-                          <SelectItem value="5">Sexta</SelectItem>
-                          <SelectItem value="6">Sábado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {(formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
                       <div>
-                        <Label>Semana do Mês</Label>
+                        <Label>Dia da Semana</Label>
                         <Select
-                          value={formData.semana_mes}
-                          onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                          value={formData.dia_semana}
+                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="1">1ª Semana</SelectItem>
-                            <SelectItem value="2">2ª Semana</SelectItem>
-                            <SelectItem value="3">3ª Semana</SelectItem>
-                            <SelectItem value="4">4ª Semana</SelectItem>
-                            <SelectItem value="5">Última Semana</SelectItem>
+                            <SelectItem value="0">Domingo</SelectItem>
+                            <SelectItem value="1">Segunda</SelectItem>
+                            <SelectItem value="2">Terça</SelectItem>
+                            <SelectItem value="3">Quarta</SelectItem>
+                            <SelectItem value="4">Quinta</SelectItem>
+                            <SelectItem value="5">Sexta</SelectItem>
+                            <SelectItem value="6">Sábado</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-                    )}
+
+                      {!formData.data_fim && (formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
+                        <div>
+                          <Label>Semana do Mês</Label>
+                          <Select
+                            value={formData.semana_mes}
+                            onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1ª Semana</SelectItem>
+                              <SelectItem value="2">2ª Semana</SelectItem>
+                              <SelectItem value="3">3ª Semana</SelectItem>
+                              <SelectItem value="4">4ª Semana</SelectItem>
+                              <SelectItem value="5">Última Semana</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
