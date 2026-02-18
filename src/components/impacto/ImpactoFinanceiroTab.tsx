@@ -94,6 +94,11 @@ const ImpactoFinanceiroTab = () => {
     dinheiro: "Dinheiro",
     credito: "Cartão Crédito",
     debito: "Cartão Débito",
+    cartao_credito: "Cartão Crédito",
+    cartao_debito: "Cartão Débito",
+    transferencia: "Transferência",
+    boleto: "Boleto",
+    vale: "Vale",
   };
 
   // Count by type

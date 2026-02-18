@@ -332,35 +332,38 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
 
             {form.watch("tem_custo") && (
               <div className="space-y-3 border rounded-md p-3 bg-muted/30">
-                <p className="text-sm font-medium text-muted-foreground">Valores por tipo de inscrição (R$)</p>
-                {TIPOS_INSCRICAO.filter(t => (form.watch("tipos_inscricao") || []).includes(t.value)).map((tipo) => (
-                  <div key={tipo.value} className="flex items-center gap-3">
-                    <Label className="min-w-[140px] text-sm">{tipo.label}</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0,00"
-                      className="max-w-[120px]"
-                      value={form.watch(`valores_por_tipo.${tipo.value}`) || ""}
-                      onChange={(e) => {
-                        const current = form.getValues("valores_por_tipo") || {};
-                        form.setValue("valores_por_tipo", { ...current, [tipo.value]: e.target.value });
-                      }}
-                    />
-                  </div>
-                ))}
                 <FormField
                   control={form.control}
                   name="valor_inscricao"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-muted-foreground">Valor padrão (para tipos sem valor específico)</FormLabel>
+                      <FormLabel>Valor Padrão (R$)</FormLabel>
                       <FormControl>
-                        <Input type="number" step="0.01" placeholder="0,00" className="max-w-[120px]" {...field} />
+                        <Input type="number" step="0.01" placeholder="0,00" className="max-w-[160px]" {...field} />
                       </FormControl>
                     </FormItem>
                   )}
                 />
+                <div className="space-y-2 border rounded-md p-3 bg-background">
+                  <p className="text-sm font-medium">Valores por Tipo de Inscrição</p>
+                  <p className="text-xs text-muted-foreground">Deixe vazio para usar o valor padrão</p>
+                  {TIPOS_INSCRICAO.filter(t => (form.watch("tipos_inscricao") || []).includes(t.value)).map((tipo) => (
+                    <div key={tipo.value} className="flex items-center gap-3">
+                      <Label className="min-w-[140px] text-sm">{tipo.label}</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="0,00"
+                        className="max-w-[120px]"
+                        value={form.watch(`valores_por_tipo.${tipo.value}`) || ""}
+                        onChange={(e) => {
+                          const current = form.getValues("valores_por_tipo") || {};
+                          form.setValue("valores_por_tipo", { ...current, [tipo.value]: e.target.value });
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
