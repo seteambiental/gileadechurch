@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, UserCog } from "lucide-react";
+import { Loader2, Shield, UserCog, CheckCircle2 } from "lucide-react";
 import {
   usePastorAuxiliarPermissoes,
   MODULOS_DISPONIVEIS,
@@ -142,6 +142,10 @@ const PastorAuxiliarPermissoesTab = () => {
                     />
                   </div>
                 ))}
+                <div className="flex items-center gap-2 pt-3 text-xs text-muted-foreground border-t border-border">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  As alterações são salvas automaticamente ao clicar em cada opção.
+                </div>
               </div>
             )}
           </CardContent>
