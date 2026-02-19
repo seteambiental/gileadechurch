@@ -56,8 +56,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Fetch impacto_eventos
-  const { data: impactoEventos } = useQuery({
+  // Fetch impacto_eventos (unified dropdown)
+  const { data: impactoEventos = [] } = useQuery({
     queryKey: ["impacto-eventos"],
     queryFn: async () => {
       const { data, error } = await supabase
