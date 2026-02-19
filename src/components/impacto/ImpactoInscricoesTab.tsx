@@ -56,7 +56,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const { data: eventos } = useQuery({
+  // Fetch impacto_eventos
+  const { data: impactoEventos } = useQuery({
     queryKey: ["impacto-eventos"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -65,9 +66,44 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         .eq("ativo", true)
         .order("data_inicio", { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
+
+  // Fetch agenda events with inscricao enabled (non-recurring)
+  const { data: agendaEventos } = useQuery({
+    queryKey: ["agenda-eventos-inscricao-for-impacto"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, tem_custo, valores_por_tipo")
+        .eq("necessita_inscricao", true)
+        .eq("recorrente", false)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Unify both sources into a single list for the dropdown
+  const eventos = useMemo(() => {
+    const impacto = (impactoEventos || []).map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      data_inicio: e.data_inicio,
+      source: "impacto" as const,
+    }));
+    const agenda = (agendaEventos || []).map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      data_inicio: e.data_evento,
+      source: "agenda" as const,
+    }));
+    // Deduplicate by title (impacto takes priority)
+    const impactoTitles = new Set(impacto.map((e) => e.titulo.toLowerCase()));
+    const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo.toLowerCase()));
+    return [...impacto, ...uniqueAgenda];
+  }, [impactoEventos, agendaEventos]);
 
   const { data: rawInscricoes, isLoading } = useQuery({
     queryKey: ["impacto-inscricoes", selectedEventoId],
