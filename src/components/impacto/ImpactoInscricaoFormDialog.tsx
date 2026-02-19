@@ -291,6 +291,55 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
           if (error) throw error;
         }
       } else {
+        // Check for duplicate before inserting
+        let duplicateQuery = supabase
+          .from("impacto_inscricoes")
+          .select("id, nome")
+          .eq("evento_id", eventoId);
+
+        if (!isManual && memberId) {
+          // Check by member_id
+          const { data: existingMember } = await duplicateQuery.eq("member_id", memberId).maybeSingle();
+          if (existingMember) {
+            throw new Error(`${existingMember.nome} já está inscrito neste evento`);
+          }
+          // Also check in inscricoes_eventos (public link)
+          const { data: existingPublic } = await supabase
+            .from("inscricoes_eventos")
+            .select("id")
+            .eq("evento_id", eventoId)
+            .eq("member_id", memberId)
+            .maybeSingle();
+          if (existingPublic) {
+            const member = members?.find((m) => m.id === memberId);
+            throw new Error(`${member?.full_name || "Este membro"} já está inscrito neste evento`);
+          }
+        } else if (isManual && finalNome) {
+          // Check by normalized name in impacto_inscricoes
+          const { data: allInscricoes } = await supabase
+            .from("impacto_inscricoes")
+            .select("id, nome")
+            .eq("evento_id", eventoId);
+          const normalizedNew = finalNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+          const duplicate = (allInscricoes || []).find(
+            (i) => (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() === normalizedNew
+          );
+          if (duplicate) {
+            throw new Error(`${duplicate.nome} já está inscrito neste evento`);
+          }
+          // Also check in inscricoes_eventos
+          const { data: allPublic } = await supabase
+            .from("inscricoes_eventos")
+            .select("id, nome_participante")
+            .eq("evento_id", eventoId);
+          const duplicatePublic = (allPublic || []).find(
+            (i) => (i.nome_participante || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() === normalizedNew
+          );
+          if (duplicatePublic) {
+            throw new Error(`${duplicatePublic.nome_participante} já está inscrito neste evento`);
+          }
+        }
+
         const { error } = await supabase.from("impacto_inscricoes").insert(payload);
         if (error) throw error;
       }
