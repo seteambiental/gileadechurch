@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { todayDateStr } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -65,7 +66,7 @@ export function MissoesContribuintesTab() {
   const [contribuinteToDelete, setContribuinteToDelete] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const mesAtual = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const mesAtual = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`; })(); // YYYY-MM
 
   const { data: contribuintes, isLoading } = useQuery({
     queryKey: ["missoes-contribuintes"],
@@ -131,7 +132,7 @@ export function MissoesContribuintesTab() {
           .from("missoes_mocambique_contribuicoes")
           .update({ 
             pago: true, 
-            data_pagamento: new Date().toISOString().split("T")[0],
+            data_pagamento: todayDateStr(),
             valor: contribuinte.valor_mensal
           })
           .eq("id", existente.id);
@@ -144,7 +145,7 @@ export function MissoesContribuintesTab() {
             mes_referencia: mesAtual,
             valor: contribuinte.valor_mensal,
             pago: true,
-            data_pagamento: new Date().toISOString().split("T")[0],
+            data_pagamento: todayDateStr(),
           });
       }
 

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { parseLocalDate } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -75,9 +76,9 @@ const ImpactoEventosTab = () => {
                   return (
                     <TableRow key={evento.id}>
                       <TableCell className="font-medium whitespace-nowrap">
-                        {format(new Date(evento.data_evento + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                        {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
                         {evento.data_fim && (
-                          <span className="text-muted-foreground"> - {format(new Date(evento.data_fim + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</span>
+                          <span className="text-muted-foreground"> - {format(parseLocalDate(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}</span>
                         )}
                       </TableCell>
                       <TableCell>{evento.titulo}</TableCell>

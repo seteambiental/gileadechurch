@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -186,7 +187,7 @@ export const EncontroFormDialog = ({
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      data_encontro: new Date().toISOString().split("T")[0],
+      data_encontro: todayDateStr(),
       qtd_lideres: 0,
       qtd_membros: 0,
       qtd_criancas: 0,
@@ -228,7 +229,7 @@ export const EncontroFormDialog = ({
       } else {
         // New encontro (or from blank row with pre-filled date)
         form.reset({
-          data_encontro: isNewFromBlank ? editingEncontro.data_encontro : new Date().toISOString().split("T")[0],
+          data_encontro: isNewFromBlank ? editingEncontro.data_encontro : todayDateStr(),
           qtd_lideres: 0,
           qtd_membros: 0,
           qtd_criancas: 0,

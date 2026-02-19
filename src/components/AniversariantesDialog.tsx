@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Copy, Cake, Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
 
       membros?.forEach((m) => {
         if (m.birth_date) {
-          const birthDate = new Date(m.birth_date + "T00:00:00");
+          const birthDate = parseLocalDate(m.birth_date);
           if (birthDate.getDate() === day && birthDate.getMonth() + 1 === month) {
             aniversariantes.push({
               id: `m-${m.id}`,
@@ -101,7 +102,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
 
       novosConvertidos?.forEach((nc) => {
         if (nc.data_nascimento) {
-          const birthDate = new Date(nc.data_nascimento + "T00:00:00");
+          const birthDate = parseLocalDate(nc.data_nascimento);
           if (birthDate.getDate() === day && birthDate.getMonth() + 1 === month) {
             aniversariantes.push({
               id: `nc-${nc.id}`,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { resizeKeepAspect } from "@/lib/image-resize";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -534,7 +535,7 @@ export const EventoFormDialog = ({
 
     setIsLoading(true);
     try {
-      const dataEvento = formData.data_evento || new Date().toISOString().split("T")[0];
+      const dataEvento = formData.data_evento || todayDateStr();
       const localCheck = formData.local_tipo === "na_igreja"
         ? (ambientes.find(a => a.id === formData.ambiente_id)?.nome || "Igreja Gileade")
         : formData.local || null;
@@ -582,7 +583,7 @@ export const EventoFormDialog = ({
       const payload = {
         titulo: formData.titulo.trim(),
         descricao: formData.descricao || null,
-        data_evento: formData.data_evento || new Date().toISOString().split("T")[0],
+        data_evento: formData.data_evento || todayDateStr(),
         data_fim: formData.data_fim || null,
         hora_inicio: formData.hora_inicio || null,
         hora_fim: formData.hora_fim || null,

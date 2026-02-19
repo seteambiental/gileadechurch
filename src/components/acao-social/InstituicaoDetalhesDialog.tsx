@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Building2, Users, HandHeart, Phone, MapPin, Mail } from "lucide-react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface InstituicaoDetalhesDialogProps {
@@ -46,7 +47,7 @@ export function InstituicaoDetalhesDialog({ open, onOpenChange, instituicao }: I
   };
 
   const formatDate = (date: string) => {
-    return format(new Date(date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR });
+    return format(parseLocalDate(date), "dd/MM/yyyy", { locale: ptBR });
   };
 
   if (!instituicao) return null;

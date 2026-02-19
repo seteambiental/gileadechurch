@@ -22,6 +22,7 @@ import {
 import { includesNormalized } from "@/lib/text-utils";
 import { Plus, MoreHorizontal, Pencil, Trash2, Users, Eye } from "lucide-react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { TurmaFormDialog } from "./TurmaFormDialog";
@@ -91,8 +92,8 @@ export function CasaisTurmasTab() {
               columns={[
                 { header: "Nome", accessor: "nome" },
                 { header: "Horário", accessor: "horario" },
-                { header: "Data Início", accessor: (r) => r.data_inicio ? format(new Date(r.data_inicio + "T00:00:00"), "dd/MM/yyyy") : "-" },
-                { header: "Data Fim", accessor: (r) => r.data_fim ? format(new Date(r.data_fim + "T00:00:00"), "dd/MM/yyyy") : "-" },
+                { header: "Data Início", accessor: (r) => r.data_inicio ? format(parseLocalDate(r.data_inicio), "dd/MM/yyyy") : "-" },
+                { header: "Data Fim", accessor: (r) => r.data_fim ? format(parseLocalDate(r.data_fim), "dd/MM/yyyy") : "-" },
                 { header: "Casais", accessor: (r) => inscritosCount?.[r.id] || 0 },
                 { header: "Vagas", accessor: (r) => r.vagas || "∞" },
                 { header: "Status", accessor: (r) => r.ativo ? "Ativa" : "Encerrada" },
@@ -147,8 +148,8 @@ export function CasaisTurmasTab() {
                     <TableCell className="hidden md:table-cell">
                       {turma.data_inicio ? (
                         <span className="text-sm">
-                          {format(new Date(turma.data_inicio + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
-                          {turma.data_fim && ` - ${format(new Date(turma.data_fim + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}`}
+                          {format(parseLocalDate(turma.data_inicio), "dd/MM/yyyy", { locale: ptBR })}
+                          {turma.data_fim && ` - ${format(parseLocalDate(turma.data_fim), "dd/MM/yyyy", { locale: ptBR })}`}
                         </span>
                       ) : "-"}
                     </TableCell>

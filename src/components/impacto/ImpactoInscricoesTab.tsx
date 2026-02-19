@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/masks";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -354,7 +355,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         <div class="nome">${inscricao.nome}</div>
         ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
         <div class="evento">${evento?.titulo || "Impacto"}</div>
-        <div class="data">${evento?.data_inicio ? format(new Date(evento.data_inicio), "dd/MM/yyyy") : ''}</div>
+        <div class="data">${evento?.data_inicio ? format(parseLocalDate(evento.data_inicio), "dd/MM/yyyy") : ''}</div>
       </div>
     `).join("");
 

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -210,7 +211,7 @@ const ImpactoFinanceiroTab = () => {
           <SelectContent>
             {eventos?.map((e) => (
               <SelectItem key={e.id} value={e.id}>
-                {format(new Date(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
+                {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
               </SelectItem>
             ))}
           </SelectContent>

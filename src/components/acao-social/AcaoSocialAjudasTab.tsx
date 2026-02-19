@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, HandHeart, Trash2, Package, DollarSign, Scale } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { AjudaFormDialog } from "./AjudaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
@@ -62,7 +63,7 @@ export function AcaoSocialAjudasTab() {
   };
 
   const formatDate = (date: string) => {
-    return format(new Date(date + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR });
+    return format(parseLocalDate(date), "dd/MM/yyyy", { locale: ptBR });
   };
 
   // Calculate totals

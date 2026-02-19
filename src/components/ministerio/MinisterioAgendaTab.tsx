@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,7 +91,7 @@ export const MinisterioAgendaTab = ({ ministerioSlug, ministerioTitle, memberId 
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["eventos-ministerio", ministerioSlug],
     queryFn: async () => {
-      const hoje = startOfDay(new Date()).toISOString().split("T")[0];
+      const hoje = todayDateStr();
       
       const { data, error } = await supabase
         .from("agenda_igreja")
