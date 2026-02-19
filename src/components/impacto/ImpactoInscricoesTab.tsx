@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -159,72 +159,29 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
 
   const isLoading = loadingImpacto || loadingAgenda;
 
-  // Unmirrored: agenda records not yet in impacto_inscricoes (no reference generated yet)
-  const unmirroredAgenda = useMemo(() => {
+  const inscricoes = useMemo(() => {
     const impacto = rawImpactoInscricoes || [];
     const agenda = rawAgendaInscricoes || [];
 
+    // Build sets of already-present identifiers from impacto_inscricoes
     const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
-    const impactoNomes = new Set(
-      impacto.map((i: any) =>
-        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
-      )
-    );
+    const impactoIds = new Set(impacto.map((i: any) => i.id));
 
-    return agenda.filter((i: any) => {
-      // Exclude if same member_id already in impacto
+    // Only include agenda records not already mirrored in impacto_inscricoes by member_id
+    const uniqueAgenda = agenda.filter((i: any) => {
+      if (impactoIds.has(i.id)) return false;
       if (i.member_id && impactoMemberIds.has(i.member_id)) return false;
-      // Exclude if same normalized name already in impacto (covers non-member duplicates)
-      const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      if (impactoNomes.has(nomeNorm)) return false;
       return true;
     });
-  }, [rawImpactoInscricoes, rawAgendaInscricoes]);
 
-  // Auto-mirror unmirrored agenda inscriptions into impacto_inscricoes so references are generated
-  const mirroredRef = useRef<string>("");
-  useEffect(() => {
-    if (!selectedEventoId || !unmirroredAgenda.length) return;
-    // Use a key to avoid re-running for the same event+count combination
-    const key = `${selectedEventoId}-${unmirroredAgenda.length}`;
-    if (mirroredRef.current === key) return;
-    mirroredRef.current = key;
-
-    const toInsert = unmirroredAgenda.map((i: any) => ({
-      evento_id: selectedEventoId,
-      member_id: i.member_id || null,
-      nome: i.nome || i.nome_participante || "",
-      telefone: i.telefone || i.telefone_contato || null,
-      email: i.email || null,
-      genero: i.genero || null,
-      tipo_inscricao: i.tipo_inscricao || "membro",
-      valor_inscricao: i.valor_inscricao || null,
-      status_pagamento: "pendente",
-    }));
-
-    supabase
-      .from("impacto_inscricoes")
-      .insert(toInsert)
-      .then(({ error }) => {
-        if (!error) {
-          queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
-          queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes", selectedEventoId] });
-        }
-      });
-  }, [selectedEventoId, unmirroredAgenda, queryClient]);
-
-  const inscricoes = useMemo(() => {
-    // Once auto-mirror runs, impacto_inscricoes will have all records.
-    // Show impacto records + any still-unmirrored agenda records as fallback.
-    const impacto = rawImpactoInscricoes || [];
-    const all = [...impacto, ...unmirroredAgenda];
+    const all = [...impacto, ...uniqueAgenda];
     const sorted = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
     if (!searchNome.trim()) return sorted;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return sorted.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, unmirroredAgenda, searchNome]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
 
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
