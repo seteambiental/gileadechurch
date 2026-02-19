@@ -163,14 +163,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     const impacto = rawImpactoInscricoes || [];
     const agenda = rawAgendaInscricoes || [];
 
-    // Build sets of already-present identifiers from impacto_inscricoes
+    // Build lookup sets from impacto_inscricoes (the authoritative source)
     const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
-    const impactoIds = new Set(impacto.map((i: any) => i.id));
+    const impactoNomes = new Set(
+      impacto.map((i: any) =>
+        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      ).filter(Boolean)
+    );
 
-    // Only include agenda records not already mirrored in impacto_inscricoes by member_id
+    // Exclude agenda records that already have a counterpart in impacto_inscricoes
+    // Match by member_id (reliable) OR by normalized name (for records without member_id)
     const uniqueAgenda = agenda.filter((i: any) => {
-      if (impactoIds.has(i.id)) return false;
       if (i.member_id && impactoMemberIds.has(i.member_id)) return false;
+      const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      if (nomeNorm && impactoNomes.has(nomeNorm)) return false;
       return true;
     });
 

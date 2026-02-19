@@ -145,14 +145,20 @@ const ImpactoFinanceiroTab = () => {
     const imp = rawImpactoInscricoes || [];
     const agd = rawAgendaInscricoes || [];
 
-    // Build sets of already-present identifiers from impacto_inscricoes
+    // Build lookup sets from impacto_inscricoes (the authoritative source)
     const impMemberIds = new Set(imp.map((i: any) => i.member_id).filter(Boolean));
-    const impIds = new Set(imp.map((i: any) => i.id));
+    const impNomes = new Set(
+      imp.map((i: any) =>
+        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      ).filter(Boolean)
+    );
 
-    // Only include agenda records not already represented in impacto_inscricoes by member_id
+    // Exclude agenda records that already have a counterpart in impacto_inscricoes
+    // Match by member_id (reliable) OR by normalized name (for records without member_id)
     const uniqueAgd = agd.filter((i: any) => {
-      if (impIds.has(i.id)) return false;
       if (i.member_id && impMemberIds.has(i.member_id)) return false;
+      const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      if (nomeNorm && impNomes.has(nomeNorm)) return false;
       return true;
     });
 
