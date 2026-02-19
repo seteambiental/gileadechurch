@@ -24,7 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 
 interface ImpactoInscricoesTabProps {
@@ -55,6 +56,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [editingInscricao, setEditingInscricao] = useState<any>(null);
   const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [searchNome, setSearchNome] = useState("");
 
   // Fetch impacto_eventos (unified dropdown)
   const { data: impactoEventos = [] } = useQuery({
@@ -122,11 +124,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     enabled: !!selectedEventoId,
   });
 
-  // Sort alphabetically
   const inscricoes = useMemo(() => {
     if (!rawInscricoes) return [];
-    return [...rawInscricoes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
-  }, [rawInscricoes]);
+    const sorted = [...rawInscricoes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    if (!searchNome.trim()) return sorted;
+    const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return sorted.filter((i) =>
+      i.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+    );
+  }, [rawInscricoes, searchNome]);
 
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
@@ -346,7 +352,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-heading font-bold">Inscrições</h2>
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedEventoId} onValueChange={setSelectedEventoId}>
+          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); }}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>
@@ -366,6 +372,18 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
           )}
         </div>
       </div>
+
+      {selectedEventoId && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={searchNome}
+            onChange={(e) => setSearchNome(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
 
       {selectedIds.length > 0 && (
         <div className="flex gap-2 p-3 bg-muted rounded-lg">
