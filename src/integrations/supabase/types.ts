@@ -2422,6 +2422,9 @@ export type Database = {
       }
       inscricoes_eventos: {
         Row: {
+          aprovado: boolean
+          aprovado_em: string | null
+          aprovado_por: string | null
           casa_refugio_id: string | null
           cpf: string | null
           created_at: string
@@ -2453,6 +2456,9 @@ export type Database = {
           valor_inscricao: number | null
         }
         Insert: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
@@ -2484,6 +2490,9 @@ export type Database = {
           valor_inscricao?: number | null
         }
         Update: {
+          aprovado?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
           casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
