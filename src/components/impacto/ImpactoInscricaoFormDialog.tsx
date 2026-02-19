@@ -272,6 +272,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     onSuccess: () => {
       toast.success(isEditing ? "Inscrição atualizada!" : "Inscrição realizada!");
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-financeiro", eventoId] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
       onOpenChange(false);
     },
