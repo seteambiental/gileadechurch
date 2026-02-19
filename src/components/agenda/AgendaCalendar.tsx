@@ -74,6 +74,7 @@ interface AgendaCalendarProps {
     cursos: "Cursos",
     aulas: "Aulas",
     apresentacao_criancas: "Apresentação de Crianças",
+    outros: "Outros",
   };
  
  const diasSemanaAbrev = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];

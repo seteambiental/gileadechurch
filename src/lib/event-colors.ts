@@ -27,6 +27,7 @@ export const CORES_POR_TIPO: Record<string, string> = {
   retiro: "#8b5cf6",              // Violeta
   retiro_kids: "#84cc16",         // Lima
   acao_evangelistica: "#db2777",   // Rosa
+  outros: "#6b7280",               // Cinza
 };
 
 export function getCorPorTipo(tipo: string): string {
