@@ -81,7 +81,7 @@ const ImpactoFinanceiroTab = () => {
     );
   }, [impactoEventos, agendaEventos]);
 
-  const { data: inscricoes, isLoading } = useQuery({
+  const { data: rawImpactoInscricoes } = useQuery({
     queryKey: ["impacto-inscricoes-financeiro", selectedEventoId],
     queryFn: async () => {
       if (!selectedEventoId) return [];
@@ -95,6 +95,41 @@ const ImpactoFinanceiroTab = () => {
     },
     enabled: !!selectedEventoId,
   });
+
+  const { data: rawAgendaInscricoes, isLoading } = useQuery({
+    queryKey: ["agenda-inscricoes-financeiro", selectedEventoId],
+    queryFn: async () => {
+      if (!selectedEventoId) return [];
+      const { data, error } = await supabase
+        .from("inscricoes_eventos")
+        .select("id, nome_participante, tipo_inscricao, valor_inscricao, forma_pagamento, created_at")
+        .eq("evento_id", selectedEventoId)
+        .order("nome_participante");
+      if (error) throw error;
+      return (data || []).map((i: any) => ({
+        id: i.id,
+        nome: i.nome_participante,
+        tipo_inscricao: i.tipo_inscricao || "membro",
+        valor_inscricao: i.valor_inscricao || null,
+        valor_pago: null,
+        status_pagamento: "pendente",
+        forma_pagamento: i.forma_pagamento || null,
+        pagamentos: null,
+        created_at: i.created_at,
+        referencia: null,
+      }));
+    },
+    enabled: !!selectedEventoId,
+  });
+
+  // Merge both sources, deduplicating by id
+  const inscricoes = useMemo(() => {
+    const imp = rawImpactoInscricoes || [];
+    const agd = rawAgendaInscricoes || [];
+    const impIds = new Set(imp.map((i: any) => i.id));
+    const uniqueAgd = agd.filter((i: any) => !impIds.has(i.id));
+    return [...imp, ...uniqueAgd].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+  }, [rawImpactoInscricoes, rawAgendaInscricoes]);
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 
