@@ -540,12 +540,16 @@ export const EventoFormDialog = ({
         : formData.local || null;
 
       if (localCheck && !formData.recorrente) {
+        // Only check non-recurring events for conflicts to avoid false positives
+        // from recurring events with no end date (e.g. "Culto de Celebração")
         let conflictQuery = supabase
           .from("agenda_igreja")
           .select("id, titulo")
           .eq("ativo", true)
+          .neq("status", "rejeitado")
+          .eq("recorrente", false)
           .eq("local", localCheck)
-          .or(`and(data_evento.lte.${dataEvento},or(data_fim.gte.${dataEvento},data_fim.is.null,data_evento.eq.${dataEvento}))`);
+          .or(`data_evento.eq.${dataEvento},and(data_evento.lte.${dataEvento},data_fim.gte.${dataEvento})`);
 
         if (evento?.id) {
           conflictQuery = conflictQuery.neq("id", evento.id);
