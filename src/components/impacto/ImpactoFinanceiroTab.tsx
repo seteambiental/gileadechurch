@@ -22,6 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DollarSign, Check, Clock, TrendingUp, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ImpactoDespesasTab from "./ImpactoDespesasTab";
 
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -219,51 +221,64 @@ const ImpactoFinanceiroTab = () => {
             </Card>
           </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">Carregando...</div>
-          ) : inscricoes?.length === 0 ? (
-            <Card>
-              <CardContent className="py-8 text-center text-muted-foreground">
-                Nenhuma inscrição registrada.
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Valor Inscrição</TableHead>
-                    <TableHead>Valor Pago</TableHead>
-                    <TableHead>Saldo</TableHead>
-                    <TableHead>Forma Pgto</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {inscricoes?.map((inscricao) => {
-                    const valorInsc = inscricao.valor_inscricao || 0;
-                    const valorPg = inscricao.valor_pago || 0;
-                    const saldo = Math.max(0, valorInsc - valorPg);
-                    return (
-                      <TableRow key={inscricao.id}>
-                        <TableCell className="font-medium">{inscricao.nome}</TableCell>
-                        <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>
-                        <TableCell>{formatCurrency(valorInsc)}</TableCell>
-                        <TableCell className="text-green-600 font-medium">{formatCurrency(valorPg)}</TableCell>
-                        <TableCell className={saldo > 0 ? "text-yellow-600 font-medium" : "text-green-600 font-medium"}>
-                          {formatCurrency(saldo)}
-                        </TableCell>
-                        <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>
-                        <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
+          <Tabs defaultValue="receitas">
+            <TabsList>
+              <TabsTrigger value="receitas">Receitas</TabsTrigger>
+              <TabsTrigger value="despesas">Despesas</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="receitas">
+              {isLoading ? (
+                <div className="text-center py-8">Carregando...</div>
+              ) : inscricoes?.length === 0 ? (
+                <Card>
+                  <CardContent className="py-8 text-center text-muted-foreground">
+                    Nenhuma inscrição registrada.
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Valor Inscrição</TableHead>
+                        <TableHead>Valor Pago</TableHead>
+                        <TableHead>Saldo</TableHead>
+                        <TableHead>Forma Pgto</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
+                    </TableHeader>
+                    <TableBody>
+                      {inscricoes?.map((inscricao) => {
+                        const valorInsc = inscricao.valor_inscricao || 0;
+                        const valorPg = inscricao.valor_pago || 0;
+                        const saldo = Math.max(0, valorInsc - valorPg);
+                        return (
+                          <TableRow key={inscricao.id}>
+                            <TableCell className="font-medium">{inscricao.nome}</TableCell>
+                            <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>
+                            <TableCell>{formatCurrency(valorInsc)}</TableCell>
+                            <TableCell className="text-green-600 font-medium">{formatCurrency(valorPg)}</TableCell>
+                            <TableCell className={saldo > 0 ? "text-yellow-600 font-medium" : "text-green-600 font-medium"}>
+                              {formatCurrency(saldo)}
+                            </TableCell>
+                            <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>
+                            <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="despesas">
+              <ImpactoDespesasTab eventoId={selectedEventoId} />
+            </TabsContent>
+          </Tabs>
         </>
       )}
     </div>
