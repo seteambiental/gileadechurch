@@ -52,9 +52,8 @@ const ImpactoFinanceiroTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, data_evento, data_fim, tem_custo")
+        .select("id, titulo, data_evento, data_fim")
         .eq("necessita_inscricao", true)
-        .eq("recorrente", false)
         .order("data_evento", { ascending: false });
       if (error) throw error;
       return data;
@@ -66,17 +65,18 @@ const ImpactoFinanceiroTab = () => {
       id: e.id,
       titulo: e.titulo,
       data_inicio: e.data_inicio,
-      source: "impacto" as const,
     }));
     const agenda = (agendaEventos || []).map((e) => ({
       id: e.id,
       titulo: e.titulo,
       data_inicio: e.data_evento,
-      source: "agenda" as const,
     }));
-    const impactoTitles = new Set(impacto.map((e) => e.titulo.toLowerCase()));
-    const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo.toLowerCase()));
-    return [...impacto, ...uniqueAgenda];
+    // Deduplicate by ID (same event can exist in both tables)
+    const impactoIds = new Set(impacto.map((e) => e.id));
+    const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id));
+    return [...impacto, ...uniqueAgenda].sort((a, b) =>
+      new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
+    );
   }, [impactoEventos, agendaEventos]);
 
   const { data: inscricoes, isLoading } = useQuery({
