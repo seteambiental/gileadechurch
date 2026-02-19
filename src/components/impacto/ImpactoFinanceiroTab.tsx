@@ -75,7 +75,7 @@ const ImpactoFinanceiroTab = () => {
     const impactoIds = new Set(impacto.map((e) => e.id));
     const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id));
     return [...impacto, ...uniqueAgenda].sort((a, b) =>
-      new Date(b.data_inicio).getTime() - new Date(a.data_inicio).getTime()
+      new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
     );
   }, [impactoEventos, agendaEventos]);
 
