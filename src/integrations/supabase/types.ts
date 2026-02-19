@@ -2185,6 +2185,47 @@ export type Database = {
           },
         ]
       }
+      impacto_despesas: {
+        Row: {
+          categoria: string
+          created_at: string
+          data_despesa: string
+          descricao: string | null
+          evento_id: string
+          id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          evento_id: string
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          evento_id?: string
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "impacto_despesas_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "impacto_eventos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       impacto_equipe_membros: {
         Row: {
           created_at: string
