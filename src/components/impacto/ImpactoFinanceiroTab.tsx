@@ -141,37 +141,31 @@ const ImpactoFinanceiroTab = () => {
     enabled: !!selectedEventoId,
   });
 
-  // If the selected event is an impacto_evento, use ONLY impacto_inscricoes
-  // (agenda inscriptions are already mirrored there when finances are managed).
-  // Only merge agenda inscriptions for pure agenda events (not in impacto_eventos).
-  const isImpactoEvent = useMemo(() => {
-    const impactoIds = new Set((impactoEventos || []).map((e) => e.id));
-    return impactoIds.has(selectedEventoId);
-  }, [impactoEventos, selectedEventoId]);
-
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
-
-    // For impacto events, trust only impacto_inscricoes — no merging needed
-    if (isImpactoEvent) {
-      return [...imp].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-    }
-
-    // For pure agenda events, merge and deduplicate by normalized name
     const agd = rawAgendaInscricoes || [];
-    const impIds = new Set(imp.map((i: any) => i.id));
+
+    // Build sets of already-present member_ids and normalized names from impacto_inscricoes
+    const impMemberIds = new Set(imp.map((i: any) => i.member_id).filter(Boolean));
     const impNomes = new Set(
       imp.map((i: any) =>
         (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
       )
     );
+
+    // From agenda/public registrations, only include those NOT already mirrored in impacto_inscricoes.
+    // A record is considered mirrored if: same member_id (for members) OR same normalized name (for non-members).
     const uniqueAgd = agd.filter((i: any) => {
-      if (impIds.has(i.id)) return false;
-      const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      return !impNomes.has(nomeNorm);
+      if (i.member_id && impMemberIds.has(i.member_id)) return false;
+      if (!i.member_id) {
+        const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        if (impNomes.has(nomeNorm)) return false;
+      }
+      return true;
     });
+
     return [...imp, ...uniqueAgd].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, isImpactoEvent]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes]);
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 

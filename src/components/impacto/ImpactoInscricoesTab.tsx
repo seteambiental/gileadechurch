@@ -159,37 +159,37 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
 
   const isLoading = loadingImpacto || loadingAgenda;
 
-  // If the selected event is an impacto_evento, use ONLY impacto_inscricoes
-  // (agenda inscriptions are already mirrored there). Only merge for pure agenda events.
-  const isImpactoEvent = useMemo(
-    () => (impactoEventos || []).some((e) => e.id === selectedEventoId),
-    [impactoEventos, selectedEventoId]
-  );
-
   const inscricoes = useMemo(() => {
     const impacto = rawImpactoInscricoes || [];
-    let all: any[];
+    const agenda = rawAgendaInscricoes || [];
 
-    if (isImpactoEvent) {
-      // For impacto events, trust only impacto_inscricoes — no merging needed
-      all = [...impacto];
-    } else {
-      // For pure agenda events, merge and deduplicate by member_id
-      const agenda = rawAgendaInscricoes || [];
-      const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
-      const uniqueAgenda = agenda.filter(
-        (i: any) => !i.member_id || !impactoMemberIds.has(i.member_id)
-      );
-      all = [...impacto, ...uniqueAgenda];
-    }
+    // Build sets of already-present member_ids and normalized names from impacto_inscricoes
+    const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
+    const impactoNomes = new Set(
+      impacto.map((i: any) =>
+        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      )
+    );
 
+    // From agenda/public registrations, only include those NOT already mirrored in impacto_inscricoes.
+    // A record is considered mirrored if: same member_id (for members) OR same normalized name (for non-members).
+    const uniqueAgenda = agenda.filter((i: any) => {
+      if (i.member_id && impactoMemberIds.has(i.member_id)) return false;
+      if (!i.member_id) {
+        const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        if (impactoNomes.has(nomeNorm)) return false;
+      }
+      return true;
+    });
+
+    const all = [...impacto, ...uniqueAgenda];
     const sorted = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
     if (!searchNome.trim()) return sorted;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return sorted.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, isImpactoEvent, searchNome]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
 
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
