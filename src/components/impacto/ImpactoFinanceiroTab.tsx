@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -35,7 +35,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
 const ImpactoFinanceiroTab = () => {
   const [selectedEventoId, setSelectedEventoId] = useState("");
 
-  const { data: eventos } = useQuery({
+  const { data: impactoEventos } = useQuery({
     queryKey: ["impacto-eventos-financeiro"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,6 +46,38 @@ const ImpactoFinanceiroTab = () => {
       return data;
     },
   });
+
+  const { data: agendaEventos } = useQuery({
+    queryKey: ["agenda-eventos-financeiro"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, data_fim, tem_custo")
+        .eq("necessita_inscricao", true)
+        .eq("recorrente", false)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const eventos = useMemo(() => {
+    const impacto = (impactoEventos || []).map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      data_inicio: e.data_inicio,
+      source: "impacto" as const,
+    }));
+    const agenda = (agendaEventos || []).map((e) => ({
+      id: e.id,
+      titulo: e.titulo,
+      data_inicio: e.data_evento,
+      source: "agenda" as const,
+    }));
+    const impactoTitles = new Set(impacto.map((e) => e.titulo.toLowerCase()));
+    const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo.toLowerCase()));
+    return [...impacto, ...uniqueAgenda];
+  }, [impactoEventos, agendaEventos]);
 
   const { data: inscricoes, isLoading } = useQuery({
     queryKey: ["impacto-inscricoes-financeiro", selectedEventoId],
