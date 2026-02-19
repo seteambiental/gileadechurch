@@ -123,13 +123,13 @@ const TIPOS_EVENTO = [
   { value: "batismo", label: "Batismo" },
   { value: "casa_refugio", label: "Casa Refúgio" },
   { value: "conferencia", label: "Conferência" },
-  { value: "culto", label: "Culto" },
   { value: "gileade_fest", label: "Gileade Fest" },
   { value: "impacto", label: "Impacto" },
-  { value: "evento", label: "Outro Evento" },
+  { value: "evento", label: "Evento" },
   { value: "retiro", label: "Retiro" },
   { value: "retiro_kids", label: "Retiro Kids" },
-  { value: "ceia", label: "Santa Ceia" },
+  { value: "acao_evangelistica", label: "Ação Evangelística" },
+  { value: "outros", label: "Outros" },
 ];
 
 const TIPOS_COMPROMISSO = [
