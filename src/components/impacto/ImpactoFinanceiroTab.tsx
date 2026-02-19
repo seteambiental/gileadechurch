@@ -123,12 +123,23 @@ const ImpactoFinanceiroTab = () => {
     enabled: !!selectedEventoId,
   });
 
-  // Merge both sources, deduplicating by id
+  // Merge both sources, deduplicating by id OR by normalized name
+  // (records from inscricoes_eventos mirrored to impacto_inscricoes get a new id,
+  //  so we must also exclude agenda entries whose name already exists in impacto)
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
     const agd = rawAgendaInscricoes || [];
     const impIds = new Set(imp.map((i: any) => i.id));
-    const uniqueAgd = agd.filter((i: any) => !impIds.has(i.id));
+    const impNomes = new Set(
+      imp.map((i: any) =>
+        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+      )
+    );
+    const uniqueAgd = agd.filter((i: any) => {
+      if (impIds.has(i.id)) return false;
+      const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      return !impNomes.has(nomeNorm);
+    });
     return [...imp, ...uniqueAgd].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
   }, [rawImpactoInscricoes, rawAgendaInscricoes]);
 
