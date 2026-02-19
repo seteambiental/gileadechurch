@@ -21,7 +21,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
 
@@ -34,6 +35,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
 
 const ImpactoFinanceiroTab = () => {
   const [selectedEventoId, setSelectedEventoId] = useState("");
+  const [searchNome, setSearchNome] = useState("");
 
   const { data: impactoEventos } = useQuery({
     queryKey: ["impacto-eventos-financeiro"],
@@ -95,6 +97,15 @@ const ImpactoFinanceiroTab = () => {
   });
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
+
+  const inscricoesFiltradas = useMemo(() => {
+    if (!inscricoes) return [];
+    if (!searchNome.trim()) return inscricoes;
+    const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return inscricoes.filter((i) =>
+      i.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+    );
+  }, [inscricoes, searchNome]);
 
   const totalInscritos = inscricoes?.length || 0;
 
@@ -259,13 +270,22 @@ const ImpactoFinanceiroTab = () => {
               <TabsTrigger value="despesas">Despesas</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="receitas">
+            <TabsContent value="receitas" className="space-y-3">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={searchNome}
+                  onChange={(e) => setSearchNome(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
               {isLoading ? (
                 <div className="text-center py-8">Carregando...</div>
-              ) : inscricoes?.length === 0 ? (
+              ) : inscricoesFiltradas.length === 0 ? (
                 <Card>
                   <CardContent className="py-8 text-center text-muted-foreground">
-                    Nenhuma inscrição registrada.
+                    {searchNome ? "Nenhum resultado encontrado." : "Nenhuma inscrição registrada."}
                   </CardContent>
                 </Card>
               ) : (
@@ -283,7 +303,7 @@ const ImpactoFinanceiroTab = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {inscricoes?.map((inscricao) => {
+                      {inscricoesFiltradas.map((inscricao) => {
                         const valorInsc = inscricao.valor_inscricao || 0;
                         const valorPg = inscricao.valor_pago || 0;
                         const saldo = Math.max(0, valorInsc - valorPg);
@@ -292,8 +312,8 @@ const ImpactoFinanceiroTab = () => {
                             <TableCell className="font-medium">{inscricao.nome}</TableCell>
                             <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>
                             <TableCell>{formatCurrency(valorInsc)}</TableCell>
-                            <TableCell className="text-green-600 font-medium">{formatCurrency(valorPg)}</TableCell>
-                            <TableCell className={saldo > 0 ? "text-yellow-600 font-medium" : "text-green-600 font-medium"}>
+                            <TableCell className="font-medium text-green-600">{formatCurrency(valorPg)}</TableCell>
+                            <TableCell className={saldo > 0 ? "font-medium text-yellow-600" : "font-medium text-green-600"}>
                               {formatCurrency(saldo)}
                             </TableCell>
                             <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>
