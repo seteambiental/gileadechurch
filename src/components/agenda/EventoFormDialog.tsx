@@ -144,6 +144,7 @@ const TIPOS_COMPROMISSO = [
   { value: "cursos", label: "Cursos" },
   { value: "quarta_proposito", label: "Quarta com Propósito" },
   { value: "quarta_proposito_prestacao", label: "Quarta com Propósito - Prestação de Contas" },
+  { value: "outros", label: "Outros" },
 ];
 
 export const EventoFormDialog = ({
