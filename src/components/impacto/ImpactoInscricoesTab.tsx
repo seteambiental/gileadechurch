@@ -104,19 +104,25 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     // Deduplicate by title (impacto takes priority)
     const impactoTitles = new Set(impacto.map((e) => e.titulo.toLowerCase()));
     const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo.toLowerCase()));
-    return [...impacto, ...uniqueAgenda];
+    return [...impacto, ...uniqueAgenda].sort((a, b) =>
+      new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
+    );
   }, [impactoEventos, agendaEventos]);
 
-  const { data: rawInscricoes, isLoading } = useQuery({
+  // Determine if selected event is from agenda_igreja or impacto_eventos
+  const selectedEventoSource = useMemo(
+    () => eventos.find((e) => e.id === selectedEventoId)?.source || "impacto",
+    [eventos, selectedEventoId]
+  );
+
+  // Fetch from impacto_inscricoes (admin inserts from within the app)
+  const { data: rawImpactoInscricoes, isLoading: loadingImpacto } = useQuery({
     queryKey: ["impacto-inscricoes", selectedEventoId],
     queryFn: async () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select(`
-          *,
-          member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)
-        `)
+        .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
         .eq("evento_id", selectedEventoId);
       if (error) throw error;
       return data;
@@ -124,15 +130,48 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     enabled: !!selectedEventoId,
   });
 
+  // Fetch from inscricoes_eventos (public link inserts)
+  const { data: rawAgendaInscricoes, isLoading: loadingAgenda } = useQuery({
+    queryKey: ["agenda-inscricoes", selectedEventoId],
+    queryFn: async () => {
+      if (!selectedEventoId) return [];
+      const { data, error } = await supabase
+        .from("inscricoes_eventos")
+        .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .eq("evento_id", selectedEventoId);
+      if (error) throw error;
+      // Normalize fields to match impacto_inscricoes shape
+      return (data || []).map((i: any) => ({
+        ...i,
+        nome: i.nome_participante,
+        telefone: i.telefone_contato,
+        status_pagamento: i.status_pagamento || "pendente",
+        tipo_inscricao: i.tipo_inscricao || "membro",
+        source: "agenda_inscricao",
+      }));
+    },
+    enabled: !!selectedEventoId,
+  });
+
+  const isLoading = loadingImpacto || loadingAgenda;
+
   const inscricoes = useMemo(() => {
-    if (!rawInscricoes) return [];
-    const sorted = [...rawInscricoes].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+    // Merge both tables, deduplicating by member_id when possible
+    const impacto = rawImpactoInscricoes || [];
+    const agenda = rawAgendaInscricoes || [];
+    // Merge: prefer impacto_inscricoes entries; add agenda entries not already in impacto
+    const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
+    const uniqueAgenda = agenda.filter(
+      (i: any) => !i.member_id || !impactoMemberIds.has(i.member_id)
+    );
+    const all = [...impacto, ...uniqueAgenda];
+    const sorted = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
     if (!searchNome.trim()) return sorted;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return sorted.filter((i) =>
-      i.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+    return sorted.filter((i: any) =>
+      (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawInscricoes, searchNome]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
 
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
@@ -212,13 +251,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("impacto_inscricoes").delete().eq("id", id);
+    mutationFn: async ({ id, source }: { id: string; source?: string }) => {
+      const table = source === "agenda_inscricao" ? "inscricoes_eventos" : "impacto_inscricoes";
+      const { error } = await supabase.from(table as any).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Inscrição removida!");
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes", selectedEventoId] });
     },
   });
 
@@ -475,9 +516,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          onClick={() => deleteMutation.mutate(inscricao.id)}
-                        >
+                           variant="ghost"
+                           onClick={() => deleteMutation.mutate({ id: inscricao.id, source: inscricao.source })}
+                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
