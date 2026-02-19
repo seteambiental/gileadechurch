@@ -72,6 +72,8 @@ const AprovacaoUsuariosTab = () => {
       if (error) throw error;
       return data;
     },
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 
   const { data: ministries = [] } = useQuery({
