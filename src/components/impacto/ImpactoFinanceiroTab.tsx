@@ -105,6 +105,7 @@ const ImpactoFinanceiroTab = () => {
         .from("inscricoes_eventos")
         .select("id, nome_participante, tipo_inscricao, valor_inscricao, forma_pagamento, created_at")
         .eq("evento_id", selectedEventoId)
+        .eq("aprovado", true)
         .order("nome_participante");
       if (error) throw error;
       return (data || []).map((i: any) => ({

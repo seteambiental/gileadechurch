@@ -47,8 +47,8 @@ import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTeste
 import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
 import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
 import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
-
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
+import NovasInscricoesTab from "@/components/impacto/NovasInscricoesTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
@@ -367,7 +367,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-5' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -388,6 +388,10 @@ const MinistryPage = () => {
                   <TabsTrigger value="eventos" className="flex items-center gap-2">
                     <CalendarDays className="w-4 h-4" />
                     <span className="hidden sm:inline">Eventos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="novas-inscricoes" className="flex items-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    <span className="hidden sm:inline">Novas</span>
                   </TabsTrigger>
                   <TabsTrigger value="inscricoes-impacto" className="flex items-center gap-2">
                     <ClipboardList className="w-4 h-4" />
@@ -534,6 +538,9 @@ const MinistryPage = () => {
               <>
                 <TabsContent value="eventos">
                   <ImpactoEventosTab />
+                </TabsContent>
+                <TabsContent value="novas-inscricoes">
+                  <NovasInscricoesTab />
                 </TabsContent>
                 <TabsContent value="inscricoes-impacto">
                   <ImpactoInscricoesTab />

@@ -131,7 +131,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     enabled: !!selectedEventoId,
   });
 
-  // Fetch from inscricoes_eventos (public link inserts)
+  // Fetch from inscricoes_eventos (public link inserts) — only approved ones
   const { data: rawAgendaInscricoes, isLoading: loadingAgenda } = useQuery({
     queryKey: ["agenda-inscricoes", selectedEventoId],
     queryFn: async () => {
@@ -139,7 +139,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       const { data, error } = await supabase
         .from("inscricoes_eventos")
         .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
-        .eq("evento_id", selectedEventoId);
+        .eq("evento_id", selectedEventoId)
+        .eq("aprovado", true);
       if (error) throw error;
       // Normalize fields to match impacto_inscricoes shape
       return (data || []).map((i: any) => ({
