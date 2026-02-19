@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Calendar, Loader2, Music, BookOpen, Star } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface PortalMinisterioTabProps {
@@ -73,7 +73,7 @@ export const PortalMinisterioTab = ({
             *,
             lider:members!kids_escalas_lider_id_fkey (full_name)
           `)
-          .gte("data_culto", new Date().toISOString().split("T")[0])
+          .gte("data_culto", todayDateStr())
           .order("data_culto")
           .limit(5);
         if (error) throw error;

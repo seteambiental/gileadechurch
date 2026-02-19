@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,7 +103,7 @@ export const PortalLideresMinisterio = ({
         .from("ministerio_escalas")
         .select("*")
         .eq("ministry_id", ministryId)
-        .gte("data_culto", new Date().toISOString().split("T")[0])
+        .gte("data_culto", todayDateStr())
         .order("data_culto")
         .limit(5);
       if (error) throw error;

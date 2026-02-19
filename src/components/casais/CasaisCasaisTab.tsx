@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart } from "lucide-react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { includesNormalized } from "@/lib/text-utils";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -167,7 +168,7 @@ export function CasaisCasaisTab() {
               { header: "Esposo", accessor: (r) => r.membro_masculino?.full_name || r.nome_masculino || "-" },
               { header: "Esposa", accessor: (r) => r.membro_feminino?.full_name || r.nome_feminino || "-" },
               { header: "Turma", accessor: (r) => r.turma?.nome || "-" },
-              { header: "Data Casamento", accessor: (r) => r.data_casamento ? format(new Date(r.data_casamento + "T00:00:00"), "dd/MM/yyyy") : r.tempo_casamento || "-" },
+              { header: "Data Casamento", accessor: (r) => r.data_casamento ? format(parseLocalDate(r.data_casamento), "dd/MM/yyyy") : r.tempo_casamento || "-" },
               { header: "Status", accessor: (r) => r.certificado_emitido ? "Concluído" : (r.status || "Ativo") },
             ]}
             filename="casais-inscritos"
@@ -228,7 +229,7 @@ export function CasaisCasaisTab() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       {casal.data_casamento ? 
-                        format(new Date(casal.data_casamento + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR }) : 
+                        format(parseLocalDate(casal.data_casamento), "dd/MM/yyyy", { locale: ptBR }) : 
                         casal.tempo_casamento || "-"
                       }
                     </TableCell>

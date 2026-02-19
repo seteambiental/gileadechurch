@@ -10,6 +10,7 @@ import { Plus, Trash2, Users, DollarSign, Briefcase, Calendar } from "lucide-rea
 import { toast } from "sonner";
 import { MembroFamiliaFormDialog } from "./MembroFamiliaFormDialog";
 import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 
 interface FamiliaDetalhesDialogProps {
   open: boolean;
@@ -72,7 +73,7 @@ export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDe
 
   const calcularIdade = (dataNascimento: string | null) => {
     if (!dataNascimento) return null;
-    return differenceInYears(new Date(), new Date(dataNascimento + "T00:00:00"));
+    return differenceInYears(new Date(), parseLocalDate(dataNascimento));
   };
 
   const formatCurrency = (value: number | null) => {

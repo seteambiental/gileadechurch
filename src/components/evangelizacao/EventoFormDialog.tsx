@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { todayDateStr } from "@/lib/date-utils";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,7 @@ export function EventoFormDialog({ open, onOpenChange, frenteId, evento }: Event
   const form = useForm<FormData>({
     defaultValues: {
       nome: "",
-      data_evento: new Date().toISOString().split("T")[0],
+      data_evento: todayDateStr(),
       local: "",
       descricao: "",
       vidas_alcancadas: 0,
@@ -81,7 +82,7 @@ export function EventoFormDialog({ open, onOpenChange, frenteId, evento }: Event
     } else {
       form.reset({
         nome: "",
-        data_evento: new Date().toISOString().split("T")[0],
+        data_evento: todayDateStr(),
         local: "",
         descricao: "",
         vidas_alcancadas: 0,

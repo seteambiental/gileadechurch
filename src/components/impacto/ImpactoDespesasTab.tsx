@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { formatCurrency } from "@/lib/masks";
 import { Card, CardContent } from "@/components/ui/card";
@@ -59,7 +60,7 @@ const emptyForm: DespesaForm = {
   categoria: "",
   descricao: "",
   valor: "",
-  data_despesa: new Date().toISOString().split("T")[0],
+  data_despesa: todayDateStr(),
 };
 
 interface Props {
@@ -186,7 +187,7 @@ const ImpactoDespesasTab = ({ eventoId }: Props) => {
                     <Badge variant="outline">{d.categoria}</Badge>
                   </TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>
-                  <TableCell>{format(new Date(d.data_despesa), "dd/MM/yyyy")}</TableCell>
+                  <TableCell>{format(parseLocalDate(d.data_despesa), "dd/MM/yyyy")}</TableCell>
                   <TableCell className="text-right font-medium text-destructive">
                     {formatCurrency(d.valor || 0)}
                   </TableCell>

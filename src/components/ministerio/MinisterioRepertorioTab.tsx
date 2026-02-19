@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { 
   ChevronLeft, 
@@ -603,7 +604,7 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
         <div className="space-y-4">
           {escalas.map((escala) => {
             const musicas = musicasByEscala[escala.id] || [];
-            const dataFormatada = format(new Date(escala.data_culto + "T00:00:00"), "dd/MM - EEEE", { locale: ptBR });
+            const dataFormatada = format(parseLocalDate(escala.data_culto), "dd/MM - EEEE", { locale: ptBR });
             
             return (
               <Card key={escala.id} className="bg-card border-border">
@@ -1111,7 +1112,7 @@ export const MinisterioRepertorioTab = ({ ministryId }: MinisterioRepertorioTabP
               <p className="text-sm text-muted-foreground">
                 Compartilhar escala de{" "}
                 <strong>
-                  {format(new Date(escalaToShare.data_culto + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}
+                  {format(parseLocalDate(escalaToShare.data_culto), "dd/MM/yyyy", { locale: ptBR })}
                 </strong>{" "}
                 com os ministérios:
               </p>

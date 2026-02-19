@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { parseLocalDate } from "@/lib/date-utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function AcaoSocialFamiliasTab() {
         if (m.genero === "Masculino") summary[m.familia_id].masculino++;
         if (m.genero === "Feminino") summary[m.familia_id].feminino++;
         if (m.data_nascimento) {
-          const idade = Math.floor((new Date().getTime() - new Date(m.data_nascimento + "T00:00:00").getTime()) / (1000 * 60 * 60 * 24 * 365.25));
+          const idade = Math.floor((new Date().getTime() - parseLocalDate(m.data_nascimento).getTime()) / (1000 * 60 * 60 * 24 * 365.25));
           summary[m.familia_id].idades.push(idade);
         }
       });

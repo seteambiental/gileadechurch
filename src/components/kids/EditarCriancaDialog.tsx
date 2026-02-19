@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { todayDateStr } from "@/lib/date-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -233,7 +234,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
           state: ncData.state,
           cpf: ncData.cpf,
           photo_url: photoUrl,
-          member_since: new Date().toISOString().split("T")[0],
+          member_since: todayDateStr(),
         })
         .select()
         .single();
@@ -246,7 +247,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca }: EditarCrian
         .update({
           tornou_membro: true,
           member_id: novoMembro.id,
-          data_membresia: new Date().toISOString().split("T")[0],
+          data_membresia: todayDateStr(),
         })
         .eq("id", crianca.id);
 

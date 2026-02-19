@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { formatPhone } from "@/lib/masks";
 import { differenceInYears, differenceInMonths } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField } from "@/lib/text-utils";
 import { ClearableSelect } from "@/components/ui/clearable-select";
@@ -28,7 +29,7 @@ interface CasalFormDialogProps {
 
 function calcularTempoCasamento(dataStr: string): string {
   if (!dataStr) return "";
-  const data = new Date(dataStr + "T00:00:00");
+  const data = parseLocalDate(dataStr);
   const hoje = new Date();
   const anos = differenceInYears(hoje, data);
   const meses = differenceInMonths(hoje, data) % 12;

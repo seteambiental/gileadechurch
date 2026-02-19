@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2, Award, Users, UserCheck } from "lucide-react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { CasalFormDialog } from "./CasalFormDialog";
 import { LiderFormDialog } from "./LiderFormDialog";
@@ -125,13 +126,13 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
             {turma.data_inicio && (
               <div>
                 <p className="text-xs text-muted-foreground">Início</p>
-                <p className="font-medium">{format(new Date(turma.data_inicio + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</p>
+                <p className="font-medium">{format(parseLocalDate(turma.data_inicio), "dd/MM/yyyy", { locale: ptBR })}</p>
               </div>
             )}
             {turma.data_fim && (
               <div>
                 <p className="text-xs text-muted-foreground">Término</p>
-                <p className="font-medium">{format(new Date(turma.data_fim + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR })}</p>
+                <p className="font-medium">{format(parseLocalDate(turma.data_fim), "dd/MM/yyyy", { locale: ptBR })}</p>
               </div>
             )}
             {turma.horario && (
@@ -193,7 +194,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
                             {casal.data_casamento ? 
-                              format(new Date(casal.data_casamento + "T00:00:00"), "dd/MM/yyyy", { locale: ptBR }) : 
+                              format(parseLocalDate(casal.data_casamento), "dd/MM/yyyy", { locale: ptBR }) : 
                               casal.tempo_casamento || "-"
                             }
                           </TableCell>

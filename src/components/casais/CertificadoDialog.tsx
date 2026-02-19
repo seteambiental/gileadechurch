@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download, Printer } from "lucide-react";
 import { format } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -48,7 +50,7 @@ export function CertificadoDialog({ open, onOpenChange, casal, turma }: Certific
       // Marcar certificado como emitido
       await supabase
         .from("casais_inscritos")
-        .update({ certificado_emitido: true, data_certificado: new Date().toISOString().split("T")[0] })
+        .update({ certificado_emitido: true, data_certificado: todayDateStr() })
         .eq("id", casal.id);
 
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos"] });
@@ -111,8 +113,8 @@ export function CertificadoDialog({ open, onOpenChange, casal, turma }: Certific
               concluiu com êxito o <strong>Curso de Casais</strong> - {turma.nome}
               {turma.data_inicio && turma.data_fim && (
                 <span className="block mt-1">
-                  realizado de {format(new Date(turma.data_inicio + "T00:00:00"), "dd/MM/yyyy")} a{" "}
-                  {format(new Date(turma.data_fim + "T00:00:00"), "dd/MM/yyyy")}
+                  realizado de {format(parseLocalDate(turma.data_inicio), "dd/MM/yyyy")} a{" "}
+                  {format(parseLocalDate(turma.data_fim), "dd/MM/yyyy")}
                 </span>
               )}
             </p>

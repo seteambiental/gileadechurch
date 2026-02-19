@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -84,7 +85,7 @@ export function ContribuinteFormDialog({
       valor_mensal: "",
       dia_vencimento: "10",
       ativo: true,
-      data_inicio: new Date().toISOString().split("T")[0],
+      data_inicio: todayDateStr(),
       observacoes: "",
     },
   });
@@ -107,7 +108,7 @@ export function ContribuinteFormDialog({
         valor_mensal: "",
         dia_vencimento: "10",
         ativo: true,
-        data_inicio: new Date().toISOString().split("T")[0],
+        data_inicio: todayDateStr(),
         observacoes: "",
       });
     }

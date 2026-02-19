@@ -4,7 +4,7 @@ import { CalendarIcon, Clock, DoorOpen, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface OcupacaoAmbienteDialogProps {
@@ -31,7 +31,7 @@ export const OcupacaoAmbienteDialog = ({ open, onOpenChange, ambiente }: Ocupaca
         .select("*, solicitante:members!solicitante_id(full_name)")
         .eq("ambiente_id", ambiente.id)
         .in("status", ["pendente", "aprovado"])
-        .gte("data_reserva", new Date().toISOString().split("T")[0])
+        .gte("data_reserva", todayDateStr())
         .order("data_reserva", { ascending: true });
       if (error) throw error;
       return data;
@@ -43,7 +43,7 @@ export const OcupacaoAmbienteDialog = ({ open, onOpenChange, ambiente }: Ocupaca
     queryKey: ["ocupacao-agenda", ambiente?.id],
     enabled: !!ambiente?.id && open,
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayDateStr();
       // Direct ambiente_id references
       const { data: direct, error: e1 } = await supabase
         .from("agenda_igreja")

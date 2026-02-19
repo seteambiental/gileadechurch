@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -108,7 +109,7 @@ export function MissoesFechamentoTab() {
         mes_referencia: mesAtual,
         valor: c.valor_mensal,
         pago: true,
-        data_pagamento: new Date().toISOString().split("T")[0],
+        data_pagamento: todayDateStr(),
       })) || [];
 
       if (contribuicoesData.length > 0) {

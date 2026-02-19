@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { todayDateStr } from "@/lib/date-utils";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ export function AjudaFormDialog({ open, onOpenChange }: AjudaFormDialogProps) {
   const form = useForm({
     defaultValues: {
       beneficiario_id: "",
-      data_ajuda: new Date().toISOString().split("T")[0],
+      data_ajuda: todayDateStr(),
       tipo_ajuda: "",
       valor: "",
       quantidade_kilos: "",
@@ -81,7 +82,7 @@ export function AjudaFormDialog({ open, onOpenChange }: AjudaFormDialogProps) {
     if (open) {
       form.reset({
         beneficiario_id: "",
-        data_ajuda: new Date().toISOString().split("T")[0],
+        data_ajuda: todayDateStr(),
         tipo_ajuda: "",
         valor: "",
         quantidade_kilos: "",
