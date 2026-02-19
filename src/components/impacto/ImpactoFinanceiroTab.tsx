@@ -141,11 +141,23 @@ const ImpactoFinanceiroTab = () => {
     enabled: !!selectedEventoId,
   });
 
-  // Merge both sources, deduplicating by id OR by normalized name
-  // (records from inscricoes_eventos mirrored to impacto_inscricoes get a new id,
-  //  so we must also exclude agenda entries whose name already exists in impacto)
+  // If the selected event is an impacto_evento, use ONLY impacto_inscricoes
+  // (agenda inscriptions are already mirrored there when finances are managed).
+  // Only merge agenda inscriptions for pure agenda events (not in impacto_eventos).
+  const isImpactoEvent = useMemo(() => {
+    const impactoIds = new Set((impactoEventos || []).map((e) => e.id));
+    return impactoIds.has(selectedEventoId);
+  }, [impactoEventos, selectedEventoId]);
+
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
+
+    // For impacto events, trust only impacto_inscricoes — no merging needed
+    if (isImpactoEvent) {
+      return [...imp].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+    }
+
+    // For pure agenda events, merge and deduplicate by normalized name
     const agd = rawAgendaInscricoes || [];
     const impIds = new Set(imp.map((i: any) => i.id));
     const impNomes = new Set(
@@ -159,7 +171,7 @@ const ImpactoFinanceiroTab = () => {
       return !impNomes.has(nomeNorm);
     });
     return [...imp, ...uniqueAgd].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  }, [rawImpactoInscricoes, rawAgendaInscricoes]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, isImpactoEvent]);
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 
