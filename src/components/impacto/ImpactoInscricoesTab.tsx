@@ -25,9 +25,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
+import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+
 
 interface ImpactoInscricoesTabProps {
   eventoSelecionado?: string;
@@ -379,6 +381,36 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     printWindow.document.close();
   };
 
+  const getExportColumns = () => [
+    { header: "Ref.", accessor: "referencia", format: (v: any) => v || "—" },
+    { header: "Nome", accessor: "nome" },
+    { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao] || row.tipo_inscricao || "Membro" },
+    { header: "Gênero", accessor: (row: any) => {
+      const g = row.genero || row.member?.genero;
+      if (!g) return "—";
+      return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
+    }},
+    { header: "Telefone", accessor: (row: any) => getPhone(row) },
+    { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
+    { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
+    { header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao != null ? formatCurrency(row.valor_inscricao) : "—" },
+    { header: "Valor Pago", accessor: (row: any) => { const v = getValorPago(row); return v > 0 ? formatCurrency(v) : "—"; }},
+    { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+    { header: "WhatsApp Membro", accessor: (row: any) => row.member?.whatsapp || "—" },
+  ];
+
+  const eventoNome = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "inscricoes";
+
+  const handleExportExcel = () => {
+    if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
+    exportGenericToExcel(inscricoes, getExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
+  };
+
+  const handleExportPDF = () => {
+    if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
+    exportGenericToPDF(inscricoes, getExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pago":
@@ -407,6 +439,18 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
               ))}
             </SelectContent>
           </Select>
+          {selectedEventoId && inscricoes.length > 0 && (
+            <>
+              <Button variant="outline" size="sm" onClick={handleExportExcel}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportPDF}>
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </>
+          )}
           {selectedEventoId && (
             <Button onClick={handleNewInscricao}>
               <Plus className="w-4 h-4 mr-2" />
