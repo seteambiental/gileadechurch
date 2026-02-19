@@ -259,11 +259,37 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       };
 
       if (isEditing) {
-        const { error } = await supabase
-          .from("impacto_inscricoes")
-          .update(payload)
-          .eq("id", inscricao.id);
-        if (error) throw error;
+        const isAgendaSource = inscricao?.source === "agenda_inscricao";
+
+        if (isAgendaSource) {
+          // This inscricao exists only in inscricoes_eventos (public link).
+          // We upsert it into impacto_inscricoes so payment data is persisted properly.
+          const { data: existing } = await supabase
+            .from("impacto_inscricoes")
+            .select("id")
+            .eq("evento_id", eventoId)
+            .eq("nome", finalNome)
+            .maybeSingle();
+
+          if (existing) {
+            const { error } = await supabase
+              .from("impacto_inscricoes")
+              .update(payload)
+              .eq("id", existing.id);
+            if (error) throw error;
+          } else {
+            const { error } = await supabase
+              .from("impacto_inscricoes")
+              .insert({ ...payload, member_id: inscricao.member_id || null });
+            if (error) throw error;
+          }
+        } else {
+          const { error } = await supabase
+            .from("impacto_inscricoes")
+            .update(payload)
+            .eq("id", inscricao.id);
+          if (error) throw error;
+        }
       } else {
         const { error } = await supabase.from("impacto_inscricoes").insert(payload);
         if (error) throw error;
