@@ -159,23 +159,37 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
 
   const isLoading = loadingImpacto || loadingAgenda;
 
+  // If the selected event is an impacto_evento, use ONLY impacto_inscricoes
+  // (agenda inscriptions are already mirrored there). Only merge for pure agenda events.
+  const isImpactoEvent = useMemo(
+    () => (impactoEventos || []).some((e) => e.id === selectedEventoId),
+    [impactoEventos, selectedEventoId]
+  );
+
   const inscricoes = useMemo(() => {
-    // Merge both tables, deduplicating by member_id when possible
     const impacto = rawImpactoInscricoes || [];
-    const agenda = rawAgendaInscricoes || [];
-    // Merge: prefer impacto_inscricoes entries; add agenda entries not already in impacto
-    const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
-    const uniqueAgenda = agenda.filter(
-      (i: any) => !i.member_id || !impactoMemberIds.has(i.member_id)
-    );
-    const all = [...impacto, ...uniqueAgenda];
+    let all: any[];
+
+    if (isImpactoEvent) {
+      // For impacto events, trust only impacto_inscricoes — no merging needed
+      all = [...impacto];
+    } else {
+      // For pure agenda events, merge and deduplicate by member_id
+      const agenda = rawAgendaInscricoes || [];
+      const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
+      const uniqueAgenda = agenda.filter(
+        (i: any) => !i.member_id || !impactoMemberIds.has(i.member_id)
+      );
+      all = [...impacto, ...uniqueAgenda];
+    }
+
     const sorted = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
     if (!searchNome.trim()) return sorted;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return sorted.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, isImpactoEvent, searchNome]);
 
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
