@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
@@ -123,6 +123,20 @@ const ImpactoFinanceiroTab = () => {
     enabled: !!selectedEventoId,
   });
 
+  const { data: despesas = [] } = useQuery({
+    queryKey: ["impacto-despesas", selectedEventoId],
+    queryFn: async () => {
+      if (!selectedEventoId) return [];
+      const { data, error } = await supabase
+        .from("impacto_despesas")
+        .select("valor")
+        .eq("evento_id", selectedEventoId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedEventoId,
+  });
+
   // Merge both sources, deduplicating by id OR by normalized name
   // (records from inscricoes_eventos mirrored to impacto_inscricoes get a new id,
   //  so we must also exclude agenda entries whose name already exists in impacto)
@@ -160,6 +174,8 @@ const ImpactoFinanceiroTab = () => {
   const totalPrevisao = inscricoes?.reduce((sum, i) => sum + (i.valor_inscricao || 0), 0) || 0;
   const totalPago = inscricoes?.reduce((sum, i) => sum + (i.valor_pago || 0), 0) || 0;
   const totalAReceber = Math.max(0, totalPrevisao - totalPago);
+  const totalDespesas = (despesas as any[]).reduce((sum, d) => sum + (d.valor || 0), 0);
+  const saldoEvento = totalPago - totalDespesas;
 
   // Count by status
   const pagos = inscricoes?.filter((i) => i.status_pagamento === "pago").length || 0;
@@ -306,6 +322,34 @@ const ImpactoFinanceiroTab = () => {
                 <div className="text-2xl font-bold text-yellow-600">{formatCurrency(totalAReceber)}</div>
                 <p className="text-xs text-muted-foreground">
                   {pendentes} pendentes
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total de Despesas</CardTitle>
+                <ArrowDownCircle className="w-4 h-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesas)}</div>
+                <p className="text-xs text-muted-foreground">
+                  Soma dos custos do evento
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Saldo do Evento</CardTitle>
+                <Scale className={`w-4 h-4 ${saldoEvento >= 0 ? "text-green-600" : "text-destructive"}`} />
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${saldoEvento >= 0 ? "text-green-600" : "text-destructive"}`}>
+                  {formatCurrency(saldoEvento)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Receitas pagas − Despesas
                 </p>
               </CardContent>
             </Card>
