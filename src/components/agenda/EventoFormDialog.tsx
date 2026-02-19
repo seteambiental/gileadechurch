@@ -540,16 +540,22 @@ export const EventoFormDialog = ({
         ? (ambientes.find(a => a.id === formData.ambiente_id)?.nome || "Igreja Gileade")
         : formData.local || null;
 
-      if (localCheck && !formData.recorrente) {
-        // Only check non-recurring events for conflicts to avoid false positives
-        // from recurring events with no end date (e.g. "Culto de Celebração")
+      // Only check conflicts when a specific named environment is selected (not generic "Igreja Gileade")
+      // to avoid false positives from timezone mismatches and generic location strings
+      const ambienteSelecionado = formData.local_tipo === "na_igreja" && formData.ambiente_id
+        ? ambientes.find(a => a.id === formData.ambiente_id)?.nome
+        : null;
+
+      if (ambienteSelecionado && !formData.recorrente) {
+        // Check conflicts only for specific environments (not generic "Igreja Gileade")
+        // Compare date strings directly (YYYY-MM-DD) to avoid timezone issues
         let conflictQuery = supabase
           .from("agenda_igreja")
           .select("id, titulo")
           .eq("ativo", true)
           .neq("status", "rejeitado")
           .eq("recorrente", false)
-          .eq("local", localCheck)
+          .eq("local", ambienteSelecionado)
           .or(`data_evento.eq.${dataEvento},and(data_evento.lte.${dataEvento},data_fim.gte.${dataEvento})`);
 
         if (evento?.id) {
