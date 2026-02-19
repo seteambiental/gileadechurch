@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,10 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
+import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+
 
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -228,6 +231,29 @@ const ImpactoFinanceiroTab = () => {
     }
   };
 
+  const eventoNomeFinanceiro = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "financeiro";
+
+  const getExportColumnsReceitas = () => [
+    { header: "Nome", accessor: "nome" },
+    { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
+    { header: "Valor Inscrição", accessor: (row: any) => formatCurrency(row.valor_inscricao || 0) },
+    { header: "Valor Pago", accessor: (row: any) => formatCurrency(row.valor_pago || 0) },
+    { header: "Saldo", accessor: (row: any) => formatCurrency(Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0))) },
+    { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
+    { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+    { header: "Referência", accessor: (row: any) => row.referencia || "—" },
+  ];
+
+  const handleExportReceitasExcel = () => {
+    if (!inscricoes.length) return;
+    exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas");
+  };
+
+  const handleExportReceitasPDF = () => {
+    if (!inscricoes.length) return;
+    exportGenericToPDF(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, `Financeiro — Receitas — ${eventoNomeFinanceiro}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -363,14 +389,28 @@ const ImpactoFinanceiroTab = () => {
             </TabsList>
 
             <TabsContent value="receitas" className="space-y-3">
-              <div className="relative max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome..."
-                  value={searchNome}
-                  onChange={(e) => setSearchNome(e.target.value)}
-                  className="pl-9"
-                />
+              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+                <div className="relative max-w-sm w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome..."
+                    value={searchNome}
+                    onChange={(e) => setSearchNome(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {inscricoes.length > 0 && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={handleExportReceitasExcel}>
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Excel
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleExportReceitasPDF}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      PDF
+                    </Button>
+                  </div>
+                )}
               </div>
               {isLoading ? (
                 <div className="text-center py-8">Carregando...</div>
