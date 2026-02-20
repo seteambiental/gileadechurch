@@ -90,9 +90,12 @@ interface AgendaCalendarProps {
       const dateStr = format(date, "yyyy-MM-dd");
       const semanaDoMes = getWeekOfMonth(date, { weekStartsOn: 0 });
 
-      const eventosFiltrados = eventos.filter((evento) => {
+    const eventosFiltrados = eventos.filter((evento) => {
         if (evento.recorrente) {
           if (evento.dia_semana !== diaSemana) return false;
+          // Verificar se a data está dentro do intervalo de início/fim da recorrência
+          if (evento.data_evento && dateStr < evento.data_evento) return false;
+          if (evento.data_fim && dateStr > evento.data_fim) return false;
           if (evento.semana_mes !== null && evento.semana_mes !== undefined && evento.semana_mes > 0) {
             return evento.semana_mes === semanaDoMes;
           }
