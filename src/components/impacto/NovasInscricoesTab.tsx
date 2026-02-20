@@ -56,7 +56,8 @@ const NovasInscricoesTab = () => {
           genero,
           created_at,
           evento_id,
-          evento:agenda_igreja(id, titulo, data_evento, data_fim)
+          member_id,
+          evento:agenda_igreja(id, titulo, data_evento, data_fim, valores_por_tipo)
         `)
         .eq("aprovado", false)
         .order("created_at", { ascending: false });
@@ -67,6 +68,33 @@ const NovasInscricoesTab = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Find the inscription to migrate
+      const inscricao = novasInscricoes.find((i) => i.id === id);
+      if (!inscricao) throw new Error("Inscrição não encontrada");
+
+      // Resolve valor_inscricao from the record or from event's valores_por_tipo
+      let valorInscricao = inscricao.valor_inscricao;
+      if (valorInscricao == null && inscricao.evento?.valores_por_tipo) {
+        const tipo = inscricao.tipo_inscricao || "membro";
+        valorInscricao = (inscricao.evento.valores_por_tipo as Record<string, number>)[tipo] ?? null;
+      }
+
+      // Create a mirror record in impacto_inscricoes so the referência trigger fires
+      const { error: insertError } = await supabase
+        .from("impacto_inscricoes")
+        .insert({
+          evento_id: inscricao.evento_id,
+          nome: inscricao.nome_participante,
+          telefone: inscricao.telefone_contato,
+          tipo_inscricao: inscricao.tipo_inscricao || "membro",
+          genero: inscricao.genero,
+          valor_inscricao: valorInscricao,
+          status_pagamento: "pendente",
+          member_id: inscricao.member_id || null,
+        });
+      if (insertError) throw insertError;
+
+      // Mark the original public record as approved
       const { error } = await supabase
         .from("inscricoes_eventos")
         .update({
@@ -89,6 +117,7 @@ const NovasInscricoesTab = () => {
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes-financeiro"] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     },
     onError: (_, id) => {
@@ -103,6 +132,28 @@ const NovasInscricoesTab = () => {
 
   const approveAllMutation = useMutation({
     mutationFn: async (ids: string[]) => {
+      // For each inscription, create a mirror record in impacto_inscricoes
+      const toApprove = novasInscricoes.filter((i) => ids.includes(i.id));
+
+      for (const inscricao of toApprove) {
+        let valorInscricao = inscricao.valor_inscricao;
+        if (valorInscricao == null && inscricao.evento?.valores_por_tipo) {
+          const tipo = inscricao.tipo_inscricao || "membro";
+          valorInscricao = (inscricao.evento.valores_por_tipo as Record<string, number>)[tipo] ?? null;
+        }
+
+        await supabase.from("impacto_inscricoes").insert({
+          evento_id: inscricao.evento_id,
+          nome: inscricao.nome_participante,
+          telefone: inscricao.telefone_contato,
+          tipo_inscricao: inscricao.tipo_inscricao || "membro",
+          genero: inscricao.genero,
+          valor_inscricao: valorInscricao,
+          status_pagamento: "pendente",
+          member_id: inscricao.member_id || null,
+        });
+      }
+
       const { error } = await supabase
         .from("inscricoes_eventos")
         .update({
@@ -117,6 +168,7 @@ const NovasInscricoesTab = () => {
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes-financeiro"] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     },
     onError: () => toast.error("Erro ao aprovar inscrições."),
