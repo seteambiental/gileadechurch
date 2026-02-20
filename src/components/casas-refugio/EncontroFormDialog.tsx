@@ -124,6 +124,7 @@ export const EncontroFormDialog = ({
   const queryClient = useQueryClient();
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isRotating, setIsRotating] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
@@ -673,6 +674,40 @@ export const EncontroFormDialog = ({
     setRecognitionResult(null);
   };
 
+  const rotatePhoto = async () => {
+    if (!photoPreview) return;
+    setIsRotating(true);
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = photoPreview;
+      });
+
+      const canvas = document.createElement("canvas");
+      // Swap width/height for 90° rotation
+      canvas.width = img.height;
+      canvas.height = img.width;
+      const ctx = canvas.getContext("2d")!;
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(Math.PI / 2);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      setPhotoPreview(dataUrl);
+
+      // Convert to File to update the actual upload
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const rotatedFile = new File([blob], `photo_rotated_${Date.now()}.jpg`, { type: "image/jpeg" });
+      setPhoto(rotatedFile);
+    } finally {
+      setIsRotating(false);
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -775,9 +810,20 @@ export const EncontroFormDialog = ({
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
                     onClick={removePhoto}
-                    disabled={isAnalyzing}
+                    disabled={isAnalyzing || isRotating}
                   >
                     <X className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="absolute bottom-2 right-2 gap-1"
+                    onClick={rotatePhoto}
+                    disabled={isAnalyzing || isRotating}
+                  >
+                    {isRotating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
+                    Girar foto
                   </Button>
                 </div>
               ) : (
