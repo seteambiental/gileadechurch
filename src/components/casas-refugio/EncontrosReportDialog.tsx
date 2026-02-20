@@ -475,13 +475,39 @@ export const EncontrosReportDialog = ({
   ];
 
 
+  // Column key to export column mapping (respects visible columns selection)
+  const columnKeyToExportHeader: Record<string, string> = {
+    casa_nome: "Casa Refúgio",
+    data_encontro: "Data do Encontro",
+    conferido: "Conferido",
+    qtd_lideres: "Líderes",
+    qtd_membros: "Membros",
+    qtd_criancas: "Crianças",
+    qtd_visitantes: "Visitantes",
+    total_presentes: "Total Presentes",
+    ofertas_dinheiro: "Ofertas Dinheiro",
+    ofertas_pix: "Ofertas PIX",
+    ofertas_total: "Ofertas Total",
+    kilos_arrecadados: "Kilos Arrecadados",
+  };
+
+  const filteredExportColumns = exportColumns.filter((col) => {
+    // Always include Status column
+    if (col.header === "Status") return true;
+    // Find matching column key by header
+    const matchingKey = Object.entries(columnKeyToExportHeader).find(
+      ([, header]) => header === col.header
+    )?.[0];
+    return matchingKey ? visibleColumns.has(matchingKey) : true;
+  });
+
   const handleExcelExport = () => {
     const periodLabel = appliedStartDate && appliedEndDate 
       ? `${formatDateBR(appliedStartDate)}-${formatDateBR(appliedEndDate)}` 
       : "todos";
     exportGenericToExcel(
       filteredReportData,
-      exportColumns,
+      filteredExportColumns,
       `relatorio-encontros-${periodLabel}`,
       "Encontros"
     );
@@ -493,7 +519,7 @@ export const EncontrosReportDialog = ({
       : "Todos os períodos";
     exportGenericToPDF(
       filteredReportData,
-      exportColumns,
+      filteredExportColumns,
       `relatorio-encontros`,
       `Relatório de Encontros - Casas Refúgio (${periodLabel})`
     );
