@@ -66,6 +66,7 @@ interface EncontroReport {
   kilos_arrecadados: number;
   is_blank: boolean;
   is_cancelled: boolean;
+  conferido: boolean;
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -121,6 +122,7 @@ export const EncontrosReportDialog = ({
   const allColumns = [
     { key: "casa_nome", label: "Casa Refúgio", default: true },
     { key: "data_encontro", label: "Data", default: true },
+    { key: "conferido", label: "Conferido", default: true },
     { key: "qtd_lideres", label: "Líderes", default: true },
     { key: "qtd_membros", label: "Membros", default: true },
     { key: "qtd_criancas", label: "Crianças", default: true },
@@ -131,6 +133,7 @@ export const EncontrosReportDialog = ({
     { key: "ofertas_total", label: "R$ Total", default: true },
     { key: "kilos_arrecadados", label: "Kilos", default: true },
   ] as const;
+
 
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
     new Set(allColumns.map((c) => c.key))
@@ -308,6 +311,7 @@ export const EncontrosReportDialog = ({
             kilos_arrecadados: Number(existing.kilos_arrecadados || 0),
             is_blank: false,
             is_cancelled: existing.reuniao_realizada === false,
+            conferido: !!(existing as any).conferido,
           });
         } else {
           rows.push({
@@ -325,6 +329,7 @@ export const EncontrosReportDialog = ({
             kilos_arrecadados: 0,
             is_blank: true,
             is_cancelled: false,
+            conferido: false,
           });
         }
       });
@@ -358,6 +363,7 @@ export const EncontrosReportDialog = ({
           kilos_arrecadados: Number(e.kilos_arrecadados || 0),
           is_blank: false,
           is_cancelled: (e as any).reuniao_realizada === false,
+          conferido: !!(e as any).conferido,
         });
       }
     });
@@ -440,6 +446,7 @@ export const EncontrosReportDialog = ({
       format: (value) => formatDateBR(value),
     },
     { header: "Status", accessor: (row) => row.is_blank ? "Pendente" : row.is_cancelled ? "Não realizada" : "Preenchido" },
+    { header: "Conferido", accessor: (row) => row.conferido ? "Sim" : "Não" },
     { header: "Líderes", accessor: "qtd_lideres" },
     { header: "Membros", accessor: "qtd_membros" },
     { header: "Crianças", accessor: "qtd_criancas" },
@@ -466,6 +473,7 @@ export const EncontrosReportDialog = ({
       format: (value) => `${Number(value).toFixed(1)} kg`,
     },
   ];
+
 
   const handleExcelExport = () => {
     const periodLabel = appliedStartDate && appliedEndDate 
@@ -696,7 +704,9 @@ export const EncontrosReportDialog = ({
                   <TableRow>
                     {isColumnVisible("casa_nome") && <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>}
                     {isColumnVisible("data_encontro") && <TableHead className="whitespace-nowrap">Data</TableHead>}
+                    {isColumnVisible("conferido") && <TableHead className="text-center">Conf.</TableHead>}
                     {isColumnVisible("qtd_lideres") && <TableHead className="text-center">Líd.</TableHead>}
+
                     {isColumnVisible("qtd_membros") && <TableHead className="text-center">Memb.</TableHead>}
                     {isColumnVisible("qtd_criancas") && <TableHead className="text-center">Crian.</TableHead>}
                     {isColumnVisible("qtd_visitantes") && <TableHead className="text-center">Visit.</TableHead>}
@@ -722,6 +732,15 @@ export const EncontrosReportDialog = ({
                         </TableCell>
                       )}
                       {isColumnVisible("data_encontro") && <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>}
+                      {isColumnVisible("conferido") && (
+                        <TableCell className="text-center">
+                          {row.is_blank ? "-" : (
+                            <span className={row.conferido ? "text-green-600 font-semibold" : "text-muted-foreground"}>
+                              {row.conferido ? "✓ Sim" : "Não"}
+                            </span>
+                          )}
+                        </TableCell>
+                      )}
                       {isColumnVisible("qtd_lideres") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_lideres}</TableCell>}
                       {isColumnVisible("qtd_membros") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_membros}</TableCell>}
                       {isColumnVisible("qtd_criancas") && <TableCell className="text-center">{row.is_blank ? "-" : row.qtd_criancas}</TableCell>}
@@ -737,6 +756,7 @@ export const EncontrosReportDialog = ({
                   <TableRow className="bg-muted/50 font-semibold">
                     {isColumnVisible("casa_nome") && <TableCell>TOTAL</TableCell>}
                     {isColumnVisible("data_encontro") && <TableCell />}
+                    {isColumnVisible("conferido") && <TableCell />}
                     {isColumnVisible("qtd_lideres") && <TableCell className="text-center">{totals.qtd_lideres}</TableCell>}
                     {isColumnVisible("qtd_membros") && <TableCell className="text-center">{totals.qtd_membros}</TableCell>}
                     {isColumnVisible("qtd_criancas") && <TableCell className="text-center">{totals.qtd_criancas}</TableCell>}
