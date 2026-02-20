@@ -566,6 +566,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                       key={key}
                       checked={selectedExportCols.includes(key)}
                       onCheckedChange={() => toggleExportCol(key)}
+                      onSelect={(e) => e.preventDefault()}
                     >
                       {EXPORT_COLUMN_LABELS[key]}
                     </DropdownMenuCheckboxItem>
