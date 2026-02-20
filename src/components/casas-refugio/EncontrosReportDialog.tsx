@@ -44,6 +44,8 @@ interface CasaRefugioData {
   frequencia: string | null;
   data_inicio_cr: string | null;
   supervisor?: { full_name: string } | null;
+  lider?: { full_name: string } | null;
+  lider_esposa?: { full_name: string } | null;
 }
 
 interface EncontrosReportDialogProps {
@@ -54,6 +56,7 @@ interface EncontrosReportDialogProps {
 interface EncontroReport {
   casa_refugio_id: string;
   casa_nome: string;
+  lideres: string;
   data_encontro: string;
   qtd_lideres: number;
   qtd_membros: number;
@@ -121,9 +124,10 @@ export const EncontrosReportDialog = ({
   // Column visibility
   const allColumns = [
     { key: "casa_nome", label: "Casa Refúgio", default: true },
+    { key: "lideres", label: "Líderes da CR", default: true },
     { key: "data_encontro", label: "Data", default: true },
     { key: "conferido", label: "Conferido", default: true },
-    { key: "qtd_lideres", label: "Líderes", default: true },
+    { key: "qtd_lideres", label: "Qtd. Líderes", default: true },
     { key: "qtd_membros", label: "Membros", default: true },
     { key: "qtd_criancas", label: "Crianças", default: true },
     { key: "qtd_visitantes", label: "Visitantes", default: true },
@@ -170,6 +174,19 @@ export const EncontrosReportDialog = ({
   }, [condominioFilter, supervisorFilter, casaRefugioFilter, appliedStartDate, appliedEndDate]);
 
   // Fetch all casas refugio for filters
+  const getFirstName = (fullName: string | null | undefined): string => {
+    if (!fullName) return "";
+    return fullName.split(" ")[0];
+  };
+
+  const getLideresDisplay = (casa: CasaRefugioData): string => {
+    const names = [
+      getFirstName(casa.lider?.full_name),
+      getFirstName(casa.lider_esposa?.full_name),
+    ].filter(Boolean);
+    return names.join(" e ") || "-";
+  };
+
   const { data: allCasas = [] } = useQuery({
     queryKey: ["casas-refugio-report-filters"],
     queryFn: async () => {
@@ -182,7 +199,9 @@ export const EncontrosReportDialog = ({
           dias,
           frequencia,
           data_inicio_cr,
-          supervisor:members!casas_refugio_supervisor_id_fkey(full_name)
+          supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
+          lider:members!casas_refugio_lider_id_fkey(full_name),
+          lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
         `)
         .order("name");
       if (error) throw error;
@@ -295,6 +314,7 @@ export const EncontrosReportDialog = ({
           rows.push({
             casa_refugio_id: casa.id,
             casa_nome: casa.name,
+            lideres: getLideresDisplay(casa),
             data_encontro: existing.data_encontro,
             qtd_lideres: existing.qtd_lideres || 0,
             qtd_membros: existing.qtd_membros || 0,
@@ -317,6 +337,7 @@ export const EncontrosReportDialog = ({
           rows.push({
             casa_refugio_id: casa.id,
             casa_nome: casa.name,
+            lideres: getLideresDisplay(casa),
             data_encontro: date,
             qtd_lideres: 0,
             qtd_membros: 0,
@@ -350,6 +371,7 @@ export const EncontrosReportDialog = ({
         rows.push({
           casa_refugio_id: e.casa_refugio_id,
           casa_nome: casa.name,
+          lideres: getLideresDisplay(casa),
           data_encontro: e.data_encontro,
           qtd_lideres: e.qtd_lideres || 0,
           qtd_membros: e.qtd_membros || 0,
@@ -440,6 +462,7 @@ export const EncontrosReportDialog = ({
 
   const exportColumns: ExportColumn[] = [
     { header: "Casa Refúgio", accessor: "casa_nome" },
+    { header: "Líderes da CR", accessor: "lideres" },
     { 
       header: "Data do Encontro", 
       accessor: "data_encontro",
@@ -447,7 +470,7 @@ export const EncontrosReportDialog = ({
     },
     { header: "Status", accessor: (row) => row.is_blank ? "Pendente" : row.is_cancelled ? "Não realizada" : "Preenchido" },
     { header: "Conferido", accessor: (row) => row.conferido ? "Sim" : "Não" },
-    { header: "Líderes", accessor: "qtd_lideres" },
+    { header: "Qtd. Líderes", accessor: "qtd_lideres" },
     { header: "Membros", accessor: "qtd_membros" },
     { header: "Crianças", accessor: "qtd_criancas" },
     { header: "Visitantes", accessor: "qtd_visitantes" },
@@ -474,13 +497,13 @@ export const EncontrosReportDialog = ({
     },
   ];
 
-
   // Column key to export column mapping (respects visible columns selection)
   const columnKeyToExportHeader: Record<string, string> = {
     casa_nome: "Casa Refúgio",
+    lideres: "Líderes da CR",
     data_encontro: "Data do Encontro",
     conferido: "Conferido",
-    qtd_lideres: "Líderes",
+    qtd_lideres: "Qtd. Líderes",
     qtd_membros: "Membros",
     qtd_criancas: "Crianças",
     qtd_visitantes: "Visitantes",
@@ -729,10 +752,10 @@ export const EncontrosReportDialog = ({
                 <TableHeader>
                   <TableRow>
                     {isColumnVisible("casa_nome") && <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>}
+                    {isColumnVisible("lideres") && <TableHead className="whitespace-nowrap">Líderes da CR</TableHead>}
                     {isColumnVisible("data_encontro") && <TableHead className="whitespace-nowrap">Data</TableHead>}
                     {isColumnVisible("conferido") && <TableHead className="text-center">Conf.</TableHead>}
                     {isColumnVisible("qtd_lideres") && <TableHead className="text-center">Líd.</TableHead>}
-
                     {isColumnVisible("qtd_membros") && <TableHead className="text-center">Memb.</TableHead>}
                     {isColumnVisible("qtd_criancas") && <TableHead className="text-center">Crian.</TableHead>}
                     {isColumnVisible("qtd_visitantes") && <TableHead className="text-center">Visit.</TableHead>}
@@ -757,6 +780,7 @@ export const EncontrosReportDialog = ({
                           )}
                         </TableCell>
                       )}
+                      {isColumnVisible("lideres") && <TableCell className="whitespace-nowrap text-muted-foreground">{row.lideres}</TableCell>}
                       {isColumnVisible("data_encontro") && <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>}
                       {isColumnVisible("conferido") && (
                         <TableCell className="text-center">
@@ -781,6 +805,7 @@ export const EncontrosReportDialog = ({
                   {/* Totals Row */}
                   <TableRow className="bg-muted/50 font-semibold">
                     {isColumnVisible("casa_nome") && <TableCell>TOTAL</TableCell>}
+                    {isColumnVisible("lideres") && <TableCell />}
                     {isColumnVisible("data_encontro") && <TableCell />}
                     {isColumnVisible("conferido") && <TableCell />}
                     {isColumnVisible("qtd_lideres") && <TableCell className="text-center">{totals.qtd_lideres}</TableCell>}
