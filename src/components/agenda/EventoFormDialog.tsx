@@ -797,65 +797,193 @@ export const EventoFormDialog = ({
               />
             </div>
 
+            {/* Recorrência — logo após a descrição */}
+            {mode !== "compromisso" && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="recorrente"
+                    checked={formData.recorrente}
+                    onCheckedChange={(c) => setFormData({
+                      ...formData,
+                      recorrente: !!c,
+                      ...(!c ? { tipo_recorrencia: "", dia_semana: "", semana_mes: "" } : { tipo_recorrencia: formData.tipo_recorrencia || "semanal" }),
+                    })}
+                  />
+                  <Label htmlFor="recorrente" className="cursor-pointer font-medium">
+                    Evento Recorrente
+                  </Label>
+                </div>
+
+                {formData.recorrente && (
+                  <div className="space-y-3 pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">
+                      {!formData.data_evento && !formData.data_fim
+                        ? "Sem datas: a recorrência será aplicada a todos os períodos passados e futuros."
+                        : !formData.data_fim
+                        ? "Sem data de término: a recorrência começa na data de início e não tem fim."
+                        : "Com início e término: a recorrência será aplicada apenas entre as datas informadas."}
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Label className="text-xs">Tipo</Label>
+                        <Select
+                          value={formData.tipo_recorrencia}
+                          onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="semanal">Semanal</SelectItem>
+                            <SelectItem value="mensal">Mensal</SelectItem>
+                            <SelectItem value="semestral">Semestral</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs">Dia da Semana</Label>
+                        <Select
+                          value={formData.dia_semana}
+                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="0">Domingo</SelectItem>
+                            <SelectItem value="1">Segunda</SelectItem>
+                            <SelectItem value="2">Terça</SelectItem>
+                            <SelectItem value="3">Quarta</SelectItem>
+                            <SelectItem value="4">Quinta</SelectItem>
+                            <SelectItem value="5">Sexta</SelectItem>
+                            <SelectItem value="6">Sábado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {(formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
+                        <div>
+                          <Label className="text-xs">Semana do Mês</Label>
+                          <Select
+                            value={formData.semana_mes}
+                            onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="1">1ª Semana</SelectItem>
+                              <SelectItem value="2">2ª Semana</SelectItem>
+                              <SelectItem value="3">3ª Semana</SelectItem>
+                              <SelectItem value="4">4ª Semana</SelectItem>
+                              <SelectItem value="5">Última Semana</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Datas — opcionais quando recorrente */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Data Início</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
+                <Label>
+                  Data Início
+                  {!formData.recorrente && <span className="text-destructive ml-1">*</span>}
+                  {formData.recorrente && <span className="text-xs text-muted-foreground ml-1">(opcional)</span>}
+                </Label>
+                <div className="flex gap-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal",
+                          !formData.data_evento && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.data_evento 
+                          ? format(parseLocalDate(formData.data_evento), "dd/MM/yyyy", { locale: ptBR }) 
+                          : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.data_evento ? parseLocalDate(formData.data_evento) : undefined}
+                        onSelect={(date) => setFormData({ ...formData, data_evento: date ? format(date, "yyyy-MM-dd") : "" })}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {formData.data_evento && (
                     <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.data_evento && "text-muted-foreground"
-                      )}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => setFormData({ ...formData, data_evento: "" })}
+                      title="Limpar data"
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.data_evento 
-                        ? format(parseLocalDate(formData.data_evento), "dd/MM/yyyy", { locale: ptBR }) 
-                        : "Selecione a data"}
+                      <X className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.data_evento ? parseLocalDate(formData.data_evento) : undefined}
-                      onSelect={(date) => setFormData({ ...formData, data_evento: date ? format(date, "yyyy-MM-dd") : "" })}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+                  )}
+                </div>
               </div>
               <div>
-                <Label>Data Término</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
+                <Label>
+                  Data Término
+                  <span className="text-xs text-muted-foreground ml-1">(opcional)</span>
+                </Label>
+                <div className="flex gap-1">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "flex-1 justify-start text-left font-normal",
+                          !formData.data_fim && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.data_fim 
+                          ? format(parseLocalDate(formData.data_fim), "dd/MM/yyyy", { locale: ptBR }) 
+                          : "Selecione"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={formData.data_fim ? parseLocalDate(formData.data_fim) : undefined}
+                        onSelect={(date) => setFormData({ ...formData, data_fim: date ? format(date, "yyyy-MM-dd") : "" })}
+                        disabled={(date) => formData.data_evento ? date < parseLocalDate(formData.data_evento) : false}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {formData.data_fim && (
                     <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.data_fim && "text-muted-foreground"
-                      )}
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => setFormData({ ...formData, data_fim: "" })}
+                      title="Limpar data"
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.data_fim 
-                        ? format(parseLocalDate(formData.data_fim), "dd/MM/yyyy", { locale: ptBR }) 
-                        : "Selecione a data"}
+                      <X className="h-4 w-4" />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.data_fim ? parseLocalDate(formData.data_fim) : undefined}
-                      onSelect={(date) => setFormData({ ...formData, data_fim: date ? format(date, "yyyy-MM-dd") : "" })}
-                      disabled={(date) => formData.data_evento ? date < parseLocalDate(formData.data_evento) : false}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1039,19 +1167,34 @@ export const EventoFormDialog = ({
                 <div className="space-y-3">
                   <div>
                     <Label>Ambiente</Label>
-                    <Select
-                      value={formData.ambiente_id}
-                      onValueChange={(v) => setFormData({ ...formData, ambiente_id: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o ambiente" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ambientes.map((amb) => (
-                          <SelectItem key={amb.id} value={amb.id}>{amb.nome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-1">
+                      <Select
+                        value={formData.ambiente_id || "none"}
+                        onValueChange={(v) => setFormData({ ...formData, ambiente_id: v === "none" ? "" : v })}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Selecione o ambiente" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhum (Igreja Gileade)</SelectItem>
+                          {ambientes.map((amb) => (
+                            <SelectItem key={amb.id} value={amb.id}>{amb.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {formData.ambiente_id && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0"
+                          onClick={() => setFormData({ ...formData, ambiente_id: "", bloqueio_inicio_data: "", bloqueio_inicio_hora: "", bloqueio_fim_data: "", bloqueio_fim_hora: "" })}
+                          title="Limpar ambiente"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {formData.ambiente_id && (
@@ -1689,8 +1832,8 @@ export const EventoFormDialog = ({
               </div>
             )}
 
-            {/* Recorrência */}
-            {mode === "compromisso" ? (
+            {/* Recorrência — apenas para compromissos (eventos têm o bloco acima) */}
+            {mode === "compromisso" && (
               <div className="p-3 bg-muted/50 rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -1709,7 +1852,7 @@ export const EventoFormDialog = ({
 
                 {formData.recorrente && (
                   <div className="space-y-3 pt-2 border-t border-border/50">
-                    <Label className="font-medium text-sm text-muted-foreground">Evento Recorrente</Label>
+                    <Label className="font-medium text-sm text-muted-foreground">Recorrência</Label>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
                         <Label className="text-xs">Semana</Label>
@@ -1767,89 +1910,6 @@ export const EventoFormDialog = ({
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="recorrente"
-                    checked={formData.recorrente}
-                    onCheckedChange={(c) => setFormData({ ...formData, recorrente: !!c })}
-                  />
-                  <Label htmlFor="recorrente" className="cursor-pointer">Evento Recorrente</Label>
-                </div>
-
-                {formData.recorrente && (
-                  <div className="space-y-3">
-                    {formData.data_fim && (
-                      <p className="text-xs text-muted-foreground">
-                        A recorrência será aplicada entre as datas de início e fim do evento. Selecione apenas o dia da semana.
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {!formData.data_fim && (
-                        <div>
-                          <Label>Tipo de Recorrência</Label>
-                          <Select
-                            value={formData.tipo_recorrencia}
-                            onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="semanal">Semanal</SelectItem>
-                              <SelectItem value="mensal">Mensal</SelectItem>
-                              <SelectItem value="semestral">Semestral</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-
-                      <div>
-                        <Label>Dia da Semana</Label>
-                        <Select
-                          value={formData.dia_semana}
-                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">Domingo</SelectItem>
-                            <SelectItem value="1">Segunda</SelectItem>
-                            <SelectItem value="2">Terça</SelectItem>
-                            <SelectItem value="3">Quarta</SelectItem>
-                            <SelectItem value="4">Quinta</SelectItem>
-                            <SelectItem value="5">Sexta</SelectItem>
-                            <SelectItem value="6">Sábado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {!formData.data_fim && (formData.tipo_recorrencia === "mensal" || formData.tipo_recorrencia === "semestral") && (
-                        <div>
-                          <Label>Semana do Mês</Label>
-                          <Select
-                            value={formData.semana_mes}
-                            onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="1">1ª Semana</SelectItem>
-                              <SelectItem value="2">2ª Semana</SelectItem>
-                              <SelectItem value="3">3ª Semana</SelectItem>
-                              <SelectItem value="4">4ª Semana</SelectItem>
-                              <SelectItem value="5">Última Semana</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
