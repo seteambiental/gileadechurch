@@ -70,6 +70,7 @@ const CasaRefugioDetalhes = () => {
   const [encontrosPage, setEncontrosPage] = useState(1);
   const ENCONTROS_PER_PAGE = 5;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [photoRotation, setPhotoRotation] = useState(0);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
   const [analiseEncontro, setAnaliseEncontro] = useState<{
     id: string;
@@ -914,14 +915,27 @@ const CasaRefugioDetalhes = () => {
       </main>
 
       {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+      <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); setPhotoRotation(0); }}>
         <DialogContent className="max-w-3xl p-2">
           {selectedPhoto && (
-            <img
-              src={selectedPhoto}
-              alt="Foto do encontro"
-              className="w-full h-auto rounded-lg"
-            />
+            <div className="flex flex-col items-center gap-3">
+              <div className="overflow-hidden flex items-center justify-center" style={{ minHeight: 200 }}>
+                <img
+                  src={selectedPhoto}
+                  alt="Foto do encontro"
+                  className="max-w-full max-h-[70vh] rounded-lg transition-transform duration-300"
+                  style={{ transform: `rotate(${photoRotation}deg)` }}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPhotoRotation((r) => (r + 90) % 360)}
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Girar foto
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
