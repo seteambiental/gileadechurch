@@ -85,34 +85,36 @@ const ImpactoFinanceiroTab = () => {
     );
   }, [impactoEventos, agendaEventos]);
 
-  const { data: rawImpactoInscricoes } = useQuery({
+  const { data: rawImpactoInscricoes, isLoading } = useQuery({
     queryKey: ["impacto-inscricoes-financeiro", selectedEventoId],
     queryFn: async () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia")
+        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia")
         .eq("evento_id", selectedEventoId)
         .order("nome");
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!selectedEventoId,
   });
 
-  const { data: rawAgendaInscricoes, isLoading } = useQuery({
-    queryKey: ["agenda-inscricoes-financeiro", selectedEventoId],
+  // Inscrições pendentes de aprovação (não espelhadas ainda em impacto_inscricoes)
+  const { data: rawAgendaPendentes } = useQuery({
+    queryKey: ["agenda-inscricoes-pendentes-financeiro", selectedEventoId],
     queryFn: async () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("id, nome_participante, tipo_inscricao, valor_inscricao, forma_pagamento, created_at")
+        .select("id, member_id, nome_participante, tipo_inscricao, valor_inscricao, forma_pagamento, created_at")
         .eq("evento_id", selectedEventoId)
-        .eq("aprovado", true)
+        .eq("aprovado", false)
         .order("nome_participante");
       if (error) throw error;
       return (data || []).map((i: any) => ({
         id: i.id,
+        member_id: i.member_id || null,
         nome: i.nome_participante,
         tipo_inscricao: i.tipo_inscricao || "membro",
         valor_inscricao: i.valor_inscricao || null,
@@ -143,9 +145,9 @@ const ImpactoFinanceiroTab = () => {
 
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
-    const agd = rawAgendaInscricoes || [];
+    const pendentes = rawAgendaPendentes || [];
 
-    // Build lookup sets from impacto_inscricoes (the authoritative source)
+    // Nomes já existentes em impacto_inscricoes (fonte autorizada pós-aprovação)
     const impMemberIds = new Set(imp.map((i: any) => i.member_id).filter(Boolean));
     const impNomes = new Set(
       imp.map((i: any) =>
@@ -153,17 +155,17 @@ const ImpactoFinanceiroTab = () => {
       ).filter(Boolean)
     );
 
-    // Exclude agenda records that already have a counterpart in impacto_inscricoes
-    // Match by member_id (reliable) OR by normalized name (for records without member_id)
-    const uniqueAgd = agd.filter((i: any) => {
+    // Incluir apenas pendentes que ainda não foram migrados para impacto_inscricoes
+    const uniquePendentes = pendentes.filter((i: any) => {
       if (i.member_id && impMemberIds.has(i.member_id)) return false;
       const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
       if (nomeNorm && impNomes.has(nomeNorm)) return false;
       return true;
     });
 
-    return [...imp, ...uniqueAgd].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  }, [rawImpactoInscricoes, rawAgendaInscricoes]);
+    return [...imp, ...uniquePendentes].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+  }, [rawImpactoInscricoes, rawAgendaPendentes]);
+
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 

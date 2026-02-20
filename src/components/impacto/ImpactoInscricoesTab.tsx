@@ -187,7 +187,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     enabled: !!selectedEventoId,
   });
 
-  // Fetch from inscricoes_eventos (public link inserts) — only approved ones
+  // Fetch from inscricoes_eventos — apenas as NÃO aprovadas (pendentes de aprovação)
+  // Aprovadas já foram espelhadas em impacto_inscricoes pelo fluxo de aprovação
   const { data: rawAgendaInscricoes, isLoading: loadingAgenda } = useQuery({
     queryKey: ["agenda-inscricoes", selectedEventoId],
     queryFn: async () => {
@@ -196,13 +197,11 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
         .from("inscricoes_eventos")
         .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
         .eq("evento_id", selectedEventoId)
-        .eq("aprovado", true);
+        .eq("aprovado", false);
       if (error) throw error;
-      // Normalize fields to match impacto_inscricoes shape
-      // IMPORTANT: explicitly preserve member_id so deduplication works correctly
       return (data || []).map((i: any) => ({
         ...i,
-        member_id: i.member_id, // explicit — Supabase join alias 'member' must not shadow this
+        member_id: i.member_id,
         nome: i.nome_participante,
         telefone: i.telefone_contato,
         status_pagamento: i.status_pagamento || "pendente",
@@ -212,6 +211,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     },
     enabled: !!selectedEventoId,
   });
+
 
   // Fetch selected event details for valores_por_tipo
   const selectedEventoDetalhes = useMemo(() => {
