@@ -797,8 +797,8 @@ export const EventoFormDialog = ({
               />
             </div>
 
-            {/* Recorrência — logo após a descrição */}
-            {mode !== "compromisso" && (
+            {/* Recorrência — apenas para COMPROMISSOS, logo após a descrição */}
+            {mode === "compromisso" && (
               <div className="p-3 bg-muted/50 rounded-lg space-y-3">
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -811,7 +811,7 @@ export const EventoFormDialog = ({
                     })}
                   />
                   <Label htmlFor="recorrente" className="cursor-pointer font-medium">
-                    Evento Recorrente
+                    Compromisso Recorrente
                   </Label>
                 </div>
 
@@ -1832,89 +1832,6 @@ export const EventoFormDialog = ({
               </div>
             )}
 
-            {/* Recorrência — apenas para compromissos (eventos têm o bloco acima) */}
-            {mode === "compromisso" && (
-              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="compromisso_unico"
-                    checked={!formData.recorrente}
-                    onCheckedChange={(c) => setFormData({ 
-                      ...formData, 
-                      recorrente: !c,
-                      ...(c ? { tipo_recorrencia: "", dia_semana: "", semana_mes: "" } : {}),
-                    })}
-                  />
-                  <Label htmlFor="compromisso_unico" className="cursor-pointer font-medium">
-                    Compromisso Único
-                  </Label>
-                </div>
-
-                {formData.recorrente && (
-                  <div className="space-y-3 pt-2 border-t border-border/50">
-                    <Label className="font-medium text-sm text-muted-foreground">Recorrência</Label>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div>
-                        <Label className="text-xs">Semana</Label>
-                        <Select
-                          value={formData.semana_mes}
-                          onValueChange={(v) => setFormData({ ...formData, semana_mes: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">Todos</SelectItem>
-                            <SelectItem value="1">Primeiro</SelectItem>
-                            <SelectItem value="2">Segundo</SelectItem>
-                            <SelectItem value="3">Terceiro</SelectItem>
-                            <SelectItem value="4">Quarto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Dia</Label>
-                        <Select
-                          value={formData.dia_semana}
-                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1">Segunda</SelectItem>
-                            <SelectItem value="2">Terça</SelectItem>
-                            <SelectItem value="3">Quarta</SelectItem>
-                            <SelectItem value="4">Quinta</SelectItem>
-                            <SelectItem value="5">Sexta</SelectItem>
-                            <SelectItem value="6">Sábado</SelectItem>
-                            <SelectItem value="0">Domingo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Frequência</Label>
-                        <Select
-                          value={formData.tipo_recorrencia}
-                          onValueChange={(v) => setFormData({ ...formData, tipo_recorrencia: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="semanal">Da Semana</SelectItem>
-                            <SelectItem value="mensal">Do Mês</SelectItem>
-                            <SelectItem value="anual">Do Ano</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className="flex justify-between pt-4 border-t">
               {evento && (
