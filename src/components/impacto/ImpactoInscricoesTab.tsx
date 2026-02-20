@@ -25,10 +25,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 interface ImpactoInscricoesTabProps {
@@ -53,6 +61,51 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe (apoio/serviço)",
 };
 
+// All available export column keys
+const ALL_EXPORT_COLUMN_KEYS = [
+  "referencia",
+  "nome",
+  "tipo",
+  "genero",
+  "telefone",
+  "local",
+  "forma_pagamento",
+  "valor_inscricao",
+  "valor_pago",
+  "a_pagar",
+  "status",
+  "whatsapp",
+] as const;
+
+type ExportColumnKey = typeof ALL_EXPORT_COLUMN_KEYS[number];
+
+const EXPORT_COLUMN_LABELS: Record<ExportColumnKey, string> = {
+  referencia: "Ref.",
+  nome: "Nome",
+  tipo: "Tipo",
+  genero: "Gênero",
+  telefone: "Telefone",
+  local: "Casa Refúgio / Condomínio",
+  forma_pagamento: "Forma Pagamento",
+  valor_inscricao: "Valor Inscrição",
+  valor_pago: "Valor Pago",
+  a_pagar: "A Pagar",
+  status: "Status",
+  whatsapp: "WhatsApp",
+};
+
+const DEFAULT_EXPORT_COLUMNS: ExportColumnKey[] = [
+  "referencia",
+  "nome",
+  "tipo",
+  "telefone",
+  "local",
+  "valor_inscricao",
+  "valor_pago",
+  "a_pagar",
+  "status",
+];
+
 const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) => {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
@@ -60,6 +113,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
+  const [selectedExportCols, setSelectedExportCols] = useState<ExportColumnKey[]>(DEFAULT_EXPORT_COLUMNS);
 
   // Fetch impacto_eventos (unified dropdown)
   const { data: impactoEventos = [] } = useQuery({
@@ -157,6 +211,17 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     enabled: !!selectedEventoId,
   });
 
+  // Fetch selected event details for valores_por_tipo
+  const selectedEventoDetalhes = useMemo(() => {
+    if (!selectedEventoId) return null;
+    // Try agenda first
+    const agenda = agendaEventos?.find((e) => e.id === selectedEventoId);
+    if (agenda) return agenda;
+    // Try impacto
+    const impacto = impactoEventos?.find((e: any) => e.id === selectedEventoId);
+    return impacto || null;
+  }, [selectedEventoId, agendaEventos, impactoEventos]);
+
   const isLoading = loadingImpacto || loadingAgenda;
 
   const inscricoes = useMemo(() => {
@@ -172,7 +237,6 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     );
 
     // Exclude agenda records that already have a counterpart in impacto_inscricoes
-    // Match by member_id (reliable) OR by normalized name (for records without member_id)
     const uniqueAgenda = agenda.filter((i: any) => {
       if (i.member_id && impactoMemberIds.has(i.member_id)) return false;
       const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -264,6 +328,23 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       return pagamentos.reduce((sum: number, p: any) => sum + (parseFloat(p.valor) || 0), 0);
     }
     return parseFloat(inscricao.valor_pago) || 0;
+  };
+
+  // Calculate "A Pagar" = valor_inscricao - valorPago
+  const getValorAPagar = (inscricao: any): number => {
+    const valorInscricao = parseFloat(inscricao.valor_inscricao) || 0;
+    const valorPago = getValorPago(inscricao);
+    const diff = valorInscricao - valorPago;
+    return diff > 0 ? diff : 0;
+  };
+
+  // Get valor_inscricao from event's valores_por_tipo based on tipo_inscricao
+  const getValorInscricaoEvento = (inscricao: any): number | null => {
+    if (inscricao.valor_inscricao != null) return parseFloat(inscricao.valor_inscricao);
+    const valores = selectedEventoDetalhes?.valores_por_tipo as Record<string, number> | null;
+    if (!valores) return null;
+    const tipo = inscricao.tipo_inscricao || "membro";
+    return valores[tipo] ?? null;
   };
 
   const deleteMutation = useMutation({
@@ -393,42 +474,58 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     printWindow.document.close();
   };
 
-  const getExportColumns = () => [
-    { header: "Ref.", accessor: "referencia", format: (v: any) => v || "—" },
-    { header: "Nome", accessor: "nome" },
-    { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao] || row.tipo_inscricao || "Membro" },
-    { header: "Gênero", accessor: (row: any) => {
-      const g = row.genero || row.member?.genero;
-      if (!g) return "—";
-      return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
-    }},
-    { header: "Telefone", accessor: (row: any) => getPhone(row) },
-    { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
-    { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
-    { header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao != null ? formatCurrency(row.valor_inscricao) : "—" },
-    { header: "Valor Pago", accessor: (row: any) => { const v = getValorPago(row); return v > 0 ? formatCurrency(v) : "—"; }},
-    { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
-    { header: "WhatsApp Membro", accessor: (row: any) => row.member?.whatsapp || "—" },
-  ];
+  const buildExportColumns = () => {
+    const allCols: Record<ExportColumnKey, any> = {
+      referencia: { header: "Ref.", accessor: "referencia", format: (v: any) => v || "—" },
+      nome: { header: "Nome", accessor: "nome" },
+      tipo: { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao] || row.tipo_inscricao || "Membro" },
+      genero: { header: "Gênero", accessor: (row: any) => {
+        const g = row.genero || row.member?.genero;
+        if (!g) return "—";
+        return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
+      }},
+      telefone: { header: "Telefone", accessor: (row: any) => getPhone(row) },
+      local: { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
+      forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
+      valor_inscricao: { header: "Valor Inscrição", accessor: (row: any) => {
+        const v = getValorInscricaoEvento(row);
+        return v != null ? formatCurrency(v) : "—";
+      }},
+      valor_pago: { header: "Valor Pago", accessor: (row: any) => { const v = getValorPago(row); return v > 0 ? formatCurrency(v) : "—"; }},
+      a_pagar: { header: "A Pagar", accessor: (row: any) => {
+        const v = getValorAPagar(row);
+        return v > 0 ? formatCurrency(v) : "—";
+      }},
+      status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+      whatsapp: { header: "WhatsApp", accessor: (row: any) => row.member?.whatsapp || "—" },
+    };
+    return selectedExportCols.map((key) => allCols[key]);
+  };
 
   const eventoNome = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "inscricoes";
 
   const handleExportExcel = () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToExcel(inscricoes, getExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
+    exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
   };
 
   const handleExportPDF = () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToPDF(inscricoes, getExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`);
+    exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`);
+  };
+
+  const toggleExportCol = (key: ExportColumnKey) => {
+    setSelectedExportCols((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pago":
-        return <Badge className="bg-green-500">Pago</Badge>;
+        return <Badge className="bg-green-600 text-white">Pago</Badge>;
       case "parcial":
-        return <Badge className="bg-yellow-500">Parcial</Badge>;
+        return <Badge className="bg-yellow-600 text-white">Parcial</Badge>;
       default:
         return <Badge variant="secondary">Pendente</Badge>;
     }
@@ -453,6 +550,28 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
           </Select>
           {selectedEventoId && inscricoes.length > 0 && (
             <>
+              {/* Column selector for export */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Columns className="w-4 h-4 mr-2" />
+                    Colunas Relatório
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-popover">
+                  <DropdownMenuLabel>Selecionar colunas</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {ALL_EXPORT_COLUMN_KEYS.map((key) => (
+                    <DropdownMenuCheckboxItem
+                      key={key}
+                      checked={selectedExportCols.includes(key)}
+                      onCheckedChange={() => toggleExportCol(key)}
+                    >
+                      {EXPORT_COLUMN_LABELS[key]}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button variant="outline" size="sm" onClick={handleExportExcel}>
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                 Excel
@@ -530,7 +649,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                 <TableHead>Tipo</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Casa Refúgio / Condomínio</TableHead>
-                <TableHead>Pagamento</TableHead>
+                <TableHead>A Pagar</TableHead>
                 <TableHead>Valor Pago</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-20"></TableHead>
@@ -539,6 +658,10 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
             <TableBody>
               {inscricoes.map((inscricao) => {
                 const valorPago = getValorPago(inscricao);
+                const valorInscricao = getValorInscricaoEvento(inscricao);
+                const aPagar = valorInscricao != null
+                  ? Math.max(0, valorInscricao - valorPago)
+                  : null;
                 return (
                   <TableRow key={inscricao.id}>
                     <TableCell>
@@ -554,9 +677,11 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                     </TableCell>
                     <TableCell>{getPhone(inscricao)}</TableCell>
                     <TableCell>{getLocationLabel(inscricao)}</TableCell>
-                    <TableCell className="text-sm">
-                      {inscricao.forma_pagamento
-                        ? FORMAS_PAGAMENTO_LABELS[inscricao.forma_pagamento] || inscricao.forma_pagamento
+                    <TableCell className="text-sm font-medium">
+                      {aPagar != null
+                        ? aPagar > 0
+                        ? <span className="text-destructive">{formatCurrency(aPagar)}</span>
+                          : <span className="text-primary">Quitado</span>
                         : "—"}
                     </TableCell>
                     <TableCell className="text-sm">
