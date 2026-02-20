@@ -194,13 +194,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", true);
       if (error) throw error;
       // Normalize fields to match impacto_inscricoes shape
+      // IMPORTANT: explicitly preserve member_id so deduplication works correctly
       return (data || []).map((i: any) => ({
         ...i,
+        member_id: i.member_id, // explicit — Supabase join alias 'member' must not shadow this
         nome: i.nome_participante,
         telefone: i.telefone_contato,
         status_pagamento: i.status_pagamento || "pendente",
