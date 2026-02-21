@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -622,12 +622,12 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] w-[calc(100vw-1.5rem)]">
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] w-[calc(100vw-1.5rem)] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{member ? "Editar Membro" : "Novo Membro"}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-2 sm:pr-4">
+        <div className="overflow-y-auto overflow-x-hidden max-h-[calc(90vh-120px)] pr-2 sm:pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
               {/* Photo */}
@@ -1298,7 +1298,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
               </div>
             </form>
           </Form>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
