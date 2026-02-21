@@ -358,6 +358,14 @@ html, body {
   [role="dialog"] {
     max-width: calc(100vw - 1.5rem) !important;
     width: calc(100vw - 1.5rem) !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+  [role="dialog"] input,
+  [role="dialog"] select,
+  [role="dialog"] textarea {
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 }
 

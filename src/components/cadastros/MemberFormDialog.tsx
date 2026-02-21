@@ -622,12 +622,12 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh]">
+      <DialogContent className="bg-card border-border max-w-2xl max-h-[90vh] w-[calc(100vw-1.5rem)]">
         <DialogHeader>
           <DialogTitle>{member ? "Editar Membro" : "Novo Membro"}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] pr-4">
+        <ScrollArea className="max-h-[calc(90vh-120px)] pr-2 sm:pr-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
               {/* Photo */}
