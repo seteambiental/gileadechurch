@@ -404,10 +404,10 @@ const Index = () => {
               currentCarouselIndex === contadorSlideIndex ? "opacity-100 z-[2]" : "opacity-0"
             }`}
           >
-            <div className="absolute inset-0 bg-secondary flex flex-col items-center justify-center">
+            <div className="absolute inset-0 bg-accent flex flex-col items-center justify-center">
               {/* Faixa preta */}
               <div className="w-full bg-black/90 py-6 sm:py-10 flex flex-col items-center gap-2 sm:gap-4 shadow-lg">
-                <span className="text-secondary font-heading font-extrabold text-lg sm:text-2xl md:text-3xl tracking-widest uppercase">
+                <span className="text-accent font-heading font-extrabold text-lg sm:text-2xl md:text-3xl tracking-widest uppercase">
                   Rumo aos 1.000 Cadastros
                 </span>
                 <div className="flex items-baseline gap-3 sm:gap-6">
@@ -421,7 +421,7 @@ const Index = () => {
                 {/* Barra de progresso */}
                 <div className="w-4/5 max-w-lg bg-white/10 rounded-full h-5 sm:h-7 overflow-hidden mt-2">
                   <div
-                    className="h-full bg-secondary rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                    className="h-full bg-accent rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
                     style={{ width: `${Math.min(((totalMembros ?? 0) / 1000) * 100, 100)}%` }}
                   >
                     {(totalMembros ?? 0) >= 30 && (
