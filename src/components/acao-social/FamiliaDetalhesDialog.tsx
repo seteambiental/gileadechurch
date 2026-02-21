@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Users, DollarSign, Briefcase, Calendar } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { MembroFamiliaFormDialog } from "./MembroFamiliaFormDialog";
 import { differenceInYears } from "date-fns";
@@ -21,6 +22,7 @@ interface FamiliaDetalhesDialogProps {
 export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDetalhesDialogProps) {
   const [membroDialogOpen, setMembroDialogOpen] = useState(false);
   const [selectedMembro, setSelectedMembro] = useState<any>(null);
+  const [deleteMembroId, setDeleteMembroId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: membros, isLoading } = useQuery({
@@ -263,9 +265,7 @@ export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDe
                               variant="ghost"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (confirm("Remover este membro?")) {
-                                  deleteMutation.mutate(membro.id);
-                                }
+                                setDeleteMembroId(membro.id);
                               }}
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />
@@ -287,6 +287,11 @@ export function FamiliaDetalhesDialog({ open, onOpenChange, familia }: FamiliaDe
           familiaId={familia?.id}
           membro={selectedMembro}
           onSuccess={updateRendaTotal}
+        />
+        <ConfirmDialog
+          open={!!deleteMembroId}
+          onOpenChange={(open) => !open && setDeleteMembroId(null)}
+          onConfirm={() => { if (deleteMembroId) { deleteMutation.mutate(deleteMembroId); setDeleteMembroId(null); } }}
         />
       </DialogContent>
     </Dialog>

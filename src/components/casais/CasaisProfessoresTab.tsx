@@ -33,6 +33,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Plus, Pencil, Trash2, Loader2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { includesNormalized } from "@/lib/text-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const DIAS_SEMANA = [
   "Segunda-feira",
@@ -67,6 +68,7 @@ export function CasaisProfessoresTab() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProfessorForm>(emptyForm);
+  const [deleteProfId, setDeleteProfId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: professores = [], isLoading } = useQuery({
@@ -252,11 +254,7 @@ export function CasaisProfessoresTab() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          if (confirm("Remover este professor?")) {
-                            deleteMutation.mutate(prof.id);
-                          }
-                        }}
+                        onClick={() => setDeleteProfId(prof.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -371,6 +369,11 @@ export function CasaisProfessoresTab() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteProfId}
+        onOpenChange={(open) => !open && setDeleteProfId(null)}
+        onConfirm={() => { if (deleteProfId) { deleteMutation.mutate(deleteProfId); setDeleteProfId(null); } }}
+      />
     </div>
   );
 }

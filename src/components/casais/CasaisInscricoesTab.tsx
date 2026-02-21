@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -65,15 +66,18 @@ export function CasaisInscricoesTab() {
     },
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja remover esta inscrição?")) return;
-    const { error } = await supabase.from("casais_inscritos").delete().eq("id", id);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("casais_inscritos").delete().eq("id", deleteId);
     if (error) {
       toast({ title: "Erro ao remover inscrição", variant: "destructive" });
     } else {
       toast({ title: "Inscrição removida" });
       queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
     }
+    setDeleteId(null);
   };
 
   const handleApprove = async () => {
@@ -201,7 +205,7 @@ export function CasaisInscricoesTab() {
                             <DropdownMenuItem onClick={() => { setEditingId(insc.id); setIsFormOpen(true); }}>
                               <Pencil className="w-4 h-4 mr-2" />Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(insc.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => setDeleteId(insc.id)} className="text-destructive">
                               <Trash2 className="w-4 h-4 mr-2" />Remover
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -252,6 +256,11 @@ export function CasaisInscricoesTab() {
           </div>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={handleDelete}
+      />
     </Card>
   );
 }

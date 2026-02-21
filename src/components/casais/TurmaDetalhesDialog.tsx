@@ -26,6 +26,7 @@ import { ptBR } from "date-fns/locale";
 import { CasalFormDialog } from "./CasalFormDialog";
 import { LiderFormDialog } from "./LiderFormDialog";
 import { CertificadoDialog } from "./CertificadoDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface TurmaDetalhesDialogProps {
   open: boolean;
@@ -79,8 +80,9 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
     enabled: !!turma?.id,
   });
 
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; type: "casal" | "lider" } | null>(null);
+
   const handleDeleteCasal = async (id: string) => {
-    if (!confirm("Deseja remover este casal da turma?")) return;
     const { error } = await supabase.from("casais_inscritos").delete().eq("id", id);
     if (error) {
       toast({ title: "Erro ao remover casal", variant: "destructive" });
@@ -92,7 +94,6 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
   };
 
   const handleDeleteLider = async (id: string) => {
-    if (!confirm("Deseja remover este líder?")) return;
     const { error } = await supabase.from("casais_lideres").delete().eq("id", id);
     if (error) {
       toast({ title: "Erro ao remover líder", variant: "destructive" });
@@ -100,6 +101,16 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
       toast({ title: "Líder removido" });
       queryClient.invalidateQueries({ queryKey: ["casais_lideres"] });
     }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    if (deleteTarget.type === "casal") {
+      await handleDeleteCasal(deleteTarget.id);
+    } else {
+      await handleDeleteLider(deleteTarget.id);
+    }
+    setDeleteTarget(null);
   };
 
   const handleEmitirCertificado = (casal: any) => {
@@ -218,7 +229,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleDeleteCasal(casal.id)}
+                                onClick={() => setDeleteTarget({ id: casal.id, type: "casal" })}
                                 className="text-destructive"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -266,7 +277,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteLider(lider.id)}
+                              onClick={() => setDeleteTarget({ id: lider.id, type: "lider" })}
                               className="text-destructive"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -300,6 +311,11 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
         onOpenChange={setIsCertificadoOpen}
         casal={selectedCasal}
         turma={turma}
+      />
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -78,16 +79,18 @@ export function CasaisMateriaisTab() {
     },
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja excluir este material?")) return;
-    
-    const { error } = await supabase.from("casais_materiais").delete().eq("id", id);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("casais_materiais").delete().eq("id", deleteId);
     if (error) {
       toast({ title: "Erro ao excluir material", variant: "destructive" });
     } else {
       toast({ title: "Material excluído" });
       queryClient.invalidateQueries({ queryKey: ["casais_materiais"] });
     }
+    setDeleteId(null);
   };
 
   const filteredMateriais = materiais?.filter((m) =>
@@ -182,7 +185,7 @@ export function CasaisMateriaisTab() {
                               <Pencil className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(material.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => setDeleteId(material.id)} className="text-destructive">
                               <Trash2 className="w-4 h-4 mr-2" />
                               Excluir
                             </DropdownMenuItem>
@@ -203,6 +206,11 @@ export function CasaisMateriaisTab() {
         onOpenChange={setIsFormOpen}
         material={selectedMaterial}
         turmas={turmas || []}
+      />
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={handleDelete}
       />
     </Card>
   );
