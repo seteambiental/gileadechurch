@@ -9,7 +9,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield, Heart, Plus, Trash2 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -71,7 +71,7 @@ const Auth = () => {
   const [preCheckEstadoCivil, setPreCheckEstadoCivil] = useState<"solteiro" | "casado" | "viuvo" | "divorciado" | "uniao_estavel" | "">("");
   const [preCheckGenero, setPreCheckGenero] = useState<"masculino" | "feminino" | "">("");
   const [existingMemberEmail, setExistingMemberEmail] = useState<string | null>(null);
-  const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = acesso
+  const [step, setStep] = useState(1); // Steps: 1 = dados pessoais, 2 = endereço, 3 = família, 4 = confirmação
   
   // Tipo de cadastro: membro ou visitante
   const [tipocadastro, setTipoCadastro] = useState<"membro" | "visitante" | null>(null);
@@ -80,6 +80,32 @@ const Auth = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedTermsVisitante, setAcceptedTermsVisitante] = useState(false);
   const [naoPretendeServir, setNaoPretendeServir] = useState(false);
+  
+  // Família: cônjuge e filhos
+  interface DependenteData {
+    nome_completo: string;
+    cpf: string;
+    data_nascimento: string;
+    genero: string;
+    dateInputValue: string;
+  }
+  const [filhosAuth, setFilhosAuth] = useState<DependenteData[]>([]);
+  const [conjugeAuth, setConjugeAuth] = useState<DependenteData | null>(null);
+  
+  const formatDateInputAuth = (value: string): string => {
+    const numbers = value.replace(/\D/g, "");
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 4) return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+    return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+  };
+  
+  const convertToISODateAuth = (dateStr: string): string | null => {
+    const parts = dateStr.split("/");
+    if (parts.length !== 3 || parts[2].length !== 4) return null;
+    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    if (isNaN(d.getTime())) return null;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
   
   // Responsável para menores de 12 anos
   const [responsavelId, setResponsavelId] = useState<string | null>(null);
@@ -532,7 +558,7 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateSignupStep(3)) return;
+    if (!validateSignupStep(4)) return;
 
     // Segurança extra: nunca permitir finalizar cadastro de menor sem responsável
     if (signupData.birth_date && needsResponsible(signupData.birth_date) && !responsavelId) {
@@ -595,6 +621,20 @@ const Auth = () => {
         ministerios_interesse: signupData.ministerio_ids || [],
         nao_pretende_servir: naoPretendeServir,
         estado_civil: preCheckEstadoCivil || null,
+        filhos: filhosAuth.map((f) => ({
+          nome_completo: f.nome_completo,
+          cpf: f.cpf,
+          data_nascimento: f.data_nascimento || null,
+          genero: f.genero || null,
+          tipo: "filho" as const,
+        })),
+        conjuge: conjugeAuth && conjugeAuth.nome_completo ? {
+          nome_completo: conjugeAuth.nome_completo,
+          cpf: conjugeAuth.cpf,
+          data_nascimento: conjugeAuth.data_nascimento || null,
+          genero: conjugeAuth.genero || null,
+          tipo: "conjuge" as const,
+        } : null,
       };
 
       const { data: created, error: requestError } = await supabase.functions.invoke(
@@ -656,7 +696,7 @@ const Auth = () => {
     e?.preventDefault();
     e?.stopPropagation();
     if (validateSignupStep(step)) {
-      setStep(step + 1);
+      setStep(Math.min(step + 1, 4));
       // Scroll to top when changing steps
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -1419,10 +1459,10 @@ const Auth = () => {
 
           {/* Step indicator */}
           <div className="flex items-center justify-center gap-2 pt-2">
-            {[1, 2, 3].map((s) => (
+            {[1, 2, 3, 4].map((s) => (
               <div
                 key={s}
-                className={`flex items-center ${s < 3 ? "flex-1" : ""}`}
+                className={`flex items-center ${s < 4 ? "flex-1" : ""}`}
               >
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
@@ -1433,7 +1473,7 @@ const Auth = () => {
                 >
                   {s}
                 </div>
-                {s < 3 && (
+                {s < 4 && (
                   <div
                     className={`flex-1 h-1 mx-2 rounded transition-colors ${
                       s < step ? "bg-secondary" : "bg-muted"
@@ -1444,9 +1484,10 @@ const Auth = () => {
             ))}
           </div>
           <div className="flex justify-between text-xs text-muted-foreground px-4">
-            <span>Dados Pessoais</span>
+            <span>Pessoais</span>
             <span>Endereço</span>
-            <span>Acesso</span>
+            <span>Família</span>
+            <span>Confirmar</span>
           </div>
         </CardHeader>
 
@@ -1660,8 +1701,184 @@ const Auth = () => {
                 </div>
               )}
 
-              {/* Step 3: Confirmation */}
+              {/* Step 3: Família */}
               {step === 3 && (
+                <div className="space-y-4">
+                  {/* Cônjuge */}
+                  <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-secondary" />
+                      <Label className="text-base font-semibold">Adicionar Esposo(a)</Label>
+                    </div>
+
+                    {conjugeAuth ? (
+                      <div className="p-3 border rounded-lg bg-background space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Esposo(a)</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setConjugeAuth(null)}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Nome Completo *</Label>
+                          <Input
+                            placeholder="Nome completo do esposo(a)"
+                            value={conjugeAuth.nome_completo}
+                            onChange={(e) => setConjugeAuth({ ...conjugeAuth, nome_completo: e.target.value })}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">CPF *</Label>
+                            <Input
+                              placeholder="000.000.000-00"
+                              value={conjugeAuth.cpf}
+                              inputMode="numeric"
+                              maxLength={14}
+                              onChange={(e) => setConjugeAuth({ ...conjugeAuth, cpf: formatCPF(e.target.value) })}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Gênero *</Label>
+                            <Select value={conjugeAuth.genero} onValueChange={(val) => setConjugeAuth({ ...conjugeAuth, genero: val })}>
+                              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="masculino">Masculino</SelectItem>
+                                <SelectItem value="feminino">Feminino</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Data de Nascimento *</Label>
+                          <Input
+                            placeholder="DD/MM/AAAA"
+                            value={conjugeAuth.dateInputValue}
+                            inputMode="numeric"
+                            maxLength={10}
+                            onChange={(e) => {
+                              const formatted = formatDateInputAuth(e.target.value);
+                              let dataNasc = "";
+                              if (formatted.length === 10) {
+                                dataNasc = convertToISODateAuth(formatted) || "";
+                              }
+                              setConjugeAuth({ ...conjugeAuth, dateInputValue: formatted, data_nascimento: dataNasc });
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setConjugeAuth({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" })}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Adicionar Esposo(a)
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Filhos */}
+                  <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Baby className="w-5 h-5 text-secondary" />
+                      <Label className="text-base font-semibold">Adicionar Filhos</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">(que moram no mesmo endereço)</p>
+
+                    {filhosAuth.map((filho, index) => (
+                      <div key={index} className="p-3 border rounded-lg bg-background space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Filho(a) {index + 1}</span>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => setFilhosAuth((prev) => prev.filter((_, i) => i !== index))}>
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Nome Completo *</Label>
+                          <Input
+                            placeholder="Nome completo do filho(a)"
+                            value={filho.nome_completo}
+                            onChange={(e) => {
+                              const updated = [...filhosAuth];
+                              updated[index].nome_completo = e.target.value;
+                              setFilhosAuth(updated);
+                            }}
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Label className="text-sm">CPF *</Label>
+                            <Input
+                              placeholder="000.000.000-00"
+                              value={filho.cpf}
+                              inputMode="numeric"
+                              maxLength={14}
+                              onChange={(e) => {
+                                const updated = [...filhosAuth];
+                                updated[index].cpf = formatCPF(e.target.value);
+                                setFilhosAuth(updated);
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm">Gênero *</Label>
+                            <Select
+                              value={filho.genero}
+                              onValueChange={(val) => {
+                                const updated = [...filhosAuth];
+                                updated[index].genero = val;
+                                setFilhosAuth(updated);
+                              }}
+                            >
+                              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="masculino">Masculino</SelectItem>
+                                <SelectItem value="feminino">Feminino</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Data de Nascimento *</Label>
+                          <Input
+                            placeholder="DD/MM/AAAA"
+                            value={filho.dateInputValue}
+                            inputMode="numeric"
+                            maxLength={10}
+                            onChange={(e) => {
+                              const formatted = formatDateInputAuth(e.target.value);
+                              const updated = [...filhosAuth];
+                              updated[index].dateInputValue = formatted;
+                              if (formatted.length === 10) {
+                                updated[index].data_nascimento = convertToISODateAuth(formatted) || "";
+                              } else {
+                                updated[index].data_nascimento = "";
+                              }
+                              setFilhosAuth(updated);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setFilhosAuth((prev) => [...prev, { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" }])}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      {filhosAuth.length === 0 ? "Adicionar Filho(a)" : "Adicionar Mais um Filho(a)"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 4: Confirmação */}
+              {step === 4 && (
                 <div className="space-y-6">
                   <div className="p-4 bg-muted/50 rounded-lg border border-border">
                     <h3 className="font-semibold mb-3">Confirme seus dados</h3>
@@ -1673,65 +1890,13 @@ const Auth = () => {
                       <p><strong>Endereço:</strong> {signupData.address}, {signupData.number}{signupData.complement ? ` - ${signupData.complement}` : ""}</p>
                       <p><strong>Bairro:</strong> {signupData.neighborhood}</p>
                       <p><strong>Cidade/Estado:</strong> {signupData.city}/{signupData.state}</p>
+                      {conjugeAuth && conjugeAuth.nome_completo && (
+                        <p><strong>Cônjuge:</strong> {conjugeAuth.nome_completo}</p>
+                      )}
+                      {filhosAuth.length > 0 && (
+                        <p><strong>Filhos:</strong> {filhosAuth.map(f => f.nome_completo).join(", ")}</p>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Seção de Ministérios - ENTRE o resumo e os termos */}
-                  <div className="p-4 bg-muted/50 rounded-lg border border-border space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Church className="w-5 h-5 text-secondary" />
-                      <h3 className="font-semibold">Gostaria de servir em algum ministério?</h3>
-                    </div>
-
-                    <div className="flex items-center space-x-3">
-                      <Checkbox
-                        id="nao-pretende-servir"
-                        checked={naoPretendeServir}
-                        onCheckedChange={(checked) => {
-                          setNaoPretendeServir(checked === true);
-                          if (checked) {
-                            setSignupData({ ...signupData, ministerio_ids: [] });
-                          }
-                        }}
-                      />
-                      <Label htmlFor="nao-pretende-servir" className="text-sm font-normal cursor-pointer">
-                        Ainda não pretendo servir
-                      </Label>
-                    </div>
-
-                    {!naoPretendeServir && (
-                      <div className="space-y-2">
-                        <Label className="text-sm text-muted-foreground">
-                          Selecione os ministérios de seu interesse:
-                        </Label>
-                        <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
-                          <div className="space-y-2">
-                            {ministries.map((ministry) => (
-                              <div key={ministry.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`ministry-auth-${ministry.id}`}
-                                  checked={signupData.ministerio_ids?.includes(ministry.id) || false}
-                                  onCheckedChange={(checked) => {
-                                    const currentIds = signupData.ministerio_ids || [];
-                                    if (checked) {
-                                      setSignupData({ ...signupData, ministerio_ids: [...currentIds, ministry.id] });
-                                    } else {
-                                      setSignupData({ ...signupData, ministerio_ids: currentIds.filter((id) => id !== ministry.id) });
-                                    }
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`ministry-auth-${ministry.id}`}
-                                  className="text-sm font-normal cursor-pointer"
-                                >
-                                  {ministry.name}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </div>
-                    )}
                   </div>
 
                   <TermsCheckbox
@@ -1773,7 +1938,7 @@ const Auth = () => {
                   </Button>
                 )}
 
-                {step < 3 ? (
+                {step < 4 ? (
                   <Button type="button" variant="secondary" onClick={(e) => nextStep(e)}>
                     Próximo
                     <ChevronRight className="w-4 h-4 ml-2" />
