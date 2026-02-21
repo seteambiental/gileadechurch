@@ -56,6 +56,7 @@ interface EncontrosReportDialogProps {
 interface EncontroReport {
   casa_refugio_id: string;
   casa_nome: string;
+  condominio: string;
   lideres: string;
   data_encontro: string;
   qtd_lideres: number;
@@ -124,6 +125,7 @@ export const EncontrosReportDialog = ({
   // Column visibility
   const allColumns = [
     { key: "casa_nome", label: "Casa Refúgio", default: true },
+    { key: "condominio", label: "Condomínio", default: true },
     { key: "lideres", label: "Líderes da CR", default: true },
     { key: "data_encontro", label: "Data", default: true },
     { key: "conferido", label: "Conferido", default: true },
@@ -331,6 +333,7 @@ export const EncontrosReportDialog = ({
           rows.push({
             casa_refugio_id: casa.id,
             casa_nome: casa.name,
+            condominio: casa.condominio || "-",
             lideres: getLideresDisplay(casa),
             data_encontro: existing.data_encontro,
             qtd_lideres: existing.qtd_lideres || 0,
@@ -354,6 +357,7 @@ export const EncontrosReportDialog = ({
           rows.push({
             casa_refugio_id: casa.id,
             casa_nome: casa.name,
+            condominio: casa.condominio || "-",
             lideres: getLideresDisplay(casa),
             data_encontro: date,
             qtd_lideres: 0,
@@ -381,6 +385,7 @@ export const EncontrosReportDialog = ({
       rows.push({
         casa_refugio_id: e.casa_refugio_id,
         casa_nome: casa.name,
+        condominio: casa.condominio || "-",
         lideres: getLideresDisplay(casa),
         data_encontro: e.data_encontro,
         qtd_lideres: e.qtd_lideres || 0,
@@ -471,6 +476,7 @@ export const EncontrosReportDialog = ({
 
   const exportColumns: ExportColumn[] = [
     { header: "Casa Refúgio", accessor: "casa_nome" },
+    { header: "Condomínio", accessor: "condominio" },
     { header: "Líderes da CR", accessor: "lideres" },
     { 
       header: "Data do Encontro", 
@@ -509,6 +515,7 @@ export const EncontrosReportDialog = ({
   // Column key to export column mapping (respects visible columns selection)
   const columnKeyToExportHeader: Record<string, string> = {
     casa_nome: "Casa Refúgio",
+    condominio: "Condomínio",
     lideres: "Líderes da CR",
     data_encontro: "Data do Encontro",
     conferido: "Conferido",
@@ -761,6 +768,7 @@ export const EncontrosReportDialog = ({
                 <TableHeader>
                   <TableRow>
                     {isColumnVisible("casa_nome") && <TableHead className="whitespace-nowrap">Casa Refúgio</TableHead>}
+                    {isColumnVisible("condominio") && <TableHead className="whitespace-nowrap">Condomínio</TableHead>}
                     {isColumnVisible("lideres") && <TableHead className="whitespace-nowrap">Líderes da CR</TableHead>}
                     {isColumnVisible("data_encontro") && <TableHead className="whitespace-nowrap">Data</TableHead>}
                     {isColumnVisible("conferido") && <TableHead className="text-center">Conf.</TableHead>}
@@ -789,6 +797,7 @@ export const EncontrosReportDialog = ({
                           )}
                         </TableCell>
                       )}
+                      {isColumnVisible("condominio") && <TableCell className="whitespace-nowrap text-muted-foreground">{row.condominio}</TableCell>}
                       {isColumnVisible("lideres") && <TableCell className="whitespace-nowrap text-muted-foreground">{row.lideres}</TableCell>}
                       {isColumnVisible("data_encontro") && <TableCell className="whitespace-nowrap">{formatDateBR(row.data_encontro)}</TableCell>}
                       {isColumnVisible("conferido") && (
@@ -814,6 +823,7 @@ export const EncontrosReportDialog = ({
                   {/* Totals Row */}
                   <TableRow className="bg-muted/50 font-semibold">
                     {isColumnVisible("casa_nome") && <TableCell>TOTAL</TableCell>}
+                    {isColumnVisible("condominio") && <TableCell />}
                     {isColumnVisible("lideres") && <TableCell />}
                     {isColumnVisible("data_encontro") && <TableCell />}
                     {isColumnVisible("conferido") && <TableCell />}
