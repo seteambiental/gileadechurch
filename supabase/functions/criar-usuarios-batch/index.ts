@@ -13,12 +13,42 @@ interface MemberData {
   whatsapp: string | null;
 }
 
+function generateSecurePassword(length = 14): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lower = "abcdefghjkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const symbols = "!@#$%";
+  const all = upper + lower + digits + symbols;
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  const pick = (set: string, b: number) => set[b % set.length];
+  const pwdChars: string[] = [pick(upper, bytes[0]), pick(lower, bytes[1]), pick(digits, bytes[2]), pick(symbols, bytes[3])];
+  for (let i = pwdChars.length; i < length; i++) pwdChars.push(pick(all, bytes[i]));
+  for (let i = pwdChars.length - 1; i > 0; i--) { const j = bytes[i] % (i + 1); [pwdChars[i], pwdChars[j]] = [pwdChars[j], pwdChars[i]]; }
+  return pwdChars.join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Auth check
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const authClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: authHeader } } });
+    const { data: claims, error: authErr } = await authClient.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (authErr || !claims?.claims) {
+      return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const { data: hasAccess, error: accessErr } = await authClient.rpc('has_full_access');
+    if (accessErr || !hasAccess) {
+      return new Response(JSON.stringify({ error: 'Proibido' }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -81,9 +111,8 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Gerar senha padrão: Cpf@ + 6 primeiros dígitos do CPF ou 123456
-        const cpfDigits = member.cpf ? member.cpf.replace(/\D/g, "") : "";
-        const defaultPassword = `Cpf@${cpfDigits.length >= 6 ? cpfDigits.substring(0, 6) : "123456"}`;
+        // Gerar senha segura criptograficamente
+        const defaultPassword = generateSecurePassword(14);
 
         // Criar novo usuário
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
