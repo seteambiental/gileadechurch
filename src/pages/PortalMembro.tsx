@@ -11,6 +11,7 @@ import {
   Home,
   User,
   Send,
+  HandHelping,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +24,7 @@ import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 import { PortalCandidaturaTab } from "@/components/portal/PortalCandidaturaTab";
 import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
+import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 
 const PortalMembro = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -119,7 +121,10 @@ const PortalMembro = () => {
     });
   });
 
-  // Sempre adicionar candidatura
+  // Aba de candidatura de serviço (Recepção/Estacionamento)
+  availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
+
+  // Sempre adicionar candidatura a ministérios
   availableTabs.push({ id: "candidatura", label: "Quero Servir", icon: Send });
 
   return (
@@ -216,6 +221,10 @@ const PortalMembro = () => {
               </TabsContent>
             );
           })}
+
+          <TabsContent value="servico">
+            <PortalCandidaturaServicoTab memberId={memberProfile.id} />
+          </TabsContent>
 
           <TabsContent value="candidatura">
             <PortalCandidaturaTab memberId={memberProfile.id} />
