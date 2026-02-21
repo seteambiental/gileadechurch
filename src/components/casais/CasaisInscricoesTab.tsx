@@ -14,18 +14,22 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList, Eye } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList, CheckCircle } from "lucide-react";
 import { includesNormalized } from "@/lib/text-utils";
 import { useToast } from "@/hooks/use-toast";
 import { InscricaoCompletaFormDialog } from "./InscricaoCompletaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
-import { formatDateBR } from "@/lib/masks";
 
 export function CasaisInscricoesTab() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [turmaFilter, setTurmaFilter] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [approvalTurmaId, setApprovalTurmaId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,9 +46,9 @@ export function CasaisInscricoesTab() {
   });
 
   const { data: inscricoes, isLoading } = useQuery({
-    queryKey: ["casais_inscricoes_completas", turmaFilter],
+    queryKey: ["casais_inscricoes_pendentes"],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from("casais_inscritos")
         .select(`
           *,
@@ -53,13 +57,9 @@ export function CasaisInscricoesTab() {
           membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, whatsapp, email),
           casa_refugio:casas_refugio!casais_inscritos_casa_refugio_id_fkey(name)
         `)
+        .or("status.eq.pendente,status.is.null")
         .order("created_at", { ascending: false });
 
-      if (turmaFilter !== "all") {
-        query = query.eq("turma_id", turmaFilter);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -72,7 +72,28 @@ export function CasaisInscricoesTab() {
       toast({ title: "Erro ao remover inscrição", variant: "destructive" });
     } else {
       toast({ title: "Inscrição removida" });
-      queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_completas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!approvingId || !approvalTurmaId) {
+      toast({ title: "Selecione a turma para aprovar", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from("casais_inscritos")
+      .update({ status: "aprovado", turma_id: approvalTurmaId })
+      .eq("id", approvingId);
+    if (error) {
+      toast({ title: "Erro ao aprovar inscrição", variant: "destructive" });
+    } else {
+      toast({ title: "Inscrição aprovada! Casal movido para a aba Casais." });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
+      setApprovingId(null);
+      setApprovalTurmaId("");
     }
   };
 
@@ -100,37 +121,25 @@ export function CasaisInscricoesTab() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-heading flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
-            Inscrições Completas
+            Inscrições Pendentes
           </CardTitle>
-          <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }} disabled={turmasAtivas.length === 0}>
+          <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
             Nova Inscrição
           </Button>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <SearchInput placeholder="Buscar por nome..." value={searchTerm} onChange={setSearchTerm} className="flex-1" />
-          <Select value={turmaFilter} onValueChange={setTurmaFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filtrar por turma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as turmas</SelectItem>
-              {turmas?.filter((t) => !!t?.id).map((t) => (
-                <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <ExportButton
             data={filteredInscricoes || []}
             columns={[
               { header: "Esposo", accessor: (r) => r.membro_masculino?.full_name || r.nome_masculino || "-" },
               { header: "Esposa", accessor: (r) => r.membro_feminino?.full_name || r.nome_feminino || "-" },
-              { header: "Turma", accessor: (r) => r.turma?.nome || "-" },
               { header: "Modalidade", accessor: (r) => modalidadeLabel(r.modalidade_casamento) },
               { header: "Congrega", accessor: (r) => r.congrega_gileade ? "Sim" : "Não" },
             ]}
-            filename="inscricoes-casais"
-            title="Inscrições Casais"
+            filename="inscricoes-pendentes-casais"
+            title="Inscrições Pendentes"
             sheetName="Inscrições"
           />
         </div>
@@ -139,7 +148,7 @@ export function CasaisInscricoesTab() {
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
         ) : filteredInscricoes?.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Nenhuma inscrição encontrada</div>
+          <div className="text-center py-8 text-muted-foreground">Nenhuma inscrição pendente</div>
         ) : (
           <div className="rounded-md border border-border overflow-hidden">
             <Table>
@@ -147,9 +156,9 @@ export function CasaisInscricoesTab() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Nome Completo do Esposo</TableHead>
                   <TableHead>Nome Completo da Esposa</TableHead>
-                  <TableHead className="hidden md:table-cell">Turma</TableHead>
                   <TableHead className="hidden md:table-cell">Modalidade</TableHead>
                   <TableHead className="hidden lg:table-cell">Congrega</TableHead>
+                  <TableHead className="hidden md:table-cell">Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -164,29 +173,40 @@ export function CasaisInscricoesTab() {
                       <p className="font-medium">{insc.membro_feminino?.full_name || insc.nome_feminino || "-"}</p>
                       <p className="text-xs text-muted-foreground">{insc.whatsapp_feminino || insc.membro_feminino?.whatsapp || ""}</p>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline">{insc.turma?.nome || "-"}</Badge>
-                    </TableCell>
                     <TableCell className="hidden md:table-cell">{modalidadeLabel(insc.modalidade_casamento)}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <Badge variant={insc.congrega_gileade ? "default" : "secondary"}>
                         {insc.congrega_gileade ? "Sim" : "Não"}
                       </Badge>
                     </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Badge variant="outline" className="text-amber-600 border-amber-600">Pendente</Badge>
+                    </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setEditingId(insc.id); setIsFormOpen(true); }}>
-                            <Pencil className="w-4 h-4 mr-2" />Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(insc.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />Remover
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => { setApprovingId(insc.id); setApprovalTurmaId(""); }}
+                        >
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                          Aprovar
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="w-4 h-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { setEditingId(insc.id); setIsFormOpen(true); }}>
+                              <Pencil className="w-4 h-4 mr-2" />Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(insc.id)} className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -202,6 +222,36 @@ export function CasaisInscricoesTab() {
         editingId={editingId}
         turmas={turmasAtivas}
       />
+
+      {/* Dialog de Aprovação com seleção de turma */}
+      <Dialog open={!!approvingId} onOpenChange={(open) => { if (!open) { setApprovingId(null); setApprovalTurmaId(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aprovar Inscrição</DialogTitle>
+            <DialogDescription>Selecione a turma em que este casal irá participar.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Turma *</Label>
+              <Select value={approvalTurmaId} onValueChange={setApprovalTurmaId}>
+                <SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger>
+                <SelectContent>
+                  {turmasAtivas.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setApprovingId(null); setApprovalTurmaId(""); }}>Cancelar</Button>
+              <Button onClick={handleApprove} disabled={!approvalTurmaId} className="bg-green-600 hover:bg-green-700">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Confirmar Aprovação
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

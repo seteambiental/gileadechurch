@@ -70,6 +70,7 @@ export function CasaisCasaisTab() {
           membro_masculino:members!casais_inscritos_membro_masculino_id_fkey(full_name, whatsapp),
           membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, whatsapp)
         `)
+        .eq("status", "aprovado")
         .order("created_at", { ascending: false });
 
       if (turmaFilter !== "all") {
