@@ -6,13 +6,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+type Filho = {
+  nome_completo: string;
+  cpf: string;
+  data_nascimento?: string | null;
+  genero?: string | null;
+};
+
 type Body = {
   full_name: string;
   email?: string | null;
   whatsapp?: string | null;
   genero?: string | null;
   estado_civil?: string | null;
-  birth_date?: string | null; // YYYY-MM-DD
+  birth_date?: string | null;
   cep?: string | null;
   address?: string | null;
   number?: string | null;
@@ -20,11 +27,12 @@ type Body = {
   neighborhood?: string | null;
   city?: string | null;
   state?: string | null;
-  cpf: string; // only digits
+  cpf: string;
   photo_url?: string | null;
   ministerios_interesse?: string[] | null;
   nao_pretende_servir?: boolean | null;
-  responsavel_id?: string | null; // UUID do membro responsável (para menores de 12 anos)
+  responsavel_id?: string | null;
+  filhos?: Filho[] | null;
 };
 
 serve(async (req) => {
@@ -73,6 +81,62 @@ serve(async (req) => {
       });
     }
 
+    // Verificar CPFs dos filhos contra membros existentes e solicitações pendentes
+    const filhos = body.filhos || [];
+    for (const filho of filhos) {
+      const filhoCpf = (filho.cpf ?? "").replace(/\D/g, "");
+      if (filhoCpf.length !== 11) continue;
+
+      // Check against existing members
+      const { data: memberMatch } = await supabaseAdmin
+        .from("members")
+        .select("id, full_name")
+        .eq("cpf", filhoCpf)
+        .limit(1);
+
+      if (memberMatch && memberMatch.length > 0) {
+        return new Response(JSON.stringify({ 
+          error: `O filho(a) "${filho.nome_completo}" já está cadastrado como membro (${memberMatch[0].full_name}).` 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check against existing pending member requests
+      const { data: requestMatch } = await supabaseAdmin
+        .from("member_requests")
+        .select("id, full_name")
+        .eq("cpf", filhoCpf)
+        .eq("status", "pendente")
+        .limit(1);
+
+      if (requestMatch && requestMatch.length > 0) {
+        return new Response(JSON.stringify({ 
+          error: `O filho(a) "${filho.nome_completo}" já possui uma solicitação pendente (${requestMatch[0].full_name}).` 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Check against children already registered in other requests
+      const { data: filhoMatch } = await supabaseAdmin
+        .from("member_request_filhos")
+        .select("id, nome_completo")
+        .eq("cpf", filhoCpf)
+        .limit(1);
+
+      if (filhoMatch && filhoMatch.length > 0) {
+        return new Response(JSON.stringify({ 
+          error: `O filho(a) com CPF informado já foi cadastrado anteriormente por outro responsável (${filhoMatch[0].nome_completo}). Não é possível cadastrar o mesmo filho(a) duas vezes.` 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const payload = {
       full_name: fullName,
       email: body.email ?? null,
@@ -102,6 +166,26 @@ serve(async (req) => {
       .single();
 
     if (error) throw error;
+
+    // Save children if any
+    if (filhos.length > 0) {
+      const filhosPayload = filhos.map((f) => ({
+        member_request_id: data.id,
+        nome_completo: f.nome_completo.trim(),
+        cpf: (f.cpf ?? "").replace(/\D/g, ""),
+        data_nascimento: f.data_nascimento ?? null,
+        genero: f.genero ?? null,
+      }));
+
+      const { error: filhosError } = await supabaseAdmin
+        .from("member_request_filhos")
+        .insert(filhosPayload);
+
+      if (filhosError) {
+        console.error("Error saving filhos:", filhosError);
+        // Don't fail the whole request, the parent is already saved
+      }
+    }
 
     return new Response(JSON.stringify({ success: true, id: data.id }), {
       status: 200,
