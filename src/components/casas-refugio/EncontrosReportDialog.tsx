@@ -281,13 +281,30 @@ export const EncontrosReportDialog = ({
   });
 
   const reportData: EncontroReport[] = useMemo(() => {
-    // Build a map of existing encontros by casa_id + data_esperada (or data_encontro as fallback)
-    const existingMap = new Map<string, typeof encontros[0]>();
+    // Build maps of existing encontros indexed by both data_esperada and data_encontro
+    // This ensures we find the match regardless of whether the actual date differs from expected
+    const byExpectedDate = new Map<string, typeof encontros[0]>();
+    const byActualDate = new Map<string, typeof encontros[0]>();
+    const usedEncontroIds = new Set<string>();
+
     encontros.forEach((e) => {
       const expectedDate = (e as any).data_esperada || e.data_encontro;
-      const key = `${e.casa_refugio_id}_${expectedDate}`;
-      existingMap.set(key, e);
+      const keyExpected = `${e.casa_refugio_id}_${expectedDate}`;
+      const keyActual = `${e.casa_refugio_id}_${e.data_encontro}`;
+      // For duplicates, last one wins (query is ordered ASC, so latest created_at wins)
+      byExpectedDate.set(keyExpected, e);
+      byActualDate.set(keyActual, e);
     });
+
+    const findEncontro = (casaId: string, expectedDate: string) => {
+      // First try by data_esperada match
+      const byExpected = byExpectedDate.get(`${casaId}_${expectedDate}`);
+      if (byExpected && !usedEncontroIds.has(byExpected.id)) return byExpected;
+      // Fallback: try by data_encontro match (when actual date matches expected slot)
+      const byActual = byActualDate.get(`${casaId}_${expectedDate}`);
+      if (byActual && !usedEncontroIds.has(byActual.id)) return byActual;
+      return null;
+    };
 
     const rows: EncontroReport[] = [];
 
@@ -307,8 +324,8 @@ export const EncontrosReportDialog = ({
       const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber);
 
       expectedDates.forEach((date) => {
-        const key = `${casa.id}_${date}`;
-        const existing = existingMap.get(key);
+        const existing = findEncontro(casa.id, date);
+        if (existing) usedEncontroIds.add(existing.id);
 
         if (existing) {
           rows.push({
@@ -356,38 +373,30 @@ export const EncontrosReportDialog = ({
       });
     });
 
-    // Also add encontros whose data_esperada doesn't match any expected date
-    // (manually created or from before data_esperada tracking)
-    const addedKeys = new Set(rows.map((r) => `${r.casa_refugio_id}_${r.data_encontro}`));
+    // Also add encontros that weren't matched to any expected date slot
     encontros.forEach((e) => {
-      const expectedDate = (e as any).data_esperada || e.data_encontro;
+      if (usedEncontroIds.has(e.id)) return;
       const casa = casasMap.get(e.casa_refugio_id);
       if (!casa) return;
-      // Check if this encontro was already included via expected date matching
-      const alreadyIncluded = rows.some(
-        (r) => r.casa_refugio_id === e.casa_refugio_id && r.data_encontro === e.data_encontro
-      );
-      if (!alreadyIncluded) {
-        rows.push({
-          casa_refugio_id: e.casa_refugio_id,
-          casa_nome: casa.name,
-          lideres: getLideresDisplay(casa),
-          data_encontro: e.data_encontro,
-          qtd_lideres: e.qtd_lideres || 0,
-          qtd_membros: e.qtd_membros || 0,
-          qtd_criancas: e.qtd_criancas || 0,
-          qtd_visitantes: e.qtd_visitantes || 0,
-          total_presentes:
-            (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0),
-          ofertas_dinheiro: Number(e.ofertas_dinheiro || 0),
-          ofertas_pix: Number(e.ofertas_pix || 0),
-          ofertas_total: Number(e.ofertas || 0),
-          kilos_arrecadados: Number(e.kilos_arrecadados || 0),
-          is_blank: false,
-          is_cancelled: (e as any).reuniao_realizada === false,
-          conferido: !!(e as any).conferido,
-        });
-      }
+      rows.push({
+        casa_refugio_id: e.casa_refugio_id,
+        casa_nome: casa.name,
+        lideres: getLideresDisplay(casa),
+        data_encontro: e.data_encontro,
+        qtd_lideres: e.qtd_lideres || 0,
+        qtd_membros: e.qtd_membros || 0,
+        qtd_criancas: e.qtd_criancas || 0,
+        qtd_visitantes: e.qtd_visitantes || 0,
+        total_presentes:
+          (e.qtd_lideres || 0) + (e.qtd_membros || 0) + (e.qtd_criancas || 0) + (e.qtd_visitantes || 0),
+        ofertas_dinheiro: Number(e.ofertas_dinheiro || 0),
+        ofertas_pix: Number(e.ofertas_pix || 0),
+        ofertas_total: Number(e.ofertas || 0),
+        kilos_arrecadados: Number(e.kilos_arrecadados || 0),
+        is_blank: false,
+        is_cancelled: (e as any).reuniao_realizada === false,
+        conferido: !!(e as any).conferido,
+      });
     });
 
     // Sort by date then casa name
