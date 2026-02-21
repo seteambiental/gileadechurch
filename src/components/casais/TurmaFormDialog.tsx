@@ -4,10 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +12,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+
+const DIAS_SEMANA = [
+  { value: "segunda", label: "Segunda-feira" },
+  { value: "terca", label: "Terça-feira" },
+  { value: "quarta", label: "Quarta-feira" },
+  { value: "quinta", label: "Quinta-feira" },
+  { value: "sexta", label: "Sexta-feira" },
+  { value: "sabado", label: "Sábado" },
+  { value: "domingo", label: "Domingo" },
+];
+
+// Format time input as HH:MM
+const formatTimeInput = (value: string): string => {
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length <= 2) return numbers;
+  return `${numbers.slice(0, 2)}:${numbers.slice(2, 4)}`;
+};
 
 interface TurmaFormDialogProps {
   open: boolean;
@@ -35,7 +52,9 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
         descricao: turma.descricao,
         data_inicio: turma.data_inicio,
         data_fim: turma.data_fim,
-        horario: turma.horario,
+        dia_semana: turma.dia_semana || "",
+        horario_inicio: turma.horario_inicio || "",
+        horario_fim: turma.horario_fim || "",
         local: turma.local,
         vagas: turma.vagas,
         ativo: turma.ativo,
@@ -46,7 +65,9 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
         descricao: "",
         data_inicio: "",
         data_fim: "",
-        horario: "",
+        dia_semana: "",
+        horario_inicio: "",
+        horario_fim: "",
         local: "",
         vagas: 20,
         ativo: true,
@@ -55,12 +76,21 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
   }, [turma, reset]);
 
   const onSubmit = async (data: any) => {
+    // Build horario string for display
+    const horarioDisplay = [
+      DIAS_SEMANA.find(d => d.value === data.dia_semana)?.label,
+      data.horario_inicio && data.horario_fim ? `${data.horario_inicio} - ${data.horario_fim}` : data.horario_inicio,
+    ].filter(Boolean).join(" ");
+
     const payload = {
       nome: data.nome,
       descricao: data.descricao || null,
       data_inicio: data.data_inicio || null,
       data_fim: data.data_fim || null,
-      horario: data.horario || null,
+      dia_semana: data.dia_semana || null,
+      horario_inicio: data.horario_inicio || null,
+      horario_fim: data.horario_fim || null,
+      horario: horarioDisplay || null,
       local: data.local || null,
       vagas: parseInt(data.vagas) || 20,
       ativo: data.ativo,
@@ -101,39 +131,67 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="data_inicio">Data Início</Label>
-              <DateInput 
-                id="data_inicio" 
-                value={watch("data_inicio") || ""} 
+              <Label>Data Início</Label>
+              <DateInput
+                value={watch("data_inicio") || ""}
                 onChange={(v) => setValue("data_inicio", v)}
                 maxDate={undefined}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="data_fim">Data Fim</Label>
-              <DateInput 
-                id="data_fim" 
-                value={watch("data_fim") || ""} 
+              <Label>Data Fim</Label>
+              <DateInput
+                value={watch("data_fim") || ""}
                 onChange={(v) => setValue("data_fim", v)}
                 maxDate={undefined}
               />
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>Dia da Semana</Label>
+            <Select value={watch("dia_semana") || ""} onValueChange={(v) => setValue("dia_semana", v)}>
+              <SelectTrigger><SelectValue placeholder="Selecione o dia" /></SelectTrigger>
+              <SelectContent>
+                {DIAS_SEMANA.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="horario">Horário</Label>
-              <Input id="horario" {...register("horario")} placeholder="Ex: Sábados 19h" />
+              <Label>Horário De (HH:MM)</Label>
+              <Input
+                value={watch("horario_inicio") || ""}
+                onChange={(e) => setValue("horario_inicio", formatTimeInput(e.target.value))}
+                placeholder="19:00"
+                maxLength={5}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Horário Até (HH:MM)</Label>
+              <Input
+                value={watch("horario_fim") || ""}
+                onChange={(e) => setValue("horario_fim", formatTimeInput(e.target.value))}
+                placeholder="21:00"
+                maxLength={5}
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="local">Local</Label>
+              <Input id="local" {...register("local")} placeholder="Local das aulas" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="vagas">Vagas</Label>
               <Input id="vagas" type="number" {...register("vagas")} />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="local">Local</Label>
-            <Input id="local" {...register("local")} placeholder="Local das aulas" />
           </div>
 
           <div className="flex items-center justify-between">
@@ -146,12 +204,8 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {turma ? "Salvar" : "Criar Turma"}
-            </Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="submit">{turma ? "Salvar" : "Criar Turma"}</Button>
           </div>
         </form>
       </DialogContent>

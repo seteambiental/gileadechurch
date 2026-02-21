@@ -1097,7 +1097,10 @@ export type Database = {
           data_fim: string | null
           data_inicio: string | null
           descricao: string | null
+          dia_semana: string | null
           horario: string | null
+          horario_fim: string | null
+          horario_inicio: string | null
           id: string
           local: string | null
           nome: string
@@ -1110,7 +1113,10 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string | null
           descricao?: string | null
+          dia_semana?: string | null
           horario?: string | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
           id?: string
           local?: string | null
           nome: string
@@ -1123,7 +1129,10 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string | null
           descricao?: string | null
+          dia_semana?: string | null
           horario?: string | null
+          horario_fim?: string | null
+          horario_inicio?: string | null
           id?: string
           local?: string | null
           nome?: string
