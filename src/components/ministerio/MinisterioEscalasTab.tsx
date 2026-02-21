@@ -32,7 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Calendar, Users, Home } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -70,12 +70,29 @@ interface Escala {
   membros: EscalaMembro[];
 }
 
+interface EscalaServicoAprovada {
+  id: string;
+  data_culto: string;
+  tipo_culto: string;
+  tipo_escala: string;
+  observacoes: string | null;
+  member?: { id: string; full_name: string } | null;
+  casa_refugio?: { id: string; name: string } | null;
+  membros: { id: string; member: { id: string; full_name: string } }[];
+}
+
 const TIPOS_CULTO = [
   { value: "domingo", label: "Domingo" },
   { value: "quarta", label: "Quarta-feira" },
   { value: "sabado", label: "Sábado" },
   { value: "especial", label: "Evento Especial" },
 ];
+
+const TIPOS_CULTO_SERVICO: Record<string, string> = {
+  celebracao: "Culto de Celebração",
+  ceia: "Culto de Ceia",
+  quarta: "Quarta com Propósito",
+};
 
 export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) => {
   const queryClient = useQueryClient();
@@ -109,7 +126,7 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
     },
   });
 
-  // Fetch escalas do mês
+  // Fetch escalas do mês (escalas manuais do ministério)
   const { data: escalas = [], isLoading } = useQuery({
     queryKey: ["ministerio-escalas", ministryId, format(currentMonth, "yyyy-MM")],
     queryFn: async () => {
@@ -142,7 +159,39 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
     },
   });
 
-  // Agrupar escalas por data
+  // Fetch escalas de serviço aprovadas (candidaturas aprovadas)
+  const { data: escalasServico = [] } = useQuery({
+    queryKey: ["ministerio-escalas-servico", ministryId, format(currentMonth, "yyyy-MM")],
+    queryFn: async () => {
+      const start = format(startOfMonth(currentMonth), "yyyy-MM-dd");
+      const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
+
+      const { data, error } = await supabase
+        .from("escalas_servico")
+        .select(`
+          id,
+          data_culto,
+          tipo_culto,
+          tipo_escala,
+          observacoes,
+          member:members!escalas_servico_member_id_fkey(id, full_name),
+          casa_refugio:casas_refugio!escalas_servico_casa_refugio_id_fkey(id, name),
+          membros:escala_servico_membros(
+            id,
+            member:members(id, full_name)
+          )
+        `)
+        .eq("ministry_id", ministryId)
+        .eq("status", "aprovado")
+        .gte("data_culto", start)
+        .lte("data_culto", end)
+        .order("data_culto");
+      if (error) throw error;
+      return data as unknown as EscalaServicoAprovada[];
+    },
+  });
+
+  // Agrupar escalas manuais por data
   const escalasByDate = useMemo(() => {
     const grouped: Record<string, Escala[]> = {};
     escalas.forEach((escala) => {
@@ -153,6 +202,27 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
     });
     return grouped;
   }, [escalas]);
+
+  // Agrupar escalas de serviço por data
+  const escalasServicoByDate = useMemo(() => {
+    const grouped: Record<string, EscalaServicoAprovada[]> = {};
+    escalasServico.forEach((escala) => {
+      if (!grouped[escala.data_culto]) {
+        grouped[escala.data_culto] = [];
+      }
+      grouped[escala.data_culto].push(escala);
+    });
+    return grouped;
+  }, [escalasServico]);
+
+  // Todas as datas únicas combinadas
+  const allDates = useMemo(() => {
+    const dates = new Set([
+      ...Object.keys(escalasByDate),
+      ...Object.keys(escalasServicoByDate),
+    ]);
+    return Array.from(dates).sort();
+  }, [escalasByDate, escalasServicoByDate]);
 
   // Mutation para salvar escala
   const saveMutation = useMutation({
@@ -288,7 +358,7 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
       {/* Lista de escalas */}
       {isLoading ? (
         <p className="text-center text-muted-foreground">Carregando...</p>
-      ) : Object.keys(escalasByDate).length === 0 && integrantes.length > 0 ? (
+      ) : allDates.length === 0 && integrantes.length > 0 ? (
         <Card className="bg-muted/30">
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">Nenhuma escala neste mês</p>
@@ -296,9 +366,11 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
         </Card>
       ) : (
         <div className="space-y-4">
-          {Object.entries(escalasByDate)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([date, dateEscalas]) => (
+          {allDates.map((date) => {
+            const dateEscalas = escalasByDate[date] || [];
+            const dateServicoEscalas = escalasServicoByDate[date] || [];
+
+            return (
               <Card key={date} className="bg-card">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -307,6 +379,40 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {/* Escalas de serviço aprovadas (candidaturas) */}
+                  {dateServicoEscalas.map((escala) => (
+                    <div key={`servico-${escala.id}`} className="bg-muted/30 rounded-lg p-3">
+                      <div className="mb-2">
+                        <p className="font-semibold text-sm">
+                          {TIPOS_CULTO_SERVICO[escala.tipo_culto] || escala.tipo_culto}
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {format(parseLocalDate(date), "dd/MM/yyyy")}
+                          {escala.casa_refugio && (
+                            <span className="ml-2 inline-flex items-center gap-1">
+                              <Home className="w-3 h-3" />
+                              CR {escala.casa_refugio.name}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                      {escala.membros.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {escala.membros.map((m, idx) => (
+                            <p key={m.id} className="text-sm">
+                              {idx + 1}. {m.member?.full_name}
+                            </p>
+                          ))}
+                        </div>
+                      ) : escala.tipo_escala === "individual" && escala.member ? (
+                        <p className="text-sm">1. {escala.member.full_name}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Nenhum membro escalado</p>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Escalas manuais do ministério */}
                   {dateEscalas.map((escala) => (
                     <div key={escala.id} className="bg-muted/30 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
@@ -354,7 +460,8 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
                   ))}
                 </CardContent>
               </Card>
-            ))}
+            );
+          })}
         </div>
       )}
 
