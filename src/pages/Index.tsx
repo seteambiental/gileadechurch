@@ -45,8 +45,21 @@ const Index = () => {
     },
   });
 
-  // Total de slides: 1 (hero fixo) + imagens do carrossel
-  const totalSlides = 1 + (carrosselImages?.length || 0);
+  // Contador de membros cadastrados
+  const { data: totalMembros } = useQuery({
+    queryKey: ["total-membros-counter-homepage"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("members")
+        .select("id", { count: "exact", head: true });
+      if (error) return 0;
+      return count || 0;
+    },
+  });
+
+  // Total de slides: 1 (hero fixo) + imagens do carrossel + 1 (contador)
+  const totalSlides = 1 + (carrosselImages?.length || 0) + 1;
+  const contadorSlideIndex = totalSlides - 1;
 
   // Auto-rotação do carrossel a cada 10 segundos
   useEffect(() => {
@@ -384,6 +397,46 @@ const Index = () => {
                 />
               </div>
           ))}
+
+          {/* Slide Contador de Cadastros */}
+          <div
+            className={`absolute inset-0 transition-opacity duration-1000 ${
+              currentCarouselIndex === contadorSlideIndex ? "opacity-100 z-[2]" : "opacity-0"
+            }`}
+          >
+            <div className="absolute inset-0 bg-black flex flex-col items-center justify-center">
+              {/* Faixa amarela */}
+              <div className="w-full bg-secondary py-6 sm:py-10 flex flex-col items-center gap-2 sm:gap-4 shadow-lg">
+                <span className="text-black font-heading font-extrabold text-lg sm:text-2xl md:text-3xl tracking-widest uppercase">
+                  Rumo aos 1.000 Cadastros
+                </span>
+                <div className="flex items-baseline gap-3 sm:gap-6">
+                  <span className="text-black font-heading font-black text-5xl sm:text-7xl md:text-8xl leading-none">
+                    {totalMembros ?? 0}
+                  </span>
+                  <span className="text-black/70 font-heading font-bold text-2xl sm:text-4xl md:text-5xl">
+                    / 1.000
+                  </span>
+                </div>
+                {/* Barra de progresso */}
+                <div className="w-4/5 max-w-lg bg-black/20 rounded-full h-5 sm:h-7 overflow-hidden mt-2">
+                  <div
+                    className="h-full bg-black rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
+                    style={{ width: `${Math.min(((totalMembros ?? 0) / 1000) * 100, 100)}%` }}
+                  >
+                    {(totalMembros ?? 0) >= 30 && (
+                      <span className="text-secondary text-[10px] sm:text-xs font-bold">
+                        {(((totalMembros ?? 0) / 1000) * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-black/60 font-medium text-sm sm:text-base mt-1">
+                  {(((totalMembros ?? 0) / 1000) * 100).toFixed(1)}% da nossa meta
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Content - Só aparece no slide 0 (hero fixo) */}
