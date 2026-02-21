@@ -506,9 +506,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
 
   const eventoNome = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "inscricoes";
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
+    await exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
   };
 
   const handleExportPDF = () => {

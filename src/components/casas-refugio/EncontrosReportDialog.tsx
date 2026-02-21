@@ -524,11 +524,11 @@ export const EncontrosReportDialog = ({
     return matchingKey ? visibleColumns.has(matchingKey) : true;
   });
 
-  const handleExcelExport = () => {
+  const handleExcelExport = async () => {
     const periodLabel = appliedStartDate && appliedEndDate 
       ? `${formatDateBR(appliedStartDate)}-${formatDateBR(appliedEndDate)}` 
       : "todos";
-    exportGenericToExcel(
+    await exportGenericToExcel(
       filteredReportData,
       filteredExportColumns,
       `relatorio-encontros-${periodLabel}`,
