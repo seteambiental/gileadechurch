@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +42,7 @@ import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
+import { CompartilharInscricaoCasaisDialog } from "@/components/casais/CompartilharInscricaoCasaisDialog";
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
 import IntercessaoTestemunhosTab from "@/components/intercessao/IntercessaoTestemunhosTab";
 import IntercessaoIndicadoresTab from "@/components/intercessao/IntercessaoIndicadoresTab";
@@ -262,6 +263,7 @@ const MinistryPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("info");
+  const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
 
   const bypass = isAuthBypassed();
 
@@ -528,10 +530,18 @@ const MinistryPage = () => {
                   </div>
                   <CardTitle className="text-2xl font-heading">{ministry.title}</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-6">
                   <p className="text-muted-foreground text-center max-w-2xl mx-auto">
                     {ministry.fullDescription}
                   </p>
+                  {isCasais && (
+                    <div className="flex justify-center">
+                      <Button onClick={() => setShareCasaisOpen(true)} variant="outline" size="lg">
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Gerar Link da Ficha de Inscrição
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -722,6 +732,10 @@ const MinistryPage = () => {
           </Card>
         )}
       </main>
+      <CompartilharInscricaoCasaisDialog
+        open={shareCasaisOpen}
+        onOpenChange={setShareCasaisOpen}
+      />
     </div>
   );
 };
