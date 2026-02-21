@@ -97,7 +97,16 @@ const ministries = [
   { icon: Shield, title: "True Man", description: "Ministério masculino", path: "/ministerio/true-man" },
 ];
 
-// Outros módulos (ícones pretos) - serão filtrados por permissão
+// Cores únicas por módulo de gestão
+const GESTAO_COLORS: Record<string, string> = {
+  "Cadastros": "#1e40af",         // Azul royal
+  "Homepage": "#0f766e",          // Teal escuro
+  "Agenda": "#7e22ce",            // Roxo vibrante
+  "Financeiro": "#15803d",        // Verde escuro
+  "Indicadores": "#b45309",       // Âmbar escuro
+};
+
+// Outros módulos - serão filtrados por permissão
 // moduleKey é usado para verificar permissões do pastor auxiliar
 const allOtherModules = [
   { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true, moduleKey: "cadastros" },
@@ -289,7 +298,8 @@ const AppDashboard = () => {
               title={module.title}
               description={module.description}
               delay={index * 50}
-              variant="default"
+              variant="ministry"
+              color={GESTAO_COLORS[module.title] || undefined}
               onClick={module.path ? () => navigate(module.path) : undefined}
             />
           ))}
