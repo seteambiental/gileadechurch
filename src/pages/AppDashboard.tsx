@@ -167,11 +167,43 @@ const AppDashboard = () => {
   });
 
   // Mapa nome do ministério → nomes dos líderes
+  // Mapeamento de nomes do banco → nomes dos cards no dashboard
+  const DB_TO_CARD_NAME: Record<string, string> = {
+    "Ministerio Ação Social": "Ação Social",
+    "Ministério Adolescentes": "GT",
+    "Ministério Casais": "Casais",
+    "Ministério Casas Refúgio": "Casas Refúgio",
+    "Ministério Consolidação": "Consolidação",
+    "Ministério Dança": "Dança",
+    "Ministério Ensino": "Ensino",
+    "Ministério Estacionamento": "Estacionamento",
+    "Ministério Eventos e Impactos": "Eventos e Impacto",
+    "Ministério Homens": "True Man",
+    "Ministério Infantil P G": "Kids",
+    "Ministério Intercessão": "Intercessão",
+    "Ministério Jovens": "Flow",
+    "Ministério Louvor": "Louvor",
+    "Ministério Midia (foto, Projeção, Som, Iluminação)": "Mídia",
+    "Ministerio Missoes": "Missões Moçambique",
+    "Ministério Mulheres": "Mulheres",
+    "Ministério Organização dos Cultos": "Organização de Culto",
+    "Ministerio Recepção": "Recepção",
+    "Ministério Serviços e Voluntáriados": "Serviço (Dorcas)",
+    "Ministério Teatro": "Teatro",
+  };
+
   const ministryLeadersMap = useMemo(() => {
     const map: Record<string, string> = {};
     ministriesData.forEach((m: any) => {
       const names = formatLeaderNames(m.lider?.full_name, m.lider_esposa?.full_name);
-      if (names) map[m.name] = names;
+      if (names) {
+        // Use the explicit mapping if available, otherwise try simplification
+        const cardName = DB_TO_CARD_NAME[m.name];
+        if (cardName) {
+          map[cardName] = names;
+        }
+        map[m.name] = names;
+      }
     });
     return map;
   }, [ministriesData]);
