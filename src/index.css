@@ -348,6 +348,19 @@ html {
   display: none;
 }
 
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Ensure dialogs fit mobile screens */
+@media (max-width: 640px) {
+  [role="dialog"] {
+    max-width: calc(100vw - 1.5rem) !important;
+    width: calc(100vw - 1.5rem) !important;
+  }
+}
+
 /* Touch-friendly tap targets */
 @media (max-width: 640px) {
   .touch-target {
