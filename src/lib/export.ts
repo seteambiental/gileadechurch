@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatPhone, formatDateBR, formatCPF } from "./masks";
@@ -124,7 +124,19 @@ const formatAddress = (member: Member): string => {
   return parts.length > 0 ? parts.join(", ") : "-";
 };
 
-export const exportToExcel = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
+// Helper to save ExcelJS workbook as file download
+async function saveWorkbook(workbook: ExcelJS.Workbook, filename: string) {
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export const exportToExcel = async (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
   const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
   
   const data = members.map((member) => ({
@@ -152,24 +164,33 @@ export const exportToExcel = (members: Member[], filename: string = "membros", f
     Funções: formatMemberFunctions(member),
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Membros");
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet("Membros");
 
-  // Auto-size columns
-  const maxWidth = 50;
-  const colWidths = Object.keys(data[0] || {}).map((key) => ({
-    wch: Math.min(
-      maxWidth,
-      Math.max(
-        key.length,
-        ...data.map((row) => String(row[key as keyof typeof row] || "").length)
-      )
-    ),
-  }));
-  worksheet["!cols"] = colWidths;
+  if (data.length > 0) {
+    const headers = Object.keys(data[0]);
+    worksheet.addRow(headers);
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
 
-  XLSX.writeFile(workbook, `${filename}.xlsx`);
+    data.forEach((row) => {
+      worksheet.addRow(headers.map((h) => row[h as keyof typeof row]));
+    });
+
+    // Auto-size columns
+    headers.forEach((header, i) => {
+      const col = worksheet.getColumn(i + 1);
+      let maxLen = header.length;
+      data.forEach((row) => {
+        const val = String(row[header as keyof typeof row] || "");
+        if (val.length > maxLen) maxLen = val.length;
+      });
+      col.width = Math.min(50, maxLen + 2);
+    });
+  }
+
+  await saveWorkbook(workbook, `${filename}.xlsx`);
 };
 
 export const exportToPDF = (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
@@ -240,7 +261,7 @@ export interface ExportColumn {
   format?: (value: any) => string;
 }
 
-export const exportGenericToExcel = (
+export const exportGenericToExcel = async (
   data: any[],
   columns: ExportColumn[],
   filename: string,
@@ -248,35 +269,39 @@ export const exportGenericToExcel = (
 ) => {
   if (data.length === 0) return;
 
-  const exportData = data.map((row) => {
-    const exportRow: Record<string, any> = {};
-    columns.forEach((col) => {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName);
+
+  const headers = columns.map((col) => col.header);
+  worksheet.addRow(headers);
+  const headerRow = worksheet.getRow(1);
+  headerRow.font = { bold: true };
+
+  data.forEach((row) => {
+    const rowData = columns.map((col) => {
       const value = typeof col.accessor === "function" 
         ? col.accessor(row) 
         : row[col.accessor];
-      exportRow[col.header] = col.format ? col.format(value) : (value ?? "-");
+      return col.format ? col.format(value) : (value ?? "-");
     });
-    return exportRow;
+    worksheet.addRow(rowData);
   });
 
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-
   // Auto-size columns
-  const maxWidth = 50;
-  const colWidths = Object.keys(exportData[0] || {}).map((key) => ({
-    wch: Math.min(
-      maxWidth,
-      Math.max(
-        key.length,
-        ...exportData.map((row) => String(row[key] || "").length)
-      )
-    ),
-  }));
-  worksheet["!cols"] = colWidths;
+  headers.forEach((header, i) => {
+    const col = worksheet.getColumn(i + 1);
+    let maxLen = header.length;
+    data.forEach((row) => {
+      const value = typeof columns[i].accessor === "function" 
+        ? (columns[i].accessor as Function)(row) 
+        : row[columns[i].accessor as string];
+      const formatted = columns[i].format ? columns[i].format!(value) : String(value ?? "-");
+      if (formatted.length > maxLen) maxLen = formatted.length;
+    });
+    col.width = Math.min(50, maxLen + 2);
+  });
 
-  XLSX.writeFile(workbook, `${filename}.xlsx`);
+  await saveWorkbook(workbook, `${filename}.xlsx`);
 };
 
 export const exportGenericToPDF = (
@@ -298,7 +323,7 @@ export const exportGenericToPDF = (
   doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 30);
   doc.text(`Total: ${data.length} registro${data.length !== 1 ? "s" : ""}`, 14, 36);
 
-  const headers = columns.map((col) => col.header);
+  const tableHeaders = columns.map((col) => col.header);
   const tableData = data.map((row) =>
     columns.map((col) => {
       const value = typeof col.accessor === "function" 
@@ -309,7 +334,7 @@ export const exportGenericToPDF = (
   );
 
   autoTable(doc, {
-    head: [headers],
+    head: [tableHeaders],
     body: tableData,
     startY: 42,
     styles: {

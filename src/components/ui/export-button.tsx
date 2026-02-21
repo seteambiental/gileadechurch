@@ -25,8 +25,8 @@ export const ExportButton = ({
   disabled = false,
   sheetName = "Dados",
 }: ExportButtonProps) => {
-  const handleExcelExport = () => {
-    exportGenericToExcel(data, columns, filename, sheetName);
+  const handleExcelExport = async () => {
+    await exportGenericToExcel(data, columns, filename, sheetName);
   };
 
   const handlePdfExport = () => {

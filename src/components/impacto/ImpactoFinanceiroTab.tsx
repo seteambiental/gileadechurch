@@ -286,9 +286,9 @@ const ImpactoFinanceiroTab = () => {
     return all.filter((c) => visibleColumns.has(c.key));
   };
 
-  const handleExportReceitasExcel = () => {
+  const handleExportReceitasExcel = async () => {
     if (!inscricoes.length) return;
-    exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas");
+    await exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas");
   };
 
   const handleExportReceitasPDF = () => {

@@ -59,7 +59,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 interface Inscricao {
   id: string;
@@ -396,7 +396,7 @@ export const InscricoesEventoDialog = ({
     }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (inscricoesFiltradas.length === 0) {
       toast({ variant: "destructive", title: "Nenhuma inscrição para exportar" });
       return;
@@ -414,10 +414,28 @@ export const InscricoesEventoDialog = ({
       "Data Inscrição": format(new Date(i.created_at), "dd/MM/yyyy HH:mm"),
     }));
 
-    const ws = XLSX.utils.json_to_sheet(dataExport);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Inscrições");
-    XLSX.writeFile(wb, `inscricoes-${eventoTitulo.replace(/\s+/g, "-").toLowerCase()}.xlsx`);
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet("Inscrições");
+    if (dataExport.length > 0) {
+      const headers = Object.keys(dataExport[0]);
+      ws.addRow(headers);
+      ws.getRow(1).font = { bold: true };
+      dataExport.forEach((row) => ws.addRow(headers.map((h) => row[h as keyof typeof row])));
+      headers.forEach((h, i) => {
+        const col = ws.getColumn(i + 1);
+        let maxLen = h.length;
+        dataExport.forEach((row) => { const v = String(row[h as keyof typeof row] || ""); if (v.length > maxLen) maxLen = v.length; });
+        col.width = Math.min(50, maxLen + 2);
+      });
+    }
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `inscricoes-${eventoTitulo.replace(/\s+/g, "-").toLowerCase()}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
     toast({ title: "Relatório exportado!" });
   };
 

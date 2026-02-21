@@ -390,7 +390,7 @@ const MembrosTab = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => exportToExcel(filteredMembers, "membros", faceIndexes, casasRefugio)}>
+                <DropdownMenuItem onClick={async () => await exportToExcel(filteredMembers, "membros", faceIndexes, casasRefugio)}>
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
                   Excel (.xlsx)
                 </DropdownMenuItem>
