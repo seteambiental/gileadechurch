@@ -404,11 +404,11 @@ export const EncontrosReportDialog = ({
       });
     });
 
-    // Sort by date then casa name
+    // Sort by casa name (alphabetical) then date
     rows.sort((a, b) => {
-      const dateCompare = a.data_encontro.localeCompare(b.data_encontro);
-      if (dateCompare !== 0) return dateCompare;
-      return a.casa_nome.localeCompare(b.casa_nome);
+      const casaCompare = a.casa_nome.localeCompare(b.casa_nome);
+      if (casaCompare !== 0) return casaCompare;
+      return a.data_encontro.localeCompare(b.data_encontro);
     });
 
     return rows;
