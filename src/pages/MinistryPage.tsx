@@ -57,6 +57,7 @@ import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosT
 import { ServicoTarefasTab } from "@/components/servico/ServicoTarefasTab";
 import { ServicoMembrosTab } from "@/components/servico/ServicoMembrosTab";
 import { EvangelizacaoAgendaTab } from "@/components/evangelizacao/EvangelizacaoAgendaTab";
+import { EscalasServicoTab } from "@/components/ministerio/EscalasServicoTab";
 
 interface MinistryInfo {
   title: string;
@@ -64,6 +65,7 @@ interface MinistryInfo {
   icon: LucideIcon;
   fullDescription: string;
   hasEscalas?: boolean;
+  hasEscalasServico?: boolean;
   hasRepertorio?: boolean;
   isDanca?: boolean;
   isCasais?: boolean;
@@ -131,6 +133,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério responsável pela organização e direcionamento do estacionamento nos cultos e eventos da igreja.",
     hasEscalas: true,
+    hasEscalasServico: true,
   },
   evangelizacao: {
     title: "Evangelização",
@@ -211,6 +214,7 @@ const ministriesData: Record<string, MinistryInfo> = {
     fullDescription:
       "Ministério dedicado a receber e acolher as pessoas na entrada dos cultos e eventos, proporcionando uma experiência acolhedora.",
     hasEscalas: true,
+    hasEscalasServico: true,
   },
   servico: {
     title: "Serviço (Dorcas)",
@@ -330,6 +334,7 @@ const MinistryPage = () => {
   const isHomens = ministry.isHomens;
   const isMulheres = ministry.isMulheres;
   const isServico = ministry.isServico;
+  const hasEscalasServico = ministry.hasEscalasServico && ministryFromDb?.id;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
 
   return (
@@ -367,7 +372,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -482,7 +487,13 @@ const MinistryPage = () => {
                   <TabsTrigger value="escalas" className="flex items-center gap-2">
                     <CalendarDays className="w-4 h-4" />
                     <span className="hidden sm:inline">Escalas</span>
-                  </TabsTrigger>
+                   </TabsTrigger>
+                   {hasEscalasServico && (
+                     <TabsTrigger value="escalas-servico" className="flex items-center gap-2">
+                       <ClipboardList className="w-4 h-4" />
+                       <span className="hidden sm:inline">Serviço</span>
+                     </TabsTrigger>
+                   )}
                   {(hasRepertorio || isDanca) && (
                     <TabsTrigger value="repertorio" className="flex items-center gap-2">
                       <ListMusic className="w-4 h-4" />
@@ -629,6 +640,12 @@ const MinistryPage = () => {
                     <MinisterioEscalasTab ministryId={ministryFromDb!.id} />
                   )}
                 </TabsContent>
+
+                {hasEscalasServico && (
+                  <TabsContent value="escalas-servico">
+                    <EscalasServicoTab ministryId={ministryFromDb!.id} ministrySlug={slug!} />
+                  </TabsContent>
+                )}
 
                 {hasRepertorio && (
                   <TabsContent value="repertorio">
