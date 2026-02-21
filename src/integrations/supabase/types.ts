@@ -4981,6 +4981,7 @@ export type Database = {
       can_manage_casa_refugio: { Args: { casa_id: string }; Returns: boolean }
       can_manage_member_requests: { Args: never; Returns: boolean }
       can_manage_ministry: { Args: { ministry_uuid: string }; Returns: boolean }
+      get_members_count: { Args: never; Returns: number }
       get_next_kids_numero: { Args: never; Returns: number }
       has_full_access: { Args: never; Returns: boolean }
       has_role: {
