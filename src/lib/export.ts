@@ -225,7 +225,7 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
     body: tableData,
     startY: 42,
     styles: {
-      fontSize: 6,
+      fontSize: 12,
       cellPadding: 1.5,
     },
     headStyles: {
@@ -338,7 +338,7 @@ export const exportGenericToPDF = (
     body: tableData,
     startY: 42,
     styles: {
-      fontSize: 7,
+      fontSize: 12,
       cellPadding: 2,
     },
     headStyles: {
