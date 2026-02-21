@@ -145,8 +145,8 @@ export function CasaisInscricoesTab() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Esposo</TableHead>
-                  <TableHead>Esposa</TableHead>
+                  <TableHead>Nome Completo do Esposo</TableHead>
+                  <TableHead>Nome Completo da Esposa</TableHead>
                   <TableHead className="hidden md:table-cell">Turma</TableHead>
                   <TableHead className="hidden md:table-cell">Modalidade</TableHead>
                   <TableHead className="hidden lg:table-cell">Congrega</TableHead>

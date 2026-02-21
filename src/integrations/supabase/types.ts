@@ -688,7 +688,7 @@ export type Database = {
           quantas_vezes_casado: number | null
           status: string | null
           tempo_casamento: string | null
-          turma_id: string
+          turma_id: string | null
           updated_at: string
           whatsapp_feminino: string | null
           whatsapp_masculino: string | null
@@ -725,7 +725,7 @@ export type Database = {
           quantas_vezes_casado?: number | null
           status?: string | null
           tempo_casamento?: string | null
-          turma_id: string
+          turma_id?: string | null
           updated_at?: string
           whatsapp_feminino?: string | null
           whatsapp_masculino?: string | null
@@ -762,7 +762,7 @@ export type Database = {
           quantas_vezes_casado?: number | null
           status?: string | null
           tempo_casamento?: string | null
-          turma_id?: string
+          turma_id?: string | null
           updated_at?: string
           whatsapp_feminino?: string | null
           whatsapp_masculino?: string | null
