@@ -3301,6 +3301,7 @@ export type Database = {
           id: string
           member_request_id: string | null
           nome_completo: string
+          tipo: string
         }
         Insert: {
           cpf: string
@@ -3310,6 +3311,7 @@ export type Database = {
           id?: string
           member_request_id?: string | null
           nome_completo: string
+          tipo?: string
         }
         Update: {
           cpf?: string
@@ -3319,6 +3321,7 @@ export type Database = {
           id?: string
           member_request_id?: string | null
           nome_completo?: string
+          tipo?: string
         }
         Relationships: [
           {

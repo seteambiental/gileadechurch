@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight, Baby, Plus, Trash2 } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, ChevronLeft, ChevronRight, Baby, Plus, Trash2, Heart } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -123,30 +123,17 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [currentStep, setCurrentStep] = useState(1);
   const [isAdvancingStep, setIsAdvancingStep] = useState(false);
   const [filhos, setFilhos] = useState<FilhoData[]>([]);
+  const [conjuge, setConjuge] = useState<FilhoData | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Quando muda de etapa, volta para o topo do modal para não “sumir” o conteúdo
-  // (ex.: usuário está no fim da etapa 3 e a etapa 4 é curta)
   useEffect(() => {
     scrollContainerRef.current?.scrollTo({ top: 0 });
   }, [currentStep]);
 
-  // Steps: 1=Verificação, 2=Dados Pessoais, 3=Endereço, 4=Ministérios, 5=Termos
-  const TOTAL_STEPS = 5;
+  // Steps: 1=Verificação, 2=Dados Pessoais, 3=Endereço, 4=Família e Termos
+  const TOTAL_STEPS = 4;
 
-  // Buscar lista de ministérios
-  const { data: ministries = [] } = useQuery({
-    queryKey: ["ministries-public"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ministries")
-        .select("id, name")
-        .order("name");
-      if (error) throw error;
-      return data || [];
-    },
-  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -286,7 +273,15 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
           cpf: f.cpf,
           data_nascimento: f.data_nascimento || null,
           genero: f.genero || null,
+          tipo: "filho",
         })),
+        conjuge: conjuge && conjuge.nome_completo ? {
+          nome_completo: conjuge.nome_completo,
+          cpf: conjuge.cpf,
+          data_nascimento: conjuge.data_nascimento || null,
+          genero: conjuge.genero || null,
+          tipo: "conjuge",
+        } : null,
       };
 
       // Inserção via função backend (contorna RLS do client/anon)
@@ -328,6 +323,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setPhotoPreview(null);
     setCurrentStep(1);
     setFilhos([]);
+    setConjuge(null);
     form.reset();
     onOpenChange(false);
   };
@@ -392,10 +388,6 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         // Endereço
         return await form.trigger(["cep", "address", "number", "neighborhood", "city", "state"]);
       }
-      case 4: {
-        // Ministérios - sempre válido
-        return true;
-      }
       default:
         return true;
     }
@@ -410,10 +402,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
     if (isValid) {
       setCurrentStep((prev) => {
-        // Sequência obrigatória: 2 → 3 → 4 → 5 (não pode pular a etapa 4)
         if (prev === 2) return 3;
         if (prev === 3) return 4;
-        if (prev === 4) return 5;
         return Math.min(prev + 1, TOTAL_STEPS);
       });
     }
@@ -437,8 +427,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
       case 1: return "Verificação";
       case 2: return "Dados Pessoais";
       case 3: return "Endereço";
-      case 4: return "Ministérios";
-      case 5: return "Termos e Confirmação";
+      case 4: return "Família e Confirmação";
       default: return "";
     }
   };
@@ -901,84 +890,11 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
               </div>
             )}
 
-            {/* STEP 4: Ministérios */}
+
+
+
+            {/* STEP 4: Família e Confirmação */}
             {currentStep === 4 && (
-              <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Church className="w-5 h-5 text-secondary" />
-                  <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="nao_pretende_servir"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => {
-                            field.onChange(checked);
-                            if (checked) {
-                              form.setValue("ministerios_interesse", []);
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel className="text-sm font-normal">
-                          Ainda não pretendo servir
-                        </FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {!form.watch("nao_pretende_servir") && (
-                  <FormField
-                    control={form.control}
-                    name="ministerios_interesse"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm text-muted-foreground">
-                          Selecione os ministérios de seu interesse:
-                        </FormLabel>
-                        <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
-                          <div className="space-y-2">
-                            {ministries.map((ministry) => (
-                              <div key={ministry.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`ministry-${ministry.id}`}
-                                  checked={field.value?.includes(ministry.id) || false}
-                                  onCheckedChange={(checked) => {
-                                    const currentValue = field.value || [];
-                                    if (checked) {
-                                      field.onChange([...currentValue, ministry.id]);
-                                    } else {
-                                      field.onChange(currentValue.filter((id) => id !== ministry.id));
-                                    }
-                                  }}
-                                />
-                                <label
-                                  htmlFor={`ministry-${ministry.id}`}
-                                  className="text-sm font-normal cursor-pointer"
-                                >
-                                  {ministry.name}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </div>
-            )}
-
-            {/* STEP 5: Termos e Confirmação */}
-            {currentStep === 5 && (
               <div className="space-y-4">
                 {/* Resumo do Cadastro */}
                 <div className="p-4 border rounded-lg bg-muted/30">
@@ -992,87 +908,100 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                   </div>
                 </div>
 
-                {/* Ministérios - ENTRE o resumo e os termos */}
+                {/* Cônjuge */}
                 <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Church className="w-5 h-5 text-secondary" />
-                    <Label className="text-base font-semibold">Gostaria de servir em algum ministério?</Label>
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-secondary" />
+                    <Label className="text-base font-semibold">Adicionar Esposo(a)</Label>
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="nao_pretende_servir"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={(checked) => {
-                              field.onChange(checked);
-                              if (checked) {
-                                form.setValue("ministerios_interesse", []);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-normal">
-                            Ainda não pretendo servir
-                          </FormLabel>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
+                  {conjuge ? (
+                    <div className="p-3 border rounded-lg bg-background space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Esposo(a)</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConjuge(null)}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
 
-                  {!form.watch("nao_pretende_servir") && (
-                    <FormField
-                      control={form.control}
-                      name="ministerios_interesse"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm text-muted-foreground">
-                            Selecione os ministérios de seu interesse:
-                          </FormLabel>
-                          <ScrollArea className="h-48 rounded-md border border-border p-3 bg-background">
-                            <div className="space-y-2">
-                              {ministries.map((ministry) => (
-                                <div key={ministry.id} className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`ministry-final-${ministry.id}`}
-                                    checked={field.value?.includes(ministry.id) || false}
-                                    onCheckedChange={(checked) => {
-                                      const currentValue = field.value || [];
-                                      if (checked) {
-                                        field.onChange([...currentValue, ministry.id]);
-                                      } else {
-                                        field.onChange(currentValue.filter((id) => id !== ministry.id));
-                                      }
-                                    }}
-                                  />
-                                  <label
-                                    htmlFor={`ministry-final-${ministry.id}`}
-                                    className="text-sm font-normal cursor-pointer"
-                                  >
-                                    {ministry.name}
-                                  </label>
-                                </div>
-                              ))}
-                            </div>
-                          </ScrollArea>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div>
+                        <Label className="text-sm">Nome Completo *</Label>
+                        <Input
+                          placeholder="Nome completo do esposo(a)"
+                          value={conjuge.nome_completo}
+                          onChange={(e) => setConjuge({ ...conjuge, nome_completo: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm">CPF *</Label>
+                          <Input
+                            placeholder="000.000.000-00"
+                            value={conjuge.cpf}
+                            inputMode="numeric"
+                            maxLength={14}
+                            onChange={(e) => setConjuge({ ...conjuge, cpf: formatCPF(e.target.value) })}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Gênero *</Label>
+                          <Select
+                            value={conjuge.genero}
+                            onValueChange={(val) => setConjuge({ ...conjuge, genero: val })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="masculino">Masculino</SelectItem>
+                              <SelectItem value="feminino">Feminino</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Data de Nascimento *</Label>
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          value={conjuge.dateInputValue}
+                          inputMode="numeric"
+                          maxLength={10}
+                          onChange={(e) => {
+                            const formatted = formatDateInput(e.target.value);
+                            let dataNasc = "";
+                            if (formatted.length === 10) {
+                              dataNasc = convertToISODate(formatted) || "";
+                            }
+                            setConjuge({ ...conjuge, dateInputValue: formatted, data_nascimento: dataNasc });
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setConjuge({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" })}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Esposo(a)
+                    </Button>
                   )}
                 </div>
 
                 {/* Filhos */}
                 <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Baby className="w-5 h-5 text-secondary" />
-                      <Label className="text-base font-semibold">Adicionar Filhos</Label>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <Baby className="w-5 h-5 text-secondary" />
+                    <Label className="text-base font-semibold">Adicionar Filhos</Label>
                   </div>
                   <p className="text-sm text-muted-foreground">(que moram no mesmo endereço)</p>
 

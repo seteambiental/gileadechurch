@@ -6,11 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-type Filho = {
+type Dependente = {
   nome_completo: string;
   cpf: string;
   data_nascimento?: string | null;
   genero?: string | null;
+  tipo: "filho" | "conjuge";
 };
 
 type Body = {
@@ -32,7 +33,8 @@ type Body = {
   ministerios_interesse?: string[] | null;
   nao_pretende_servir?: boolean | null;
   responsavel_id?: string | null;
-  filhos?: Filho[] | null;
+  filhos?: Dependente[] | null;
+  conjuge?: Dependente | null;
 };
 
 serve(async (req) => {
@@ -81,56 +83,66 @@ serve(async (req) => {
       });
     }
 
-    // Verificar CPFs dos filhos contra membros existentes e solicitações pendentes
-    const filhos = body.filhos || [];
-    for (const filho of filhos) {
-      const filhoCpf = (filho.cpf ?? "").replace(/\D/g, "");
-      if (filhoCpf.length !== 11) continue;
+    // Helper to check CPF duplicates for dependentes
+    const checkDependenteCpf = async (depCpf: string, depNome: string) => {
+      const cleanCpf = depCpf.replace(/\D/g, "");
+      if (cleanCpf.length !== 11) return null;
 
       // Check against existing members
       const { data: memberMatch } = await supabaseAdmin
         .from("members")
         .select("id, full_name")
-        .eq("cpf", filhoCpf)
+        .eq("cpf", cleanCpf)
         .limit(1);
 
       if (memberMatch && memberMatch.length > 0) {
-        return new Response(JSON.stringify({ 
-          error: `O filho(a) "${filho.nome_completo}" já está cadastrado como membro (${memberMatch[0].full_name}).` 
-        }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return `"${depNome}" já está cadastrado como membro (${memberMatch[0].full_name}).`;
       }
 
       // Check against existing pending member requests
       const { data: requestMatch } = await supabaseAdmin
         .from("member_requests")
         .select("id, full_name")
-        .eq("cpf", filhoCpf)
+        .eq("cpf", cleanCpf)
         .eq("status", "pendente")
         .limit(1);
 
       if (requestMatch && requestMatch.length > 0) {
-        return new Response(JSON.stringify({ 
-          error: `O filho(a) "${filho.nome_completo}" já possui uma solicitação pendente (${requestMatch[0].full_name}).` 
-        }), {
+        return `"${depNome}" já possui uma solicitação pendente (${requestMatch[0].full_name}).`;
+      }
+
+      // Check against children/conjuge already registered in other requests
+      const { data: filhoMatch } = await supabaseAdmin
+        .from("member_request_filhos")
+        .select("id, nome_completo")
+        .eq("cpf", cleanCpf)
+        .limit(1);
+
+      if (filhoMatch && filhoMatch.length > 0) {
+        return `O CPF informado para "${depNome}" já foi cadastrado anteriormente por outro responsável (${filhoMatch[0].nome_completo}). Não é possível cadastrar a mesma pessoa duas vezes.`;
+      }
+
+      return null;
+    };
+
+    // Validate conjuge CPF
+    const conjuge = body.conjuge;
+    if (conjuge && conjuge.cpf) {
+      const err = await checkDependenteCpf(conjuge.cpf, conjuge.nome_completo);
+      if (err) {
+        return new Response(JSON.stringify({ error: err }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    }
 
-      // Check against children already registered in other requests
-      const { data: filhoMatch } = await supabaseAdmin
-        .from("member_request_filhos")
-        .select("id, nome_completo")
-        .eq("cpf", filhoCpf)
-        .limit(1);
-
-      if (filhoMatch && filhoMatch.length > 0) {
-        return new Response(JSON.stringify({ 
-          error: `O filho(a) com CPF informado já foi cadastrado anteriormente por outro responsável (${filhoMatch[0].nome_completo}). Não é possível cadastrar o mesmo filho(a) duas vezes.` 
-        }), {
+    // Validate filhos CPFs
+    const filhos = body.filhos || [];
+    for (const filho of filhos) {
+      const err = await checkDependenteCpf(filho.cpf, filho.nome_completo);
+      if (err) {
+        return new Response(JSON.stringify({ error: err }), {
           status: 409,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -167,23 +179,45 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    // Save children if any
-    if (filhos.length > 0) {
-      const filhosPayload = filhos.map((f) => ({
+    // Save dependentes (conjuge + filhos)
+    const dependentes: Array<{
+      member_request_id: string;
+      nome_completo: string;
+      cpf: string;
+      data_nascimento: string | null;
+      genero: string | null;
+      tipo: string;
+    }> = [];
+
+    if (conjuge && conjuge.nome_completo) {
+      dependentes.push({
+        member_request_id: data.id,
+        nome_completo: conjuge.nome_completo.trim(),
+        cpf: (conjuge.cpf ?? "").replace(/\D/g, ""),
+        data_nascimento: conjuge.data_nascimento ?? null,
+        genero: conjuge.genero ?? null,
+        tipo: "conjuge",
+      });
+    }
+
+    for (const f of filhos) {
+      dependentes.push({
         member_request_id: data.id,
         nome_completo: f.nome_completo.trim(),
         cpf: (f.cpf ?? "").replace(/\D/g, ""),
         data_nascimento: f.data_nascimento ?? null,
         genero: f.genero ?? null,
-      }));
+        tipo: "filho",
+      });
+    }
 
-      const { error: filhosError } = await supabaseAdmin
+    if (dependentes.length > 0) {
+      const { error: depError } = await supabaseAdmin
         .from("member_request_filhos")
-        .insert(filhosPayload);
+        .insert(dependentes);
 
-      if (filhosError) {
-        console.error("Error saving filhos:", filhosError);
-        // Don't fail the whole request, the parent is already saved
+      if (depError) {
+        console.error("Error saving dependentes:", depError);
       }
     }
 
