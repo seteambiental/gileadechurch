@@ -252,10 +252,10 @@ const AgendaPage = () => {
           <TabsContent value="programacao" className="space-y-6">
              <AgendaCalendar
                eventos={[...eventosRecorrentes, ...eventosUnicos]}
-               onEventoClick={(evento) => {
-                 const isRecorrente = evento.recorrente;
+              onEventoClick={(evento) => {
+                 const isCompromisso = TIPOS_COMPROMISSO.includes(evento.tipo_evento);
                  setEditingEvento(evento as Evento);
-                 setFormMode(isRecorrente ? "compromisso" : "evento");
+                 setFormMode(isCompromisso ? "compromisso" : "evento");
                  setShowEventoForm(true);
                }}
                onNovoCompromisso={() => {
