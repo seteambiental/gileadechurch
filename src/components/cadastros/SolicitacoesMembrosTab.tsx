@@ -136,7 +136,52 @@ const SolicitacoesMembrosTab = () => {
 
         if (kidsError) {
           console.error("Erro ao criar vínculo kids_responsaveis:", kidsError);
-          // Não falhar a aprovação se o vínculo não for criado
+        }
+      }
+
+      // Buscar dependentes (filhos e cônjuge) da solicitação
+      const { data: dependentes } = await supabase
+        .from("member_request_filhos")
+        .select("*")
+        .eq("member_request_id", request.id);
+
+      if (dependentes && dependentes.length > 0) {
+        for (const dep of dependentes) {
+          const depPayload = {
+            full_name: dep.nome_completo,
+            cpf: dep.cpf || null,
+            birth_date: dep.data_nascimento || null,
+            genero: dep.genero || null,
+            cep: request.cep,
+            address: request.address,
+            number: request.number,
+            neighborhood: request.neighborhood,
+            city: request.city,
+            state: request.state,
+            responsavel_id: dep.tipo === "filho" ? newMember.id : null,
+          };
+
+          const { data: depMember, error: depError } = await supabase
+            .from("members")
+            .insert(depPayload)
+            .select()
+            .single();
+
+          if (depError) {
+            console.error(`Erro ao criar membro dependente ${dep.nome_completo}:`, depError);
+            continue;
+          }
+
+          // Se filho é menor de 12, criar vínculo kids_responsaveis
+          if (dep.tipo === "filho" && depMember && needsResponsible(dep.data_nascimento)) {
+            await supabase.from("kids_responsaveis").insert({
+              crianca_member_id: depMember.id,
+              responsavel_member_id: newMember.id,
+              parentesco: "responsavel",
+              principal: true,
+              notificar_ausencia: true,
+            });
+          }
         }
       }
 
@@ -155,7 +200,6 @@ const SolicitacoesMembrosTab = () => {
 
         if (candidaturaError) {
           console.error("Erro ao criar candidaturas:", candidaturaError);
-          // Não falhar a aprovação se a candidatura não for criada
         }
       }
 
@@ -193,7 +237,6 @@ const SolicitacoesMembrosTab = () => {
           }
         } catch (userCreateError) {
           console.error("Erro ao criar usuário de autenticação:", userCreateError);
-          // Não falhar a aprovação se o usuário não for criado
         }
 
         // Enviar email de boas-vindas após aprovação
@@ -207,7 +250,6 @@ const SolicitacoesMembrosTab = () => {
           console.log("Email de boas-vindas enviado para:", request.email);
         } catch (emailError) {
           console.error("Erro ao enviar email de boas-vindas:", emailError);
-          // Não falhar a aprovação se o email não for enviado
         }
       }
 
