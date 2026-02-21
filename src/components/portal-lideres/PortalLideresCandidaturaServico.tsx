@@ -145,6 +145,8 @@ export const PortalLideresCandidaturaServico = ({
       .filter((day) => {
         if (getDay(day) !== tipoCulto.day) return false;
         if (isBefore(day, addDays(today, 1))) return false;
+        // Ceia: apenas o 1º domingo do mês
+        if (selectedTipoCulto === "ceia" && day.getDate() > 7) return false;
         return true;
       })
       .map((day) => {

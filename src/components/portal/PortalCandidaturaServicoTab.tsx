@@ -128,6 +128,8 @@ export const PortalCandidaturaServicoTab = ({ memberId }: PortalCandidaturaServi
         if (getDay(day) !== tipoCulto.day) return false;
         // Não permitir datas passadas (precisa ser pelo menos amanhã)
         if (isBefore(day, addDays(today, 1))) return false;
+        // Ceia: apenas o 1º domingo do mês
+        if (selectedTipoCulto === "ceia" && day.getDate() > 7) return false;
         return true;
       })
       .map((day) => {
