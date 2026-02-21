@@ -3292,6 +3292,44 @@ export type Database = {
           },
         ]
       }
+      member_request_filhos: {
+        Row: {
+          cpf: string
+          created_at: string
+          data_nascimento: string | null
+          genero: string | null
+          id: string
+          member_request_id: string | null
+          nome_completo: string
+        }
+        Insert: {
+          cpf: string
+          created_at?: string
+          data_nascimento?: string | null
+          genero?: string | null
+          id?: string
+          member_request_id?: string | null
+          nome_completo: string
+        }
+        Update: {
+          cpf?: string
+          created_at?: string
+          data_nascimento?: string | null
+          genero?: string | null
+          id?: string
+          member_request_id?: string | null
+          nome_completo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_request_filhos_member_request_id_fkey"
+            columns: ["member_request_id"]
+            isOneToOne: false
+            referencedRelation: "member_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_requests: {
         Row: {
           address: string | null

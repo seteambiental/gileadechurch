@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight, Baby } from "lucide-react";
+import { Loader2, UserPlus, CheckCircle2, Search, AlertCircle, CalendarIcon, Church, ChevronLeft, ChevronRight, Baby, Plus, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +100,14 @@ const convertToISODate = (dateStr: string): string | null => {
   return null;
 };
 
+interface FilhoData {
+  nome_completo: string;
+  cpf: string;
+  data_nascimento: string;
+  genero: string;
+  dateInputValue: string; // for display only
+}
+
 export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
@@ -114,6 +122,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [isAdvancingStep, setIsAdvancingStep] = useState(false);
+  const [filhos, setFilhos] = useState<FilhoData[]>([]);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -272,6 +281,12 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         ministerios_interesse: data.nao_pretende_servir ? [] : (data.ministerios_interesse || []),
         nao_pretende_servir: data.nao_pretende_servir || false,
         responsavel_id: data.responsavel_id || null,
+        filhos: filhos.map((f) => ({
+          nome_completo: f.nome_completo,
+          cpf: f.cpf,
+          data_nascimento: f.data_nascimento || null,
+          genero: f.genero || null,
+        })),
       };
 
       // Inserção via função backend (contorna RLS do client/anon)
@@ -312,6 +327,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setPhotoFile(null);
     setPhotoPreview(null);
     setCurrentStep(1);
+    setFilhos([]);
     form.reset();
     onOpenChange(false);
   };
@@ -1048,6 +1064,119 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       )}
                     />
                   )}
+                </div>
+
+                {/* Filhos */}
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Baby className="w-5 h-5 text-secondary" />
+                      <Label className="text-base font-semibold">Adicionar Filhos</Label>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">(que moram no mesmo endereço)</p>
+
+                  {filhos.map((filho, index) => (
+                    <div key={index} className="p-3 border rounded-lg bg-background space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Filho(a) {index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setFilhos((prev) => prev.filter((_, i) => i !== index))}
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Nome Completo *</Label>
+                        <Input
+                          placeholder="Nome completo do filho(a)"
+                          value={filho.nome_completo}
+                          onChange={(e) => {
+                            const updated = [...filhos];
+                            updated[index].nome_completo = e.target.value;
+                            setFilhos(updated);
+                          }}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-sm">CPF *</Label>
+                          <Input
+                            placeholder="000.000.000-00"
+                            value={filho.cpf}
+                            inputMode="numeric"
+                            maxLength={14}
+                            onChange={(e) => {
+                              const updated = [...filhos];
+                              updated[index].cpf = formatCPF(e.target.value);
+                              setFilhos(updated);
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm">Gênero *</Label>
+                          <Select
+                            value={filho.genero}
+                            onValueChange={(val) => {
+                              const updated = [...filhos];
+                              updated[index].genero = val;
+                              setFilhos(updated);
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="masculino">Masculino</SelectItem>
+                              <SelectItem value="feminino">Feminino</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Data de Nascimento *</Label>
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          value={filho.dateInputValue}
+                          inputMode="numeric"
+                          maxLength={10}
+                          onChange={(e) => {
+                            const formatted = formatDateInput(e.target.value);
+                            const updated = [...filhos];
+                            updated[index].dateInputValue = formatted;
+                            if (formatted.length === 10) {
+                              const isoDate = convertToISODate(formatted);
+                              updated[index].data_nascimento = isoDate || "";
+                            } else {
+                              updated[index].data_nascimento = "";
+                            }
+                            setFilhos(updated);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() =>
+                      setFilhos((prev) => [
+                        ...prev,
+                        { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" },
+                      ])
+                    }
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    {filhos.length === 0 ? "Adicionar Filho(a)" : "Adicionar Mais um Filho(a)"}
+                  </Button>
                 </div>
 
                 {/* Termos */}
