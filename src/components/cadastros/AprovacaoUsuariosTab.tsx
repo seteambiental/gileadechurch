@@ -88,7 +88,21 @@ const AprovacaoUsuariosTab = () => {
     mutationFn: async (request: any) => {
       let userId: string;
       let isExistingUser = false;
-      const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
+      // Generate cryptographically secure password
+      const tempPassword = (() => {
+        const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const lower = "abcdefghjkmnpqrstuvwxyz";
+        const digits = "23456789";
+        const symbols = "!@#$%";
+        const all = upper + lower + digits + symbols;
+        const bytes = new Uint8Array(14);
+        crypto.getRandomValues(bytes);
+        const pick = (set: string, b: number) => set[b % set.length];
+        const chars: string[] = [pick(upper, bytes[0]), pick(lower, bytes[1]), pick(digits, bytes[2]), pick(symbols, bytes[3])];
+        for (let i = 4; i < 14; i++) chars.push(pick(all, bytes[i]));
+        for (let i = chars.length - 1; i > 0; i--) { const j = bytes[i] % (i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+        return chars.join("");
+      })();
 
       // 1. Verificar se o membro já tem user_id vinculado
       const { data: memberData } = await supabase
