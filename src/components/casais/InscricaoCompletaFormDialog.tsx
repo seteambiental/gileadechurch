@@ -223,15 +223,11 @@ export function InscricaoCompletaFormDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!turmaId) {
-      toast({ title: "Selecione uma turma", variant: "destructive" });
-      return;
-    }
 
     setSaving(true);
     try {
       const payload: any = {
-        turma_id: turmaId,
+        turma_id: turmaId || null,
         membro_masculino_id: membroMasculinoId || null,
         membro_feminino_id: membroFemininoId || null,
         nome_masculino: nomeMasculino ? formatNameField(nomeMasculino) : null,
@@ -377,20 +373,7 @@ export function InscricaoCompletaFormDialog({
           <DialogDescription>Preencha todos os dados do casal para inscrição completa.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Turma */}
-          <div className="space-y-2">
-            <Label>Turma *</Label>
-            <Select value={turmaId} onValueChange={setTurmaId}>
-              <SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger>
-              <SelectContent>
-                {turmas.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <Separator />
+          {/* Turma removida - será atribuída na aprovação */}
 
           {/* Esposo */}
           <div className="space-y-3">
@@ -401,8 +384,8 @@ export function InscricaoCompletaFormDialog({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Nome do Esposo *</Label>
-                <Input value={nomeMasculino} onChange={(e) => setNomeMasculino(e.target.value)} required />
+                <Label>Nome Completo do Esposo *</Label>
+                <Input value={nomeMasculino} onChange={(e) => setNomeMasculino(e.target.value)} required placeholder="Nome completo" />
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
@@ -426,8 +409,8 @@ export function InscricaoCompletaFormDialog({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Nome da Esposa *</Label>
-                <Input value={nomeFeminino} onChange={(e) => setNomeFeminino(e.target.value)} required />
+                <Label>Nome Completo da Esposa *</Label>
+                <Input value={nomeFeminino} onChange={(e) => setNomeFeminino(e.target.value)} required placeholder="Nome completo" />
               </div>
               <div className="space-y-2">
                 <Label>Telefone</Label>
@@ -471,7 +454,7 @@ export function InscricaoCompletaFormDialog({
             </div>
             {modalidadeCasamento && (
               <div className="space-y-2 max-w-xs">
-                <Label>Desde quando?</Label>
+                <Label>Desde quando? (Pode ser aproximado)</Label>
                 <DateInput value={dataModalidade} onChange={(v) => setDataModalidade(v)} maxDate={undefined} />
               </div>
             )}
@@ -580,7 +563,7 @@ export function InscricaoCompletaFormDialog({
             </RadioGroup>
             {congregaGileade === "nao" && (
               <div className="max-w-md space-y-2">
-                <Label>Onde congrega?</Label>
+                <Label>Onde congrega? (Pode deixar em branco se não congregar)</Label>
                 <Input value={ondeCongrega} onChange={(e) => setOndeCongrega(e.target.value)} placeholder="Informe a igreja..." />
               </div>
             )}

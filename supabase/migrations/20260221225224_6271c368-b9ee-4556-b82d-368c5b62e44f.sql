@@ -1,0 +1,1 @@
+ALTER TABLE public.casais_inscritos ALTER COLUMN turma_id DROP NOT NULL;
