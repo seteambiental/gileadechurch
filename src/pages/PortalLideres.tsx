@@ -31,6 +31,7 @@ import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLide
 import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLideresCondominio";
 import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLideresAprovacoes";
 import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
+import { PortalLideresCandidaturaServico } from "@/components/portal-lideres/PortalLideresCandidaturaServico";
 
 // Roles que têm acesso ao portal de líderes
 const LEADER_ROLES: PortalRole[] = [
@@ -226,6 +227,11 @@ const PortalLideres = () => {
     availableTabs.push({ id: "aprovacoes", label: "Aprovações", icon: ClipboardCheck });
   }
 
+  // Servir na Porta - para líderes/supervisores de Casa Refúgio
+  if (memberCasasRefugio.length > 0) {
+    availableTabs.push({ id: "servir-porta", label: "Servir na Porta", icon: HandHeart });
+  }
+
   // Finanças - disponível para todos os líderes
   availableTabs.push({ id: "financas", label: "Finanças", icon: DollarSign });
 
@@ -322,6 +328,13 @@ const PortalLideres = () => {
 
           <TabsContent value="aprovacoes">
             <PortalLideresAprovacoes portalAccess={portalAccess} memberId={memberProfile.id} />
+          </TabsContent>
+
+          <TabsContent value="servir-porta">
+            <PortalLideresCandidaturaServico
+              memberId={memberProfile.id}
+              memberCasasRefugio={memberCasasRefugio}
+            />
           </TabsContent>
 
           <TabsContent value="financas">
