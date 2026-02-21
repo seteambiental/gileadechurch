@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import rumoImage from "@/assets/rumo-aos-1000.png";
+import { formatLeaderNames } from "@/lib/text-utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
 import {
@@ -44,7 +45,33 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 import AniversariantesDialog from "@/components/AniversariantesDialog";
 import { useUserAccess } from "@/hooks/useUserAccess";
 
-// Ministérios (ícones vermelhos) - ordenados alfabeticamente
+// Cores únicas por ministério (combinando com o tema/ícone de cada um)
+const MINISTRY_COLORS: Record<string, string> = {
+  "Ação Social": "#e11d48",       // Rosa avermelhado (Heart)
+  "Casais": "#be185d",            // Rosa profundo (HeartHandshake)
+  "Casas Refúgio": "#16a34a",     // Verde (Home)
+  "Consolidação": "#0d9488",      // Teal (UserCheck)
+  "Dança": "#a855f7",             // Roxo (Disc3)
+  "Ensino": "#2563eb",            // Azul (BookOpen)
+  "Estacionamento": "#475569",    // Cinza azulado (Car)
+  "Evangelização": "#ea580c",     // Laranja (Megaphone)
+  "Flow": "#ef4444",              // Vermelho fogo (Flame)
+  "GT": "#eab308",                // Amarelo dourado (Sparkles)
+  "Eventos e Impacto": "#7c3aed", // Violeta (Zap)
+  "Intercessão": "#f97316",       // Laranja quente (HandHeart)
+  "Kids": "",                     // Usa gradient especial
+  "Louvor": "#6366f1",            // Índigo (Music)
+  "Mídia": "#0891b2",             // Ciano (Camera)
+  "Missões Moçambique": "#059669",// Verde esmeralda (Globe)
+  "Mulheres": "#db2777",          // Pink (Crown)
+  "Organização de Culto": "#b45309",// Âmbar (ClipboardList)
+  "Recepção": "#0284c7",          // Sky (DoorOpen)
+  "Serviço (Dorcas)": "#d97706",  // Amber (HandHeart)
+  "Teatro": "#9333ea",            // Purple (Drama)
+  "True Man": "#1e3a5f",          // Azul marinho (Shield)
+};
+
+// Ministérios (ícones com cores individuais) - ordenados alfabeticamente
 const ministries = [
   { icon: Heart, title: "Ação Social", description: "Ajuda comunitária", path: "/ministerio/acao-social" },
   { icon: HeartHandshake, title: "Casais", description: "Ministério de casais", path: "/ministerio/casais" },
@@ -112,6 +139,33 @@ const AppDashboard = () => {
       return count || 0;
     },
   });
+
+  // Buscar líderes dos ministérios
+  const { data: ministriesData = [] } = useQuery({
+    queryKey: ["ministries-leaders-dashboard"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministries")
+        .select(`
+          name,
+          lider:members!ministries_lider_id_fkey(full_name),
+          lider_esposa:members!ministries_lider_esposa_id_fkey(full_name)
+        `)
+        .order("name");
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Mapa nome do ministério → nomes dos líderes
+  const ministryLeadersMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    ministriesData.forEach((m: any) => {
+      const names = formatLeaderNames(m.lider?.full_name, m.lider_esposa?.full_name);
+      if (names) map[m.name] = names;
+    });
+    return map;
+  }, [ministriesData]);
 
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
@@ -275,8 +329,10 @@ const AppDashboard = () => {
               icon={ministry.icon}
               title={ministry.title}
               description={ministry.description}
+              leaderNames={ministryLeadersMap[ministry.title]}
               delay={index * 50}
               variant={ministry.title === "Kids" ? "kids" : "ministry"}
+              color={MINISTRY_COLORS[ministry.title] || undefined}
               onClick={() => navigate(ministry.path)}
             />
           ))}
