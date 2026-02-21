@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Video, Plus, Pencil, Trash2, GripVertical, ExternalLink } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface HomepageVideo {
   id: string;
@@ -25,6 +26,7 @@ const HomepageVideosTab = () => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingVideo, setEditingVideo] = useState<HomepageVideo | null>(null);
+  const [deleteVideoId, setDeleteVideoId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
@@ -222,11 +224,7 @@ const HomepageVideosTab = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => {
-                          if (confirm("Remover este vídeo?")) {
-                            deleteMutation.mutate(video.id);
-                          }
-                        }}
+                        onClick={() => setDeleteVideoId(video.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
@@ -312,6 +310,11 @@ const HomepageVideosTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog
+        open={!!deleteVideoId}
+        onOpenChange={(open) => !open && setDeleteVideoId(null)}
+        onConfirm={() => { if (deleteVideoId) { deleteMutation.mutate(deleteVideoId); setDeleteVideoId(null); } }}
+      />
     </div>
   );
 };

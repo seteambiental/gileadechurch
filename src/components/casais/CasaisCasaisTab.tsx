@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CasalFormDialog } from "./CasalFormDialog";
 import { CertificadoDialog } from "./CertificadoDialog";
 import { ExportButton } from "@/components/ui/export-button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function CasaisCasaisTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -44,6 +45,8 @@ export function CasaisCasaisTab() {
   const [isCertificadoOpen, setIsCertificadoOpen] = useState(false);
   const [selectedCasal, setSelectedCasal] = useState<any>(null);
   const [selectedTurma, setSelectedTurma] = useState<any>(null);
+  const [editingCasal, setEditingCasal] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -83,10 +86,9 @@ export function CasaisCasaisTab() {
     },
   });
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja remover este casal?")) return;
-    
-    const { error } = await supabase.from("casais_inscritos").delete().eq("id", id);
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("casais_inscritos").delete().eq("id", deleteId);
     if (error) {
       toast({ title: "Erro ao remover casal", variant: "destructive" });
     } else {
@@ -94,10 +96,18 @@ export function CasaisCasaisTab() {
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
     }
+    setDeleteId(null);
   };
 
   const handleAddCasal = (turmaId: string) => {
+    setEditingCasal(null);
     setSelectedTurmaId(turmaId);
+    setIsFormOpen(true);
+  };
+
+  const handleEditCasal = (casal: any) => {
+    setEditingCasal(casal);
+    setSelectedTurmaId(casal.turma_id);
     setIsFormOpen(true);
   };
 
@@ -249,11 +259,15 @@ export function CasaisCasaisTab() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEditCasal(casal)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEmitirCertificado(casal)}>
                             <Award className="w-4 h-4 mr-2" />
                             Emitir Certificado
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(casal.id)} className="text-destructive">
+                          <DropdownMenuItem onClick={() => setDeleteId(casal.id)} className="text-destructive">
                             <Trash2 className="w-4 h-4 mr-2" />
                             Remover
                           </DropdownMenuItem>
@@ -267,7 +281,6 @@ export function CasaisCasaisTab() {
           </div>
         )}
 
-        {/* Summary cards */}
         {casais && casais.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             <Card className="bg-muted/30">
@@ -303,9 +316,13 @@ export function CasaisCasaisTab() {
           open={isFormOpen}
           onOpenChange={(open) => {
             setIsFormOpen(open);
-            if (!open) setSelectedTurmaId("");
+            if (!open) {
+              setSelectedTurmaId("");
+              setEditingCasal(null);
+            }
           }}
           turmaId={selectedTurmaId}
+          casal={editingCasal}
         />
       )}
 
@@ -314,6 +331,12 @@ export function CasaisCasaisTab() {
         onOpenChange={setIsCertificadoOpen}
         casal={selectedCasal}
         turma={selectedTurma}
+      />
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={handleDelete}
       />
     </Card>
   );

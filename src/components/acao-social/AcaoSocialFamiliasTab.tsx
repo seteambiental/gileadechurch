@@ -13,12 +13,14 @@ import { FamiliaFormDialog } from "./FamiliaFormDialog";
 import { FamiliaDetalhesDialog } from "./FamiliaDetalhesDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function AcaoSocialFamiliasTab() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detalhesOpen, setDetalhesOpen] = useState(false);
   const [selectedFamilia, setSelectedFamilia] = useState<any>(null);
+  const [deleteFamiliaId, setDeleteFamiliaId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: familias, isLoading } = useQuery({
@@ -213,11 +215,7 @@ export function AcaoSocialFamiliasTab() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => {
-                              if (confirm("Tem certeza que deseja remover esta família?")) {
-                                deleteMutation.mutate(familia.id);
-                              }
-                            }}
+                            onClick={() => setDeleteFamiliaId(familia.id)}
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -242,6 +240,11 @@ export function AcaoSocialFamiliasTab() {
         open={detalhesOpen}
         onOpenChange={setDetalhesOpen}
         familia={selectedFamilia}
+      />
+      <ConfirmDialog
+        open={!!deleteFamiliaId}
+        onOpenChange={(open) => !open && setDeleteFamiliaId(null)}
+        onConfirm={() => { if (deleteFamiliaId) { deleteMutation.mutate(deleteFamiliaId); setDeleteFamiliaId(null); } }}
       />
     </div>
   );

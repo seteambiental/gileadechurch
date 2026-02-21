@@ -14,10 +14,12 @@ import { ptBR } from "date-fns/locale";
 import { AjudaFormDialog } from "./AjudaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export function AcaoSocialAjudasTab() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteAjudaId, setDeleteAjudaId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: ajudas, isLoading } = useQuery({
@@ -200,11 +202,7 @@ export function AcaoSocialAjudasTab() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => {
-                            if (confirm("Tem certeza que deseja remover este registro?")) {
-                              deleteMutation.mutate(ajuda.id);
-                            }
-                          }}
+                          onClick={() => setDeleteAjudaId(ajuda.id)}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -221,6 +219,11 @@ export function AcaoSocialAjudasTab() {
       <AjudaFormDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
+      <ConfirmDialog
+        open={!!deleteAjudaId}
+        onOpenChange={(open) => !open && setDeleteAjudaId(null)}
+        onConfirm={() => { if (deleteAjudaId) { deleteMutation.mutate(deleteAjudaId); setDeleteAjudaId(null); } }}
       />
     </div>
   );

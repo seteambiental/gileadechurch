@@ -12,6 +12,7 @@ import { InstituicaoFormDialog } from "./InstituicaoFormDialog";
 import { InstituicaoDetalhesDialog } from "./InstituicaoDetalhesDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const tiposInstituicao: Record<string, string> = {
   idosos: "Idosos",
@@ -27,6 +28,7 @@ export function AcaoSocialInstituicoesTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detalhesOpen, setDetalhesOpen] = useState(false);
   const [selectedInstituicao, setSelectedInstituicao] = useState<any>(null);
+  const [deleteInstId, setDeleteInstId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: instituicoes, isLoading } = useQuery({
@@ -167,11 +169,7 @@ export function AcaoSocialInstituicoesTab() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => {
-                              if (confirm("Tem certeza que deseja remover esta instituição?")) {
-                                deleteMutation.mutate(instituicao.id);
-                              }
-                            }}
+                            onClick={() => setDeleteInstId(instituicao.id)}
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -196,6 +194,11 @@ export function AcaoSocialInstituicoesTab() {
         open={detalhesOpen}
         onOpenChange={setDetalhesOpen}
         instituicao={selectedInstituicao}
+      />
+      <ConfirmDialog
+        open={!!deleteInstId}
+        onOpenChange={(open) => !open && setDeleteInstId(null)}
+        onConfirm={() => { if (deleteInstId) { deleteMutation.mutate(deleteInstId); setDeleteInstId(null); } }}
       />
     </div>
   );

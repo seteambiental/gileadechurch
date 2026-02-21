@@ -25,6 +25,7 @@ interface CasalFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   turmaId: string;
+  casal?: any;
 }
 
 function calcularTempoCasamento(dataStr: string): string {
@@ -40,7 +41,7 @@ function calcularTempoCasamento(dataStr: string): string {
   return `${anos} ${anos === 1 ? "ano" : "anos"} e ${meses} ${meses === 1 ? "mês" : "meses"}`;
 }
 
-export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialogProps) {
+export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFormDialogProps) {
   const [usarMembros, setUsarMembros] = useState(true);
   const [membroMasculinoId, setMembroMasculinoId] = useState("");
   const [membroFemininoId, setMembroFemininoId] = useState("");
@@ -54,7 +55,25 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Calcula automaticamente o tempo de casamento quando a data muda
+  const isEditing = !!casal;
+
+  useEffect(() => {
+    if (casal && open) {
+      setUsarMembros(!!(casal.membro_masculino_id || casal.membro_feminino_id));
+      setMembroMasculinoId(casal.membro_masculino_id || "");
+      setMembroFemininoId(casal.membro_feminino_id || "");
+      setNomeMasculino(casal.nome_masculino || "");
+      setNomeFeminino(casal.nome_feminino || "");
+      setWhatsappMasculino(casal.whatsapp_masculino || "");
+      setWhatsappFeminino(casal.whatsapp_feminino || "");
+      setDataCasamento(casal.data_casamento || "");
+      setTempoCasamento(casal.tempo_casamento || "");
+      setObservacoes(casal.observacoes || "");
+    } else if (!casal && open) {
+      resetForm();
+    }
+  }, [casal, open]);
+
   useEffect(() => {
     if (dataCasamento) {
       setTempoCasamento(calcularTempoCasamento(dataCasamento));
@@ -97,12 +116,17 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
       observacoes: observacoes || null,
     };
 
-    const { error } = await supabase.from("casais_inscritos").insert(payload);
+    let error;
+    if (isEditing) {
+      ({ error } = await supabase.from("casais_inscritos").update(payload).eq("id", casal.id));
+    } else {
+      ({ error } = await supabase.from("casais_inscritos").insert(payload));
+    }
 
     if (error) {
-      toast({ title: "Erro ao inscrever casal", variant: "destructive" });
+      toast({ title: isEditing ? "Erro ao atualizar casal" : "Erro ao inscrever casal", variant: "destructive" });
     } else {
-      toast({ title: "Casal inscrito com sucesso" });
+      toast({ title: isEditing ? "Casal atualizado com sucesso" : "Casal inscrito com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
@@ -127,9 +151,9 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Adicionar Casal</DialogTitle>
+          <DialogTitle>{isEditing ? "Editar Casal" : "Adicionar Casal"}</DialogTitle>
           <DialogDescription>
-            Preencha os dados do casal para inscrevê-los na turma.
+            {isEditing ? "Edite os dados do casal." : "Preencha os dados do casal para inscrevê-los na turma."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -145,43 +169,40 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
           {usarMembros ? (
             <>
               <div className="space-y-2">
-                <Label>Esposo *</Label>
+                <Label>Esposo (membro)</Label>
                 <ClearableSelect
-                  value={membroMasculinoId || null}
-                  onChange={(val) => setMembroMasculinoId(val || "")}
+                  value={membroMasculinoId}
+                  onChange={(v) => setMembroMasculinoId(v || "")}
+                  placeholder="Selecione o esposo"
                   options={membrosMasculinos.map((m) => ({
                     value: m.id,
-                    label: m.full_name,
+                    label: m.full_name || "",
                   }))}
-                  placeholder="Selecione o esposo"
-                  emptyLabel="Selecione..."
                 />
               </div>
-
               <div className="space-y-2">
-                <Label>Esposa *</Label>
+                <Label>Esposa (membro)</Label>
                 <ClearableSelect
-                  value={membroFemininoId || null}
-                  onChange={(val) => setMembroFemininoId(val || "")}
+                  value={membroFemininoId}
+                  onChange={(v) => setMembroFemininoId(v || "")}
+                  placeholder="Selecione a esposa"
                   options={membrosFemininos.map((m) => ({
                     value: m.id,
-                    label: m.full_name,
+                    label: m.full_name || "",
                   }))}
-                  placeholder="Selecione a esposa"
-                  emptyLabel="Selecione..."
                 />
               </div>
             </>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nomeMasculino">Nome do Esposo *</Label>
+                  <Label htmlFor="nomeMasculino">Nome do Esposo</Label>
                   <Input
                     id="nomeMasculino"
                     value={nomeMasculino}
-                    onChange={(e) => setNomeMasculino(e.target.value)}
-                    required
+                    onChange={(e) => setNomeMasculino(formatNameField(e.target.value))}
+                    placeholder="Nome completo"
                   />
                 </div>
                 <div className="space-y-2">
@@ -190,18 +211,18 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
                     id="whatsappMasculino"
                     value={whatsappMasculino}
                     onChange={(e) => setWhatsappMasculino(formatPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
                   />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nomeFeminino">Nome da Esposa *</Label>
+                  <Label htmlFor="nomeFeminino">Nome da Esposa</Label>
                   <Input
                     id="nomeFeminino"
                     value={nomeFeminino}
-                    onChange={(e) => setNomeFeminino(e.target.value)}
-                    required
+                    onChange={(e) => setNomeFeminino(formatNameField(e.target.value))}
+                    placeholder="Nome completo"
                   />
                 </div>
                 <div className="space-y-2">
@@ -210,20 +231,20 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
                     id="whatsappFeminino"
                     value={whatsappFeminino}
                     onChange={(e) => setWhatsappFeminino(formatPhone(e.target.value))}
+                    placeholder="(00) 00000-0000"
                   />
                 </div>
               </div>
             </>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dataCasamento">Data do Casamento</Label>
+              <Label>Data de Casamento</Label>
               <DateInput
-                id="dataCasamento"
                 value={dataCasamento}
-                onChange={(value) => setDataCasamento(value)}
-                maxDate={undefined}
+                onChange={setDataCasamento}
+                placeholder="DD/MM/AAAA"
               />
             </div>
             <div className="space-y-2">
@@ -252,7 +273,7 @@ export function CasalFormDialog({ open, onOpenChange, turmaId }: CasalFormDialog
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit">Inscrever Casal</Button>
+            <Button type="submit">{isEditing ? "Salvar" : "Inscrever Casal"}</Button>
           </div>
         </form>
       </DialogContent>
