@@ -187,7 +187,7 @@ const ImpactoDespesasTab = ({ eventoId }: Props) => {
                     <Badge variant="outline">{d.categoria}</Badge>
                   </TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>
-                  <TableCell>{format(parseLocalDate(d.data_despesa), "dd/MM/yyyy")}</TableCell>
+                  <TableCell>{d.data_despesa ? format(parseLocalDate(d.data_despesa), "dd/MM/yyyy") : "—"}</TableCell>
                   <TableCell className="text-right font-medium text-destructive">
                     {formatCurrency(d.valor || 0)}
                   </TableCell>
