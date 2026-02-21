@@ -1701,6 +1701,120 @@ export type Database = {
           },
         ]
       }
+      escala_servico_membros: {
+        Row: {
+          created_at: string
+          escala_id: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          created_at?: string
+          escala_id: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          created_at?: string
+          escala_id?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_servico_membros_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "escalas_servico"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escala_servico_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escala_servico_membros_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escalas_servico: {
+        Row: {
+          casa_refugio_id: string | null
+          created_at: string
+          data_culto: string
+          id: string
+          member_id: string | null
+          ministry_id: string
+          observacoes: string | null
+          status: string
+          tipo_culto: string
+          tipo_escala: string
+          updated_at: string
+        }
+        Insert: {
+          casa_refugio_id?: string | null
+          created_at?: string
+          data_culto: string
+          id?: string
+          member_id?: string | null
+          ministry_id: string
+          observacoes?: string | null
+          status?: string
+          tipo_culto: string
+          tipo_escala: string
+          updated_at?: string
+        }
+        Update: {
+          casa_refugio_id?: string | null
+          created_at?: string
+          data_culto?: string
+          id?: string
+          member_id?: string | null
+          ministry_id?: string
+          observacoes?: string | null
+          status?: string
+          tipo_culto?: string
+          tipo_escala?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalas_servico_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalas_servico_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalas_servico_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalas_servico_ministry_id_fkey"
+            columns: ["ministry_id"]
+            isOneToOne: false
+            referencedRelation: "ministries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       evangelizacao_eventos: {
         Row: {
           created_at: string
