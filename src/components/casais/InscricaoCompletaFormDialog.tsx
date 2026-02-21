@@ -228,6 +228,7 @@ export function InscricaoCompletaFormDialog({
     try {
       const payload: any = {
         turma_id: turmaId || null,
+        status: editingId ? undefined : "pendente",
         membro_masculino_id: membroMasculinoId || null,
         membro_feminino_id: membroFemininoId || null,
         nome_masculino: nomeMasculino ? formatNameField(nomeMasculino) : null,
