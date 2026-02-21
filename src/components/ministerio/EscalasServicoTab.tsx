@@ -42,6 +42,7 @@ import {
   endOfMonth,
 } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { calculateAge } from "@/lib/age-utils";
 import { ptBR } from "date-fns/locale";
 
 interface EscalasServicoTabProps {
@@ -157,13 +158,18 @@ export const EscalasServicoTab = ({ ministryId, ministrySlug }: EscalasServicoTa
       if (escala.tipo_escala === "casa_refugio" && escala.casa_refugio_id) {
         const { data: membrosVinculados, error: mvError } = await supabase
           .from("members")
-          .select("id, genero")
+          .select("id, genero, birth_date")
           .eq("casa_refugio_id", escala.casa_refugio_id);
         if (mvError) throw mvError;
 
         let membrosParaEscalar = membrosVinculados || [];
         if (isEstacionamento) {
-          membrosParaEscalar = membrosParaEscalar.filter((m) => m.genero === "masculino");
+          membrosParaEscalar = membrosParaEscalar.filter((m) => {
+            if (m.genero !== "masculino") return false;
+            const { years } = calculateAge(m.birth_date);
+            if (m.birth_date && years < 14) return false;
+            return true;
+          });
         }
 
         if (membrosParaEscalar.length > 0) {
