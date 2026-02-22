@@ -88,9 +88,13 @@ const Auth = () => {
     data_nascimento: string;
     genero: string;
     dateInputValue: string;
+    photoFile: File | null;
+    photoPreview: string | null;
   }
   const [filhosAuth, setFilhosAuth] = useState<DependenteData[]>([]);
   const [conjugeAuth, setConjugeAuth] = useState<DependenteData | null>(null);
+  const [conjugeAuthPhotoFile, setConjugeAuthPhotoFile] = useState<File | null>(null);
+  const [conjugeAuthPhotoPreview, setConjugeAuthPhotoPreview] = useState<string | null>(null);
   
   const formatDateInputAuth = (value: string): string => {
     const numbers = value.replace(/\D/g, "");
@@ -601,6 +605,32 @@ const Auth = () => {
       const hasMinistries = (signupData.ministerio_ids?.length || 0) > 0;
       const needsManualApproval = !isMemberOnly || hasMinistries;
 
+      // Helper to upload a dependent photo
+      const uploadDepPhoto = async (file: File | null): Promise<string | null> => {
+        if (!file) return null;
+        const ext = file.name.split(".").pop();
+        const name = `solicitacao_dep_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("member-photos").upload(name, file);
+        if (upErr) { console.error("Upload dep photo error:", upErr); return null; }
+        const { data: u } = supabase.storage.from("member-photos").getPublicUrl(name);
+        return u.publicUrl;
+      };
+
+      // Upload conjuge photo
+      const conjugePhotoUrl = await uploadDepPhoto(conjugeAuthPhotoFile);
+
+      // Upload filhos photos
+      const filhosWithPhotos = await Promise.all(
+        filhosAuth.map(async (f) => ({
+          nome_completo: f.nome_completo,
+          cpf: f.cpf,
+          data_nascimento: f.data_nascimento || null,
+          genero: f.genero || null,
+          tipo: "filho" as const,
+          photo_url: await uploadDepPhoto(f.photoFile),
+        }))
+      );
+
       const requestPayload = {
         full_name: signupData.full_name!,
         email: signupData.email!,
@@ -621,19 +651,14 @@ const Auth = () => {
         ministerios_interesse: signupData.ministerio_ids || [],
         nao_pretende_servir: naoPretendeServir,
         estado_civil: preCheckEstadoCivil || null,
-        filhos: filhosAuth.map((f) => ({
-          nome_completo: f.nome_completo,
-          cpf: f.cpf,
-          data_nascimento: f.data_nascimento || null,
-          genero: f.genero || null,
-          tipo: "filho" as const,
-        })),
+        filhos: filhosWithPhotos,
         conjuge: conjugeAuth && conjugeAuth.nome_completo ? {
           nome_completo: conjugeAuth.nome_completo,
           cpf: conjugeAuth.cpf,
           data_nascimento: conjugeAuth.data_nascimento || null,
           genero: conjugeAuth.genero || null,
           tipo: "conjuge" as const,
+          photo_url: conjugePhotoUrl,
         } : null,
       };
 
@@ -1715,9 +1740,31 @@ const Auth = () => {
                       <div className="p-3 border rounded-lg bg-background space-y-3">
                         <div className="flex items-center justify-between">
                           <span className="text-sm font-medium">Esposo(a)</span>
-                          <Button type="button" variant="ghost" size="sm" onClick={() => setConjugeAuth(null)}>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => { setConjugeAuth(null); setConjugeAuthPhotoFile(null); setConjugeAuthPhotoPreview(null); }}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
+                        </div>
+
+                        {/* Foto do Cônjuge */}
+                        <div className="flex flex-col items-center gap-2 py-2 border rounded-lg bg-muted/30">
+                          {conjugeAuthPhotoPreview && (
+                            <img src={conjugeAuthPhotoPreview} alt="Foto cônjuge" className="w-20 h-20 rounded-full object-cover" />
+                          )}
+                          <CameraPhotoInput
+                            photoPreview={conjugeAuthPhotoPreview}
+                            onPhotoCapture={(file) => {
+                              setConjugeAuthPhotoFile(file);
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setConjugeAuthPhotoPreview(reader.result as string);
+                                reader.readAsDataURL(file);
+                              } else {
+                                setConjugeAuthPhotoPreview(null);
+                              }
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">Foto do esposo(a) *</p>
+                          {!conjugeAuthPhotoPreview && <p className="text-xs text-destructive">Foto é obrigatória</p>}
                         </div>
                         <div>
                           <Label className="text-sm">Nome Completo *</Label>
@@ -1772,7 +1819,7 @@ const Auth = () => {
                         type="button"
                         variant="outline"
                         className="w-full"
-                        onClick={() => setConjugeAuth({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" })}
+                        onClick={() => setConjugeAuth({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "", photoFile: null, photoPreview: null })}
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Adicionar Esposo(a)
@@ -1796,6 +1843,35 @@ const Auth = () => {
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>
+
+                        {/* Foto do Filho */}
+                        <div className="flex flex-col items-center gap-2 py-2 border rounded-lg bg-muted/30">
+                          {filho.photoPreview && (
+                            <img src={filho.photoPreview} alt={`Foto filho ${index + 1}`} className="w-20 h-20 rounded-full object-cover" />
+                          )}
+                          <CameraPhotoInput
+                            photoPreview={filho.photoPreview}
+                            onPhotoCapture={(file) => {
+                              const updated = [...filhosAuth];
+                              updated[index].photoFile = file;
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  const u = [...filhosAuth];
+                                  u[index].photoPreview = reader.result as string;
+                                  setFilhosAuth(u);
+                                };
+                                reader.readAsDataURL(file);
+                              } else {
+                                updated[index].photoPreview = null;
+                              }
+                              setFilhosAuth(updated);
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">Foto do filho(a) *</p>
+                          {!filho.photoPreview && <p className="text-xs text-destructive">Foto é obrigatória</p>}
+                        </div>
+
                         <div>
                           <Label className="text-sm">Nome Completo *</Label>
                           <Input
@@ -1868,7 +1944,7 @@ const Auth = () => {
                       type="button"
                       variant="outline"
                       className="w-full"
-                      onClick={() => setFilhosAuth((prev) => [...prev, { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" }])}
+                      onClick={() => setFilhosAuth((prev) => [...prev, { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "", photoFile: null, photoPreview: null }])}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       {filhosAuth.length === 0 ? "Adicionar Filho(a)" : "Adicionar Mais um Filho(a)"}
