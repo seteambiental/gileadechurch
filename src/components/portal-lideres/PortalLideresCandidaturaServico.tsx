@@ -29,7 +29,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Send,
+  
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
@@ -48,6 +48,8 @@ import {
   startOfDay,
   addDays,
   getYear,
+  startOfWeek,
+  endOfWeek,
 } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -59,7 +61,10 @@ const ESTACIONAMENTO_ID = "25c5c6c9-20c6-4f67-a324-a3abe275f904";
 const TIPOS_CULTO = [
   { value: "celebracao", label: "Celebração (Domingo)", day: 0 },
   { value: "ceia", label: "Ceia (Domingo)", day: 0 },
+  { value: "quarta", label: "Quarta com Propósito", day: 3 },
 ];
+
+const DIAS_SEMANA_ABREV = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 interface PortalLideresCandidaturaServicoProps {
   memberId: string;
@@ -83,6 +88,13 @@ export const PortalLideresCandidaturaServico = ({
   const monthEnd = endOfMonth(currentMonth);
   const currentYear = getYear(currentMonth);
 
+  // Gerar dias do calendário (incluindo dias do mês anterior/posterior para preencher a grade)
+  const calendarDays = useMemo(() => {
+    const start = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const end = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start, end });
+  }, [monthStart, monthEnd]);
+
   // Buscar candidaturas existentes da CR neste ano (para regra de max 2/ano)
   const { data: candidaturasCrAno = [], isLoading: loadingCrAno } = useQuery({
     queryKey: ["candidaturas-cr-ano", selectedCasaRefugio, currentYear],
@@ -104,24 +116,28 @@ export const PortalLideresCandidaturaServico = ({
 
   // Buscar escalas do mês (para ver vagas ocupadas — max 2 CRs por culto)
   const { data: escalasDoMes = [], isLoading: loadingEscalas } = useQuery({
-    queryKey: ["escalas-cr-mes", format(currentMonth, "yyyy-MM")],
+    queryKey: ["escalas-cr-mes", format(currentMonth, "yyyy-MM"), selectedMinistry],
     queryFn: async () => {
       const start = format(monthStart, "yyyy-MM-dd");
       const end = format(monthEnd, "yyyy-MM-dd");
-      const { data, error } = await supabase
+      const query = supabase
         .from("escalas_servico")
-        .select("id, ministry_id, data_culto, tipo_culto, tipo_escala, status, casa_refugio_id")
+        .select("id, ministry_id, data_culto, tipo_culto, tipo_escala, status, casa_refugio_id, membros:escala_servico_membros(id)")
         .eq("tipo_escala", "casa_refugio")
         .in("status", ["pendente", "aprovado"])
         .gte("data_culto", start)
         .lte("data_culto", end);
+      if (selectedMinistry) {
+        query.eq("ministry_id", selectedMinistry);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
+    enabled: !!selectedMinistry,
   });
 
   // Contar serviços da CR no ano (agrupando domingo+quarta como 1 serviço)
-  // Cada candidatura domingo conta como 1 serviço (a quarta é automática para recepção)
   const servicosCrNoAno = useMemo(() => {
     if (!selectedCasaRefugio || !selectedMinistry) return 0;
     return candidaturasCrAno.filter(
@@ -131,41 +147,70 @@ export const PortalLideresCandidaturaServico = ({
 
   const atingiuLimiteAnual = servicosCrNoAno >= 2;
 
-  // Gerar datas de culto disponíveis (domingos)
-  const availableDates = useMemo(() => {
-    if (!selectedMinistry || !selectedTipoCulto || !selectedCasaRefugio) return [];
-
-    const tipoCulto = TIPOS_CULTO.find((t) => t.value === selectedTipoCulto);
-    if (!tipoCulto) return [];
-
+  // Dados do calendário: mapear cada dia do mês com informações de culto
+  const calendarData = useMemo(() => {
+    if (!selectedMinistry || !selectedCasaRefugio) return new Map();
+    
     const today = startOfDay(new Date());
+    const dataMap = new Map<string, {
+      isCulto: boolean;
+      tipoCulto: string;
+      crsCount: number;
+      membrosCount: number;
+      alreadyCandidated: boolean;
+      isPast: boolean;
+    }>();
+
     const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-    return days
-      .filter((day) => {
-        if (getDay(day) !== tipoCulto.day) return false;
-        if (isBefore(day, addDays(today, 1))) return false;
-        // Ceia: apenas o 1º domingo do mês
-        if (selectedTipoCulto === "ceia" && day.getDate() > 7) return false;
-        return true;
-      })
-      .map((day) => {
-        const dateStr = format(day, "yyyy-MM-dd");
-        // Max 2 CRs por data+tipo+ministério
+    for (const day of days) {
+      const dayOfWeek = getDay(day);
+      const dateStr = format(day, "yyyy-MM-dd");
+      const isPast = isBefore(day, addDays(today, 1));
+
+      // Verificar se é dia de culto
+      let isCulto = false;
+      let tipoCulto = "";
+
+      if (dayOfWeek === 0) {
+        // Domingo: celebração ou ceia (1º domingo)
+        if (day.getDate() <= 7) {
+          tipoCulto = "ceia";
+        } else {
+          tipoCulto = "celebracao";
+        }
+        isCulto = true;
+      } else if (dayOfWeek === 3) {
+        // Quarta: quarta com propósito
+        tipoCulto = "quarta";
+        isCulto = true;
+      }
+
+      if (isCulto) {
         const crsNessaData = escalasDoMes.filter(
-          (e) =>
-            e.data_culto === dateStr &&
-            e.tipo_culto === selectedTipoCulto &&
-            e.ministry_id === selectedMinistry
+          (e) => e.data_culto === dateStr && e.tipo_culto === tipoCulto
         );
-        const occupied = crsNessaData.length >= 2;
-        // Verificar se esta mesma CR já candidatou nesta data
+        const crsCount = crsNessaData.length;
+        const membrosCount = crsNessaData.reduce(
+          (sum, e) => sum + ((e as any).membros?.length || 0), 0
+        );
         const alreadyCandidated = crsNessaData.some(
           (e) => e.casa_refugio_id === selectedCasaRefugio
         );
-        return { date: day, dateStr, occupied, alreadyCandidated, slotsUsed: crsNessaData.length };
-      });
-  }, [selectedMinistry, selectedTipoCulto, selectedCasaRefugio, monthStart, monthEnd, escalasDoMes]);
+
+        dataMap.set(dateStr, {
+          isCulto: true,
+          tipoCulto,
+          crsCount,
+          membrosCount,
+          alreadyCandidated,
+          isPast,
+        });
+      }
+    }
+
+    return dataMap;
+  }, [selectedMinistry, selectedCasaRefugio, monthStart, monthEnd, escalasDoMes]);
 
   // Submit candidatura
   const submitMutation = useMutation({
@@ -174,7 +219,6 @@ export const PortalLideresCandidaturaServico = ({
         throw new Error("Preencha todos os campos");
       }
 
-      // Inserir candidatura principal (domingo)
       const { error } = await supabase.from("escalas_servico").insert({
         ministry_id: selectedMinistry,
         data_culto: selectedDate,
@@ -189,7 +233,6 @@ export const PortalLideresCandidaturaServico = ({
       // Se for Recepção e domingo, criar automaticamente candidatura para quarta
       if (selectedMinistry === RECEPCAO_ID && (selectedTipoCulto === "celebracao" || selectedTipoCulto === "ceia")) {
         const domingoDate = parseLocalDate(selectedDate);
-        // Próxima quarta-feira (domingo=0, quarta=3 → +3 dias)
         const quartaDate = addDays(domingoDate, 3);
         const quartaStr = format(quartaDate, "yyyy-MM-dd");
 
@@ -231,6 +274,12 @@ export const PortalLideresCandidaturaServico = ({
       setShowConfirmDialog(false);
     },
   });
+
+  const handleCalendarDayClick = (dateStr: string, tipoCulto: string) => {
+    setSelectedDate(dateStr);
+    setSelectedTipoCulto(tipoCulto);
+    setShowConfirmDialog(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -308,7 +357,7 @@ export const PortalLideresCandidaturaServico = ({
           {/* Ministério */}
           {selectedCasaRefugio && (
             <div className="space-y-2">
-              <label className="text-sm font-medium">Ministério</label>
+              <label className="text-sm font-medium">Local de Serviço</label>
               <Select
                 value={selectedMinistry}
                 onValueChange={(v) => {
@@ -318,7 +367,7 @@ export const PortalLideresCandidaturaServico = ({
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o ministério" />
+                  <SelectValue placeholder="Selecione o local de serviço" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={RECEPCAO_ID}>
@@ -366,40 +415,17 @@ export const PortalLideresCandidaturaServico = ({
             </div>
           )}
 
-          {/* Tipo de Culto */}
+          {/* Calendário mensal */}
           {selectedMinistry && !atingiuLimiteAnual && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo de Culto</label>
-              <Select
-                value={selectedTipoCulto}
-                onValueChange={(v) => {
-                  setSelectedTipoCulto(v);
-                  setSelectedDate("");
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo de culto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIPOS_CULTO.map((tipo) => (
-                    <SelectItem key={tipo.value} value={tipo.value}>
-                      {tipo.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Seleção de data */}
-          {selectedTipoCulto && !atingiuLimiteAnual && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Data</label>
-              <div className="flex items-center gap-2 mb-2">
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Selecione a data no calendário</label>
+              
+              {/* Navegação do mês */}
+              <div className="flex items-center justify-between">
                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="font-medium min-w-32 text-center capitalize text-sm">
+                <span className="font-semibold capitalize text-sm">
                   {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
                 </span>
                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
@@ -407,57 +433,100 @@ export const PortalLideresCandidaturaServico = ({
                 </Button>
               </div>
 
-              {availableDates.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhuma data disponível neste mês.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {availableDates.map(({ date, dateStr, occupied, alreadyCandidated, slotsUsed }) => {
-                    const disabled = occupied || alreadyCandidated;
-                    return (
-                      <Button
-                        key={dateStr}
-                        variant={selectedDate === dateStr ? "default" : "outline"}
-                        className={`justify-start h-auto py-3 ${disabled ? "opacity-50" : ""}`}
-                        disabled={disabled}
-                        onClick={() => setSelectedDate(dateStr)}
-                      >
-                        <Calendar className="w-4 h-4 mr-2 shrink-0" />
-                        <div className="text-left">
-                          <span className="capitalize">
-                            {format(date, "EEEE, dd/MM", { locale: ptBR })}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {alreadyCandidated
-                              ? "Sua CR já se candidatou"
-                              : occupied
-                              ? "2/2 vagas preenchidas"
-                              : `${slotsUsed}/2 CRs`}
-                          </span>
+              {/* Legenda */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm bg-green-500" />
+                  <span>Disponível</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm bg-red-500" />
+                  <span>CRs já escaladas</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-sm bg-muted" />
+                  <span>Sem culto</span>
+                </div>
+              </div>
+
+              {/* Grid do calendário */}
+              <div className="border rounded-lg overflow-hidden">
+                {/* Cabeçalho dias da semana */}
+                <div className="grid grid-cols-7 bg-muted/50">
+                  {DIAS_SEMANA_ABREV.map((dia) => (
+                    <div key={dia} className="text-center text-xs font-medium py-2 text-muted-foreground">
+                      {dia}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Dias */}
+                <div className="grid grid-cols-7">
+                  {calendarDays.map((day, idx) => {
+                    const dateStr = format(day, "yyyy-MM-dd");
+                    const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
+                    const data = calendarData.get(dateStr);
+
+                    if (!isCurrentMonth) {
+                      return (
+                        <div key={idx} className="aspect-square border-t border-r last:border-r-0 bg-muted/20" />
+                      );
+                    }
+
+                    if (!data?.isCulto) {
+                      return (
+                        <div key={idx} className="aspect-square border-t border-r last:border-r-0 flex items-center justify-center">
+                          <span className="text-xs text-muted-foreground/40">{day.getDate()}</span>
                         </div>
-                      </Button>
+                      );
+                    }
+
+                    // Dia de culto
+                    const hasCrs = data.crsCount > 0;
+                    const isFull = data.crsCount >= 2;
+                    const isDisabled = data.isPast || isFull || data.alreadyCandidated;
+                    const tipoCultoLabel = data.tipoCulto === "ceia" ? "Ceia" : data.tipoCulto === "celebracao" ? "Culto" : "QcP";
+
+                    return (
+                      <button
+                        key={idx}
+                        disabled={isDisabled}
+                        onClick={() => !isDisabled && handleCalendarDayClick(dateStr, data.tipoCulto)}
+                        className={`aspect-square border-t border-r last:border-r-0 flex flex-col items-center justify-center gap-0.5 transition-colors relative
+                          ${hasCrs 
+                            ? "bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-950/60" 
+                            : "bg-green-100 dark:bg-green-950/40 hover:bg-green-200 dark:hover:bg-green-950/60"
+                          }
+                          ${isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+                          ${data.alreadyCandidated ? "ring-2 ring-inset ring-blue-400" : ""}
+                        `}
+                        title={
+                          data.alreadyCandidated
+                            ? "Sua CR já se candidatou"
+                            : isFull
+                            ? "2/2 CRs preenchidas"
+                            : data.isPast
+                            ? "Data passada"
+                            : `${data.crsCount}/2 CRs - Clique para candidatar`
+                        }
+                      >
+                        <span className={`text-sm font-bold ${hasCrs ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
+                          {day.getDate()}
+                        </span>
+                        <span className={`text-[9px] leading-none font-medium ${hasCrs ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
+                          {tipoCultoLabel}
+                        </span>
+                        {hasCrs && (
+                          <span className="text-[8px] leading-none text-red-500 dark:text-red-400 font-semibold">
+                            {data.membrosCount > 0 ? `${data.membrosCount}p` : `${data.crsCount}CR`}
+                          </span>
+                        )}
+                      </button>
                     );
                   })}
                 </div>
-              )}
+              </div>
             </div>
-          )}
-
-          {/* Botão enviar */}
-          {selectedDate && (
-            <Button
-              onClick={() => setShowConfirmDialog(true)}
-              disabled={submitMutation.isPending}
-              className="w-full"
-            >
-              {submitMutation.isPending ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4 mr-2" />
-              )}
-              Candidatar CR {selectedCrName}
-            </Button>
           )}
         </CardContent>
       </Card>
