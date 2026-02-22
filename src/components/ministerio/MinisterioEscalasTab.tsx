@@ -99,8 +99,12 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showDialog, setShowDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteServicoDialog, setShowDeleteServicoDialog] = useState(false);
   const [editingEscala, setEditingEscala] = useState<Escala | null>(null);
   const [escalaToDelete, setEscalaToDelete] = useState<string | null>(null);
+  const [escalaServicoToDelete, setEscalaServicoToDelete] = useState<string | null>(null);
+  const [editServicoDialogId, setEditServicoDialogId] = useState<string | null>(null);
+  const [editServicoStatus, setEditServicoStatus] = useState<string>("");
 
   // Form state
   const [dataCulto, setDataCulto] = useState<Date | undefined>(undefined);
@@ -299,6 +303,37 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
     onError: () => toast.error("Erro ao remover escala"),
   });
 
+  // Mutation para deletar escala de serviço
+  const deleteServicoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await supabase.from("escala_servico_membros").delete().eq("escala_id", id);
+      const { error } = await supabase.from("escalas_servico").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-servico", ministryId] });
+      toast.success("Escala de serviço removida!");
+      setEscalaServicoToDelete(null);
+      setShowDeleteServicoDialog(false);
+    },
+    onError: () => toast.error("Erro ao remover escala de serviço"),
+  });
+
+  // Mutation para editar status de escala de serviço
+  const editServicoMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("escalas_servico").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ministerio-escalas-servico", ministryId] });
+      queryClient.invalidateQueries({ queryKey: ["escalas-servico", ministryId] });
+      toast.success("Escala atualizada!");
+      setEditServicoDialogId(null);
+    },
+    onError: () => toast.error("Erro ao atualizar escala"),
+  });
+
   const resetForm = () => {
     setShowDialog(false);
     setEditingEscala(null);
@@ -382,19 +417,47 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
                   {/* Escalas de serviço aprovadas (candidaturas) */}
                   {dateServicoEscalas.map((escala) => (
                     <div key={`servico-${escala.id}`} className="bg-muted/30 rounded-lg p-3">
-                      <div className="mb-2">
-                        <p className="font-semibold text-sm">
-                          {TIPOS_CULTO_SERVICO[escala.tipo_culto] || escala.tipo_culto}
-                        </p>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {format(parseLocalDate(date), "dd/MM/yyyy")}
-                          {escala.casa_refugio && (
-                            <span className="ml-2 inline-flex items-center gap-1">
-                              <Home className="w-3 h-3" />
-                              CR {escala.casa_refugio.name}
-                            </span>
-                          )}
-                        </p>
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-semibold text-sm">
+                            {TIPOS_CULTO_SERVICO[escala.tipo_culto] || escala.tipo_culto}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {format(parseLocalDate(date), "dd/MM/yyyy")}
+                            {escala.casa_refugio && (
+                              <span className="ml-2 inline-flex items-center gap-1">
+                                <Home className="w-3 h-3" />
+                                CR {escala.casa_refugio.name}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setEditServicoDialogId(escala.id);
+                              setEditServicoStatus("aprovado");
+                            }}
+                            title="Editar"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              setEscalaServicoToDelete(escala.id);
+                              setShowDeleteServicoDialog(true);
+                            }}
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       {escala.membros.length > 0 ? (
                         <div className="space-y-0.5">
@@ -573,6 +636,57 @@ export const MinisterioEscalasTab = ({ ministryId }: MinisterioEscalasTabProps) 
               onClick={() => escalaToDelete && deleteMutation.mutate(escalaToDelete)}
             >
               Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog excluir escala de serviço */}
+      <AlertDialog open={showDeleteServicoDialog} onOpenChange={(o) => { if (!o) { setShowDeleteServicoDialog(false); setEscalaServicoToDelete(null); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quer mesmo excluir esse registro?</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. A escala e membros vinculados serão removidos.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => escalaServicoToDelete && deleteServicoMutation.mutate(escalaServicoToDelete)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog editar status de escala de serviço */}
+      <AlertDialog open={!!editServicoDialogId} onOpenChange={(o) => !o && setEditServicoDialogId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar status da escala</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Altere o status desta escala:</p>
+                <Select value={editServicoStatus} onValueChange={setEditServicoStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => editServicoDialogId && editServicoMutation.mutate({ id: editServicoDialogId, status: editServicoStatus })}
+            >
+              Salvar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
