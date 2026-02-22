@@ -3355,11 +3355,13 @@ export type Database = {
           nao_pretende_servir: boolean | null
           neighborhood: string | null
           number: string | null
+          parent_request_id: string | null
           photo_url: string | null
           responsavel_id: string | null
           rg: string | null
           state: string | null
           status: string
+          tipo_dependente: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -3384,11 +3386,13 @@ export type Database = {
           nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
+          parent_request_id?: string | null
           photo_url?: string | null
           responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           status?: string
+          tipo_dependente?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -3413,11 +3417,13 @@ export type Database = {
           nao_pretende_servir?: boolean | null
           neighborhood?: string | null
           number?: string | null
+          parent_request_id?: string | null
           photo_url?: string | null
           responsavel_id?: string | null
           rg?: string | null
           state?: string | null
           status?: string
+          tipo_dependente?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -3434,6 +3440,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_requests_parent_request_id_fkey"
+            columns: ["parent_request_id"]
+            isOneToOne: false
+            referencedRelation: "member_requests"
             referencedColumns: ["id"]
           },
           {

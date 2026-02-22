@@ -111,17 +111,6 @@ serve(async (req) => {
         return `"${depNome}" já possui uma solicitação pendente (${requestMatch[0].full_name}).`;
       }
 
-      // Check against children/conjuge already registered in other requests
-      const { data: filhoMatch } = await supabaseAdmin
-        .from("member_request_filhos")
-        .select("id, nome_completo")
-        .eq("cpf", cleanCpf)
-        .limit(1);
-
-      if (filhoMatch && filhoMatch.length > 0) {
-        return `O CPF informado para "${depNome}" já foi cadastrado anteriormente por outro responsável (${filhoMatch[0].nome_completo}). Não é possível cadastrar a mesma pessoa duas vezes.`;
-      }
-
       return null;
     };
 
@@ -140,15 +129,18 @@ serve(async (req) => {
     // Validate filhos CPFs
     const filhos = body.filhos || [];
     for (const filho of filhos) {
-      const err = await checkDependenteCpf(filho.cpf, filho.nome_completo);
-      if (err) {
-        return new Response(JSON.stringify({ error: err }), {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (filho.cpf) {
+        const err = await checkDependenteCpf(filho.cpf, filho.nome_completo);
+        if (err) {
+          return new Response(JSON.stringify({ error: err }), {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
     }
 
+    // Create main member request
     const payload = {
       full_name: fullName,
       email: body.email ?? null,
@@ -169,6 +161,8 @@ serve(async (req) => {
       nao_pretende_servir: body.nao_pretende_servir ?? false,
       responsavel_id: body.responsavel_id ?? null,
       status: "pendente" as const,
+      parent_request_id: null,
+      tipo_dependente: null,
     };
 
     const { data, error } = await supabaseAdmin
@@ -179,7 +173,68 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    // Save dependentes (conjuge + filhos)
+    const parentRequestId = data.id;
+
+    // Create separate member_requests for each dependent
+    // Cônjuge
+    if (conjuge && conjuge.nome_completo) {
+      const conjugePayload = {
+        full_name: conjuge.nome_completo.trim(),
+        cpf: (conjuge.cpf ?? "").replace(/\D/g, "") || null,
+        birth_date: conjuge.data_nascimento ?? null,
+        genero: conjuge.genero ?? null,
+        // Inherit address from parent
+        cep: body.cep ?? null,
+        address: body.address ?? null,
+        number: body.number ?? null,
+        complement: body.complement ?? null,
+        neighborhood: body.neighborhood ?? null,
+        city: body.city ?? null,
+        state: body.state ?? null,
+        status: "pendente" as const,
+        parent_request_id: parentRequestId,
+        tipo_dependente: "conjuge",
+      };
+
+      const { error: conjError } = await supabaseAdmin
+        .from("member_requests")
+        .insert(conjugePayload);
+
+      if (conjError) {
+        console.error("Error creating conjuge request:", conjError);
+      }
+    }
+
+    // Filhos
+    for (const f of filhos) {
+      const filhoPayload = {
+        full_name: f.nome_completo.trim(),
+        cpf: (f.cpf ?? "").replace(/\D/g, "") || null,
+        birth_date: f.data_nascimento ?? null,
+        genero: f.genero ?? null,
+        // Inherit address from parent
+        cep: body.cep ?? null,
+        address: body.address ?? null,
+        number: body.number ?? null,
+        complement: body.complement ?? null,
+        neighborhood: body.neighborhood ?? null,
+        city: body.city ?? null,
+        state: body.state ?? null,
+        status: "pendente" as const,
+        parent_request_id: parentRequestId,
+        tipo_dependente: "filho",
+      };
+
+      const { error: filhoError } = await supabaseAdmin
+        .from("member_requests")
+        .insert(filhoPayload);
+
+      if (filhoError) {
+        console.error(`Error creating filho request for ${f.nome_completo}:`, filhoError);
+      }
+    }
+
+    // Also save to member_request_filhos for backward compatibility
     const dependentes: Array<{
       member_request_id: string;
       nome_completo: string;
