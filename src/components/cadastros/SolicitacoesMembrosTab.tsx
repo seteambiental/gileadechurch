@@ -186,6 +186,19 @@ const SolicitacoesMembrosTab = () => {
 
       if (updateError) throw updateError;
 
+      // Se este é o titular (sem parent_request_id), atualizar responsavel_id dos filhos vinculados
+      if (!request.parent_request_id) {
+        const { error: updateFilhosError } = await supabase
+          .from("member_requests")
+          .update({ responsavel_id: newMember.id })
+          .eq("parent_request_id", request.id)
+          .eq("tipo_dependente", "filho");
+
+        if (updateFilhosError) {
+          console.error("Erro ao atualizar responsável dos filhos:", updateFilhosError);
+        }
+      }
+
       // Criar usuário de autenticação automaticamente se tiver email
       if (request.email) {
         try {
@@ -422,7 +435,11 @@ const SolicitacoesMembrosTab = () => {
                   <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
                     <Baby className="w-4 h-4" />
                     Menor de 12 anos ({getAgeString(request.birth_date)})
-                    {request.responsavel_id ? " - Com responsável" : " - Sem responsável!"}
+                    {request.responsavel_id 
+                      ? " - Com responsável" 
+                      : request.parent_request_id 
+                        ? " - Responsável será vinculado na aprovação"
+                        : " - Sem responsável!"}
                   </div>
                 )}
 
