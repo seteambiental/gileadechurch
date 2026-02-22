@@ -33,6 +33,8 @@ import {
   Loader2,
   Home,
   User,
+  Trash2,
+  Pencil,
 } from "lucide-react";
 import {
   format,
@@ -83,6 +85,9 @@ export const EscalasServicoTab = ({ ministryId, ministrySlug }: EscalasServicoTa
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [approveDialogId, setApproveDialogId] = useState<string | null>(null);
   const [rejectDialogId, setRejectDialogId] = useState<string | null>(null);
+  const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
+  const [editDialogId, setEditDialogId] = useState<string | null>(null);
+  const [editStatus, setEditStatus] = useState<string>("");
 
   const isEstacionamento = ministrySlug === "estacionamento";
 
@@ -218,6 +223,39 @@ export const EscalasServicoTab = ({ ministryId, ministrySlug }: EscalasServicoTa
     onError: () => toast.error("Erro ao rejeitar candidatura"),
   });
 
+  // Excluir escala
+  const deleteMutation = useMutation({
+    mutationFn: async (escalaId: string) => {
+      // Primeiro deletar membros vinculados
+      await supabase.from("escala_servico_membros").delete().eq("escala_id", escalaId);
+      const { error } = await supabase.from("escalas_servico").delete().eq("id", escalaId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["escalas-servico", ministryId] });
+      toast.success("Escala excluída!");
+      setDeleteDialogId(null);
+    },
+    onError: () => toast.error("Erro ao excluir escala"),
+  });
+
+  // Editar status da escala
+  const editMutation = useMutation({
+    mutationFn: async ({ escalaId, newStatus }: { escalaId: string; newStatus: string }) => {
+      const { error } = await supabase
+        .from("escalas_servico")
+        .update({ status: newStatus })
+        .eq("id", escalaId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["escalas-servico", ministryId] });
+      toast.success("Escala atualizada!");
+      setEditDialogId(null);
+    },
+    onError: () => toast.error("Erro ao atualizar escala"),
+  });
+
   // Contagem de pendentes
   const pendingCount = escalas.filter((e) => e.status === "pendente").length;
 
@@ -336,27 +374,52 @@ export const EscalasServicoTab = ({ ministryId, ministrySlug }: EscalasServicoTa
                             )}
                           </div>
 
-                          {/* Ações de aprovação */}
-                          {escala.status === "pendente" && (
-                            <div className="flex gap-1 shrink-0">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-green-600 hover:text-green-700 h-8 w-8"
-                                onClick={() => setApproveDialogId(escala.id)}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:bg-destructive/10 h-8 w-8"
-                                onClick={() => setRejectDialogId(escala.id)}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          )}
+                          {/* Ações */}
+                          <div className="flex gap-1 shrink-0">
+                            {escala.status === "pendente" && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-green-600 hover:text-green-700 h-8 w-8"
+                                  onClick={() => setApproveDialogId(escala.id)}
+                                  title="Aprovar"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                                  onClick={() => setRejectDialogId(escala.id)}
+                                  title="Rejeitar"
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                setEditDialogId(escala.id);
+                                setEditStatus(escala.status);
+                              }}
+                              title="Editar"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteDialogId(escala.id)}
+                              title="Excluir"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -406,6 +469,59 @@ export const EscalasServicoTab = ({ ministryId, ministrySlug }: EscalasServicoTa
               onClick={() => rejectDialogId && rejectMutation.mutate(rejectDialogId)}
             >
               Rejeitar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Excluir dialog */}
+      <AlertDialog open={!!deleteDialogId} onOpenChange={(o) => !o && setDeleteDialogId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir escala?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A escala e todos os membros vinculados serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => deleteDialogId && deleteMutation.mutate(deleteDialogId)}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Editar dialog */}
+      <AlertDialog open={!!editDialogId} onOpenChange={(o) => !o && setEditDialogId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar status da escala</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>Altere o status desta escala:</p>
+                <Select value={editStatus} onValueChange={setEditStatus}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aprovado">Aprovado</SelectItem>
+                    <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => editDialogId && editMutation.mutate({ escalaId: editDialogId, newStatus: editStatus })}
+            >
+              Salvar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
