@@ -229,7 +229,7 @@ const PortalLideres = () => {
 
   // Servir na Porta - para líderes/supervisores de Casa Refúgio
   if (memberCasasRefugio.length > 0) {
-    availableTabs.push({ id: "servir-porta", label: "Servir na Porta", icon: HandHeart });
+    availableTabs.push({ id: "servir-porta", label: "Servir", icon: HandHeart });
   }
 
   // Finanças - disponível para todos os líderes
