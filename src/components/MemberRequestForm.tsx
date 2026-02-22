@@ -106,6 +106,8 @@ interface FilhoData {
   data_nascimento: string;
   genero: string;
   dateInputValue: string; // for display only
+  photoFile: File | null;
+  photoPreview: string | null;
 }
 
 export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
@@ -124,6 +126,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const [isAdvancingStep, setIsAdvancingStep] = useState(false);
   const [filhos, setFilhos] = useState<FilhoData[]>([]);
   const [conjuge, setConjuge] = useState<FilhoData | null>(null);
+  const [conjugePhotoFile, setConjugePhotoFile] = useState<File | null>(null);
+  const [conjugePhotoPreview, setConjugePhotoPreview] = useState<string | null>(null);
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -249,6 +253,32 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         photoUrl = urlData.publicUrl;
       }
 
+      // Helper to upload a dependent photo
+      const uploadDependentPhoto = async (file: File | null): Promise<string | null> => {
+        if (!file) return null;
+        const ext = file.name.split(".").pop();
+        const name = `solicitacao_dep_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("member-photos").upload(name, file);
+        if (upErr) throw upErr;
+        const { data: u } = supabase.storage.from("member-photos").getPublicUrl(name);
+        return u.publicUrl;
+      };
+
+      // Upload conjuge photo
+      const conjugePhotoUrl = await uploadDependentPhoto(conjugePhotoFile);
+
+      // Upload filhos photos
+      const filhosWithPhotos = await Promise.all(
+        filhos.map(async (f) => ({
+          nome_completo: f.nome_completo,
+          cpf: f.cpf,
+          data_nascimento: f.data_nascimento || null,
+          genero: f.genero || null,
+          tipo: "filho",
+          photo_url: await uploadDependentPhoto(f.photoFile),
+        }))
+      );
+
       const payload = {
         full_name: formatNameField(data.full_name),
         email: data.email || null,
@@ -268,19 +298,14 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         ministerios_interesse: data.nao_pretende_servir ? [] : (data.ministerios_interesse || []),
         nao_pretende_servir: data.nao_pretende_servir || false,
         responsavel_id: data.responsavel_id || null,
-        filhos: filhos.map((f) => ({
-          nome_completo: f.nome_completo,
-          cpf: f.cpf,
-          data_nascimento: f.data_nascimento || null,
-          genero: f.genero || null,
-          tipo: "filho",
-        })),
+        filhos: filhosWithPhotos,
         conjuge: conjuge && conjuge.nome_completo ? {
           nome_completo: conjuge.nome_completo,
           cpf: conjuge.cpf,
           data_nascimento: conjuge.data_nascimento || null,
           genero: conjuge.genero || null,
           tipo: "conjuge",
+          photo_url: conjugePhotoUrl,
         } : null,
       };
 
@@ -324,6 +349,8 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
     setCurrentStep(1);
     setFilhos([]);
     setConjuge(null);
+    setConjugePhotoFile(null);
+    setConjugePhotoPreview(null);
     form.reset();
     onOpenChange(false);
   };
@@ -417,6 +444,16 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
   const handleSubmit = (data: FormData) => {
     if (!acceptedTerms) {
       setTermsError("Você deve aceitar os termos para continuar");
+      return;
+    }
+    // Validar fotos dos dependentes
+    if (conjuge && conjuge.nome_completo && !conjugePhotoFile) {
+      toast({ title: "Foto obrigatória", description: "Tire uma foto do esposo(a).", variant: "destructive" });
+      return;
+    }
+    const filhoSemFoto = filhos.find(f => f.nome_completo && !f.photoFile);
+    if (filhoSemFoto) {
+      toast({ title: "Foto obrigatória", description: `Tire uma foto de ${filhoSemFoto.nome_completo || "filho(a)"}.`, variant: "destructive" });
       return;
     }
     mutation.mutate(data);
@@ -626,6 +663,9 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
               <div className="space-y-4">
                 {/* Campo de Foto */}
                 <div className="flex flex-col items-center gap-3 py-4 border rounded-lg bg-muted/30">
+                  {photoPreview && (
+                    <img src={photoPreview} alt="Foto" className="w-24 h-24 rounded-full object-cover" />
+                  )}
                   <CameraPhotoInput
                     photoPreview={photoPreview}
                     onPhotoCapture={(file) => {
@@ -923,10 +963,32 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setConjuge(null)}
+                          onClick={() => { setConjuge(null); setConjugePhotoFile(null); setConjugePhotoPreview(null); }}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
+                      </div>
+
+                      {/* Foto do Cônjuge */}
+                      <div className="flex flex-col items-center gap-2 py-2 border rounded-lg bg-muted/30">
+                        {conjugePhotoPreview && (
+                          <img src={conjugePhotoPreview} alt="Foto cônjuge" className="w-20 h-20 rounded-full object-cover" />
+                        )}
+                        <CameraPhotoInput
+                          photoPreview={conjugePhotoPreview}
+                          onPhotoCapture={(file) => {
+                            setConjugePhotoFile(file);
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => setConjugePhotoPreview(reader.result as string);
+                              reader.readAsDataURL(file);
+                            } else {
+                              setConjugePhotoPreview(null);
+                            }
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">Foto do esposo(a) *</p>
+                        {!conjugePhotoPreview && <p className="text-xs text-destructive">Foto é obrigatória</p>}
                       </div>
 
                       <div>
@@ -989,7 +1051,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                       type="button"
                       variant="outline"
                       className="w-full"
-                      onClick={() => setConjuge({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" })}
+                      onClick={() => setConjuge({ nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "", photoFile: null, photoPreview: null })}
                     >
                       <Plus className="w-4 h-4 mr-2" />
                       Adicionar Esposo(a)
@@ -1017,6 +1079,34 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
+                      </div>
+
+                      {/* Foto do Filho */}
+                      <div className="flex flex-col items-center gap-2 py-2 border rounded-lg bg-muted/30">
+                        {filho.photoPreview && (
+                          <img src={filho.photoPreview} alt={`Foto filho ${index + 1}`} className="w-20 h-20 rounded-full object-cover" />
+                        )}
+                        <CameraPhotoInput
+                          photoPreview={filho.photoPreview}
+                          onPhotoCapture={(file) => {
+                            const updated = [...filhos];
+                            updated[index].photoFile = file;
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                const u = [...filhos];
+                                u[index].photoPreview = reader.result as string;
+                                setFilhos(u);
+                              };
+                              reader.readAsDataURL(file);
+                            } else {
+                              updated[index].photoPreview = null;
+                            }
+                            setFilhos(updated);
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">Foto do filho(a) *</p>
+                        {!filho.photoPreview && <p className="text-xs text-destructive">Foto é obrigatória</p>}
                       </div>
 
                       <div>
@@ -1099,7 +1189,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
                     onClick={() =>
                       setFilhos((prev) => [
                         ...prev,
-                        { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "" },
+                        { nome_completo: "", cpf: "", data_nascimento: "", genero: "", dateInputValue: "", photoFile: null, photoPreview: null },
                       ])
                     }
                   >
