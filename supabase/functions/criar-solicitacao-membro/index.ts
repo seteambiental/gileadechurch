@@ -12,6 +12,7 @@ type Dependente = {
   data_nascimento?: string | null;
   genero?: string | null;
   tipo: "filho" | "conjuge";
+  photo_url?: string | null;
 };
 
 type Body = {
@@ -183,6 +184,7 @@ serve(async (req) => {
         cpf: (conjuge.cpf ?? "").replace(/\D/g, "") || null,
         birth_date: conjuge.data_nascimento ?? null,
         genero: conjuge.genero ?? null,
+        photo_url: conjuge.photo_url ?? null,
         // Inherit address from parent
         cep: body.cep ?? null,
         address: body.address ?? null,
@@ -212,6 +214,7 @@ serve(async (req) => {
         cpf: (f.cpf ?? "").replace(/\D/g, "") || null,
         birth_date: f.data_nascimento ?? null,
         genero: f.genero ?? null,
+        photo_url: f.photo_url ?? null,
         // Inherit address from parent
         cep: body.cep ?? null,
         address: body.address ?? null,
