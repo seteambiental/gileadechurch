@@ -64,7 +64,12 @@ const TIPOS_CULTO = [
   { value: "quarta", label: "Quarta com Propósito", day: 3 },
 ];
 
-const DIAS_SEMANA_ABREV = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const DIAS_SEMANA_ABREV = ["D", "S", "T", "Q", "Q", "S", "S"];
+
+const MIN_PESSOAS: Record<string, number> = {
+  [RECEPCAO_ID]: 4,
+  [ESTACIONAMENTO_ID]: 4,
+};
 
 interface PortalLideresCandidaturaServicoProps {
   memberId: string;
@@ -77,23 +82,19 @@ export const PortalLideresCandidaturaServico = ({
 }: PortalLideresCandidaturaServicoProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(startOfMonth(new Date()));
   const [selectedCasaRefugio, setSelectedCasaRefugio] = useState<string>("");
   const [selectedMinistry, setSelectedMinistry] = useState<string>("");
   const [selectedTipoCulto, setSelectedTipoCulto] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const currentYear = getYear(currentMonth);
+  // 3 meses a exibir
+  const displayMonths = useMemo(() => {
+    return [currentMonth, addMonths(currentMonth, 1), addMonths(currentMonth, 2)];
+  }, [currentMonth]);
 
-  // Gerar dias do calendário (incluindo dias do mês anterior/posterior para preencher a grade)
-  const calendarDays = useMemo(() => {
-    const start = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const end = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start, end });
-  }, [monthStart, monthEnd]);
+  const currentYear = getYear(currentMonth);
 
   // Buscar candidaturas existentes da CR neste ano (para regra de max 2/ano)
   const { data: candidaturasCrAno = [], isLoading: loadingCrAno } = useQuery({
@@ -114,19 +115,20 @@ export const PortalLideresCandidaturaServico = ({
     enabled: !!selectedCasaRefugio,
   });
 
-  // Buscar escalas do mês (para ver vagas ocupadas — max 2 CRs por culto)
+  // Buscar escalas dos 3 meses exibidos (para ver vagas ocupadas — max 2 CRs por culto)
+  const rangeStart = format(startOfMonth(displayMonths[0]), "yyyy-MM-dd");
+  const rangeEnd = format(endOfMonth(displayMonths[2]), "yyyy-MM-dd");
+
   const { data: escalasDoMes = [], isLoading: loadingEscalas } = useQuery({
-    queryKey: ["escalas-cr-mes", format(currentMonth, "yyyy-MM"), selectedMinistry],
+    queryKey: ["escalas-cr-mes", rangeStart, rangeEnd, selectedMinistry],
     queryFn: async () => {
-      const start = format(monthStart, "yyyy-MM-dd");
-      const end = format(monthEnd, "yyyy-MM-dd");
       const query = supabase
         .from("escalas_servico")
         .select("id, ministry_id, data_culto, tipo_culto, tipo_escala, status, casa_refugio_id, membros:escala_servico_membros(id)")
         .eq("tipo_escala", "casa_refugio")
         .in("status", ["pendente", "aprovado"])
-        .gte("data_culto", start)
-        .lte("data_culto", end);
+        .gte("data_culto", rangeStart)
+        .lte("data_culto", rangeEnd);
       if (selectedMinistry) {
         query.eq("ministry_id", selectedMinistry);
       }
@@ -147,11 +149,12 @@ export const PortalLideresCandidaturaServico = ({
 
   const atingiuLimiteAnual = servicosCrNoAno >= 2;
 
-  // Dados do calendário: mapear cada dia do mês com informações de culto
-  const calendarData = useMemo(() => {
-    if (!selectedMinistry || !selectedCasaRefugio) return new Map();
-    
+  // Dados do calendário por mês
+  const buildCalendarDataForMonth = (month: Date) => {
+    const mStart = startOfMonth(month);
+    const mEnd = endOfMonth(month);
     const today = startOfDay(new Date());
+    const minPessoas = MIN_PESSOAS[selectedMinistry] || 4;
     const dataMap = new Map<string, {
       isCulto: boolean;
       tipoCulto: string;
@@ -159,29 +162,23 @@ export const PortalLideresCandidaturaServico = ({
       membrosCount: number;
       alreadyCandidated: boolean;
       isPast: boolean;
+      hasMinPessoas: boolean;
     }>();
 
-    const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+    const days = eachDayOfInterval({ start: mStart, end: mEnd });
 
     for (const day of days) {
       const dayOfWeek = getDay(day);
       const dateStr = format(day, "yyyy-MM-dd");
       const isPast = isBefore(day, addDays(today, 1));
 
-      // Verificar se é dia de culto
       let isCulto = false;
       let tipoCulto = "";
 
       if (dayOfWeek === 0) {
-        // Domingo: celebração ou ceia (1º domingo)
-        if (day.getDate() <= 7) {
-          tipoCulto = "ceia";
-        } else {
-          tipoCulto = "celebracao";
-        }
+        tipoCulto = day.getDate() <= 7 ? "ceia" : "celebracao";
         isCulto = true;
       } else if (dayOfWeek === 3) {
-        // Quarta: quarta com propósito
         tipoCulto = "quarta";
         isCulto = true;
       }
@@ -205,12 +202,13 @@ export const PortalLideresCandidaturaServico = ({
           membrosCount,
           alreadyCandidated,
           isPast,
+          hasMinPessoas: membrosCount >= minPessoas,
         });
       }
     }
 
     return dataMap;
-  }, [selectedMinistry, selectedCasaRefugio, monthStart, monthEnd, escalasDoMes]);
+  };
 
   // Submit candidatura
   const submitMutation = useMutation({
@@ -420,112 +418,133 @@ export const PortalLideresCandidaturaServico = ({
             <div className="space-y-3">
               <label className="text-sm font-medium">Selecione a data no calendário</label>
               
-              {/* Navegação do mês */}
+              {/* Navegação */}
               <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+                <Button variant="outline" size="sm" onClick={() => setCurrentMonth(subMonths(currentMonth, 3))}>
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <span className="font-semibold capitalize text-sm">
-                  {format(currentMonth, "MMMM yyyy", { locale: ptBR })}
+                <span className="font-semibold text-xs text-muted-foreground">
+                  {format(displayMonths[0], "MMM", { locale: ptBR })} – {format(displayMonths[2], "MMM yyyy", { locale: ptBR })}
                 </span>
-                <Button variant="outline" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+                <Button variant="outline" size="sm" onClick={() => setCurrentMonth(addMonths(currentMonth, 3))}>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
 
               {/* Legenda */}
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm bg-green-500" />
+                  <div className="w-2.5 h-2.5 rounded-sm bg-green-500" />
                   <span>Disponível</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm bg-red-500" />
-                  <span>CRs já escaladas</span>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-red-500" />
+                  <span>CRs escaladas</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-sm bg-muted" />
-                  <span>Sem culto</span>
+                  <div className="w-2.5 h-2.5 rounded-sm bg-amber-500" />
+                  <span>Mín. não atingido</span>
                 </div>
               </div>
 
-              {/* Grid do calendário */}
-              <div className="border rounded-lg overflow-hidden">
-                {/* Cabeçalho dias da semana */}
-                <div className="grid grid-cols-7 bg-muted/50">
-                  {DIAS_SEMANA_ABREV.map((dia) => (
-                    <div key={dia} className="text-center text-xs font-medium py-2 text-muted-foreground">
-                      {dia}
-                    </div>
-                  ))}
-                </div>
+              {/* 3 mini calendários */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {displayMonths.map((month) => {
+                  const mStart = startOfMonth(month);
+                  const mEnd = endOfMonth(month);
+                  const calStart = startOfWeek(mStart, { weekStartsOn: 0 });
+                  const calEnd = endOfWeek(mEnd, { weekStartsOn: 0 });
+                  const days = eachDayOfInterval({ start: calStart, end: calEnd });
+                  const calData = buildCalendarDataForMonth(month);
 
-                {/* Dias */}
-                <div className="grid grid-cols-7">
-                  {calendarDays.map((day, idx) => {
-                    const dateStr = format(day, "yyyy-MM-dd");
-                    const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
-                    const data = calendarData.get(dateStr);
+                  return (
+                    <div key={format(month, "yyyy-MM")} className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 text-center py-1">
+                        <span className="text-xs font-semibold capitalize">
+                          {format(month, "MMMM", { locale: ptBR })}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-7 bg-muted/30">
+                        {DIAS_SEMANA_ABREV.map((dia, i) => (
+                          <div key={i} className="text-center text-[9px] font-medium py-0.5 text-muted-foreground">
+                            {dia}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7">
+                        {days.map((day, idx) => {
+                          const dateStr = format(day, "yyyy-MM-dd");
+                          const isCurrentMonth = day.getMonth() === month.getMonth();
+                          const data = calData.get(dateStr);
 
-                    if (!isCurrentMonth) {
-                      return (
-                        <div key={idx} className="aspect-square border-t border-r last:border-r-0 bg-muted/20" />
-                      );
-                    }
-
-                    if (!data?.isCulto) {
-                      return (
-                        <div key={idx} className="aspect-square border-t border-r last:border-r-0 flex items-center justify-center">
-                          <span className="text-xs text-muted-foreground/40">{day.getDate()}</span>
-                        </div>
-                      );
-                    }
-
-                    // Dia de culto
-                    const hasCrs = data.crsCount > 0;
-                    const isFull = data.crsCount >= 2;
-                    const isDisabled = data.isPast || isFull || data.alreadyCandidated;
-                    const tipoCultoLabel = data.tipoCulto === "ceia" ? "Ceia" : data.tipoCulto === "celebracao" ? "Culto" : "QcP";
-
-                    return (
-                      <button
-                        key={idx}
-                        disabled={isDisabled}
-                        onClick={() => !isDisabled && handleCalendarDayClick(dateStr, data.tipoCulto)}
-                        className={`aspect-square border-t border-r last:border-r-0 flex flex-col items-center justify-center gap-0.5 transition-colors relative
-                          ${hasCrs 
-                            ? "bg-red-100 dark:bg-red-950/40 hover:bg-red-200 dark:hover:bg-red-950/60" 
-                            : "bg-green-100 dark:bg-green-950/40 hover:bg-green-200 dark:hover:bg-green-950/60"
+                          if (!isCurrentMonth) {
+                            return <div key={idx} className="h-8 border-t border-r bg-muted/10" />;
                           }
-                          ${isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
-                          ${data.alreadyCandidated ? "ring-2 ring-inset ring-blue-400" : ""}
-                        `}
-                        title={
-                          data.alreadyCandidated
-                            ? "Sua CR já se candidatou"
-                            : isFull
-                            ? "2/2 CRs preenchidas"
-                            : data.isPast
-                            ? "Data passada"
-                            : `${data.crsCount}/2 CRs - Clique para candidatar`
-                        }
-                      >
-                        <span className={`text-sm font-bold ${hasCrs ? "text-red-700 dark:text-red-400" : "text-green-700 dark:text-green-400"}`}>
-                          {day.getDate()}
-                        </span>
-                        <span className={`text-[9px] leading-none font-medium ${hasCrs ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400"}`}>
-                          {tipoCultoLabel}
-                        </span>
-                        {hasCrs && (
-                          <span className="text-[8px] leading-none text-red-500 dark:text-red-400 font-semibold">
-                            {data.membrosCount > 0 ? `${data.membrosCount}p` : `${data.crsCount}CR`}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+
+                          if (!data?.isCulto) {
+                            return (
+                              <div key={idx} className="h-8 border-t border-r flex items-center justify-center">
+                                <span className="text-[10px] text-muted-foreground/30">{day.getDate()}</span>
+                              </div>
+                            );
+                          }
+
+                          const hasCrs = data.crsCount > 0;
+                          const isFull = data.crsCount >= 2;
+                          const needsMore = hasCrs && !data.hasMinPessoas;
+                          const isDisabled = data.isPast || (isFull && data.hasMinPessoas) || data.alreadyCandidated;
+
+                          return (
+                            <button
+                              key={idx}
+                              disabled={isDisabled}
+                              onClick={() => !isDisabled && handleCalendarDayClick(dateStr, data.tipoCulto)}
+                              className={`h-8 border-t border-r flex flex-col items-center justify-center transition-colors
+                                ${hasCrs
+                                  ? needsMore
+                                    ? "bg-amber-100 dark:bg-amber-950/40 hover:bg-amber-200"
+                                    : "bg-red-100 dark:bg-red-950/40 hover:bg-red-200"
+                                  : "bg-green-100 dark:bg-green-950/40 hover:bg-green-200"
+                                }
+                                ${isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+                                ${data.alreadyCandidated ? "ring-1 ring-inset ring-blue-400" : ""}
+                              `}
+                              title={
+                                data.alreadyCandidated
+                                  ? "Sua CR já se candidatou"
+                                  : isFull && data.hasMinPessoas
+                                  ? "Lotado"
+                                  : needsMore
+                                  ? `${data.membrosCount}/${MIN_PESSOAS[selectedMinistry] || 4} pessoas`
+                                  : data.isPast
+                                  ? "Data passada"
+                                  : "Clique para candidatar"
+                              }
+                            >
+                              <span className={`text-[10px] font-bold leading-none ${
+                                hasCrs
+                                  ? needsMore ? "text-amber-700 dark:text-amber-400" : "text-red-700 dark:text-red-400"
+                                  : "text-green-700 dark:text-green-400"
+                              }`}>
+                                {day.getDate()}
+                              </span>
+                              {hasCrs && (
+                                <span className="text-[7px] leading-none font-semibold text-red-500 dark:text-red-400">
+                                  {data.membrosCount}p
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
+
+              <p className="text-[10px] text-muted-foreground">
+                Mínimo por culto: <strong>Recepção {MIN_PESSOAS[RECEPCAO_ID]}p</strong> · <strong>Estacionamento {MIN_PESSOAS[ESTACIONAMENTO_ID]}p</strong>
+              </p>
             </div>
           )}
         </CardContent>
