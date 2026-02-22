@@ -62,6 +62,9 @@ interface MemberRequest {
   ministerios_interesse: string[] | null;
   nao_pretende_servir: boolean | null;
   responsavel_id: string | null;
+  parent_request_id: string | null;
+  tipo_dependente: string | null;
+  member_id: string | null;
 }
 
 const SolicitacoesMembrosTab = () => {
@@ -96,6 +99,20 @@ const SolicitacoesMembrosTab = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (request: MemberRequest) => {
+      // Se é filho e tem parent_request_id, buscar o member_id do pai/mãe aprovado
+      let responsavelId = request.responsavel_id || null;
+      if (request.tipo_dependente === "filho" && request.parent_request_id) {
+        const { data: parentRequest } = await supabase
+          .from("member_requests")
+          .select("member_id")
+          .eq("id", request.parent_request_id)
+          .single();
+
+        if (parentRequest?.member_id) {
+          responsavelId = parentRequest.member_id;
+        }
+      }
+
       // Criar o membro na tabela members
       const { data: newMember, error: memberError } = await supabase
         .from("members")
@@ -115,7 +132,7 @@ const SolicitacoesMembrosTab = () => {
           photo_url: request.photo_url,
           ministerios_interesse: request.ministerios_interesse || [],
           nao_pretende_servir: request.nao_pretende_servir || false,
-          responsavel_id: request.responsavel_id || null,
+          responsavel_id: responsavelId,
         })
         .select()
         .single();
@@ -123,12 +140,12 @@ const SolicitacoesMembrosTab = () => {
       if (memberError) throw memberError;
 
       // Se é menor de 12 anos e tem responsável, criar vínculo em kids_responsaveis
-      if (request.responsavel_id && needsResponsible(request.birth_date)) {
+      if (responsavelId && needsResponsible(request.birth_date)) {
         const { error: kidsError } = await supabase
           .from("kids_responsaveis")
           .insert({
             crianca_member_id: newMember.id,
-            responsavel_member_id: request.responsavel_id,
+            responsavel_member_id: responsavelId,
             parentesco: "responsavel",
             principal: true,
             notificar_ausencia: true,
@@ -136,52 +153,6 @@ const SolicitacoesMembrosTab = () => {
 
         if (kidsError) {
           console.error("Erro ao criar vínculo kids_responsaveis:", kidsError);
-        }
-      }
-
-      // Buscar dependentes (filhos e cônjuge) da solicitação
-      const { data: dependentes } = await supabase
-        .from("member_request_filhos")
-        .select("*")
-        .eq("member_request_id", request.id);
-
-      if (dependentes && dependentes.length > 0) {
-        for (const dep of dependentes) {
-          const depPayload = {
-            full_name: dep.nome_completo,
-            cpf: dep.cpf || null,
-            birth_date: dep.data_nascimento || null,
-            genero: dep.genero || null,
-            cep: request.cep,
-            address: request.address,
-            number: request.number,
-            neighborhood: request.neighborhood,
-            city: request.city,
-            state: request.state,
-            responsavel_id: dep.tipo === "filho" ? newMember.id : null,
-          };
-
-          const { data: depMember, error: depError } = await supabase
-            .from("members")
-            .insert(depPayload)
-            .select()
-            .single();
-
-          if (depError) {
-            console.error(`Erro ao criar membro dependente ${dep.nome_completo}:`, depError);
-            continue;
-          }
-
-          // Se filho é menor de 12, criar vínculo kids_responsaveis
-          if (dep.tipo === "filho" && depMember && needsResponsible(dep.data_nascimento)) {
-            await supabase.from("kids_responsaveis").insert({
-              crianca_member_id: depMember.id,
-              responsavel_member_id: newMember.id,
-              parentesco: "responsavel",
-              principal: true,
-              notificar_ausencia: true,
-            });
-          }
         }
       }
 
@@ -417,7 +388,15 @@ const SolicitacoesMembrosTab = () => {
                       })}
                     </CardDescription>
                   </div>
-                  {getStatusBadge(request.status)}
+                  <div className="flex flex-col items-end gap-1">
+                    {getStatusBadge(request.status)}
+                    {request.tipo_dependente === "filho" && (
+                      <Badge variant="outline" className="text-xs">👶 Filho(a)</Badge>
+                    )}
+                    {request.tipo_dependente === "conjuge" && (
+                      <Badge variant="outline" className="text-xs">💍 Cônjuge</Badge>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
