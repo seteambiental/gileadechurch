@@ -4795,6 +4795,54 @@ export type Database = {
           },
         ]
       }
+      sistema_solicitacoes: {
+        Row: {
+          aba: string | null
+          card: string | null
+          created_at: string
+          descricao: string
+          id: string
+          numero: number
+          painel: string
+          solicitante_id: string | null
+          solicitante_nome: string | null
+          status: string
+          sub_aba: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          aba?: string | null
+          card?: string | null
+          created_at?: string
+          descricao: string
+          id?: string
+          numero?: number
+          painel: string
+          solicitante_id?: string | null
+          solicitante_nome?: string | null
+          status?: string
+          sub_aba?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          aba?: string | null
+          card?: string | null
+          created_at?: string
+          descricao?: string
+          id?: string
+          numero?: number
+          painel?: string
+          solicitante_id?: string | null
+          solicitante_nome?: string | null
+          status?: string
+          sub_aba?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       testemunhos: {
         Row: {
           anonimo: boolean
