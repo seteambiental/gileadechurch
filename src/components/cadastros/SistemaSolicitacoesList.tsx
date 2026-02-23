@@ -5,14 +5,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CheckCircle2, XCircle, Clock, Circle } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, Circle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import SistemaSolicitacaoFormDialog from "./SistemaSolicitacaoFormDialog";
 
 interface Props {
   tipo: "melhoria" | "erro" | "implementacao";
+  hideAdminActions?: boolean;
 }
 
 const LABELS: Record<string, { title: string; addLabel: string }> = {
@@ -39,10 +41,11 @@ const STATUS_CONFIG: Record<string, Record<string, { label: string; variant: "de
   },
 };
 
-const SistemaSolicitacoesList = ({ tipo }: Props) => {
+const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const config = LABELS[tipo];
 
   const { data: isAdmin } = useQuery({
@@ -87,6 +90,22 @@ const SistemaSolicitacoesList = ({ tipo }: Props) => {
     onError: () => toast.error("Erro ao atualizar status"),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("sistema_solicitacoes")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sistema_solicitacoes", tipo] });
+      toast.success("Solicitação excluída!");
+      setDeleteId(null);
+    },
+    onError: () => toast.error("Erro ao excluir solicitação"),
+  });
+
   const getStatusBadge = (status: string) => {
     const cfg = STATUS_CONFIG[tipo]?.[status] || { label: status, variant: "outline" as const, icon: <Circle className="w-3 h-3" /> };
     return (
@@ -98,7 +117,7 @@ const SistemaSolicitacoesList = ({ tipo }: Props) => {
   };
 
   const getAdminActions = (item: any) => {
-    if (!isAdmin) return null;
+    if (hideAdminActions || !isAdmin) return null;
 
     if (tipo === "melhoria") {
       return (
@@ -142,6 +161,11 @@ const SistemaSolicitacoesList = ({ tipo }: Props) => {
     return null;
   };
 
+  const canDelete = (item: any) => {
+    if (isAdmin) return true;
+    return item.solicitante_id === user?.id;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -180,7 +204,19 @@ const SistemaSolicitacoesList = ({ tipo }: Props) => {
                       Por {item.solicitante_nome || "—"} em {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                     </p>
                   </div>
-                  {getAdminActions(item)}
+                  <div className="flex items-start gap-2">
+                    {getAdminActions(item)}
+                    {canDelete(item) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setDeleteId(item.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -192,6 +228,12 @@ const SistemaSolicitacoesList = ({ tipo }: Props) => {
         open={showForm}
         onOpenChange={setShowForm}
         tipo={tipo}
+      />
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
     </div>
   );

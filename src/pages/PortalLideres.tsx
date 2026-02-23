@@ -32,6 +32,7 @@ import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLider
 import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLideresAprovacoes";
 import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 import { PortalLideresCandidaturaServico } from "@/components/portal-lideres/PortalLideresCandidaturaServico";
+import SistemaTab from "@/components/cadastros/SistemaTab";
 
 // Roles que têm acesso ao portal de líderes
 const LEADER_ROLES: PortalRole[] = [
@@ -235,6 +236,9 @@ const PortalLideres = () => {
   // Finanças - disponível para todos os líderes
   availableTabs.push({ id: "financas", label: "Finanças", icon: DollarSign });
 
+  // Sistema - disponível para todos os líderes
+  availableTabs.push({ id: "sistema", label: "Sistema", icon: Settings });
+
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
   return (
@@ -339,6 +343,10 @@ const PortalLideres = () => {
 
           <TabsContent value="financas">
             <PortalFinancasTab />
+          </TabsContent>
+
+          <TabsContent value="sistema">
+            <SistemaTab />
           </TabsContent>
 
           {memberMinistries.map((ministry) => {
