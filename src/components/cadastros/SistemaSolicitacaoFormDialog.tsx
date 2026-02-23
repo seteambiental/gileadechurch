@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Send } from "lucide-react";
 
@@ -32,7 +31,6 @@ const DESC_LABELS: Record<string, string> = {
 const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [painel, setPainel] = useState("");
   const [descricao, setDescricao] = useState("");
   const [card, setCard] = useState("");
   const [aba, setAba] = useState("");
@@ -52,7 +50,6 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
 
       const { error } = await supabase.from("sistema_solicitacoes").insert({
         tipo,
-        painel,
         descricao,
         card: card || null,
         aba: aba || null,
@@ -72,7 +69,7 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
   });
 
   const resetForm = () => {
-    setPainel("");
+    setDescricao("");
     setDescricao("");
     setCard("");
     setAba("");
@@ -81,7 +78,7 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!painel || !descricao) {
+    if (!descricao) {
       toast.error("Preencha os campos obrigatórios");
       return;
     }
@@ -95,19 +92,6 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
           <DialogTitle>{TITLES[tipo]}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Painel *</Label>
-            <Select value={painel} onValueChange={setPainel}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o painel" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gestao">Gestão</SelectItem>
-                <SelectItem value="ministerios">Ministérios</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="space-y-2">
             <Label>{DESC_LABELS[tipo]} *</Label>
             <Textarea

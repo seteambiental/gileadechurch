@@ -1,0 +1,1 @@
+ALTER TABLE public.sistema_solicitacoes ALTER COLUMN painel DROP NOT NULL;
