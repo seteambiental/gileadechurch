@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Users, MessageCircle, Loader2, Check, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { ExportButton } from "@/components/ui/export-button";
 import {
   Table,
   TableBody,
@@ -274,10 +275,25 @@ export function MissoesContribuintesTab() {
 
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Contribuintes</h3>
-        <Button onClick={handleNewContribuinte}>
-          <Plus className="mr-2 h-4 w-4" />
-          Novo Contribuinte
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={(contribuintes || []).sort((a, b) => getNome(a).localeCompare(getNome(b), "pt-BR"))}
+            columns={[
+              { header: "Nome", accessor: (row: any) => getNome(row) },
+              { header: "Valor Mensal", accessor: (row: any) => `R$ ${Number(row.valor_mensal).toFixed(2).replace(".", ",")}` },
+              { header: "Dia Venc.", accessor: (row: any) => `Dia ${row.dia_vencimento || 10}` },
+              { header: "Status", accessor: (row: any) => row.ativo ? "Ativo" : "Inativo" },
+              { header: "Data Início", accessor: (row: any) => row.data_inicio },
+              { header: "Observações", accessor: (row: any) => row.observacoes || "" },
+            ]}
+            filename="Contribuintes_Missoes"
+            title="Contribuintes - Missões Moçambique"
+          />
+          <Button onClick={handleNewContribuinte}>
+            <Plus className="mr-2 h-4 w-4" />
+            Novo Contribuinte
+          </Button>
+        </div>
       </div>
 
       <Card>

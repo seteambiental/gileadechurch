@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { todayDateStr } from "@/lib/date-utils";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,6 +6,7 @@ import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { includesNormalized } from "@/lib/text-utils";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +56,63 @@ interface ContribuinteFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   contribuinte: Contribuinte | null;
+}
+
+// Componente de busca de membros com input de texto
+function MemberSearchSelect({ members, value, onChange }: { members: { id: string; full_name: string }[]; value: string; onChange: (val: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const filtered = search.length >= 2
+    ? members.filter((m) => includesNormalized(m.full_name, search))
+    : members;
+
+  const selectedName = members.find((m) => m.id === value)?.full_name || "";
+
+  return (
+    <div className="space-y-1.5">
+      <FormLabel>Membro da Igreja</FormLabel>
+      <div className="relative">
+        <Input
+          placeholder="Digite para buscar um membro..."
+          value={search || selectedName}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+            if (!e.target.value) onChange("");
+          }}
+          onFocus={() => setOpen(true)}
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => { onChange(""); setSearch(""); }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+      {open && search.length >= 2 && filtered.length > 0 && (
+        <div className="border rounded-md max-h-48 overflow-y-auto bg-popover shadow-md z-50">
+          {filtered.slice(0, 20).map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors"
+              onClick={() => {
+                onChange(m.id);
+                setSearch(m.full_name);
+                setOpen(false);
+              }}
+            >
+              {m.full_name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function ContribuinteFormDialog({
@@ -168,27 +226,10 @@ export function ContribuinteFormDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="member_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Membro da Igreja</FormLabel>
-                  <FormControl>
-                    <ClearableSelect
-                      value={field.value || null}
-                      onChange={(val) => field.onChange(val || "")}
-                      options={(members || []).map((member) => ({
-                        value: member.id,
-                        label: member.full_name,
-                      }))}
-                      placeholder="Selecione um membro (opcional)"
-                      emptyLabel="Nenhum (informar nome manual)"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <MemberSearchSelect
+              members={members || []}
+              value={form.watch("member_id") || ""}
+              onChange={(val) => form.setValue("member_id", val)}
             />
 
             <FormField

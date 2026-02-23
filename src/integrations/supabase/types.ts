@@ -5098,7 +5098,7 @@ export type Database = {
         | "membro"
         | "supervisor_casa_refugio"
       conversion_type: "conversao" | "reconciliacao" | "visitante"
-      kids_turma: "laranja" | "amarelo" | "verde" | "azul"
+      kids_turma: "laranja" | "amarelo" | "verde" | "azul" | "bercario"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -5256,7 +5256,7 @@ export const Constants = {
         "supervisor_casa_refugio",
       ],
       conversion_type: ["conversao", "reconciliacao", "visitante"],
-      kids_turma: ["laranja", "amarelo", "verde", "azul"],
+      kids_turma: ["laranja", "amarelo", "verde", "azul", "bercario"],
     },
   },
 } as const
