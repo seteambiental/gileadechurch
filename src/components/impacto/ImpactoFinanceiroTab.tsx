@@ -450,7 +450,6 @@ const ImpactoFinanceiroTab = () => {
                     <Input
                       type="date"
                       value={dataPrevisao}
-                      min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setDataPrevisao(e.target.value)}
                       className="mt-1"
                     />
