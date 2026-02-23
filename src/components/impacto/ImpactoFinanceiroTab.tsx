@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
-import { formatCurrency } from "@/lib/masks";
+import { formatCurrency, formatDateBR } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +57,7 @@ const ImpactoFinanceiroTab = () => {
     { key: "valor_inscricao", label: "Valor Inscrição" },
     { key: "valor_pago", label: "Valor Pago" },
     { key: "saldo", label: "Saldo" },
+    { key: "previsoes", label: "Previsões Pgto" },
     { key: "forma_pagamento", label: "Forma Pgto" },
     { key: "status", label: "Status" },
   ] as const;
@@ -287,6 +288,11 @@ const ImpactoFinanceiroTab = () => {
 
   const eventoNomeFinanceiro = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "financeiro";
 
+  const formatPrevisoes = (previsoes: any) => {
+    if (!previsoes || !Array.isArray(previsoes) || previsoes.length === 0) return "—";
+    return previsoes.map((p: any) => `${formatDateBR(p.data)}: ${formatCurrency(parseFloat(String(p.valor)) || 0)}`).join("; ");
+  };
+
   const getExportColumnsReceitas = () => {
     const all = [
       { key: "nome", header: "Nome", accessor: (row: any) => row.nome },
@@ -295,6 +301,7 @@ const ImpactoFinanceiroTab = () => {
       { key: "valor_inscricao", header: "Valor Inscrição", accessor: (row: any) => formatCurrency(row.valor_inscricao || 0) },
       { key: "valor_pago", header: "Valor Pago", accessor: (row: any) => formatCurrency(row.valor_pago || 0) },
       { key: "saldo", header: "Saldo", accessor: (row: any) => formatCurrency(Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0))) },
+      { key: "previsoes", header: "Previsões Pgto", accessor: (row: any) => formatPrevisoes(row.previsoes_pagamento) },
       { key: "forma_pagamento", header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
       { key: "status", header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
     ];
@@ -534,14 +541,15 @@ const ImpactoFinanceiroTab = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {isCol("nome") && <TableHead>Nome</TableHead>}
-                        {isCol("tipo") && <TableHead>Tipo</TableHead>}
-                        {isCol("referencia") && <TableHead>Referência</TableHead>}
-                        {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
-                        {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
-                        {isCol("saldo") && <TableHead>Saldo</TableHead>}
-                        {isCol("forma_pagamento") && <TableHead>Forma Pgto</TableHead>}
-                        {isCol("status") && <TableHead>Status</TableHead>}
+                         {isCol("nome") && <TableHead>Nome</TableHead>}
+                         {isCol("tipo") && <TableHead>Tipo</TableHead>}
+                         {isCol("referencia") && <TableHead>Referência</TableHead>}
+                         {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
+                         {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
+                         {isCol("saldo") && <TableHead>Saldo</TableHead>}
+                         {isCol("previsoes") && <TableHead>Previsões</TableHead>}
+                         {isCol("forma_pagamento") && <TableHead>Forma Pgto</TableHead>}
+                         {isCol("status") && <TableHead>Status</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -549,9 +557,20 @@ const ImpactoFinanceiroTab = () => {
                         const valorInsc = inscricao.valor_inscricao || 0;
                         const valorPg = inscricao.valor_pago || 0;
                         const saldo = Math.max(0, valorInsc - valorPg);
+                        const previsoes = inscricao.previsoes_pagamento as Array<{ data: string; valor: number }> | null;
+                        const temPrevisao = previsoes && Array.isArray(previsoes) && previsoes.length > 0;
                         return (
                           <TableRow key={inscricao.id}>
-                            {isCol("nome") && <TableCell className="font-medium">{inscricao.nome}</TableCell>}
+                            {isCol("nome") && (
+                              <TableCell className="font-medium">
+                                <span className="flex items-center gap-1.5">
+                                  {inscricao.nome}
+                                  {temPrevisao && (
+                                    <CalendarClock className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  )}
+                                </span>
+                              </TableCell>
+                            )}
                             {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
                             {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
                             {isCol("valor_inscricao") && <TableCell>{formatCurrency(valorInsc)}</TableCell>}
@@ -559,6 +578,17 @@ const ImpactoFinanceiroTab = () => {
                             {isCol("saldo") && (
                               <TableCell className={saldo > 0 ? "font-medium text-yellow-600" : "font-medium text-green-600"}>
                                 {formatCurrency(saldo)}
+                              </TableCell>
+                            )}
+                            {isCol("previsoes") && (
+                              <TableCell className="text-xs max-w-[200px]">
+                                {temPrevisao ? (
+                                  <div className="space-y-0.5">
+                                    {previsoes!.map((p, idx) => (
+                                      <div key={idx}>{formatDateBR(p.data)}: {formatCurrency(parseFloat(String(p.valor)) || 0)}</div>
+                                    ))}
+                                  </div>
+                                ) : "—"}
                               </TableCell>
                             )}
                             {isCol("forma_pagamento") && <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>}

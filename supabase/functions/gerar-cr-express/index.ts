@@ -41,23 +41,25 @@ serve(async (req) => {
       );
     }
 
-    // Fetch upcoming events for "avisos importantes"
+    // Fetch upcoming events for "avisos importantes" - only cultos, impactos, manains
     const today = new Date().toISOString().split("T")[0];
     const { data: eventos } = await supabaseAdmin
       .from("agenda_igreja")
-      .select("titulo, data_evento, hora_inicio, local")
+      .select("titulo, data_evento, hora_inicio, local, tipo_evento")
       .gte("data_evento", today)
       .eq("ativo", true)
+      .in("tipo_evento", ["culto", "impacto", "manaim"])
       .order("data_evento", { ascending: true })
       .limit(2);
 
-    // Fetch weekly schedule
+    // Fetch weekly schedule - only cultos, impactos, manains
     const { data: programacao } = await supabaseAdmin
       .from("agenda_igreja")
       .select("titulo, data_evento, hora_inicio, local, tipo_evento")
       .gte("data_evento", today)
       .eq("ativo", true)
       .eq("recorrente", true)
+      .in("tipo_evento", ["culto", "impacto", "manaim"])
       .order("data_evento", { ascending: true })
       .limit(10);
 
@@ -137,23 +139,24 @@ serve(async (req) => {
       ],
     };
 
-    const systemPrompt = `Você é um assistente da igreja que cria resumos de pregações para as Casas Refúgio (células/pequenos grupos).
-Gere um documento chamado "Casa Refúgio Express" seguindo este formato exato:
+    const systemPrompt = `Você é um assistente da igreja que cria RESUMOS de pregações/mensagens para as Casas Refúgio (células/pequenos grupos).
+
+REGRA FUNDAMENTAL: Você deve RESUMIR o conteúdo do material fornecido (arquivo, imagem ou texto). NÃO crie conteúdo novo nem acrescente informações externas. Tudo deve ser baseado exclusivamente no material enviado.
 
 TEMA DA MINISTRAÇÃO: ${tema}
 PASTOR/MINISTRADOR: ${pastor}
 TEXTO BASE: ${textoBase}
 
-O documento deve conter:
-1. **Introdução** - Um parágrafo introdutório contextualizando o tema
-2. **Desenvolvimento** - De 3 a 5 tópicos principais da mensagem, cada um com um subtítulo e um parágrafo explicativo
-3. **Conclusão (prática)** - Uma conclusão com aplicação prática para o dia a dia
+O documento "Casa Refúgio Express" deve conter:
+1. **Introdução** - Um parágrafo introdutório objetivo mas completo, contextualizando o tema conforme apresentado no material original
+2. **Desenvolvimento** - De 3 a 5 tópicos principais extraídos da mensagem original, cada um com um subtítulo e um parágrafo explicativo. Apenas resuma o que foi dito, sem acrescentar interpretações ou conteúdos externos.
+3. **Conclusão (prática)** - Uma conclusão com aplicação prática para o dia a dia, baseada no que foi ministrado
 4. **Avisos Importantes** - Incluir:
-   - Programação da igreja para a próxima semana:
+   - Programação da igreja (apenas Cultos, Impactos e Manains):
 ${programacaoText}
    - Próximos 2 eventos da agenda:
 ${eventosText}
-   - Lembretes fixos: Oferta para missões (meta da CR – R$ 50,00), pix@gileade.com.br, Quilo do Amor (meta da CR – 26 kgs), reforçar importância da participação nos cultos e programações da Igreja.
+   - Lembretes fixos: Oferta para missões (meta da CR – R$ 50,00), pix@gileade.com.br, Quilo do Amor (meta da CR – 28 kgs), reforçar importância da participação nos cultos e programações da Igreja.
 
 Responda APENAS em formato JSON com as chaves: introducao, desenvolvimento, conclusao, avisos_importantes
 O desenvolvimento deve ser um texto corrido com os tópicos numerados.
@@ -167,10 +170,10 @@ Todos os campos devem ser strings com o texto formatado.`;
     if (fileContent) {
       // Image files - send as multimodal
       if (fileContent.startsWith("data:image/")) {
-        messages.push({
+      messages.push({
           role: "user",
           content: [
-            { type: "text", text: `Analise esta imagem da mensagem/pregação e gere o Casa Refúgio Express baseado nela. Tema: ${tema}, Pastor: ${pastor}, Texto Base: ${textoBase}` },
+            { type: "text", text: `RESUMA esta imagem da mensagem/pregação para gerar o Casa Refúgio Express. Use APENAS o conteúdo visível na imagem, sem acrescentar informações externas. Tema: ${tema}, Pastor: ${pastor}, Texto Base: ${textoBase}` },
             { type: "image_url", image_url: { url: fileContent } },
           ],
         });
@@ -178,13 +181,13 @@ Todos os campos devem ser strings com o texto formatado.`;
         // For documents, encode as text description
         messages.push({
           role: "user",
-          content: `O arquivo da mensagem foi anexado (formato: ${arquivoPath.split(".").pop()}). Com base no tema "${tema}", do pastor/ministrador "${pastor}", com texto base "${textoBase}", gere o Casa Refúgio Express. Use o conteúdo do arquivo para embasar o resumo.`,
+          content: `O arquivo da mensagem foi anexado (formato: ${arquivoPath.split(".").pop()}). RESUMA o conteúdo deste arquivo para gerar o Casa Refúgio Express. NÃO acrescente informações externas, use APENAS o que está no material. Tema: "${tema}", Pastor/Ministrador: "${pastor}", Texto Base: "${textoBase}".`,
         });
       }
     } else {
       messages.push({
         role: "user",
-        content: `Gere o Casa Refúgio Express sobre o tema "${tema}", ministrado por "${pastor}", com texto base "${textoBase}".`,
+        content: `Gere um resumo para o Casa Refúgio Express sobre o tema "${tema}", ministrado por "${pastor}", com texto base "${textoBase}". Baseie-se apenas nas informações fornecidas.`,
       });
     }
 
