@@ -1,0 +1,1 @@
+ALTER TABLE public.impacto_inscricoes ADD COLUMN previsoes_pagamento jsonb DEFAULT NULL;

@@ -47,6 +47,11 @@ interface Pagamento {
   valor: string;
 }
 
+interface PrevisaoPagamento {
+  data: string;
+  valor: string;
+}
+
 interface ImpactoInscricaoFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -72,6 +77,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [usarMisto, setUsarMisto] = useState(false);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
   const [valorInscricao, setValorInscricao] = useState("");
+  const [previsoes, setPrevisoes] = useState<PrevisaoPagamento[]>([]);
 
   const { data: evento } = useQuery({
     queryKey: ["impacto-evento", eventoId],
@@ -135,6 +141,12 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         setPagamentos([]);
         setUsarMisto(false);
       }
+      const existingPrevisoes = inscricao.previsoes_pagamento as PrevisaoPagamento[] | null;
+      if (existingPrevisoes && existingPrevisoes.length > 0) {
+        setPrevisoes(existingPrevisoes.map((p: any) => ({ data: p.data || "", valor: p.valor?.toString() || "" })));
+      } else {
+        setPrevisoes([]);
+      }
     } else if (open && !inscricao) {
       setIsManual(false);
       setMemberId("");
@@ -150,6 +162,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setValorPago("0");
       setPagamentos([]);
       setUsarMisto(false);
+      setPrevisoes([]);
       // Auto-fill valor based on event config for default type
       if (evento?.tem_custo) {
         const vpt = evento?.valores_por_tipo as Record<string, string> | null;
@@ -256,6 +269,9 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         forma_pagamento: usarMisto ? "misto" : (formaPagamento || null),
         valor_pago: totalPago || null,
         pagamentos: pagamentosJson.length > 0 ? pagamentosJson : null,
+        previsoes_pagamento: previsoes.filter((p) => p.data && p.valor).length > 0
+          ? previsoes.filter((p) => p.data && p.valor).map((p) => ({ data: p.data, valor: parseFloat(p.valor) || 0 }))
+          : null,
       };
 
       if (isEditing) {
@@ -644,6 +660,62 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             )}
           </div>
 
+          <Separator />
+
+          {/* Previsões de Pagamento */}
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm">Previsões de Pagamento</h4>
+            {previsoes.map((prev, index) => (
+              <div key={index} className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Label className="text-xs">Data</Label>
+                  <Input
+                    type="date"
+                    value={prev.data}
+                    min={new Date().toISOString().split("T")[0]}
+                    onChange={(e) => {
+                      const updated = [...previsoes];
+                      updated[index] = { ...updated[index], data: e.target.value };
+                      setPrevisoes(updated);
+                    }}
+                  />
+                </div>
+                <div className="w-28">
+                  <Label className="text-xs">Valor (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={prev.valor}
+                    onChange={(e) => {
+                      const updated = [...previsoes];
+                      updated[index] = { ...updated[index], valor: e.target.value };
+                      setPrevisoes(updated);
+                    }}
+                    placeholder="0,00"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => setPrevisoes(previsoes.filter((_, i) => i !== index))}
+                  className="flex-shrink-0"
+                >
+                  <Trash2 className="w-4 h-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPrevisoes([...previsoes, { data: "", valor: "" }])}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Adicionar previsão
+            </Button>
+          </div>
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending ? "Salvando..." : isEditing ? "Salvar Alterações" : "Realizar Inscrição"}
           </Button>

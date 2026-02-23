@@ -2469,6 +2469,7 @@ export type Database = {
           nome: string
           observacoes: string | null
           pagamentos: Json | null
+          previsoes_pagamento: Json | null
           referencia: string | null
           status_pagamento: string
           telefone: string | null
@@ -2490,6 +2491,7 @@ export type Database = {
           nome: string
           observacoes?: string | null
           pagamentos?: Json | null
+          previsoes_pagamento?: Json | null
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
@@ -2511,6 +2513,7 @@ export type Database = {
           nome?: string
           observacoes?: string | null
           pagamentos?: Json | null
+          previsoes_pagamento?: Json | null
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
