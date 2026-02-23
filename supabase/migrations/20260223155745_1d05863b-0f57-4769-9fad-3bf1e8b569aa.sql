@@ -1,0 +1,1 @@
+ALTER TYPE kids_turma ADD VALUE IF NOT EXISTS 'bercario';

@@ -648,6 +648,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                   />
                 </TableHead>
                 <TableHead>Ref.</TableHead>
+                <TableHead></TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -674,6 +675,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                       />
                     </TableCell>
                     <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>
+                    <TableCell>
+                      {inscricao.member?.photo_url ? (
+                        <img src={inscricao.member.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                          {(inscricao.nome || "?")[0]?.toUpperCase()}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">{inscricao.nome}</TableCell>
                     <TableCell className="text-sm">
                       {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}

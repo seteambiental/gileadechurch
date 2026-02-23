@@ -20,7 +20,9 @@ import {
   Zap,
   User,
   ClipboardList,
+  Search,
 } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 import {
   format,
   startOfMonth,
@@ -71,6 +73,7 @@ interface Evento {
   idade_maxima: number | null;
   limite_vagas: number | null;
   tem_custo: boolean | null;
+  necessita_inscricao: boolean;
 }
 
 type PublicoFiltro = "todos" | "homens" | "mulheres" | "kids" | "cultos" | "jovens" | "impactos" | "adolescentes";
@@ -110,6 +113,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
   const [currentDate, setCurrentDate] = useState(new Date());
   const [publicoFiltro, setPublicoFiltro] = useState<PublicoFiltro>("todos");
   const [periodoFiltro, setPeriodoFiltro] = useState<PeriodoFiltro>("semana");
+  const [searchTerm, setSearchTerm] = useState("");
   const [compartilharEvento, setCompartilharEvento] = useState<{
     id: string;
     titulo: string;
@@ -222,7 +226,15 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
     const days = eachDayOfInterval({ start, end });
     const result: (Evento & { dataCalculada: Date })[] = [];
 
-    eventos.filter(filtrarPorPublico).forEach((evento) => {
+    const searchFiltered = searchTerm.trim()
+      ? eventos.filter(filtrarPorPublico).filter((evento) => {
+          const q = searchTerm.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const titulo = evento.titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const descricao = (evento.descricao || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          return titulo.includes(q) || descricao.includes(q);
+        })
+      : eventos.filter(filtrarPorPublico);
+    searchFiltered.forEach((evento) => {
       if (evento.recorrente) {
         days.forEach((day) => {
           const diaSemana = getDay(day);
@@ -269,7 +281,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
     });
 
     return result.sort((a, b) => a.dataCalculada.getTime() - b.dataCalculada.getTime());
-  }, [eventos, start, end, publicoFiltro]);
+  }, [eventos, start, end, publicoFiltro, searchTerm]);
 
   // Agrupar eventos por data
   const eventosAgrupados = useMemo(() => {
@@ -338,6 +350,13 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
           Veja os eventos e atividades programadas
         </p>
       </div>
+
+      {/* Busca */}
+      <SearchInput
+        value={searchTerm}
+        onChange={setSearchTerm}
+        placeholder="Buscar evento ou programação..."
+      />
 
       {/* Filtro de Público */}
       <div className="space-y-3">
@@ -421,7 +440,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
 
               <div className="space-y-2">
                 {eventosData.map((evento, i) => {
-                  const precisaInscricao = evento.limite_vagas || evento.tem_custo;
+                  const precisaInscricao = evento.necessita_inscricao && !evento.recorrente;
                   
                   return (
                     <Card key={`${evento.id}-${i}`} className="overflow-hidden">
@@ -439,7 +458,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
                                   <Badge variant="outline" className="text-xs">
                                     {tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento}
                                   </Badge>
-                                  {precisaInscricao && (
+                                {precisaInscricao && (
                                     <Badge variant="secondary" className="text-xs">
                                       Inscrição
                                     </Badge>
@@ -447,7 +466,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
                                 </div>
                               </div>
                               <div className="flex items-center gap-1 flex-shrink-0">
-                                {precisaInscricao && !evento.recorrente && (
+                                {precisaInscricao && (
                                   <Button
                                     variant="default"
                                     size="sm"

@@ -319,8 +319,11 @@ export const EncontrosReportDialog = ({
       const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
       if (dayNumber === null || dayNumber === undefined) return;
 
+      // Skip CRs without data_inicio_cr
+      if (!casa.data_inicio_cr) return;
+
       // Use data_inicio_cr as start, but clamp to appliedStartDate
-      const casaStart = casa.data_inicio_cr && casa.data_inicio_cr > appliedStartDate 
+      const casaStart = casa.data_inicio_cr > appliedStartDate 
         ? casa.data_inicio_cr 
         : appliedStartDate;
       const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber);

@@ -289,9 +289,13 @@ export const PortalLideresCasaRefugio = ({
 
     const isQuinzenal = frequencia?.toLowerCase().includes("quinzenal");
     const today = startOfDay(new Date());
-    const startRef = casaSelecionada.data_inicio_cr
-      ? parseLocalDate(casaSelecionada.data_inicio_cr)
-      : new Date(2026, 1, 1);
+    
+    // If no data_inicio_cr, skip pending report generation
+    if (!casaSelecionada.data_inicio_cr) {
+      return filteredEncontros.map((e: any) => ({ ...e, is_blank: false }));
+    }
+
+    const startRef = parseLocalDate(casaSelecionada.data_inicio_cr);
 
     let current = new Date(startRef);
     while (getDay(current) !== targetDayNum) {

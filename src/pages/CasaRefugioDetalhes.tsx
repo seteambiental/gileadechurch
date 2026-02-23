@@ -201,10 +201,13 @@ const CasaRefugioDetalhes = () => {
       return encontros.map((e) => ({ ...e, is_blank: false }));
     }
 
-    // Use data_inicio_cr if set, otherwise fallback to Feb 1, 2026
-    const startGen = casa.data_inicio_cr 
-      ? parseLocalDate(casa.data_inicio_cr) 
-      : new Date(2026, 1, 1);
+    // If no data_inicio_cr, skip pending report generation
+    if (!casa.data_inicio_cr) {
+      return encontros.map((e) => ({ ...e, is_blank: false }));
+    }
+
+    // Use data_inicio_cr as the start reference
+    const startGen = parseLocalDate(casa.data_inicio_cr);
     const today = startOfDay(new Date());
 
     // Find the first occurrence of the target day on or after startGen

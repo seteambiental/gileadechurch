@@ -195,6 +195,33 @@ const InscricaoEvento = () => {
   // Mutation to create inscription
   const inscricaoMutation = useMutation({
     mutationFn: async () => {
+      // Verificar se já existe inscrição desta pessoa neste evento
+      if (selectedPerson?.id) {
+        const { data: existente } = await supabase
+          .from("inscricoes_eventos")
+          .select("id")
+          .eq("evento_id", eventoId)
+          .eq(selectedPerson.type === "member" ? "member_id" : "novo_convertido_id", selectedPerson.id)
+          .neq("status_pagamento", "cancelado")
+          .maybeSingle();
+
+        if (existente) {
+          throw new Error("Esta pessoa já está inscrita neste evento.");
+        }
+
+        // Verificar também em impacto_inscricoes
+        const { data: existenteImpacto } = await supabase
+          .from("impacto_inscricoes")
+          .select("id")
+          .eq("evento_id", eventoId!)
+          .eq("member_id", selectedPerson.id)
+          .maybeSingle();
+
+        if (existenteImpacto) {
+          throw new Error("Esta pessoa já está inscrita neste evento.");
+        }
+      }
+
       // Verificar novamente se há vagas (para evitar race condition)
       const isListaEspera = esgotado;
       
