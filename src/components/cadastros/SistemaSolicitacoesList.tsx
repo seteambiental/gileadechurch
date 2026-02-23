@@ -189,9 +189,6 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-muted-foreground">#{item.numero}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {item.painel === "gestao" ? "Gestão" : "Ministérios"}
-                      </Badge>
                       {getStatusBadge(item.status)}
                     </div>
                     <p className="text-sm text-foreground">{item.descricao}</p>

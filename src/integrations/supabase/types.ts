@@ -4803,7 +4803,7 @@ export type Database = {
           descricao: string
           id: string
           numero: number
-          painel: string
+          painel: string | null
           solicitante_id: string | null
           solicitante_nome: string | null
           status: string
@@ -4818,7 +4818,7 @@ export type Database = {
           descricao: string
           id?: string
           numero?: number
-          painel: string
+          painel?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
@@ -4833,7 +4833,7 @@ export type Database = {
           descricao?: string
           id?: string
           numero?: number
-          painel?: string
+          painel?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
