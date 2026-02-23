@@ -89,16 +89,40 @@ const dayNameToNumber: Record<string, number> = {
 const generateExpectedDates = (
   startDate: string,
   endDate: string,
-  dayOfWeek: number
+  dayOfWeek: number,
+  frequencia?: string | null,
+  dataInicioCr?: string | null
 ): string[] => {
   const start = parseLocalDate(startDate);
   const end = parseLocalDate(endDate);
   if (start > end) return [];
 
-  const allDays = eachDayOfInterval({ start, end });
-  return allDays
-    .filter((d) => getDay(d) === dayOfWeek)
-    .map((d) => format(d, "yyyy-MM-dd"));
+  const isQuinzenal = frequencia?.toLowerCase() === "quinzenal";
+
+  if (!isQuinzenal) {
+    // Semanal: every matching day of week
+    const allDays = eachDayOfInterval({ start, end });
+    return allDays
+      .filter((d) => getDay(d) === dayOfWeek)
+      .map((d) => format(d, "yyyy-MM-dd"));
+  }
+
+  // Quinzenal: anchor from data_inicio_cr and step by 2 weeks
+  const anchor = dataInicioCr ? parseLocalDate(dataInicioCr) : start;
+  let current = new Date(anchor);
+  // Find first occurrence of target day on or after anchor
+  while (getDay(current) !== dayOfWeek) {
+    current.setDate(current.getDate() + 1);
+  }
+
+  const dates: string[] = [];
+  while (current <= end) {
+    if (current >= start) {
+      dates.push(format(current, "yyyy-MM-dd"));
+    }
+    current.setDate(current.getDate() + 14); // 2 weeks
+  }
+  return dates;
 };
 
 export const EncontrosReportDialog = ({
@@ -326,7 +350,7 @@ export const EncontrosReportDialog = ({
       const casaStart = casa.data_inicio_cr > appliedStartDate 
         ? casa.data_inicio_cr 
         : appliedStartDate;
-      const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber);
+      const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber, casa.frequencia, casa.data_inicio_cr);
 
       expectedDates.forEach((date) => {
         const existing = findEncontro(casa.id, date);
