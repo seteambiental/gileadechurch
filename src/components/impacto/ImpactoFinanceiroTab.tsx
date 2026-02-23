@@ -8,6 +8,7 @@ import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -29,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText, Columns3 } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText, Columns3, CalendarClock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
@@ -47,6 +48,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
 const ImpactoFinanceiroTab = () => {
   const [selectedEventoId, setSelectedEventoId] = useState("");
   const [searchNome, setSearchNome] = useState("");
+  const [dataPrevisao, setDataPrevisao] = useState("");
 
   const allColumns = [
     { key: "nome", label: "Nome" },
@@ -124,7 +126,7 @@ const ImpactoFinanceiroTab = () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia")
+        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento")
         .eq("evento_id", selectedEventoId)
         .order("nome");
       if (error) throw error;
@@ -157,6 +159,7 @@ const ImpactoFinanceiroTab = () => {
         pagamentos: null,
         created_at: i.created_at,
         referencia: null,
+        previsoes_pagamento: null,
       }));
     },
     enabled: !!selectedEventoId,
@@ -219,6 +222,18 @@ const ImpactoFinanceiroTab = () => {
   const totalAReceber = Math.max(0, totalPrevisao - totalPago);
   const totalDespesas = (despesas as any[]).reduce((sum, d) => sum + (d.valor || 0), 0);
   const saldoEvento = totalPago - totalDespesas;
+
+  // Calculate forecast total up to selected date
+  const totalPrevisaoPorData = useMemo(() => {
+    if (!dataPrevisao || !inscricoes) return 0;
+    return inscricoes.reduce((sum, i) => {
+      const previsoes = i.previsoes_pagamento as Array<{ data: string; valor: number }> | null;
+      if (!previsoes || !Array.isArray(previsoes)) return sum;
+      return sum + previsoes
+        .filter((p) => p.data && p.data <= dataPrevisao)
+        .reduce((s, p) => s + (parseFloat(String(p.valor)) || 0), 0);
+    }, 0);
+  }, [inscricoes, dataPrevisao]);
 
   // Count by status
   const pagos = inscricoes?.filter((i) => i.status_pagamento === "pago").length || 0;
@@ -420,6 +435,35 @@ const ImpactoFinanceiroTab = () => {
                 <p className="text-xs text-muted-foreground">
                   Receitas pagas − Despesas
                 </p>
+              </CardContent>
+            </Card>
+
+            <Card className="md:col-span-2">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Previsão de Recebimentos</CardTitle>
+                <CalendarClock className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <Label className="text-xs text-muted-foreground">Até a data</Label>
+                    <Input
+                      type="date"
+                      value={dataPrevisao}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => setDataPrevisao(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-2xl font-bold ${totalPrevisaoPorData > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                      {dataPrevisao ? formatCurrency(totalPrevisaoPorData) : "—"}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {dataPrevisao ? "valor previsto até a data" : "selecione uma data"}
+                    </p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
