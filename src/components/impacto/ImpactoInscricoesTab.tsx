@@ -25,10 +25,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -114,7 +115,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
   const [selectedExportCols, setSelectedExportCols] = useState<ExportColumnKey[]>(DEFAULT_EXPORT_COLUMNS);
-
+  const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
   // Fetch impacto_eventos (unified dropdown)
   const { data: impactoEventos = [] } = useQuery({
     queryKey: ["impacto-eventos"],
@@ -601,8 +602,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
             placeholder="Buscar por nome..."
             value={searchNome}
             onChange={(e) => setSearchNome(e.target.value)}
-            className="pl-9"
+            className="pl-9 pr-9"
           />
+          {searchNome && (
+            <button
+              onClick={() => setSearchNome("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       )}
 
@@ -713,7 +722,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         <Button
                           size="sm"
                            variant="ghost"
-                           onClick={() => deleteMutation.mutate({ id: inscricao.id, source: inscricao.source })}
+                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome })}
                          >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -738,6 +747,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
           inscricao={editingInscricao}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deletingInscricao}
+        onOpenChange={(open) => !open && setDeletingInscricao(null)}
+        onConfirm={() => {
+          if (deletingInscricao) {
+            deleteMutation.mutate({ id: deletingInscricao.id, source: deletingInscricao.source });
+            setDeletingInscricao(null);
+          }
+        }}
+        title="Excluir inscrição?"
+        description={`Deseja excluir a inscrição de "${deletingInscricao?.nome || ""}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Excluir"
+      />
     </div>
   );
 };
