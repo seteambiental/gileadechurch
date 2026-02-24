@@ -5,12 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CheckCircle2, XCircle, Clock, Circle, Trash2 } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import SistemaSolicitacaoFormDialog from "./SistemaSolicitacaoFormDialog";
+import SistemaRespostaDialog from "./SistemaRespostaDialog";
 
 interface Props {
   tipo: "melhoria" | "erro" | "implementacao";
@@ -23,22 +24,12 @@ const LABELS: Record<string, { title: string; addLabel: string }> = {
   implementacao: { title: "Implementações", addLabel: "+Implementação" },
 };
 
-const STATUS_CONFIG: Record<string, Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }>> = {
-  melhoria: {
-    enviada: { label: "Enviada", variant: "outline", icon: <Clock className="w-3 h-3" /> },
-    producao: { label: "Para Produção", variant: "default", icon: <CheckCircle2 className="w-3 h-3" /> },
-    rejeitada: { label: "Rejeitada", variant: "destructive", icon: <XCircle className="w-3 h-3" /> },
-  },
-  erro: {
-    enviada: { label: "Aguardando", variant: "outline", icon: <Clock className="w-3 h-3" /> },
-    corrigido: { label: "Corrigido", variant: "default", icon: <CheckCircle2 className="w-3 h-3" /> },
-    aguardando: { label: "Aguardando", variant: "secondary", icon: <Circle className="w-3 h-3" /> },
-  },
-  implementacao: {
-    enviada: { label: "Enviada", variant: "outline", icon: <Clock className="w-3 h-3" /> },
-    producao: { label: "Em Produção", variant: "default", icon: <CheckCircle2 className="w-3 h-3" /> },
-    rejeitada: { label: "Rejeitada", variant: "destructive", icon: <XCircle className="w-3 h-3" /> },
-  },
+const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode }> = {
+  enviada: { label: "Enviada", variant: "outline", icon: <Clock className="w-3 h-3" /> },
+  aceita: { label: "Aceita", variant: "secondary", icon: <CheckCircle2 className="w-3 h-3" /> },
+  rejeitada: { label: "Rejeitada", variant: "destructive", icon: <XCircle className="w-3 h-3" /> },
+  em_desenvolvimento: { label: "Em Desenvolvimento", variant: "default", icon: <Flag className="w-3 h-3" /> },
+  finalizado: { label: "Finalizado", variant: "secondary", icon: <CheckCircle2 className="w-3 h-3" /> },
 };
 
 const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
@@ -46,6 +37,11 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [actionDialog, setActionDialog] = useState<{
+    type: "aceitar" | "rejeitar" | "finalizar";
+    itemId: string;
+  } | null>(null);
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const config = LABELS[tipo];
 
   const { data: isAdmin } = useQuery({
@@ -75,19 +71,20 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     },
   });
 
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
       const { error } = await supabase
         .from("sistema_solicitacoes")
-        .update({ status })
+        .update(updates)
         .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sistema_solicitacoes", tipo] });
-      toast.success("Status atualizado!");
+      toast.success("Solicitação atualizada!");
+      setActionDialog(null);
     },
-    onError: () => toast.error("Erro ao atualizar status"),
+    onError: () => toast.error("Erro ao atualizar solicitação"),
   });
 
   const deleteMutation = useMutation({
@@ -106,8 +103,71 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     onError: () => toast.error("Erro ao excluir solicitação"),
   });
 
+  const handleAction = (texto: string) => {
+    if (!actionDialog) return;
+
+    const getAdminName = async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("full_name")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      return data?.full_name || user?.email || "Admin";
+    };
+
+    getAdminName().then((adminName) => {
+      if (actionDialog.type === "aceitar") {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            status: "em_desenvolvimento",
+            resposta_admin: texto || null,
+            respondido_por: adminName,
+            respondido_em: new Date().toISOString(),
+          },
+        });
+      } else if (actionDialog.type === "rejeitar") {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            status: "rejeitada",
+            resposta_admin: texto || null,
+            respondido_por: adminName,
+            respondido_em: new Date().toISOString(),
+          },
+        });
+      } else if (actionDialog.type === "finalizar") {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            status: "finalizado",
+            observacao_finalizacao: texto || null,
+            finalizado_por: adminName,
+            finalizado_em: new Date().toISOString(),
+          },
+        });
+      }
+    });
+  };
+
+  const handleReopen = (id: string) => {
+    updateMutation.mutate({
+      id,
+      updates: {
+        status: "enviada",
+        resposta_admin: null,
+        observacao_finalizacao: null,
+        respondido_por: null,
+        respondido_em: null,
+        finalizado_por: null,
+        finalizado_em: null,
+      },
+    });
+  };
+
   const getStatusBadge = (status: string) => {
-    const cfg = STATUS_CONFIG[tipo]?.[status] || { label: status, variant: "outline" as const, icon: <Circle className="w-3 h-3" /> };
+    const cfg = STATUS_CONFIG[status] || { label: status, variant: "outline" as const, icon: <Clock className="w-3 h-3" /> };
     return (
       <Badge variant={cfg.variant} className="flex items-center gap-1">
         {cfg.icon}
@@ -116,54 +176,21 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     );
   };
 
-  const getAdminActions = (item: any) => {
-    if (hideAdminActions || !isAdmin) return null;
-
-    if (tipo === "melhoria") {
-      return (
-        <div className="flex gap-2">
-          <Button size="sm" variant="default" onClick={() => updateStatus.mutate({ id: item.id, status: "producao" })} disabled={item.status === "producao"}>
-            Implementar
-          </Button>
-          <Button size="sm" variant="destructive" onClick={() => updateStatus.mutate({ id: item.id, status: "rejeitada" })} disabled={item.status === "rejeitada"}>
-            Rejeitar
-          </Button>
-        </div>
-      );
-    }
-
-    if (tipo === "erro") {
-      return (
-        <div className="flex gap-2">
-          <Button size="sm" variant="default" onClick={() => updateStatus.mutate({ id: item.id, status: "corrigido" })} disabled={item.status === "corrigido"}>
-            Corrigido
-          </Button>
-          <Button size="sm" variant="secondary" onClick={() => updateStatus.mutate({ id: item.id, status: "aguardando" })} disabled={item.status === "aguardando"}>
-            Aguardando
-          </Button>
-        </div>
-      );
-    }
-
-    if (tipo === "implementacao") {
-      return (
-        <div className="flex gap-2">
-          <Button size="sm" variant="default" onClick={() => updateStatus.mutate({ id: item.id, status: "producao" })} disabled={item.status === "producao"}>
-            Acatar
-          </Button>
-          <Button size="sm" variant="destructive" onClick={() => updateStatus.mutate({ id: item.id, status: "rejeitada" })} disabled={item.status === "rejeitada"}>
-            Rejeitar
-          </Button>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   const canDelete = (item: any) => {
     if (isAdmin) return true;
     return item.solicitante_id === user?.id;
+  };
+
+  const getDialogConfig = () => {
+    if (!actionDialog) return { title: "", label: "", confirmLabel: "", confirmVariant: "default" as const };
+    switch (actionDialog.type) {
+      case "aceitar":
+        return { title: "Aceitar Solicitação", label: "Observações (opcional)", confirmLabel: "Aceitar", confirmVariant: "default" as const };
+      case "rejeitar":
+        return { title: "Rejeitar Solicitação", label: "Motivo da rejeição (opcional)", confirmLabel: "Rejeitar", confirmVariant: "destructive" as const };
+      case "finalizar":
+        return { title: "Finalizar Solicitação", label: "Observações de finalização (opcional)", confirmLabel: "Finalizar", confirmVariant: "default" as const };
+    }
   };
 
   return (
@@ -182,38 +209,115 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
         <p className="text-muted-foreground text-sm text-center py-8">Nenhuma solicitação registrada.</p>
       ) : (
         <div className="space-y-3">
-          {solicitacoes.map((item) => (
+          {solicitacoes.map((item: any) => (
             <Card key={item.id} className="border border-border">
               <CardContent className="p-4">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div className="flex-1 space-y-1">
+                <div className="flex flex-col gap-3">
+                  {/* Header */}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-mono text-xs text-muted-foreground">#{item.numero}</span>
                       {getStatusBadge(item.status)}
                     </div>
-                    <p className="text-sm text-foreground">{item.descricao}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      {item.card && <span>Card: {item.card}</span>}
-                      {item.aba && <span>Aba: {item.aba}</span>}
-                      {item.sub_aba && <span>Sub-aba: {item.sub_aba}</span>}
+                    <div className="flex items-center gap-1">
+                      {/* Admin actions */}
+                      {!hideAdminActions && isAdmin && (
+                        <>
+                          {item.status === "enviada" && (
+                            <>
+                              <Button size="sm" variant="default" onClick={() => setActionDialog({ type: "aceitar", itemId: item.id })}>
+                                Aceitar
+                              </Button>
+                              <Button size="sm" variant="destructive" onClick={() => setActionDialog({ type: "rejeitar", itemId: item.id })}>
+                                Rejeitar
+                              </Button>
+                            </>
+                          )}
+                          {item.status === "em_desenvolvimento" && (
+                            <Button size="sm" variant="default" onClick={() => setActionDialog({ type: "finalizar", itemId: item.id })}>
+                              Finalizar
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      {/* Reopen - both admin and user */}
+                      {(item.status === "finalizado" || item.status === "rejeitada") && (
+                        <Button size="sm" variant="outline" onClick={() => handleReopen(item.id)}>
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Reabrir
+                        </Button>
+                      )}
+                      {canDelete(item) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteId(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Por {item.solicitante_nome || "—"} em {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                    </p>
                   </div>
-                  <div className="flex items-start gap-2">
-                    {getAdminActions(item)}
-                    {canDelete(item) && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleteId(item.id)}
+
+                  {/* Description */}
+                  <p className="text-sm text-foreground">{item.descricao}</p>
+
+                  {/* Image */}
+                  {item.imagem_url && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setExpandedImage(item.imagem_url)}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
                       >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
+                        <ImageIcon className="w-3 h-3" />
+                        Ver imagem anexada
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Metadata */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {item.card && <span>Card: {item.card}</span>}
+                    {item.aba && <span>Aba: {item.aba}</span>}
+                    {item.sub_aba && <span>Sub-aba: {item.sub_aba}</span>}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Por {item.solicitante_nome || "—"} em {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                  </p>
+
+                  {/* Admin response */}
+                  {item.resposta_admin && (
+                    <div className="bg-muted/50 rounded-md p-3 border border-border space-y-1">
+                      <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                        <MessageSquare className="w-3 h-3" />
+                        Resposta do Administrador
+                      </div>
+                      <p className="text-sm text-foreground">{item.resposta_admin}</p>
+                      {item.respondido_por && (
+                        <p className="text-xs text-muted-foreground">
+                          Por {item.respondido_por} em {item.respondido_em ? format(new Date(item.respondido_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Finalization note */}
+                  {item.observacao_finalizacao && (
+                    <div className="bg-primary/5 rounded-md p-3 border border-primary/20 space-y-1">
+                      <div className="flex items-center gap-1 text-xs font-medium text-primary">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Observação de Finalização
+                      </div>
+                      <p className="text-sm text-foreground">{item.observacao_finalizacao}</p>
+                      {item.finalizado_por && (
+                        <p className="text-xs text-muted-foreground">
+                          Por {item.finalizado_por} em {item.finalizado_em ? format(new Date(item.finalizado_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ""}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -221,17 +325,34 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
         </div>
       )}
 
-      <SistemaSolicitacaoFormDialog
-        open={showForm}
-        onOpenChange={setShowForm}
-        tipo={tipo}
-      />
+      <SistemaSolicitacaoFormDialog open={showForm} onOpenChange={setShowForm} tipo={tipo} />
 
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
       />
+
+      {/* Action response dialog */}
+      {actionDialog && (
+        <SistemaRespostaDialog
+          open={!!actionDialog}
+          onOpenChange={(open) => !open && setActionDialog(null)}
+          isPending={updateMutation.isPending}
+          onConfirm={handleAction}
+          {...getDialogConfig()}
+        />
+      )}
+
+      {/* Expanded image dialog */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setExpandedImage(null)}
+        >
+          <img src={expandedImage} alt="Imagem anexada" className="max-w-full max-h-[90vh] rounded-lg" />
+        </div>
+      )}
     </div>
   );
 };

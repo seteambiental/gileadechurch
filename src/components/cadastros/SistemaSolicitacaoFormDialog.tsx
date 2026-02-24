@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, ImagePlus, X } from "lucide-react";
 
 interface Props {
   open: boolean;
@@ -35,10 +35,28 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
   const [card, setCard] = useState("");
   const [aba, setAba] = useState("");
   const [subAba, setSubAba] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Imagem deve ter no máximo 5MB");
+      return;
+    }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(null);
+  };
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      // Get user display name
       let nome = user?.email || "Usuário";
       const { data: memberData } = await supabase
         .from("members")
@@ -48,6 +66,20 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
         .maybeSingle();
       if (memberData?.full_name) nome = memberData.full_name;
 
+      let imagem_url: string | null = null;
+      if (imageFile) {
+        const ext = imageFile.name.split(".").pop();
+        const path = `${user!.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("sistema-solicitacoes")
+          .upload(path, imageFile);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage
+          .from("sistema-solicitacoes")
+          .getPublicUrl(path);
+        imagem_url = urlData.publicUrl;
+      }
+
       const { error } = await supabase.from("sistema_solicitacoes").insert({
         tipo,
         descricao,
@@ -56,6 +88,7 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
         sub_aba: subAba || null,
         solicitante_id: user!.id,
         solicitante_nome: nome,
+        imagem_url,
       });
       if (error) throw error;
     },
@@ -70,10 +103,10 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
 
   const resetForm = () => {
     setDescricao("");
-    setDescricao("");
     setCard("");
     setAba("");
     setSubAba("");
+    removeImage();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -87,7 +120,7 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{TITLES[tipo]}</DialogTitle>
         </DialogHeader>
@@ -115,6 +148,31 @@ const SistemaSolicitacaoFormDialog = ({ open, onOpenChange, tipo }: Props) => {
               <Label>Sub-aba</Label>
               <Input value={subAba} onChange={(e) => setSubAba(e.target.value)} placeholder="Ex: Geral" />
             </div>
+          </div>
+
+          {/* Image upload */}
+          <div className="space-y-2">
+            <Label>Imagem (opcional)</Label>
+            {imagePreview ? (
+              <div className="relative">
+                <img src={imagePreview} alt="Preview" className="w-full max-h-48 object-contain rounded-md border border-border" />
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="destructive"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={removeImage}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ) : (
+              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-border rounded-md p-4 cursor-pointer hover:bg-muted/50 transition-colors">
+                <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Clique para anexar imagem da tela</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </label>
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={createMutation.isPending}>
