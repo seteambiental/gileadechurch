@@ -159,9 +159,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       data_inicio: e.data_evento,
       source: "agenda" as const,
     }));
-    // Deduplicate by title (impacto takes priority)
-    const impactoTitles = new Set(impacto.map((e) => e.titulo.toLowerCase()));
-    const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo.toLowerCase()));
+    // Deduplicate by ID (impacto takes priority)
+    const impactoIds = new Set(impacto.map((e) => e.id));
+    const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id));
     return [...impacto, ...uniqueAgenda].sort((a, b) =>
       new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
     );

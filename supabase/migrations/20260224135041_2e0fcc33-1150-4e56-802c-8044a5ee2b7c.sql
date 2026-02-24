@@ -1,0 +1,2 @@
+ALTER TABLE public.inscricoes_eventos DROP CONSTRAINT inscricoes_eventos_forma_pagamento_check;
+ALTER TABLE public.inscricoes_eventos ADD CONSTRAINT inscricoes_eventos_forma_pagamento_check CHECK (forma_pagamento = ANY (ARRAY['pix'::text, 'cartao_credito'::text, 'cartao_debito'::text, 'dinheiro'::text]));
