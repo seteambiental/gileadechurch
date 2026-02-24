@@ -4801,9 +4801,16 @@ export type Database = {
           card: string | null
           created_at: string
           descricao: string
+          finalizado_em: string | null
+          finalizado_por: string | null
           id: string
+          imagem_url: string | null
           numero: number
+          observacao_finalizacao: string | null
           painel: string | null
+          respondido_em: string | null
+          respondido_por: string | null
+          resposta_admin: string | null
           solicitante_id: string | null
           solicitante_nome: string | null
           status: string
@@ -4816,9 +4823,16 @@ export type Database = {
           card?: string | null
           created_at?: string
           descricao: string
+          finalizado_em?: string | null
+          finalizado_por?: string | null
           id?: string
+          imagem_url?: string | null
           numero?: number
+          observacao_finalizacao?: string | null
           painel?: string | null
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta_admin?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
@@ -4831,9 +4845,16 @@ export type Database = {
           card?: string | null
           created_at?: string
           descricao?: string
+          finalizado_em?: string | null
+          finalizado_por?: string | null
           id?: string
+          imagem_url?: string | null
           numero?: number
+          observacao_finalizacao?: string | null
           painel?: string | null
+          respondido_em?: string | null
+          respondido_por?: string | null
+          resposta_admin?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
