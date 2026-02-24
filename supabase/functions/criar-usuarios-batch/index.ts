@@ -111,8 +111,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Gerar senha segura criptograficamente
-        const defaultPassword = generateSecurePassword(14);
+        // Usar 6 primeiros dígitos do CPF como senha padrão
+        const cpfDigits = (member.cpf || "").replace(/\D/g, "");
+        const defaultPassword = cpfDigits.length >= 6
+          ? cpfDigits.slice(0, 6)
+          : generateSecurePassword(14);
 
         // Criar novo usuário
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({

@@ -46,8 +46,12 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   return result;
 }
 
-function gerarMensagemBoasVindasMembro(nome: string, email: string, senha: string) {
+function gerarMensagemBoasVindasMembro(nome: string, email: string, isCpfPassword: boolean) {
   const primeiroNome = nome.split(' ')[0];
+
+  const senhaInfo = isCpfPassword
+    ? `🔑 Senha: *Os 6 primeiros dígitos do seu CPF*`
+    : `🔑 Senha temporária foi enviada separadamente. Consulte a secretaria.`;
 
   return `🎉 *Bem-vindo(a) à Igreja Gileade, ${primeiroNome}!*
 
@@ -58,9 +62,9 @@ Seu cadastro foi realizado com sucesso! 🙏
 
 🔐 *Seus dados de acesso:*
 📧 Email: ${email}
-🔑 Senha temporária: ${senha}
+${senhaInfo}
 
-⚠️ *Importante:* por segurança, altere sua senha imediatamente após o primeiro acesso.
+⚠️ *Importante:* por segurança, altere sua senha após o primeiro acesso.
 
 Estamos muito felizes em ter você conosco!
 
@@ -142,8 +146,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Gerar senha temporária segura (não previsível)
-    const defaultPassword = generateSecurePassword(14);
+    // Buscar CPF do membro para gerar senha padrão (6 primeiros dígitos)
+    const { data: memberCpfData } = await supabaseAdmin
+      .from("members")
+      .select("cpf")
+      .eq("id", member_id)
+      .single();
+
+    const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
+    // Se o CPF tiver pelo menos 6 dígitos, usar os 6 primeiros; senão, gerar senha aleatória
+    const defaultPassword = cpfDigits.length >= 6
+      ? cpfDigits.slice(0, 6)
+      : generateSecurePassword(14);
 
     // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
@@ -239,10 +253,11 @@ Deno.serve(async (req) => {
     // Enviar WhatsApp de boas-vindas
     if (!memberError && memberData?.whatsapp) {
       try {
+        const isCpfPassword = cpfDigits.length >= 6;
         const mensagem = gerarMensagemBoasVindasMembro(
           nomeCompleto,
           email,
-          defaultPassword
+          isCpfPassword
         );
         await enviarMensagemZAPI(memberData.whatsapp, mensagem);
         console.log("Mensagem de boas-vindas enviada com sucesso para:", memberData.whatsapp);
