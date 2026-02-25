@@ -26,6 +26,8 @@ import {
   XCircle,
   ArrowRightLeft,
   Filter,
+  RotateCcw,
+  CheckCircle2,
   X,
 } from "lucide-react";
 import {
@@ -313,6 +315,11 @@ export const PortalLideresCasaRefugio = ({
       expectedDates.push(dateStr);
       current = addWeeks(current, isQuinzenal ? 2 : 1);
     }
+    // Add the next future expected date (pending line after today)
+    const nextFutureDateStr = format(current, "yyyy-MM-dd");
+    if (!endDate || !isAfter(parseLocalDate(nextFutureDateStr), parseLocalDate(endDate))) {
+      expectedDates.push(nextFutureDateStr);
+    }
 
     const encontrosByExpectedDate = new Map<string, any>();
     const matchedExpectedDates = new Set<string>();
@@ -404,6 +411,46 @@ export const PortalLideresCasaRefugio = ({
     },
     onError: (error) => {
       toast.error("Erro ao salvar: " + error.message);
+    },
+  });
+
+  // Reactivate cancelled meeting
+  const reactivateMutation = useMutation({
+    mutationFn: async (encontroId: string) => {
+      const { error } = await supabase
+        .from("encontros_casa_refugio")
+        .delete()
+        .eq("id", encontroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-encontros-casa", selectedCasa] });
+      queryClient.invalidateQueries({ queryKey: ["encontros"] });
+      toast.success("Reunião reativada! Agora pode ser preenchida normalmente.");
+    },
+    onError: (error) => {
+      toast.error("Erro ao reativar: " + error.message);
+    },
+  });
+
+  // Toggle conferido
+  const conferidoMutation = useMutation({
+    mutationFn: async ({ encontroId, conferido }: { encontroId: string; conferido: boolean }) => {
+      const { error } = await supabase
+        .from("encontros_casa_refugio")
+        .update({
+          conferido,
+          conferido_em: conferido ? new Date().toISOString() : null,
+        } as any)
+        .eq("id", encontroId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-encontros-casa", selectedCasa] });
+      toast.success("Status de conferência atualizado!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar conferência");
     },
   });
 
@@ -700,10 +747,24 @@ export const PortalLideresCasaRefugio = ({
 
                   {/* Encontros Table */}
                   <div>
-                    <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Histórico de Encontros ({mergedEncontros.length})
-                    </h3>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold text-foreground flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        Histórico de Encontros ({mergedEncontros.length})
+                      </h3>
+                      {canEditSelected && (
+                        <Button
+                          size="sm"
+                          className="bg-destructive hover:bg-destructive/90"
+                          onClick={() => {
+                            const today = format(new Date(), "yyyy-MM-dd");
+                            setPreScreenData({ dataEncontro: today });
+                          }}
+                        >
+                          + Novo Encontro
+                        </Button>
+                      )}
+                    </div>
                     {loadingEncontros ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="w-6 h-6 text-secondary animate-spin" />
@@ -727,6 +788,7 @@ export const PortalLideresCasaRefugio = ({
                                   <TableHead className="text-center">Total</TableHead>
                                   <TableHead className="text-center">Kilos</TableHead>
                                   <TableHead className="text-center">Ofertas</TableHead>
+                                  <TableHead className="text-center">Conf.</TableHead>
                                   <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -768,6 +830,25 @@ export const PortalLideresCasaRefugio = ({
                                       <TableCell className={`text-center whitespace-nowrap ${blankCellClass} ${cancelledCellClass}`}>
                                         {isBlank || isCancelled ? "—" : `R$ ${Number(encontro.ofertas || 0).toFixed(2).replace(".", ",")}`}
                                       </TableCell>
+                                      <TableCell className="text-center">
+                                        {isBlank || isCancelled ? "—" : (
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className={`h-7 w-7 ${(encontro as any).conferido ? "text-green-600" : "text-muted-foreground/30"}`}
+                                            onClick={() => {
+                                              conferidoMutation.mutate({
+                                                encontroId: encontro.id,
+                                                conferido: !(encontro as any).conferido,
+                                              });
+                                            }}
+                                            title={(encontro as any).conferido ? "Desmarcar conferido" : "Marcar como conferido"}
+                                            disabled={conferidoMutation.isPending}
+                                          >
+                                            <CheckCircle2 className="w-5 h-5" />
+                                          </Button>
+                                        )}
+                                      </TableCell>
                                       <TableCell>
                                         <div className="flex items-center justify-end gap-1">
                                           {isBlank ? (
@@ -802,9 +883,23 @@ export const PortalLideresCasaRefugio = ({
                                               </div>
                                             )
                                           ) : isCancelled ? (
-                                            <span className="text-xs text-muted-foreground italic px-2" title={encontro.justificativa || ""}>
-                                              {encontro.justificativa ? encontro.justificativa.slice(0, 30) + (encontro.justificativa.length > 30 ? "..." : "") : "Cancelada"}
-                                            </span>
+                                            <div className="flex items-center gap-1">
+                                              <span className="text-xs text-muted-foreground italic" title={encontro.justificativa || ""}>
+                                                {encontro.justificativa ? encontro.justificativa.slice(0, 20) + (encontro.justificativa.length > 20 ? "..." : "") : "Cancelada"}
+                                              </span>
+                                              {canEditSelected && (
+                                                <Button
+                                                  variant="ghost"
+                                                  size="icon"
+                                                  className="h-7 w-7 text-amber-600 hover:text-amber-700"
+                                                  onClick={() => reactivateMutation.mutate(encontro.id)}
+                                                  disabled={reactivateMutation.isPending}
+                                                  title="Reativar reunião"
+                                                >
+                                                  <RotateCcw className="w-4 h-4" />
+                                                </Button>
+                                              )}
+                                            </div>
                                           ) : (
                                             <>
                                               {encontro.photo_url && (
@@ -934,10 +1029,10 @@ export const PortalLideresCasaRefugio = ({
                   onOpenChange={(isOpen) => !isOpen && setPreScreenData(null)}
                   dataEncontro={preScreenData.dataEncontro}
                   casaRefugioId={selectedCasa}
-                  onProceedToReport={(justificativaMudanca) => {
+                  onProceedToReport={(dataReal, justificativaMudanca) => {
                     setEditingEncontro({
                       isNew: true,
-                      data_encontro: preScreenData.dataEncontro,
+                      data_encontro: dataReal || preScreenData.dataEncontro,
                       data_esperada: preScreenData.dataEncontro,
                       justificativa: justificativaMudanca || null,
                     });
