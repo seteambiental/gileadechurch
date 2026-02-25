@@ -261,6 +261,46 @@ export interface ExportColumn {
   format?: (value: any) => string;
 }
 
+// Check if a formatted string looks like a currency/numeric value
+const isCurrencyOrNumericValue = (val: string): boolean => {
+  if (!val || val === "-" || val === "—") return false;
+  // Match R$ 1.234,56 or plain numbers like 123,45 or 1234.56
+  return /^R?\$?\s*[\d.,]+$/.test(val.replace(/\s/g, ""));
+};
+
+const parseCurrencyValue = (val: string): number => {
+  if (!val || val === "-" || val === "—") return 0;
+  // Remove R$, spaces, dots (thousands), replace comma with dot
+  const cleaned = val.replace(/R\$\s*/g, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? 0 : num;
+};
+
+const formatAsCurrency = (val: number): string => {
+  return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+};
+
+const buildTotalsRow = (data: any[], columns: ExportColumn[]): (string | null)[] => {
+  // For each column, check if majority of values are currency/numeric
+  const allFormattedRows = data.map((row) =>
+    columns.map((col) => {
+      const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
+      return col.format ? col.format(value) : String(value ?? "-");
+    })
+  );
+
+  return columns.map((_, colIdx) => {
+    const values = allFormattedRows.map((r) => r[colIdx]);
+    const nonEmpty = values.filter((v) => v && v !== "-" && v !== "—");
+    if (nonEmpty.length === 0) return null;
+    const numericCount = nonEmpty.filter(isCurrencyOrNumericValue).length;
+    // At least 50% numeric values to consider totalizable
+    if (numericCount / nonEmpty.length < 0.5) return null;
+    const sum = values.reduce((s, v) => s + parseCurrencyValue(String(v)), 0);
+    return formatAsCurrency(sum);
+  });
+};
+
 export const exportGenericToExcel = async (
   data: any[],
   columns: ExportColumn[],
@@ -286,6 +326,18 @@ export const exportGenericToExcel = async (
     });
     worksheet.addRow(rowData);
   });
+
+  // Add TOTAL row
+  const totals = buildTotalsRow(data, columns);
+  const hasTotals = totals.some((v) => v !== null);
+  if (hasTotals) {
+    const totalRowData = totals.map((v, i) => {
+      if (i === 0 && v === null) return "TOTAL";
+      return v || "";
+    });
+    const totalRow = worksheet.addRow(totalRowData);
+    totalRow.font = { bold: true };
+  }
 
   // Auto-size columns
   headers.forEach((header, i) => {
@@ -333,6 +385,17 @@ export const exportGenericToPDF = (
     })
   );
 
+  // Add TOTAL row
+  const totals = buildTotalsRow(data, columns);
+  const hasTotals = totals.some((v) => v !== null);
+  if (hasTotals) {
+    const totalRowData = totals.map((v, i) => {
+      if (i === 0 && v === null) return "TOTAL";
+      return v || "";
+    });
+    tableData.push(totalRowData);
+  }
+
   autoTable(doc, {
     head: [tableHeaders],
     body: tableData,
@@ -348,6 +411,13 @@ export const exportGenericToPDF = (
     },
     alternateRowStyles: {
       fillColor: [248, 249, 250],
+    },
+    didParseCell: (hookData: any) => {
+      // Bold the TOTAL row (last row if totals exist)
+      if (hasTotals && hookData.section === "body" && hookData.row.index === tableData.length - 1) {
+        hookData.cell.styles.fontStyle = "bold";
+        hookData.cell.styles.fillColor = [230, 230, 230];
+      }
     },
   });
 
