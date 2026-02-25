@@ -1450,7 +1450,7 @@ export const EventoFormDialog = ({
                     {[
                       { key: "membro", label: "Membro" },
                       { key: "nao_membro", label: "Não Membro" },
-                      { key: "familia", label: "Família" },
+                      { key: "familia", label: "Líderes e Anfitriões" },
                       { key: "equipe", label: "Equipe (Apoio/Serviço)" },
                     ].map((tipo) => (
                       <div key={tipo.key} className="flex items-center gap-2">
