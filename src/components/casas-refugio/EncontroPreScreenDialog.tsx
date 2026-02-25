@@ -16,15 +16,16 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar, MessageCircleQuestion, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { DateInput } from "@/components/ui/date-input";
 
-type Step = "reuniao_aconteceu" | "justificativa_nao" | "ocorreu_no_dia" | "justificativa_mudanca";
+type Step = "reuniao_aconteceu" | "justificativa_nao" | "ocorreu_no_dia" | "data_real" | "justificativa_mudanca";
 
 interface EncontroPreScreenDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   dataEncontro: string;
   casaRefugioId: string;
-  onProceedToReport: (justificativaMudanca?: string) => void;
+  onProceedToReport: (dataReal?: string, justificativaMudanca?: string) => void;
 }
 
 export const EncontroPreScreenDialog = ({
@@ -38,6 +39,7 @@ export const EncontroPreScreenDialog = ({
   const [reuniaoAconteceu, setReuniaoAconteceu] = useState<string>("");
   const [ocorreuNoDia, setOcorreuNoDia] = useState<string>("");
   const [justificativa, setJustificativa] = useState("");
+  const [dataReal, setDataReal] = useState("");
   const queryClient = useQueryClient();
 
   const resetState = () => {
@@ -45,6 +47,7 @@ export const EncontroPreScreenDialog = ({
     setReuniaoAconteceu("");
     setOcorreuNoDia("");
     setJustificativa("");
+    setDataReal("");
   };
 
   const handleOpenChange = (isOpen: boolean) => {
@@ -114,9 +117,20 @@ export const EncontroPreScreenDialog = ({
         handleOpenChange(false);
         onProceedToReport();
       } else if (ocorreuNoDia === "nao") {
+        setDataReal("");
         setJustificativa("");
-        setStep("justificativa_mudanca");
+        setStep("data_real");
       }
+    } else if (step === "data_real") {
+      if (!dataReal) {
+        toast({
+          title: "Data obrigatória",
+          description: "Informe a data em que a reunião ocorreu.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setStep("justificativa_mudanca");
     } else if (step === "justificativa_mudanca") {
       if (!justificativa.trim()) {
         toast({
@@ -127,7 +141,7 @@ export const EncontroPreScreenDialog = ({
         return;
       }
       handleOpenChange(false);
-      onProceedToReport(justificativa.trim());
+      onProceedToReport(dataReal, justificativa.trim());
     }
   };
 
@@ -147,6 +161,8 @@ export const EncontroPreScreenDialog = ({
         return "Justificativa - Reunião não realizada";
       case "ocorreu_no_dia":
         return "Data do Encontro";
+      case "data_real":
+        return "Data Real da Reunião";
       case "justificativa_mudanca":
         return "Justificativa - Mudança de data";
     }
@@ -160,6 +176,8 @@ export const EncontroPreScreenDialog = ({
         return justificativa.trim().length > 0;
       case "ocorreu_no_dia":
         return ocorreuNoDia !== "";
+      case "data_real":
+        return dataReal.length > 0;
       case "justificativa_mudanca":
         return justificativa.trim().length > 0;
     }
@@ -167,9 +185,25 @@ export const EncontroPreScreenDialog = ({
 
   const getButtonLabel = () => {
     if (step === "justificativa_nao") return "Salvar";
+    if (step === "data_real") return "Continuar";
     if (step === "justificativa_mudanca") return "Prosseguir para o relatório";
     if (step === "ocorreu_no_dia" && ocorreuNoDia === "sim") return "Prosseguir para o relatório";
     return "Continuar";
+  };
+
+  const handleBack = () => {
+    if (step === "justificativa_nao") {
+      setStep("reuniao_aconteceu");
+      setJustificativa("");
+    } else if (step === "ocorreu_no_dia") {
+      setStep("reuniao_aconteceu");
+    } else if (step === "data_real") {
+      setStep("ocorreu_no_dia");
+      setDataReal("");
+    } else if (step === "justificativa_mudanca") {
+      setStep("data_real");
+      setJustificativa("");
+    }
   };
 
   return (
@@ -248,6 +282,21 @@ export const EncontroPreScreenDialog = ({
             </div>
           )}
 
+          {/* Step: Informar a data real */}
+          {step === "data_real" && (
+            <div className="space-y-3">
+              <Label className="text-base font-medium">
+                Em que data a reunião ocorreu?
+              </Label>
+              <DateInput
+                value={dataReal}
+                onChange={setDataReal}
+                placeholder="DD/MM/AAAA"
+                maxDate={new Date()}
+              />
+            </div>
+          )}
+
           {/* Step: Justificativa para mudança de data */}
           {step === "justificativa_mudanca" && (
             <div className="space-y-3">
@@ -271,17 +320,7 @@ export const EncontroPreScreenDialog = ({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => {
-                if (step === "justificativa_nao") {
-                  setStep("reuniao_aconteceu");
-                  setJustificativa("");
-                } else if (step === "ocorreu_no_dia") {
-                  setStep("reuniao_aconteceu");
-                } else if (step === "justificativa_mudanca") {
-                  setStep("ocorreu_no_dia");
-                  setJustificativa("");
-                }
-              }}
+              onClick={handleBack}
             >
               Voltar
             </Button>
