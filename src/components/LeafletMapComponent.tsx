@@ -1,4 +1,4 @@
-import { useEffect, memo } from "react";
+import { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
@@ -56,11 +56,11 @@ const MapBoundsHandler = ({ casas, center }: { casas: Casa[]; center: [number, n
   return null;
 };
 
-const LeafletMapComponent = memo(function LeafletMapComponent({ 
+const LeafletMapComponent = ({ 
   casas, 
   center, 
   onSelectCasa 
-}: LeafletMapComponentProps) {
+}: LeafletMapComponentProps) => {
   return (
     <MapContainer
       center={center}
@@ -113,6 +113,6 @@ const LeafletMapComponent = memo(function LeafletMapComponent({
       ))}
     </MapContainer>
   );
-});
+};
 
 export default LeafletMapComponent;
