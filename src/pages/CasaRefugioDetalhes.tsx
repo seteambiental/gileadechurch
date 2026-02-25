@@ -219,11 +219,15 @@ const CasaRefugioDetalhes = () => {
     const expectedDates: string[] = [];
     const weekIncrement = isQuinzenal ? 2 : 1;
 
+    // Generate dates up to today PLUS one future slot
     while (!isAfter(current, today)) {
       const dateStr = format(current, "yyyy-MM-dd");
       expectedDates.push(dateStr);
       current = addWeeks(current, weekIncrement);
     }
+    // Add the next future expected date (the pending line after the last)
+    const nextFutureDateStr = format(current, "yyyy-MM-dd");
+    expectedDates.push(nextFutureDateStr);
 
     // Create a map of actual encontros by data_esperada (preferred) or data_encontro
     const encontrosByExpectedDate = new Map<string, typeof encontros[0]>();
@@ -984,10 +988,10 @@ const CasaRefugioDetalhes = () => {
           onOpenChange={(open) => !open && setPreScreenData(null)}
           dataEncontro={preScreenData.dataEncontro}
           casaRefugioId={id}
-          onProceedToReport={(justificativaMudanca) => {
+          onProceedToReport={(dataReal, justificativaMudanca) => {
             setEditingEncontro({
               isNew: true,
-              data_encontro: preScreenData.dataEncontro,
+              data_encontro: dataReal || preScreenData.dataEncontro,
               data_esperada: preScreenData.dataEncontro,
               justificativa: justificativaMudanca || null,
             });
