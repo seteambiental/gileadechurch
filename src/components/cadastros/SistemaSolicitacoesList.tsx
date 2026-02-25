@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare, Reply, ThumbsUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -38,7 +38,7 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [actionDialog, setActionDialog] = useState<{
-    type: "aceitar" | "rejeitar" | "finalizar";
+    type: "aceitar" | "rejeitar" | "finalizar" | "responder" | "confirmar";
     itemId: string;
   } | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
@@ -116,6 +116,30 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
       return data?.full_name || user?.email || "Admin";
     };
 
+    if (actionDialog.type === "responder") {
+      getAdminName().then((nome) => {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            resposta_solicitante: texto || null,
+            resposta_solicitante_em: new Date().toISOString(),
+          },
+        });
+      });
+      return;
+    }
+
+    if (actionDialog.type === "confirmar") {
+      updateMutation.mutate({
+        id: actionDialog.itemId,
+        updates: {
+          confirmacao_solicitante: texto || "Confirmado",
+          confirmado_em: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
     getAdminName().then((adminName) => {
       if (actionDialog.type === "aceitar") {
         updateMutation.mutate({
@@ -181,6 +205,8 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     return item.solicitante_id === user?.id;
   };
 
+  const isOwner = (item: any) => item.solicitante_id === user?.id;
+
   const getDialogConfig = () => {
     if (!actionDialog) return { title: "", label: "", confirmLabel: "", confirmVariant: "default" as const };
     switch (actionDialog.type) {
@@ -190,6 +216,10 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
         return { title: "Rejeitar Solicitação", label: "Motivo da rejeição (opcional)", confirmLabel: "Rejeitar", confirmVariant: "destructive" as const };
       case "finalizar":
         return { title: "Finalizar Solicitação", label: "Observações de finalização (opcional)", confirmLabel: "Finalizar", confirmVariant: "default" as const };
+      case "responder":
+        return { title: "Responder Solicitação", label: "Sua resposta", confirmLabel: "Enviar Resposta", confirmVariant: "default" as const };
+      case "confirmar":
+        return { title: "Confirmar Solução", label: "Comentário sobre a solução (opcional)", confirmLabel: "Confirmar Solução", confirmVariant: "default" as const };
     }
   };
 
@@ -239,6 +269,20 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                             </Button>
                           )}
                         </>
+                      )}
+                      {/* Requester reply - after acceptance, if owner and no reply yet */}
+                      {isOwner(item) && item.status === "em_desenvolvimento" && item.resposta_admin && !item.resposta_solicitante && (
+                        <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: "responder", itemId: item.id })}>
+                          <Reply className="w-3 h-3 mr-1" />
+                          Responder
+                        </Button>
+                      )}
+                      {/* Requester confirm - after finalization, if owner and no confirmation yet */}
+                      {isOwner(item) && item.status === "finalizado" && !item.confirmacao_solicitante && (
+                        <Button size="sm" variant="default" onClick={() => setActionDialog({ type: "confirmar", itemId: item.id })}>
+                          <ThumbsUp className="w-3 h-3 mr-1" />
+                          Confirmar Solução
+                        </Button>
                       )}
                       {/* Reopen - both admin and user */}
                       {(item.status === "finalizado" || item.status === "rejeitada") && (
@@ -301,23 +345,55 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                         </p>
                       )}
                     </div>
-                  )}
+                    )}
 
-                  {/* Finalization note */}
-                  {item.observacao_finalizacao && (
-                    <div className="bg-primary/5 rounded-md p-3 border border-primary/20 space-y-1">
-                      <div className="flex items-center gap-1 text-xs font-medium text-primary">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Observação de Finalização
+                    {/* Requester reply */}
+                    {item.resposta_solicitante && (
+                      <div className="bg-accent/30 rounded-md p-3 border border-accent space-y-1">
+                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                          <Reply className="w-3 h-3" />
+                          Resposta do Solicitante
+                        </div>
+                        <p className="text-sm text-foreground">{item.resposta_solicitante}</p>
+                        {item.resposta_solicitante_em && (
+                          <p className="text-xs text-muted-foreground">
+                            Em {format(new Date(item.resposta_solicitante_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </p>
+                        )}
                       </div>
-                      <p className="text-sm text-foreground">{item.observacao_finalizacao}</p>
-                      {item.finalizado_por && (
-                        <p className="text-xs text-muted-foreground">
-                          Por {item.finalizado_por} em {item.finalizado_em ? format(new Date(item.finalizado_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ""}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    )}
+
+                    {/* Finalization note */}
+                    {item.observacao_finalizacao && (
+                      <div className="bg-primary/5 rounded-md p-3 border border-primary/20 space-y-1">
+                        <div className="flex items-center gap-1 text-xs font-medium text-primary">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Observação de Finalização
+                        </div>
+                        <p className="text-sm text-foreground">{item.observacao_finalizacao}</p>
+                        {item.finalizado_por && (
+                          <p className="text-xs text-muted-foreground">
+                            Por {item.finalizado_por} em {item.finalizado_em ? format(new Date(item.finalizado_em), "dd/MM/yyyy HH:mm", { locale: ptBR }) : ""}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Requester confirmation */}
+                    {item.confirmacao_solicitante && (
+                      <div className="bg-green-500/10 rounded-md p-3 border border-green-500/30 space-y-1">
+                        <div className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400">
+                          <ThumbsUp className="w-3 h-3" />
+                          Solução Confirmada pelo Solicitante
+                        </div>
+                        <p className="text-sm text-foreground">{item.confirmacao_solicitante}</p>
+                        {item.confirmado_em && (
+                          <p className="text-xs text-muted-foreground">
+                            Em {format(new Date(item.confirmado_em), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                          </p>
+                        )}
+                      </div>
+                    )}
                 </div>
               </CardContent>
             </Card>
