@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { DateInput } from "@/components/ui/date-input";
+import { MemberSelect } from "@/components/ui/member-select";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCepLookup } from "@/hooks/useCepLookup";
@@ -23,6 +24,10 @@ export default function InscricaoCasais() {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Member search state
+  const [membroMasculinoId, setMembroMasculinoId] = useState<string | null>(null);
+  const [membroFemininoId, setMembroFemininoId] = useState<string | null>(null);
 
   // Form state
   const [nomeMasculino, setNomeMasculino] = useState("");
@@ -70,6 +75,65 @@ export default function InscricaoCasais() {
     },
   });
 
+  // Fetch members for auto-fill
+  const { data: allMembers } = useQuery({
+    queryKey: ["members_for_inscricao_public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp, email, cep, address, number, complement, neighborhood, city, state, casa_refugio_id")
+        .order("full_name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Auto-fill esposo data
+  useEffect(() => {
+    if (!membroMasculinoId || !allMembers) return;
+    const m = allMembers.find((x) => x.id === membroMasculinoId);
+    if (!m) return;
+    setNomeMasculino(m.full_name || "");
+    setWhatsappMasculino(m.whatsapp || "");
+    setEmailMasculino(m.email || "");
+    if (!endereco && m.address) {
+      setEndereco(m.address);
+      setNumero(m.number || "");
+      setComplemento(m.complement || "");
+      setBairro(m.neighborhood || "");
+      setCidade(m.city || "");
+      setEstado(m.state || "");
+      setCep(m.cep || "");
+    }
+    if (m.casa_refugio_id) {
+      setFrequentaCR("sim");
+      setCasaRefugioId(m.casa_refugio_id);
+    }
+  }, [membroMasculinoId, allMembers]);
+
+  // Auto-fill esposa data
+  useEffect(() => {
+    if (!membroFemininoId || !allMembers) return;
+    const m = allMembers.find((x) => x.id === membroFemininoId);
+    if (!m) return;
+    setNomeFeminino(m.full_name || "");
+    setWhatsappFeminino(m.whatsapp || "");
+    setEmailFeminino(m.email || "");
+    if (!endereco && m.address) {
+      setEndereco(m.address);
+      setNumero(m.number || "");
+      setComplemento(m.complement || "");
+      setBairro(m.neighborhood || "");
+      setCidade(m.city || "");
+      setEstado(m.state || "");
+      setCep(m.cep || "");
+    }
+    if (!casaRefugioId && m.casa_refugio_id) {
+      setFrequentaCR("sim");
+      setCasaRefugioId(m.casa_refugio_id);
+    }
+  }, [membroFemininoId, allMembers]);
+
   // Update filhos count
   useEffect(() => {
     const totalMeninos = parseInt(qtdMeninos) || 0;
@@ -105,6 +169,8 @@ export default function InscricaoCasais() {
     try {
       const payload: any = {
         status: "pendente",
+        membro_masculino_id: membroMasculinoId || null,
+        membro_feminino_id: membroFemininoId || null,
         nome_masculino: formatNameField(nomeMasculino),
         nome_feminino: formatNameField(nomeFeminino),
         whatsapp_masculino: whatsappMasculino || null,
@@ -197,6 +263,10 @@ export default function InscricaoCasais() {
               {/* Esposo */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-base">Dados do Esposo</h3>
+                <div className="space-y-2">
+                  <Label>Buscar membro cadastrado</Label>
+                  <MemberSelect value={membroMasculinoId} onChange={setMembroMasculinoId} placeholder="Buscar esposo..." />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Nome Completo *</Label>
@@ -218,6 +288,10 @@ export default function InscricaoCasais() {
               {/* Esposa */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-base">Dados da Esposa</h3>
+                <div className="space-y-2">
+                  <Label>Buscar membro cadastrado</Label>
+                  <MemberSelect value={membroFemininoId} onChange={setMembroFemininoId} placeholder="Buscar esposa..." />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Nome Completo *</Label>
