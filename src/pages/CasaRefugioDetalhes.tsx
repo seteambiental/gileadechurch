@@ -601,10 +601,22 @@ const CasaRefugioDetalhes = () => {
 
         {/* Encontros Table - right after date filter */}
         <div>
-          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Histórico de Encontros ({filteredEncontros.length})
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-foreground flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Histórico de Encontros ({filteredEncontros.length})
+            </h3>
+            <Button
+              size="sm"
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => {
+                const today = format(new Date(), "yyyy-MM-dd");
+                setPreScreenData({ dataEncontro: today });
+              }}
+            >
+              + Novo Encontro
+            </Button>
+          </div>
           {loadingEncontros ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 text-destructive animate-spin" />
