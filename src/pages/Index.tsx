@@ -100,17 +100,25 @@ const Index = () => {
     },
   });
 
-  // Buscar avisos ativos
+  // Buscar avisos ativos (exclui vencidos, ordena por data cronológica)
   const { data: avisosDb } = useQuery({
     queryKey: ["homepage-avisos-public"],
     queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("homepage_avisos")
         .select("*")
-        .eq("ativo", true)
-        .order("ordem", { ascending: true });
+        .eq("ativo", true);
       if (error) return [];
-      return data;
+      // Filtra avisos com data passada
+      const filtered = (data || []).filter((a) => !a.data || a.data >= today);
+      // Ordena cronologicamente: avisos com data primeiro (asc), sem data por ordem
+      return filtered.sort((a, b) => {
+        if (a.data && b.data) return a.data.localeCompare(b.data);
+        if (a.data && !b.data) return -1;
+        if (!a.data && b.data) return 1;
+        return (a.ordem ?? 0) - (b.ordem ?? 0);
+      });
     },
   });
 
