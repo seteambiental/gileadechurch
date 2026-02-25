@@ -4799,6 +4799,8 @@ export type Database = {
         Row: {
           aba: string | null
           card: string | null
+          confirmacao_solicitante: string | null
+          confirmado_em: string | null
           created_at: string
           descricao: string
           finalizado_em: string | null
@@ -4811,6 +4813,8 @@ export type Database = {
           respondido_em: string | null
           respondido_por: string | null
           resposta_admin: string | null
+          resposta_solicitante: string | null
+          resposta_solicitante_em: string | null
           solicitante_id: string | null
           solicitante_nome: string | null
           status: string
@@ -4821,6 +4825,8 @@ export type Database = {
         Insert: {
           aba?: string | null
           card?: string | null
+          confirmacao_solicitante?: string | null
+          confirmado_em?: string | null
           created_at?: string
           descricao: string
           finalizado_em?: string | null
@@ -4833,6 +4839,8 @@ export type Database = {
           respondido_em?: string | null
           respondido_por?: string | null
           resposta_admin?: string | null
+          resposta_solicitante?: string | null
+          resposta_solicitante_em?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
@@ -4843,6 +4851,8 @@ export type Database = {
         Update: {
           aba?: string | null
           card?: string | null
+          confirmacao_solicitante?: string | null
+          confirmado_em?: string | null
           created_at?: string
           descricao?: string
           finalizado_em?: string | null
@@ -4855,6 +4865,8 @@ export type Database = {
           respondido_em?: string | null
           respondido_por?: string | null
           resposta_admin?: string | null
+          resposta_solicitante?: string | null
+          resposta_solicitante_em?: string | null
           solicitante_id?: string | null
           solicitante_nome?: string | null
           status?: string
