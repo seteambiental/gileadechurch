@@ -32,7 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
-import { exportGenericToExcel, exportGenericToPDF, ExportColumn } from "@/lib/export";
+import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 
@@ -596,11 +596,18 @@ export const EncontrosReportDialog = ({
       },
     ];
     
+    const blankRowStyle = (row: any): ExportRowStyle | null => {
+      if (row.is_blank) return { fillColor: "#D9D9D9", fontColor: "#666666", italic: true };
+      if (row.is_cancelled) return { fillColor: "#E8E8E8", fontColor: "#999999", italic: true };
+      return null;
+    };
+
     await exportGenericToExcel(
       dataWithTotals,
       filteredExportColumns,
       `relatorio-encontros-${periodLabel}`,
-      "Encontros"
+      "Encontros",
+      blankRowStyle
     );
   };
 
@@ -633,11 +640,18 @@ export const EncontrosReportDialog = ({
       },
     ];
     
+    const blankRowStyle = (row: any): ExportRowStyle | null => {
+      if (row.is_blank) return { fillColor: "#D9D9D9", fontColor: "#666666", italic: true };
+      if (row.is_cancelled) return { fillColor: "#E8E8E8", fontColor: "#999999", italic: true };
+      return null;
+    };
+
     exportGenericToPDF(
       dataWithTotals,
       filteredExportColumns,
       `relatorio-encontros`,
-      `Relatório de Encontros - Casas Refúgio (${periodLabel})`
+      `Relatório de Encontros - Casas Refúgio (${periodLabel})`,
+      blankRowStyle
     );
   };
 

@@ -301,11 +301,18 @@ const buildTotalsRow = (data: any[], columns: ExportColumn[]): (string | null)[]
   });
 };
 
+export interface ExportRowStyle {
+  fillColor?: string; // hex color e.g. "#D9D9D9"
+  fontColor?: string;
+  italic?: boolean;
+}
+
 export const exportGenericToExcel = async (
   data: any[],
   columns: ExportColumn[],
   filename: string,
-  sheetName: string = "Dados"
+  sheetName: string = "Dados",
+  rowStyleFn?: (row: any, index: number) => ExportRowStyle | null
 ) => {
   if (data.length === 0) return;
 
@@ -317,14 +324,38 @@ export const exportGenericToExcel = async (
   const headerRow = worksheet.getRow(1);
   headerRow.font = { bold: true };
 
-  data.forEach((row) => {
+  data.forEach((row, rowIndex) => {
     const rowData = columns.map((col) => {
       const value = typeof col.accessor === "function" 
         ? col.accessor(row) 
         : row[col.accessor];
       return col.format ? col.format(value) : (value ?? "-");
     });
-    worksheet.addRow(rowData);
+    const excelRow = worksheet.addRow(rowData);
+
+    // Apply per-row styling
+    if (rowStyleFn) {
+      const style = rowStyleFn(row, rowIndex);
+      if (style) {
+        excelRow.eachCell((cell) => {
+          if (style.fillColor) {
+            const hex = style.fillColor.replace("#", "");
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: { argb: `FF${hex}` },
+            };
+          }
+          if (style.fontColor) {
+            const hex = style.fontColor.replace("#", "");
+            cell.font = { ...cell.font, color: { argb: `FF${hex}` } };
+          }
+          if (style.italic) {
+            cell.font = { ...cell.font, italic: true };
+          }
+        });
+      }
+    }
   });
 
   // Add TOTAL row
@@ -360,7 +391,8 @@ export const exportGenericToPDF = (
   data: any[],
   columns: ExportColumn[],
   filename: string,
-  title: string
+  title: string,
+  rowStyleFn?: (row: any, index: number) => ExportRowStyle | null
 ) => {
   if (data.length === 0) return;
 
@@ -384,6 +416,11 @@ export const exportGenericToPDF = (
       return col.format ? col.format(value) : (value ?? "-");
     })
   );
+
+  // Build row style map for PDF
+  const rowStyles = rowStyleFn 
+    ? data.map((row, i) => rowStyleFn(row, i)) 
+    : [];
 
   // Add TOTAL row
   const totals = buildTotalsRow(data, columns);
@@ -417,6 +454,27 @@ export const exportGenericToPDF = (
       if (hasTotals && hookData.section === "body" && hookData.row.index === tableData.length - 1) {
         hookData.cell.styles.fontStyle = "bold";
         hookData.cell.styles.fillColor = [230, 230, 230];
+      }
+      // Apply per-row styling
+      if (hookData.section === "body" && rowStyles[hookData.row.index]) {
+        const style = rowStyles[hookData.row.index];
+        if (style?.fillColor) {
+          const hex = style.fillColor.replace("#", "");
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          hookData.cell.styles.fillColor = [r, g, b];
+        }
+        if (style?.fontColor) {
+          const hex = style.fontColor.replace("#", "");
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          hookData.cell.styles.textColor = [r, g, b];
+        }
+        if (style?.italic) {
+          hookData.cell.styles.fontStyle = "italic";
+        }
       }
     },
   });
