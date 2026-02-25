@@ -108,7 +108,7 @@ const formaPagamentoLabels: Record<string, string> = {
 const tipoInscricaoLabels: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não Membro",
-  familia: "Família",
+  familia: "Líderes e Anfitriões",
   equipe: "Equipe",
 };
 
@@ -632,7 +632,7 @@ export const InscricoesEventoDialog = ({
                           <SelectContent>
                             <SelectItem value="membro">Membro</SelectItem>
                             <SelectItem value="nao_membro">Não Membro</SelectItem>
-                            <SelectItem value="familia">Família</SelectItem>
+                            <SelectItem value="familia">Líderes e Anfitriões</SelectItem>
                             <SelectItem value="equipe">Equipe</SelectItem>
                           </SelectContent>
                         </Select>

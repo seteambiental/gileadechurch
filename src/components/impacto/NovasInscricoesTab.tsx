@@ -32,7 +32,7 @@ import { Check, X, Search, UserPlus, Loader2 } from "lucide-react";
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não membro",
-  familia: "Família",
+  familia: "Líderes e Anfitriões",
   equipe: "Equipe",
 };
 

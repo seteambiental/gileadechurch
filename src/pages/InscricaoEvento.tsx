@@ -766,7 +766,7 @@ const InscricaoEvento = () => {
                         <SelectContent>
                           <SelectItem value="membro" className="text-base md:text-lg py-2 md:py-3">Membro</SelectItem>
                           <SelectItem value="nao_membro" className="text-base md:text-lg py-2 md:py-3">Não Membro</SelectItem>
-                          <SelectItem value="familia" className="text-base md:text-lg py-2 md:py-3">Família</SelectItem>
+                          <SelectItem value="familia" className="text-base md:text-lg py-2 md:py-3">Líderes e Anfitriões</SelectItem>
                           <SelectItem value="equipe" className="text-base md:text-lg py-2 md:py-3">Equipe (Apoio/Serviço)</SelectItem>
                         </SelectContent>
                       </Select>
