@@ -322,18 +322,54 @@ const ImpactoFinanceiroTab = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-heading font-bold">Financeiro</h2>
-        <Select value={selectedEventoId} onValueChange={setSelectedEventoId}>
-          <SelectTrigger className="w-[300px]">
-            <SelectValue placeholder="Selecione um evento" />
-          </SelectTrigger>
-          <SelectContent>
-            {eventos?.map((e) => (
-              <SelectItem key={e.id} value={e.id}>
-                {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-2">
+          <Select value={selectedEventoId} onValueChange={setSelectedEventoId}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Selecione um evento" />
+            </SelectTrigger>
+            <SelectContent>
+              {eventos?.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedEventoId && inscricoes.length > 0 && (
+            <>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Columns3 className="w-4 h-4 mr-2" />
+                    Colunas Relatório
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-3" align="end">
+                  <p className="text-sm font-medium mb-2">Colunas visíveis</p>
+                  <div className="space-y-2">
+                    {allColumns.map((col) => (
+                      <label key={col.key} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={isCol(col.key)}
+                          onCheckedChange={() => toggleColumn(col.key)}
+                        />
+                        <span className="text-sm">{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button variant="outline" size="sm" onClick={handleExportReceitasExcel}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportReceitasPDF}>
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       {!selectedEventoId ? (
@@ -481,52 +517,14 @@ const ImpactoFinanceiroTab = () => {
             </TabsList>
 
             <TabsContent value="receitas" className="space-y-3">
-              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
-                <div className="relative max-w-sm w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome..."
-                    value={searchNome}
-                    onChange={(e) => setSearchNome(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Columns3 className="w-4 h-4 mr-2" />
-                        {visibleColumns.size} de {allColumns.length}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-52 p-3" align="end">
-                      <p className="text-sm font-medium mb-2">Colunas visíveis</p>
-                      <div className="space-y-2">
-                        {allColumns.map((col) => (
-                          <label key={col.key} className="flex items-center gap-2 cursor-pointer">
-                            <Checkbox
-                              checked={isCol(col.key)}
-                              onCheckedChange={() => toggleColumn(col.key)}
-                            />
-                            <span className="text-sm">{col.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                  {inscricoes.length > 0 && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={handleExportReceitasExcel}>
-                        <FileSpreadsheet className="w-4 h-4 mr-2" />
-                        Excel
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={handleExportReceitasPDF}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        PDF
-                      </Button>
-                    </>
-                  )}
-                </div>
+              <div className="relative max-w-sm w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={searchNome}
+                  onChange={(e) => setSearchNome(e.target.value)}
+                  className="pl-9"
+                />
               </div>
               {isLoading ? (
                 <div className="text-center py-8">Carregando...</div>
