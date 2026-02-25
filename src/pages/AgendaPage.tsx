@@ -163,7 +163,7 @@ const AgendaPage = () => {
   const TIPOS_COMPROMISSO = [
     "culto", "ceia", "conexao_lider", "quarta_proposito",
     "quarta_proposito_prestacao", "cursos", "aulas", "apresentacao_criancas",
-    "casamento", "confraternizacao", "churrasco",
+    "casamento", "confraternizacao", "churrasco", "outros",
   ];
 
   // Query para eventos únicos (eventos) - ordenados por data crescente
@@ -181,8 +181,14 @@ const AgendaPage = () => {
   });
 
   // Filtrar: apenas eventos reais (não compromissos) para exibir como cards
+  // "outros" can be either - show as card if it has event features
   const eventosParaCards = eventosUnicos.filter(
-    (e) => !TIPOS_COMPROMISSO.includes(e.tipo_evento)
+    (e) => {
+      if (e.tipo_evento === "outros") {
+        return (e as any).necessita_inscricao || (e as any).flyer_url;
+      }
+      return !TIPOS_COMPROMISSO.includes(e.tipo_evento);
+    }
   );
 
   // Agrupar eventos recorrentes por dia da semana
@@ -253,7 +259,12 @@ const AgendaPage = () => {
              <AgendaCalendar
                eventos={[...eventosRecorrentes, ...eventosUnicos]}
               onEventoClick={(evento) => {
-                 const isCompromisso = TIPOS_COMPROMISSO.includes(evento.tipo_evento);
+                 // For ambiguous types like "outros", use event characteristics to determine mode
+                 const isCompromissoByType = TIPOS_COMPROMISSO.includes(evento.tipo_evento);
+                 const hasEventFeatures = (evento as any).necessita_inscricao || (evento as any).flyer_url;
+                 const isCompromisso = evento.tipo_evento === "outros" 
+                   ? (!hasEventFeatures)
+                   : isCompromissoByType;
                  setEditingEvento(evento as Evento);
                  setFormMode(isCompromisso ? "compromisso" : "evento");
                  setShowEventoForm(true);
