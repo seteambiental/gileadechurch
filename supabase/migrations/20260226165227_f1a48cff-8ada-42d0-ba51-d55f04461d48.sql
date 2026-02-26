@@ -1,0 +1,1 @@
+ALTER TABLE public.impacto_inscricoes ADD COLUMN IF NOT EXISTS aprovado boolean NOT NULL DEFAULT false;

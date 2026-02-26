@@ -2457,6 +2457,7 @@ export type Database = {
       }
       impacto_inscricoes: {
         Row: {
+          aprovado: boolean
           created_at: string
           data_nascimento: string | null
           data_pagamento: string | null
@@ -2479,6 +2480,7 @@ export type Database = {
           valor_pago: number | null
         }
         Insert: {
+          aprovado?: boolean
           created_at?: string
           data_nascimento?: string | null
           data_pagamento?: string | null
@@ -2501,6 +2503,7 @@ export type Database = {
           valor_pago?: number | null
         }
         Update: {
+          aprovado?: boolean
           created_at?: string
           data_nascimento?: string | null
           data_pagamento?: string | null

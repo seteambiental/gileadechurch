@@ -127,8 +127,9 @@ const ImpactoFinanceiroTab = () => {
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento")
+        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado")
         .eq("evento_id", selectedEventoId)
+        .eq("aprovado", true)
         .order("nome");
       if (error) throw error;
       return data || [];

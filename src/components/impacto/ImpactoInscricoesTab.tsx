@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns, X } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns, X, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
@@ -178,7 +178,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       const { data, error } = await supabase
         .from("impacto_inscricoes")
         .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
-        .eq("evento_id", selectedEventoId);
+        .eq("evento_id", selectedEventoId) as any;
       if (error) throw error;
       return data;
     },
@@ -690,7 +690,30 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">{inscricao.nome}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {inscricao.nome}
+                        <button
+                          title={inscricao.aprovado ? "Aprovado" : "Clique para aprovar"}
+                          onClick={async () => {
+                            if (inscricao.aprovado) return;
+                            const { error } = await supabase
+                              .from("impacto_inscricoes")
+                              .update({ aprovado: true } as any)
+                              .eq("id", inscricao.id);
+                            if (error) {
+                              toast.error("Erro ao aprovar inscrição");
+                            } else {
+                              toast.success(`Inscrição de ${inscricao.nome} aprovada!`);
+                              queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+                            }
+                          }}
+                          className={`flex-shrink-0 ${inscricao.aprovado ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
+                        >
+                          <CheckCircle className={`w-4 h-4 ${inscricao.aprovado ? "text-muted-foreground/40" : "text-green-500"}`} />
+                        </button>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-sm">
                       {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
                     </TableCell>
