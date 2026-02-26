@@ -31,13 +31,10 @@ import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 
 interface ImpactoInscricoesTabProps {
@@ -554,28 +551,28 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
           {selectedEventoId && inscricoes.length > 0 && (
             <>
               {/* Column selector for export */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <Popover>
+                <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Columns className="w-4 h-4 mr-2" />
                     Colunas Relatório
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-popover">
-                  <DropdownMenuLabel>Selecionar colunas</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {ALL_EXPORT_COLUMN_KEYS.map((key) => (
-                    <DropdownMenuCheckboxItem
-                      key={key}
-                      checked={selectedExportCols.includes(key)}
-                      onCheckedChange={() => toggleExportCol(key)}
-                      onSelect={(e) => e.preventDefault()}
-                    >
-                      {EXPORT_COLUMN_LABELS[key]}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </PopoverTrigger>
+                <PopoverContent className="w-52 p-3" align="end">
+                  <p className="text-sm font-medium mb-2">Colunas visíveis</p>
+                  <div className="space-y-2">
+                    {ALL_EXPORT_COLUMN_KEYS.map((key) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={selectedExportCols.includes(key)}
+                          onCheckedChange={() => toggleExportCol(key)}
+                        />
+                        <span className="text-sm">{EXPORT_COLUMN_LABELS[key]}</span>
+                      </label>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button variant="outline" size="sm" onClick={handleExportExcel}>
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                 Excel
