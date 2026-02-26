@@ -131,15 +131,22 @@ const CasasRefugioMap = () => {
     return casasFiltradas;
   }, [casasFiltradas, selectedCasaId]);
 
-  // Centro do mapa baseado nas casas ou Curitiba como padrão
+  // Centro do mapa: Curitiba e região como padrão
+  const CURITIBA_CENTER: [number, number] = [-25.4372, -49.2700];
+
   const mapCenter = useMemo(() => {
-    if (casasComCoordenadas.length > 0) {
+    // Se há filtro aplicado e casas com coordenadas, centraliza nelas
+    const hasFilter = cidadeFilter !== "all" || bairroFilter !== "all";
+    if (hasFilter && casasComCoordenadas.length > 0) {
       const avgLat = casasComCoordenadas.reduce((sum, c) => sum + (c.latitude || 0), 0) / casasComCoordenadas.length;
       const avgLng = casasComCoordenadas.reduce((sum, c) => sum + (c.longitude || 0), 0) / casasComCoordenadas.length;
       return [avgLat, avgLng] as [number, number];
     }
-    return [-25.4372, -49.2700] as [number, number]; // Curitiba
-  }, [casasComCoordenadas]);
+    return CURITIBA_CENTER;
+  }, [casasComCoordenadas, cidadeFilter, bairroFilter]);
+
+  // Determina se deve usar fitBounds ou zoom fixo
+  const useFixedZoom = cidadeFilter === "all" && bairroFilter === "all";
 
   if (isLoading) {
     return (
@@ -207,6 +214,7 @@ const CasasRefugioMap = () => {
                 casas={casasComCoordenadas}
                 center={mapCenter}
                 onSelectCasa={setSelectedCasaId}
+                useFixedZoom={useFixedZoom}
               />
             </Suspense>
           </MapErrorBoundary>

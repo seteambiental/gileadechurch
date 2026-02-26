@@ -34,14 +34,18 @@ interface LeafletMapComponentProps {
   casas: Casa[];
   center: [number, number];
   onSelectCasa: (id: string) => void;
+  useFixedZoom?: boolean;
 }
 
 // Component to handle map bounds fitting
-const MapBoundsHandler = ({ casas, center }: { casas: Casa[]; center: [number, number] }) => {
+const MapBoundsHandler = ({ casas, center, useFixedZoom }: { casas: Casa[]; center: [number, number]; useFixedZoom?: boolean }) => {
   const map = useMap();
   
   useEffect(() => {
-    if (casas.length > 1) {
+    if (useFixedZoom) {
+      // Sem filtro: mostra Curitiba e região com zoom fixo
+      map.setView(center, 11);
+    } else if (casas.length > 1) {
       const bounds = L.latLngBounds(
         casas.map(c => [c.latitude!, c.longitude!] as [number, number])
       );
@@ -49,9 +53,9 @@ const MapBoundsHandler = ({ casas, center }: { casas: Casa[]; center: [number, n
     } else if (casas.length === 1) {
       map.setView([casas[0].latitude!, casas[0].longitude!], 15);
     } else {
-      map.setView(center, 12);
+      map.setView(center, 11);
     }
-  }, [casas, center, map]);
+  }, [casas, center, map, useFixedZoom]);
   
   return null;
 };
@@ -59,7 +63,8 @@ const MapBoundsHandler = ({ casas, center }: { casas: Casa[]; center: [number, n
 const LeafletMapComponent = ({ 
   casas, 
   center, 
-  onSelectCasa 
+  onSelectCasa,
+  useFixedZoom 
 }: LeafletMapComponentProps) => {
   return (
     <MapContainer
@@ -72,7 +77,7 @@ const LeafletMapComponent = ({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <MapBoundsHandler casas={casas} center={center} />
+      <MapBoundsHandler casas={casas} center={center} useFixedZoom={useFixedZoom} />
       {casas.map((casa) => (
         <Marker
           key={casa.id}
