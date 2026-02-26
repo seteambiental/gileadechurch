@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMemberPortal } from "@/hooks/useMemberPortal";
+import { useUserAccess } from "@/hooks/useUserAccess";
 import {
   LogOut,
   Loader2,
@@ -12,10 +13,17 @@ import {
   User,
   Send,
   HandHelping,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 // Componentes das abas
@@ -36,7 +44,7 @@ const PortalMembro = () => {
     memberMinistries,
     memberCasasRefugio,
   } = useMemberPortal();
-
+  const { isAdmin } = useUserAccess(user?.id);
   const [activeTab, setActiveTab] = useState("agenda");
 
   useEffect(() => {
@@ -158,6 +166,28 @@ const PortalMembro = () => {
               </Avatar>
               <span className="text-sm font-medium">{memberProfile.full_name.split(" ")[0]}</span>
             </div>
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground gap-2"
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Trocar Portal</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/app")}>
+                    Portal ADM
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/lideres")}>
+                    Portal de Líderes
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="ghost"
               size="sm"
