@@ -102,9 +102,17 @@ const CasasRefugioMap = () => {
     });
   }, [casas, cidadeFilter, bairroFilter]);
 
-  // Casas com coordenadas para o mapa
+  // Casas com coordenadas para o mapa - filtra outliers (coordenadas muito distantes de Curitiba)
   const casasComCoordenadas = useMemo(() => {
-    return casasFiltradas.filter(c => c.latitude && c.longitude);
+    const CURITIBA_LAT = -25.4372;
+    const CURITIBA_LNG = -49.2700;
+    const MAX_DISTANCE = 0.8; // ~80km de raio
+    return casasFiltradas.filter(c => {
+      if (!c.latitude || !c.longitude) return false;
+      const distLat = Math.abs(c.latitude - CURITIBA_LAT);
+      const distLng = Math.abs(c.longitude - CURITIBA_LNG);
+      return distLat < MAX_DISTANCE && distLng < MAX_DISTANCE;
+    });
   }, [casasFiltradas]);
 
   // Reset bairro filter when cidade changes
