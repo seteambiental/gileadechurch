@@ -236,7 +236,15 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
       : eventos.filter(filtrarPorPublico);
     searchFiltered.forEach((evento) => {
       if (evento.recorrente) {
+        // Limitar recorrência ao período do evento (data_evento até data_fim)
+        const recStart = parseLocalDate(evento.data_evento);
+        const recEnd = evento.data_fim ? parseLocalDate(evento.data_fim) : null;
+
         days.forEach((day) => {
+          // Não gerar antes da data de início nem após a data de fim
+          if (day < recStart) return;
+          if (recEnd && day > recEnd) return;
+
           const diaSemana = getDay(day);
 
           if (evento.tipo_recorrencia === "semanal" && evento.dia_semana === diaSemana) {
