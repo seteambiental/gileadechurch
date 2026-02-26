@@ -546,7 +546,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
             <SelectContent>
               {eventos?.map((e) => (
                 <SelectItem key={e.id} value={e.id}>
-                  {e.titulo}
+                  {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
                 </SelectItem>
               ))}
             </SelectContent>
