@@ -78,7 +78,7 @@ export const PortalLideresAgendaTab = ({
         .select("*, solicitante:members!solicitante_id(full_name)")
         .eq("status", "pendente")
         .eq("ativo", true)
-        .order("created_at", { ascending: false });
+        .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -94,7 +94,7 @@ export const PortalLideresAgendaTab = ({
         .eq("solicitante_id", memberId)
         .eq("ativo", true)
         .in("status", ["pendente", "rejeitado"])
-        .order("created_at", { ascending: false });
+        .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
     },
