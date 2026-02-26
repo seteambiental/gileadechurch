@@ -36,10 +36,17 @@ import {
   DoorOpen,
   Globe,
   Cake,
+  ArrowRightLeft,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import AniversariantesDialog from "@/components/AniversariantesDialog";
@@ -263,6 +270,28 @@ const AppDashboard = () => {
                 >
                   Fazer Login
                 </Button>
+              )}
+              {user && isAdmin && !isPastorAuxiliar && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-2"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline">Trocar Portal</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate("/lideres")}>
+                      Portal de Líderes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/portal")}>
+                      Portal do Membro
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
               <Button
                 variant="ghost"
