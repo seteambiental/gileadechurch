@@ -69,9 +69,10 @@ const LeafletMapComponent = ({
   return (
     <MapContainer
       center={center}
-      zoom={12}
+      zoom={useFixedZoom ? 11 : 12}
       style={{ height: "400px", width: "100%" }}
       className="z-0"
+      key={`${center[0]}-${center[1]}-${useFixedZoom}`}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
