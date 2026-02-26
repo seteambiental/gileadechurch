@@ -14,14 +14,22 @@ import {
   Building2,
   ClipboardCheck,
   DollarSign,
+  ArrowRightLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserAccess } from "@/hooks/useUserAccess";
 
 // Componentes das abas
 import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
@@ -56,6 +64,7 @@ const PortalLideres = () => {
     memberMinistries,
     memberCasasRefugio,
   } = useMemberPortal();
+  const { isAdmin } = useUserAccess(user?.id);
 
   const [activeTab, setActiveTab] = useState("programacao");
 
@@ -277,6 +286,28 @@ const PortalLideres = () => {
                 </Badge>
               </div>
             </div>
+            {isAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-2"
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Trocar Portal</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/app")}>
+                    Portal ADM
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/portal")}>
+                    Portal do Membro
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button
               variant="ghost"
               size="sm"
