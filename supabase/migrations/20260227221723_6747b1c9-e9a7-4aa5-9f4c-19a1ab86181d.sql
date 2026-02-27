@@ -1,0 +1,1 @@
+ALTER TYPE public.church_function_type ADD VALUE IF NOT EXISTS 'secretario_casa_refugio';
