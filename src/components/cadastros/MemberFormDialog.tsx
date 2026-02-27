@@ -45,6 +45,7 @@ import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
+  { value: "secretario_casa_refugio", label: "Secretário(a) de Casa Refúgio" },
   { value: "lider_ministerio", label: "Líder de Ministério" },
   { value: "pastor_geral", label: "Pastor Geral" },
   { value: "pastor_auxiliar", label: "Pastor Auxiliar" },
@@ -58,6 +59,7 @@ const ROLE_TYPES = [
   { value: "integrante_ministerio", label: "Integrante de Ministério", description: "Visualização do ministério (sem edição)" },
   { value: "lider_ministerio", label: "Líder de Ministério", description: "CRUD completo no ministério" },
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio", description: "Acesso à sua casa refúgio" },
+  { value: "secretario_casa_refugio", label: "Secretário(a) de Casa Refúgio", description: "Acesso à casa refúgio (funções de CR)" },
   { value: "supervisor_casa_refugio", label: "Supervisor de Casa Refúgio", description: "Acesso às casas que supervisiona" },
   { value: "lider_condominio", label: "Líder de Condomínio", description: "Acesso ao condomínio" },
   { value: "pastor_auxiliar", label: "Pastor Auxiliar", description: "Acesso completo" },
@@ -189,7 +191,7 @@ const formSchema = z.object({
   cpf: z.string().optional(),
   // Campos para criar usuário do sistema
   criar_usuario: z.boolean().optional(),
-  perfil_usuario: z.enum(["membro", "integrante_ministerio", "lider_ministerio", "lider_casa_refugio", "supervisor_casa_refugio", "lider_condominio", "pastor_auxiliar", "pastor_geral", "admin"]).optional(),
+  perfil_usuario: z.enum(["membro", "integrante_ministerio", "lider_ministerio", "lider_casa_refugio", "secretario_casa_refugio", "supervisor_casa_refugio", "lider_condominio", "pastor_auxiliar", "pastor_geral", "admin"]).optional(),
   // Interesse em servir nos ministérios
   nao_pretende_servir: z.boolean().optional(),
   ministerios_interesse: z.array(z.string()).optional(),
@@ -602,6 +604,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       case "integrante_ministerio":
         return { type: "ministry", options: ministries };
       case "lider_casa_refugio":
+      case "secretario_casa_refugio":
         return { type: "casa_refugio", options: casasRefugio };
       case "supervisor_condominio":
       case "sindico_condominio":

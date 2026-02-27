@@ -9,6 +9,7 @@ const LEADER_FUNCTION_TYPES = [
   "supervisor_condominio",
   "supervisor_casa_refugio",
   "lider_casa_refugio",
+  "secretario_casa_refugio",
   "lider_ministerio",
   "integrante_ministerio",
 ];
@@ -19,6 +20,7 @@ const LEADER_ROLES = [
   "lider_ministerio",
   "integrante_ministerio",
   "lider_casa_refugio",
+  "secretario_casa_refugio",
   "supervisor_casa_refugio",
   "lider_condominio",
   "sindico_condominio",

@@ -32,6 +32,7 @@ export type PortalRole =
   | "sindico_condominio" 
   | "supervisor_condominio" 
   | "lider_casa_refugio"
+  | "secretario_casa_refugio"
   | "lider_ministerio"
   | "integrante_ministerio"
   | "membro";
@@ -128,11 +129,13 @@ export const useMemberPortal = () => {
 
     const supervisorCasaFunctions = functions.filter(f => f.function_type === "supervisor_casa_refugio");
     const liderCasaFunctions = functions.filter(f => f.function_type === "lider_casa_refugio");
+    const secretarioCasaFunctions = functions.filter(f => f.function_type === "secretario_casa_refugio");
     
     // Combinar IDs de casas refúgio de várias fontes
     const casasFromFunctions = [
       ...supervisorCasaFunctions.filter(f => f.casa_refugio_id).map(f => f.casa_refugio_id!),
       ...liderCasaFunctions.filter(f => f.casa_refugio_id).map(f => f.casa_refugio_id!),
+      ...secretarioCasaFunctions.filter(f => f.casa_refugio_id).map(f => f.casa_refugio_id!),
     ];
     const casasFromDirect = directCasasRefugio.map(c => c.id);
     const casasRefugioIds = [...new Set([...casasFromFunctions, ...casasFromDirect])];
@@ -207,6 +210,16 @@ export const useMemberPortal = () => {
       if (casasRefugioIds.length > 0) {
         return {
           role: "lider_casa_refugio",
+          casasRefugioIds,
+        };
+      }
+    }
+
+    // Verificar se é secretário de casa refúgio
+    if (secretarioCasaFunctions.length > 0) {
+      if (casasRefugioIds.length > 0) {
+        return {
+          role: "secretario_casa_refugio",
           casasRefugioIds,
         };
       }
