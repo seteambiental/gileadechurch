@@ -459,7 +459,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
         const { error: funcError } = await supabase
           .from("member_functions")
-          .insert(functionsToInsert);
+          .insert(functionsToInsert as any);
 
         if (funcError) throw funcError;
       }
