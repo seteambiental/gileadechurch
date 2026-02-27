@@ -115,6 +115,7 @@ export const PortalLideresCasaRefugio = ({
     if (portalAccess?.role === "pastor_geral" || portalAccess?.role === "pastor_auxiliar") return true;
     if (portalAccess?.role === "sindico_condominio") return true;
     if (portalAccess?.role === "supervisor_condominio") return true;
+    if (portalAccess?.role === "secretario_casa_refugio") return memberCasasRefugio.some(c => c.id === casaId);
     return isLiderDaCasa(casaId);
   };
 
