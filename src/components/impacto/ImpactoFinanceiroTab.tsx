@@ -293,7 +293,7 @@ const ImpactoFinanceiroTab = () => {
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Columns3 className="w-4 h-4 mr-2" />
-                    Colunas Relatório
+                    Colunas
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-52 p-3" align="end">
