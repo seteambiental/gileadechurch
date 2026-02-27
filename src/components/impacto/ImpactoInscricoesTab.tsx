@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns, X, CheckCircle } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, FileSpreadsheet, FileText, Columns3, X, CheckCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
@@ -59,40 +59,25 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe (apoio/serviço)",
 };
 
-// All available export column keys
-const ALL_EXPORT_COLUMN_KEYS = [
-  "referencia",
-  "nome",
-  "tipo",
-  "genero",
-  "telefone",
-  "local",
-  "forma_pagamento",
-  "valor_inscricao",
-  "valor_pago",
-  "a_pagar",
-  "status",
-  "whatsapp",
+// All available column keys (used for both table and export)
+const ALL_COLUMNS = [
+  { key: "referencia", label: "Ref." },
+  { key: "nome", label: "Nome" },
+  { key: "tipo", label: "Tipo" },
+  { key: "genero", label: "Gênero" },
+  { key: "telefone", label: "Telefone" },
+  { key: "local", label: "Casa Refúgio / Condomínio" },
+  { key: "forma_pagamento", label: "Forma Pagamento" },
+  { key: "valor_inscricao", label: "Valor Inscrição" },
+  { key: "valor_pago", label: "Valor Pago" },
+  { key: "a_pagar", label: "A Pagar" },
+  { key: "status", label: "Status" },
+  { key: "whatsapp", label: "WhatsApp" },
 ] as const;
 
-type ExportColumnKey = typeof ALL_EXPORT_COLUMN_KEYS[number];
+type ColumnKey = typeof ALL_COLUMNS[number]["key"];
 
-const EXPORT_COLUMN_LABELS: Record<ExportColumnKey, string> = {
-  referencia: "Ref.",
-  nome: "Nome",
-  tipo: "Tipo",
-  genero: "Gênero",
-  telefone: "Telefone",
-  local: "Casa Refúgio / Condomínio",
-  forma_pagamento: "Forma Pagamento",
-  valor_inscricao: "Valor Inscrição",
-  valor_pago: "Valor Pago",
-  a_pagar: "A Pagar",
-  status: "Status",
-  whatsapp: "WhatsApp",
-};
-
-const DEFAULT_EXPORT_COLUMNS: ExportColumnKey[] = [
+const DEFAULT_VISIBLE_COLUMNS = new Set<string>([
   "referencia",
   "nome",
   "tipo",
@@ -102,7 +87,7 @@ const DEFAULT_EXPORT_COLUMNS: ExportColumnKey[] = [
   "valor_pago",
   "a_pagar",
   "status",
-];
+]);
 
 const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) => {
   const queryClient = useQueryClient();
@@ -111,7 +96,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
-  const [selectedExportCols, setSelectedExportCols] = useState<ExportColumnKey[]>(DEFAULT_EXPORT_COLUMNS);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
   // Fetch impacto_eventos (unified dropdown)
   const { data: impactoEventos = [] } = useQuery({
@@ -475,7 +460,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
   };
 
   const buildExportColumns = () => {
-    const allCols: Record<ExportColumnKey, any> = {
+    const allCols: Record<string, any> = {
       referencia: { header: "Ref.", accessor: "referencia", format: (v: any) => v || "—" },
       nome: { header: "Nome", accessor: "nome" },
       tipo: { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao] || row.tipo_inscricao || "Membro" },
@@ -499,7 +484,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
       whatsapp: { header: "WhatsApp", accessor: (row: any) => row.member?.whatsapp || "—" },
     };
-    return selectedExportCols.map((key) => allCols[key]);
+    return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((c) => allCols[c.key]);
   };
 
   const eventoNome = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "inscricoes";
@@ -514,11 +499,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
     exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`);
   };
 
-  const toggleExportCol = (key: ExportColumnKey) => {
-    setSelectedExportCols((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
-    );
+  const toggleColumn = (key: string) => {
+    setVisibleColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
+
+  const isCol = (key: string) => visibleColumns.has(key);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -554,20 +544,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm">
-                    <Columns className="w-4 h-4 mr-2" />
-                    Colunas Relatório
+                    <Columns3 className="w-4 h-4 mr-2" />
+                    Colunas
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-52 p-3" align="end">
                   <p className="text-sm font-medium mb-2">Colunas visíveis</p>
                   <div className="space-y-2">
-                    {ALL_EXPORT_COLUMN_KEYS.map((key) => (
-                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                    {ALL_COLUMNS.map((col) => (
+                      <label key={col.key} className="flex items-center gap-2 cursor-pointer">
                         <Checkbox
-                          checked={selectedExportCols.includes(key)}
-                          onCheckedChange={() => toggleExportCol(key)}
+                          checked={isCol(col.key)}
+                          onCheckedChange={() => toggleColumn(col.key)}
                         />
-                        <span className="text-sm">{EXPORT_COLUMN_LABELS[key]}</span>
+                        <span className="text-sm">{col.label}</span>
                       </label>
                     ))}
                   </div>
@@ -645,7 +635,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
       ) : (
         <Card>
           <Table>
-            <TableHeader>
+             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
@@ -653,15 +643,19 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Ref.</TableHead>
+                {isCol("referencia") && <TableHead>Ref.</TableHead>}
                 <TableHead></TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Casa Refúgio / Condomínio</TableHead>
-                <TableHead>A Pagar</TableHead>
-                <TableHead>Valor Pago</TableHead>
-                <TableHead>Status</TableHead>
+                {isCol("nome") && <TableHead>Nome</TableHead>}
+                {isCol("tipo") && <TableHead>Tipo</TableHead>}
+                {isCol("genero") && <TableHead>Gênero</TableHead>}
+                {isCol("telefone") && <TableHead>Telefone</TableHead>}
+                {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
+                {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
+                {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
+                {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
+                {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
+                {isCol("status") && <TableHead>Status</TableHead>}
+                {isCol("whatsapp") && <TableHead>WhatsApp</TableHead>}
                 <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
@@ -680,7 +674,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         onCheckedChange={(checked) => handleSelect(inscricao.id, !!checked)}
                       />
                     </TableCell>
-                    <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>
+                    {isCol("referencia") && <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>}
                     <TableCell>
                       {inscricao.member?.photo_url ? (
                         <img src={inscricao.member.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
@@ -690,46 +684,72 @@ const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) 
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {inscricao.nome}
-                        <button
-                          title={inscricao.aprovado ? "Aprovado" : "Clique para aprovar"}
-                          onClick={async () => {
-                            if (inscricao.aprovado) return;
-                            const { error } = await supabase
-                              .from("impacto_inscricoes")
-                              .update({ aprovado: true } as any)
-                              .eq("id", inscricao.id);
-                            if (error) {
-                              toast.error("Erro ao aprovar inscrição");
-                            } else {
-                              toast.success(`Inscrição de ${inscricao.nome} aprovada!`);
-                              queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
-                            }
-                          }}
-                          className={`flex-shrink-0 ${inscricao.aprovado ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
-                        >
-                          <CheckCircle className={`w-4 h-4 ${inscricao.aprovado ? "text-muted-foreground/40" : "text-green-500"}`} />
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
-                    </TableCell>
-                    <TableCell>{getPhone(inscricao)}</TableCell>
-                    <TableCell>{getLocationLabel(inscricao)}</TableCell>
-                    <TableCell className="text-sm font-medium">
-                      {aPagar != null
-                        ? aPagar > 0
-                        ? <span className="text-destructive">{formatCurrency(aPagar)}</span>
-                          : <span className="text-primary">Quitado</span>
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {valorPago > 0 ? formatCurrency(valorPago) : "—"}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>
+                    {isCol("nome") && (
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {inscricao.nome}
+                          <button
+                            title={inscricao.aprovado ? "Aprovado" : "Clique para aprovar"}
+                            onClick={async () => {
+                              if (inscricao.aprovado) return;
+                              const { error } = await supabase
+                                .from("impacto_inscricoes")
+                                .update({ aprovado: true } as any)
+                                .eq("id", inscricao.id);
+                              if (error) {
+                                toast.error("Erro ao aprovar inscrição");
+                              } else {
+                                toast.success(`Inscrição de ${inscricao.nome} aprovada!`);
+                                queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+                              }
+                            }}
+                            className={`flex-shrink-0 ${inscricao.aprovado ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
+                          >
+                            <CheckCircle className={`w-4 h-4 ${inscricao.aprovado ? "text-muted-foreground/40" : "text-green-500"}`} />
+                          </button>
+                        </div>
+                      </TableCell>
+                    )}
+                    {isCol("tipo") && (
+                      <TableCell className="text-sm">
+                        {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
+                      </TableCell>
+                    )}
+                    {isCol("genero") && (
+                      <TableCell className="text-sm">
+                        {(() => {
+                          const g = inscricao.genero || inscricao.member?.genero;
+                          if (!g) return "—";
+                          return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
+                        })()}
+                      </TableCell>
+                    )}
+                    {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
+                    {isCol("local") && <TableCell>{getLocationLabel(inscricao)}</TableCell>}
+                    {isCol("forma_pagamento") && (
+                      <TableCell>{inscricao.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[inscricao.forma_pagamento] || inscricao.forma_pagamento) : "—"}</TableCell>
+                    )}
+                    {isCol("valor_inscricao") && (
+                      <TableCell className="text-sm">
+                        {valorInscricao != null ? formatCurrency(valorInscricao) : "—"}
+                      </TableCell>
+                    )}
+                    {isCol("a_pagar") && (
+                      <TableCell className="text-sm font-medium">
+                        {aPagar != null
+                          ? aPagar > 0
+                          ? <span className="text-destructive">{formatCurrency(aPagar)}</span>
+                            : <span className="text-primary">Quitado</span>
+                          : "—"}
+                      </TableCell>
+                    )}
+                    {isCol("valor_pago") && (
+                      <TableCell className="text-sm">
+                        {valorPago > 0 ? formatCurrency(valorPago) : "—"}
+                      </TableCell>
+                    )}
+                    {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
+                    {isCol("whatsapp") && <TableCell>{inscricao.member?.whatsapp || "—"}</TableCell>}
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
