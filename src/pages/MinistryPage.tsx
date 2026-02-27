@@ -264,6 +264,7 @@ const MinistryPage = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("info");
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
+  const [impactoEventoId, setImpactoEventoId] = useState("");
 
   const bypass = isAuthBypassed();
 
@@ -564,10 +565,10 @@ const MinistryPage = () => {
                   <NovasInscricoesTab />
                 </TabsContent>
                 <TabsContent value="inscricoes-impacto">
-                  <ImpactoInscricoesTab />
+                  <ImpactoInscricoesTab eventoSelecionado={impactoEventoId} onEventoChange={setImpactoEventoId} />
                 </TabsContent>
                 <TabsContent value="financeiro">
-                  <ImpactoFinanceiroTab />
+                  <ImpactoFinanceiroTab eventoSelecionado={impactoEventoId} onEventoChange={setImpactoEventoId} />
                 </TabsContent>
               </>
             ) : isIntercessao ? (

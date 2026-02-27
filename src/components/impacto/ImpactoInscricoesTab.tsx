@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,6 +39,7 @@ import {
 
 interface ImpactoInscricoesTabProps {
   eventoSelecionado?: string;
+  onEventoChange?: (id: string) => void;
 }
 
 const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
@@ -77,27 +78,26 @@ const ALL_COLUMNS = [
 
 type ColumnKey = typeof ALL_COLUMNS[number]["key"];
 
-const DEFAULT_VISIBLE_COLUMNS = new Set<string>([
-  "referencia",
-  "nome",
-  "tipo",
-  "telefone",
-  "local",
-  "valor_inscricao",
-  "valor_pago",
-  "a_pagar",
-  "status",
-]);
+const DEFAULT_VISIBLE_COLUMNS = new Set<string>(
+  ALL_COLUMNS.map((c) => c.key)
+);
 
-const ImpactoInscricoesTab = ({ eventoSelecionado }: ImpactoInscricoesTabProps) => {
+const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInscricoesTabProps) => {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editingInscricao, setEditingInscricao] = useState<any>(null);
-  const [selectedEventoId, setSelectedEventoId] = useState(eventoSelecionado || "");
+  const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
+  const setSelectedEventoId = (id: string) => {
+    setSelectedEventoIdLocal(id);
+    onEventoChange?.(id);
+  };
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
+  useEffect(() => {
+    if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
+  }, [eventoSelecionado]);
   // Fetch impacto_eventos (unified dropdown)
   const { data: impactoEventos = [] } = useQuery({
     queryKey: ["impacto-eventos"],

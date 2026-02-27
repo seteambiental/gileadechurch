@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -45,10 +45,18 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe",
 };
 
-const ImpactoFinanceiroTab = () => {
-  const [selectedEventoId, setSelectedEventoId] = useState("");
+const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSelecionado?: string; onEventoChange?: (id: string) => void }) => {
+  const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
+  const setSelectedEventoId = (id: string) => {
+    setSelectedEventoIdLocal(id);
+    onEventoChange?.(id);
+  };
   const [searchNome, setSearchNome] = useState("");
   const [dataPrevisao, setDataPrevisao] = useState("");
+
+  useEffect(() => {
+    if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
+  }, [eventoSelecionado]);
 
   const allColumns = [
     { key: "nome", label: "Nome" },
