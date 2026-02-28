@@ -508,7 +508,15 @@ const CasaRefugioDetalhes = () => {
       doc.text(`Observações: ${encontro.observacoes}`, 14, finalY + 10);
     }
     
-    doc.save(`encontro-${format(parseLocalDate(encontro.data_encontro), "yyyy-MM-dd")}.pdf`);
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `encontro-${format(parseLocalDate(encontro.data_encontro), "yyyy-MM-dd")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   if (authLoading || loadingCasa) {

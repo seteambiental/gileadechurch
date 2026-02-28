@@ -136,6 +136,19 @@ async function saveWorkbook(workbook: ExcelJS.Workbook, filename: string) {
   URL.revokeObjectURL(url);
 }
 
+// Helper to save jsPDF document as file download (avoids webview navigation issues)
+export function savePDF(doc: jsPDF, filename: string) {
+  const blob = doc.output("blob");
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
 export const exportToExcel = async (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
   const indexedMemberIds = new Set(faceIndexes.map(fi => fi.member_id));
   
@@ -250,7 +263,7 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
     },
   });
 
-  doc.save(`${filename}.pdf`);
+  savePDF(doc, `${filename}.pdf`);
 };
 
 // ========== GENERIC EXPORT UTILITIES ==========
@@ -499,5 +512,5 @@ export const exportGenericToPDF = (
     },
   });
 
-  doc.save(`${filename}.pdf`);
+  savePDF(doc, `${filename}.pdf`);
 };
