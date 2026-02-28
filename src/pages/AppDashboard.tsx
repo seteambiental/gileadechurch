@@ -90,7 +90,7 @@ const ministries = [
   { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
-  { icon: Zap, title: "Eventos e Impacto", description: "Eventos com inscrição", path: "/ministerio/impacto" },
+  
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
@@ -106,11 +106,12 @@ const ministries = [
 
 // Cores únicas por módulo de gestão
 const GESTAO_COLORS: Record<string, string> = {
-  "Cadastros": "#1e40af",         // Azul royal
-  "Homepage": "#0f766e",          // Teal escuro
-  "Agenda": "#7e22ce",            // Roxo vibrante
-  "Financeiro": "#15803d",        // Verde escuro
-  "Indicadores": "#b45309",       // Âmbar escuro
+  "Cadastros": "#1e40af",
+  "Homepage": "#0f766e",
+  "Agenda": "#7e22ce",
+  "Eventos e Impacto": "#7c3aed",
+  "Financeiro": "#15803d",
+  "Indicadores": "#b45309",
 };
 
 // Outros módulos - serão filtrados por permissão
@@ -119,6 +120,7 @@ const allOtherModules = [
   { icon: Users, title: "Cadastros", description: "Gestão de membros", path: "/cadastros", adminOnly: true, moduleKey: "cadastros" },
   { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true, moduleKey: "homepage" },
   { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false, moduleKey: "agenda" },
+  { icon: Zap, title: "Eventos e Impacto", description: "Eventos com inscrição", path: "/ministerio/impacto", adminOnly: false, moduleKey: "impacto" },
   { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", path: "/financeiro", adminOnly: true, moduleKey: "financeiro" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
 ];
