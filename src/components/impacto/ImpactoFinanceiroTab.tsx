@@ -211,8 +211,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   // Normalize payment status across legacy/new values
   const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
     const s = String(status || "").toLowerCase().trim();
-    if (["pago", "confirmado", "aprovado", "quitado"].includes(s)) return "pago";
-    if (["parcial", "parcialmente_pago", "parcialmente pago"].includes(s)) return "parcial";
+    if (["pago", "confirmado", "aprovado", "quitado", "pago_total"].includes(s)) return "pago";
+    if (["parcial", "parcialmente_pago", "parcialmente pago", "pago_parcial"].includes(s)) return "parcial";
+    if (["pendente", "a pagar", "aguardando", "em_aberto", "aberto"].includes(s)) return "pendente";
     return "pendente";
   };
 
@@ -303,9 +304,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       { key: "nome", header: "Nome", accessor: (row: any) => row.nome },
       { key: "tipo", header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
       { key: "referencia", header: "Referência", accessor: (row: any) => row.referencia || "—" },
-      { key: "valor_inscricao", header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao || 0, type: 'currency' as const },
-      { key: "valor_pago", header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, type: 'currency' as const },
-      { key: "saldo", header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), type: 'currency' as const },
+      { key: "valor_inscricao", header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
+      { key: "valor_pago", header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
+      { key: "saldo", header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
       { key: "previsoes", header: "Previsões Pgto", accessor: (row: any) => formatPrevisoes(row.previsoes_pagamento) },
       { key: "forma_pagamento", header: "Forma Pagamento", accessor: (row: any) => formatFormaPagamentoComValor(row) },
       { key: "status", header: "Status", accessor: (row: any) => getStatusLabel(row.status_pagamento) },
@@ -315,7 +316,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const pendingRowStyle = (row: any) => {
     const normalized = normalizeStatus(row.status_pagamento);
-    if (normalized === "pendente") {
+    const statusLabel = getStatusLabel(row.status_pagamento).toLowerCase();
+    if (normalized === "pendente" || statusLabel === "pendente") {
       return { fillColor: "#FFF3CD", fontColor: "#856404" };
     }
     return null;
