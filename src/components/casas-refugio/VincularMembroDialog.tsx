@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { includesNormalized } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import {
@@ -66,15 +67,19 @@ export const VincularMembroDialog = ({
         .select("id, full_name, whatsapp, email, casa_refugio_id")
         .order("full_name");
 
-      if (search.trim()) {
-        query = query.ilike("full_name", `%${search}%`);
-      }
-
-      const { data, error } = await query.limit(50);
+      // Fetch more results and filter client-side for accent-insensitive search
+      const { data, error } = await query.limit(2000);
       if (error) throw error;
 
+      // Filter client-side using normalized search
+      let filtered = data || [];
+      if (search.trim()) {
+        filtered = filtered.filter((m) => includesNormalized(m.full_name, search.trim()));
+      }
+      filtered = filtered.slice(0, 50);
+
       // Fetch member functions for conflict detection
-      const memberIds = data?.map((m) => m.id) || [];
+      const memberIds = filtered.map((m) => m.id);
       if (memberIds.length === 0) return [];
 
       const { data: funcoes } = await supabase
@@ -83,10 +88,10 @@ export const VincularMembroDialog = ({
         .in("member_id", memberIds);
 
       // Fetch casa refugio names for members already linked
-      const casaIds = data
-        ?.filter((m) => m.casa_refugio_id)
+      const casaIds = filtered
+        .filter((m) => m.casa_refugio_id)
         .map((m) => m.casa_refugio_id!)
-        .filter((id, i, arr) => arr.indexOf(id) === i) || [];
+        .filter((id, i, arr) => arr.indexOf(id) === i);
 
       let casasMap: Record<string, string> = {};
       if (casaIds.length > 0) {
@@ -97,7 +102,7 @@ export const VincularMembroDialog = ({
         casas?.forEach((c) => (casasMap[c.id] = c.name));
       }
 
-      return (data || []).map((m) => ({
+      return filtered.map((m) => ({
         ...m,
         casa_refugio: m.casa_refugio_id ? { name: casasMap[m.casa_refugio_id] || "Outra casa" } : null,
         funcoes: (funcoes || []).filter((f) => f.member_id === m.id),
