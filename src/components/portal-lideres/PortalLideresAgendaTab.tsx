@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
+import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,8 +59,25 @@ export const PortalLideresAgendaTab = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showEventoForm, setShowEventoForm] = useState(false);
+  const [editingEvento, setEditingEvento] = useState<any>(null);
+  const [formModeLocal, setFormModeLocal] = useState<"evento" | "compromisso">("evento");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
+
+  // Buscar todos os eventos aprovados para o calendário
+  const { data: eventosCalendario = [], isLoading: loadingCalendario } = useQuery({
+    queryKey: ["agenda-igreja-lideres"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("*")
+        .eq("ativo", true)
+        .eq("status", "aprovado")
+        .order("data_evento", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   // Roles que podem aprovar eventos
   const canApprove =
@@ -294,15 +311,32 @@ export const PortalLideresAgendaTab = ({
         </Card>
       )}
 
-      {/* Agenda normal (somente eventos aprovados) */}
-      <PortalAgendaTab incluirSomenteConvidados />
+      {/* Calendário igual ao ADM */}
+      <AgendaCalendar
+        eventos={eventosCalendario}
+        onEventoClick={(evento) => {
+          setEditingEvento(evento);
+          setFormModeLocal("compromisso");
+          setShowEventoForm(true);
+        }}
+        onNovoCompromisso={() => {
+          setEditingEvento(null);
+          setFormModeLocal("compromisso");
+          setShowEventoForm(true);
+        }}
+        isLoading={loadingCalendario}
+      />
 
       {/* Dialog de criação de evento (modo aprovação) */}
       <EventoFormDialog
         open={showEventoForm}
-        onOpenChange={setShowEventoForm}
-        mode="evento"
-        approvalMode
+        onOpenChange={(open) => {
+          setShowEventoForm(open);
+          if (!open) setEditingEvento(null);
+        }}
+        mode={formModeLocal}
+        evento={editingEvento}
+        approvalMode={!editingEvento}
         solicitanteId={memberId}
       />
 
