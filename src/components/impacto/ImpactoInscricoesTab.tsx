@@ -472,14 +472,13 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       telefone: { header: "Telefone", accessor: (row: any) => getPhone(row) },
       local: { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
       forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
-      valor_inscricao: { header: "Valor Inscrição", accessor: (row: any) => {
+      valor_inscricao: { header: "Valor Inscrição", type: 'currency' as const, accessor: (row: any) => {
         const v = getValorInscricaoEvento(row);
-        return v != null ? formatCurrency(v) : "—";
+        return v != null ? v : 0;
       }},
-      valor_pago: { header: "Valor Pago", accessor: (row: any) => { const v = getValorPago(row); return v > 0 ? formatCurrency(v) : "—"; }},
-      a_pagar: { header: "A Pagar", accessor: (row: any) => {
-        const v = getValorAPagar(row);
-        return v > 0 ? formatCurrency(v) : "—";
+      valor_pago: { header: "Valor Pago", type: 'currency' as const, accessor: (row: any) => getValorPago(row) },
+      a_pagar: { header: "A Pagar", type: 'currency' as const, accessor: (row: any) => {
+        return getValorAPagar(row);
       }},
       status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
       whatsapp: { header: "WhatsApp", accessor: (row: any) => row.member?.whatsapp || "—" },

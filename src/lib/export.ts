@@ -259,19 +259,20 @@ export interface ExportColumn {
   header: string;
   accessor: string | ((row: any) => any);
   format?: (value: any) => string;
+  /** Mark column type for proper Excel formatting and totals.
+   * 'currency' = numeric with R$ formatting, included in totals
+   * 'number' = numeric, included in totals
+   * undefined = text, never summed */
+  type?: 'currency' | 'number';
 }
 
-// Check if a formatted string looks like a currency/numeric value
-const isCurrencyOrNumericValue = (val: string): boolean => {
-  if (!val || val === "-" || val === "—") return false;
-  // Match R$ 1.234,56 or plain numbers like 123,45 or 1234.56
-  return /^R?\$?\s*[\d.,]+$/.test(val.replace(/\s/g, ""));
-};
-
-const parseCurrencyValue = (val: string): number => {
-  if (!val || val === "-" || val === "—") return 0;
-  // Remove R$, spaces, dots (thousands), replace comma with dot
-  const cleaned = val.replace(/R\$\s*/g, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
+// Extract raw numeric value from a column for a given row
+const getRawNumericValue = (row: any, col: ExportColumn): number => {
+  const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
+  if (value == null || value === "" || value === "—" || value === "-") return 0;
+  if (typeof value === "number") return value;
+  // Try parsing formatted currency string
+  const cleaned = String(value).replace(/R\$\s*/g, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
   const num = parseFloat(cleaned);
   return isNaN(num) ? 0 : num;
 };
@@ -280,24 +281,11 @@ const formatAsCurrency = (val: number): string => {
   return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
-const buildTotalsRow = (data: any[], columns: ExportColumn[]): (string | null)[] => {
-  // For each column, check if majority of values are currency/numeric
-  const allFormattedRows = data.map((row) =>
-    columns.map((col) => {
-      const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
-      return col.format ? col.format(value) : String(value ?? "-");
-    })
-  );
-
-  return columns.map((_, colIdx) => {
-    const values = allFormattedRows.map((r) => r[colIdx]);
-    const nonEmpty = values.filter((v) => v && v !== "-" && v !== "—");
-    if (nonEmpty.length === 0) return null;
-    const numericCount = nonEmpty.filter(isCurrencyOrNumericValue).length;
-    // At least 50% numeric values to consider totalizable
-    if (numericCount / nonEmpty.length < 0.5) return null;
-    const sum = values.reduce((s, v) => s + parseCurrencyValue(String(v)), 0);
-    return formatAsCurrency(sum);
+const buildTotalsRow = (data: any[], columns: ExportColumn[]): (string | number | null)[] => {
+  return columns.map((col) => {
+    if (!col.type) return null; // Only sum typed columns
+    const sum = data.reduce((s, row) => s + getRawNumericValue(row, col), 0);
+    return col.type === 'currency' ? sum : sum;
   });
 };
 
@@ -326,12 +314,28 @@ export const exportGenericToExcel = async (
 
   data.forEach((row, rowIndex) => {
     const rowData = columns.map((col) => {
+      if (col.type) {
+        // Write raw number for typed columns
+        return getRawNumericValue(row, col);
+      }
       const value = typeof col.accessor === "function" 
         ? col.accessor(row) 
-        : row[col.accessor];
+        : row[col.accessor as string];
       return col.format ? col.format(value) : (value ?? "-");
     });
     const excelRow = worksheet.addRow(rowData);
+
+    // Apply number formatting to typed columns
+    columns.forEach((col, colIdx) => {
+      if (col.type) {
+        const cell = excelRow.getCell(colIdx + 1);
+        if (col.type === 'currency') {
+          cell.numFmt = 'R$ #,##0.00';
+        } else if (col.type === 'number') {
+          cell.numFmt = '#,##0.##';
+        }
+      }
+    });
 
     // Apply per-row styling
     if (rowStyleFn) {
@@ -364,10 +368,22 @@ export const exportGenericToExcel = async (
   if (hasTotals) {
     const totalRowData = totals.map((v, i) => {
       if (i === 0 && v === null) return "TOTAL";
-      return v || "";
+      return v ?? "";
     });
     const totalRow = worksheet.addRow(totalRowData);
     totalRow.font = { bold: true };
+
+    // Apply number formatting to total row
+    columns.forEach((col, colIdx) => {
+      if (col.type) {
+        const cell = totalRow.getCell(colIdx + 1);
+        if (col.type === 'currency') {
+          cell.numFmt = 'R$ #,##0.00';
+        } else if (col.type === 'number') {
+          cell.numFmt = '#,##0.##';
+        }
+      }
+    });
   }
 
   // Auto-size columns
@@ -381,7 +397,7 @@ export const exportGenericToExcel = async (
       const formatted = columns[i].format ? columns[i].format!(value) : String(value ?? "-");
       if (formatted.length > maxLen) maxLen = formatted.length;
     });
-    col.width = Math.min(50, maxLen + 2);
+    col.width = Math.min(50, Math.max(maxLen + 2, 14));
   });
 
   await saveWorkbook(workbook, `${filename}.xlsx`);
@@ -428,6 +444,10 @@ export const exportGenericToPDF = (
   if (hasTotals) {
     const totalRowData = totals.map((v, i) => {
       if (i === 0 && v === null) return "TOTAL";
+      if (v === null) return "";
+      const col = columns[i];
+      if (col.type === 'currency') return formatAsCurrency(v as number);
+      if (col.type === 'number') return String(v);
       return v || "";
     });
     tableData.push(totalRowData);
