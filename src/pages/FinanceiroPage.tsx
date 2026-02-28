@@ -46,7 +46,7 @@ const FinanceiroPage = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
+      <main className="container mx-auto px-4 pt-24 pb-12">
         <ImpactoFinanceiroTab eventoSelecionado={eventoId} onEventoChange={setEventoId} />
       </main>
     </div>

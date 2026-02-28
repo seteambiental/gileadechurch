@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -30,8 +30,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText, Columns3, CalendarClock } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
@@ -52,7 +53,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     onEventoChange?.(id);
   };
   const [searchNome, setSearchNome] = useState("");
+  const [dataPrevisaoInput, setDataPrevisaoInput] = useState("");
   const [dataPrevisao, setDataPrevisao] = useState("");
+
+  const handleAplicarPrevisao = useCallback(() => {
+    setDataPrevisao(dataPrevisaoInput);
+  }, [dataPrevisaoInput]);
 
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
@@ -448,15 +454,26 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
               </CardHeader>
               <CardContent>
                 <div className="flex items-end gap-3">
-                  <div className="flex-1">
+                  <div className="w-48">
                     <Label className="text-xs text-muted-foreground">Até a data</Label>
-                    <Input
-                      type="date"
-                      value={dataPrevisao}
-                      onChange={(e) => setDataPrevisao(e.target.value)}
+                    <DateInput
+                      value={dataPrevisaoInput}
+                      onChange={setDataPrevisaoInput}
+                      placeholder="DD/MM/AAAA"
+                      maxDate={new Date(2099, 11, 31)}
                       className="mt-1"
                     />
                   </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAplicarPrevisao}
+                    disabled={!dataPrevisaoInput}
+                    className="shrink-0"
+                  >
+                    <Filter className="w-4 h-4 mr-1" />
+                    Aplicar
+                  </Button>
                   <div className="text-right">
                     <div className={`text-2xl font-bold ${totalPrevisaoPorData > 0 ? "text-primary" : "text-muted-foreground"}`}>
                       {dataPrevisao ? formatCurrency(totalPrevisaoPorData) : "—"}
@@ -495,8 +512,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   </CardContent>
                 </Card>
               ) : (
-                <Card>
-                  <Table>
+                <Card className="overflow-x-auto">
+                  <Table className="min-w-max">
                     <TableHeader>
                       <TableRow>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
