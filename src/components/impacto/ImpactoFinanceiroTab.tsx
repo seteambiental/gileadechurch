@@ -280,14 +280,22 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return all.filter((c) => visibleColumns.has(c.key));
   };
 
+  const pendingRowStyle = (row: any) => {
+    const status = row.status_pagamento;
+    if (!status || status === "pendente") {
+      return { fillColor: "#FFF3CD", fontColor: "#856404" };
+    }
+    return null;
+  };
+
   const handleExportReceitasExcel = async () => {
     if (!inscricoes.length) return;
-    await exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas");
+    await exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas", pendingRowStyle);
   };
 
   const handleExportReceitasPDF = () => {
     if (!inscricoes.length) return;
-    exportGenericToPDF(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, `Financeiro — Receitas — ${eventoNomeFinanceiro}`);
+    exportGenericToPDF(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, `Financeiro — Receitas — ${eventoNomeFinanceiro}`, pendingRowStyle);
   };
 
   return (
