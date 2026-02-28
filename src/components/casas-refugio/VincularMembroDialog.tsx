@@ -20,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, User, AlertTriangle, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ interface VincularMembroDialogProps {
 interface MembroComConflito {
   id: string;
   full_name: string;
+  photo_url: string | null;
   whatsapp: string | null;
   email: string | null;
   casa_refugio_id: string | null;
@@ -64,7 +66,7 @@ export const VincularMembroDialog = ({
     queryFn: async () => {
       let query = supabase
         .from("members")
-        .select("id, full_name, whatsapp, email, casa_refugio_id")
+        .select("id, full_name, photo_url, whatsapp, email, casa_refugio_id")
         .order("full_name");
 
       // Fetch more results and filter client-side for accent-insensitive search
@@ -326,15 +328,16 @@ export const VincularMembroDialog = ({
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                          hasConflict ? "bg-amber-500/10" : "bg-primary/10"
-                        }`}>
-                          {hasConflict ? (
-                            <AlertTriangle className="w-4 h-4 text-amber-600" />
-                          ) : (
-                            <User className="w-4 h-4 text-primary" />
-                          )}
-                        </div>
+                        <Avatar className="w-9 h-9 flex-shrink-0">
+                          <AvatarImage src={membro.photo_url || undefined} alt={membro.full_name} />
+                          <AvatarFallback className={hasConflict ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"}>
+                            {hasConflict ? (
+                              <AlertTriangle className="w-4 h-4" />
+                            ) : (
+                              membro.full_name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
                         <div className="min-w-0">
                           <p className="font-medium text-sm text-foreground truncate">{membro.full_name}</p>
                           <div className="flex items-center gap-1 flex-wrap">
