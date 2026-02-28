@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
@@ -25,6 +26,7 @@ import { Link } from "react-router-dom";
 const diasSemana = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 const Index = () => {
+  const navigate = useNavigate();
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const { user } = useAuth();
@@ -709,7 +711,7 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                onClick={() => setMemberFormOpen(true)}
+                onClick={() => navigate("/cadastro")}
                 className="gap-2"
               >
                 <UserPlus className="w-5 h-5" />
