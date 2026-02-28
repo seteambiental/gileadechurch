@@ -208,10 +208,18 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     }, 0);
   }, [inscricoes, dataPrevisao]);
 
+  // Normalize payment status across legacy/new values
+  const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
+    const s = String(status || "").toLowerCase().trim();
+    if (["pago", "confirmado", "aprovado", "quitado"].includes(s)) return "pago";
+    if (["parcial", "parcialmente_pago", "parcialmente pago"].includes(s)) return "parcial";
+    return "pendente";
+  };
+
   // Count by status
-  const pagos = inscricoes?.filter((i) => i.status_pagamento === "pago").length || 0;
-  const parciais = inscricoes?.filter((i) => i.status_pagamento === "parcial").length || 0;
-  const pendentes = inscricoes?.filter((i) => i.status_pagamento === "pendente").length || 0;
+  const pagos = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "pago").length || 0;
+  const parciais = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "parcial").length || 0;
+  const pendentes = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "pendente").length || 0;
 
   // Calculate totals by payment method
   const totalByPaymentMethod = inscricoes?.reduce((acc, i) => {
@@ -247,15 +255,40 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return acc;
   }, {} as Record<string, number>) || {};
 
-  const getStatusBadge = (status: string | null) => {
-    switch (status) {
-      case "pago":
-        return <Badge className="bg-green-600"><Check className="w-3 h-3 mr-1" />Pago</Badge>;
-      case "parcial":
-        return <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Parcial</Badge>;
-      default:
-        return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
+  const formatFormaPagamentoComValor = (row: any) => {
+    const pagamentosArr = row.pagamentos as Array<{ tipo: string; valor: string | number }> | null;
+
+    if (pagamentosArr && Array.isArray(pagamentosArr) && pagamentosArr.length > 0) {
+      const partes = pagamentosArr
+        .filter((p) => p.tipo && parseFloat(String(p.valor)) > 0)
+        .map((p) => `${FORMAS_PAGAMENTO_LABELS[p.tipo] || p.tipo}: ${formatCurrency(parseFloat(String(p.valor)) || 0)}`);
+
+      if (partes.length > 0) return partes.join("; ");
     }
+
+    if (row.forma_pagamento && (row.valor_pago || 0) > 0) {
+      return `${FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento}: ${formatCurrency(row.valor_pago || 0)}`;
+    }
+
+    return row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—";
+  };
+
+  const getStatusLabel = (status: string | null | undefined) => {
+    const normalized = normalizeStatus(status);
+    if (normalized === "pago") return "Pago";
+    if (normalized === "parcial") return "Parcial";
+    return "Pendente";
+  };
+
+  const getStatusBadge = (status: string | null) => {
+    const normalized = normalizeStatus(status);
+    if (normalized === "pago") {
+      return <Badge className="bg-green-600"><Check className="w-3 h-3 mr-1" />Pago</Badge>;
+    }
+    if (normalized === "parcial") {
+      return <Badge className="bg-yellow-600"><Clock className="w-3 h-3 mr-1" />Parcial</Badge>;
+    }
+    return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pendente</Badge>;
   };
 
   const eventoNomeFinanceiro = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "financeiro";
@@ -274,15 +307,15 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       { key: "valor_pago", header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, type: 'currency' as const },
       { key: "saldo", header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), type: 'currency' as const },
       { key: "previsoes", header: "Previsões Pgto", accessor: (row: any) => formatPrevisoes(row.previsoes_pagamento) },
-      { key: "forma_pagamento", header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
-      { key: "status", header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+      { key: "forma_pagamento", header: "Forma Pagamento", accessor: (row: any) => formatFormaPagamentoComValor(row) },
+      { key: "status", header: "Status", accessor: (row: any) => getStatusLabel(row.status_pagamento) },
     ];
     return all.filter((c) => visibleColumns.has(c.key));
   };
 
   const pendingRowStyle = (row: any) => {
-    const status = String(row.status_pagamento || "").toLowerCase().trim();
-    if (!status || status === "pendente") {
+    const normalized = normalizeStatus(row.status_pagamento);
+    if (normalized === "pendente") {
       return { fillColor: "#FFF3CD", fontColor: "#856404" };
     }
     return null;
@@ -425,7 +458,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPago)}</div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  {pagos} pagos{parciais > 0 ? `, ${parciais} parciais` : ""}
+                  {pagos} pagos{parciais > 0 ? `, ${parciais} parciais` : ""}{pendentes > 0 ? `, ${pendentes} pendentes` : ""}
                 </p>
               </CardContent>
             </Card>
@@ -590,7 +623,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                                 ) : "—"}
                               </TableCell>
                             )}
-                            {isCol("forma_pagamento") && <TableCell>{inscricao.forma_pagamento || "—"}</TableCell>}
+                            {isCol("forma_pagamento") && <TableCell>{formatFormaPagamentoComValor(inscricao)}</TableCell>}
                             {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
                           </TableRow>
                         );
