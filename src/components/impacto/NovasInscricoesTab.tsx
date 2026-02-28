@@ -91,6 +91,7 @@ const NovasInscricoesTab = () => {
           valor_inscricao: valorInscricao,
           status_pagamento: "pendente",
           member_id: inscricao.member_id || null,
+          aprovado: true,
         });
       if (insertError) throw insertError;
 
@@ -151,6 +152,7 @@ const NovasInscricoesTab = () => {
           valor_inscricao: valorInscricao,
           status_pagamento: "pendente",
           member_id: inscricao.member_id || null,
+          aprovado: true,
         });
       }
 
