@@ -471,8 +471,8 @@ export const exportGenericToPDF = (
     body: tableData,
     startY: 42,
     styles: {
-      fontSize: 12,
-      cellPadding: 2,
+      fontSize: 8,
+      cellPadding: 1.5,
     },
     headStyles: {
       fillColor: [220, 53, 69],
