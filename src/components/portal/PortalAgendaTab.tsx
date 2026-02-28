@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { normalizeText } from "@/lib/text-utils";
+import { getFeriadoParaData } from "@/lib/feriados";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -419,8 +420,88 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
         </CardContent>
       </Card>
 
-      {/* Lista de Eventos */}
-      {eventosExpandidos.length === 0 ? (
+      {/* Visualização */}
+      {periodoFiltro === "mes" ? (
+        /* Grade de mês quadriculada */
+        (() => {
+          const diasSemanaAbrev = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+          const monthStart = startOfMonth(currentDate);
+          const monthEnd = endOfMonth(currentDate);
+          const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+          const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+          const gridDays = eachDayOfInterval({ start: gridStart, end: gridEnd });
+
+          return (
+            <div>
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {diasSemanaAbrev.map((dia) => (
+                  <div key={dia} className="text-center text-xs font-medium text-muted-foreground py-2">
+                    {dia}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {gridDays.map((day) => {
+                  const dateKey = format(day, "yyyy-MM-dd");
+                  const eventosDay = eventosAgrupados[dateKey] || [];
+                  const isCurrentDay = isToday(day);
+                  const isCurrentMonthDay = isSameMonth(day, currentDate);
+                  const feriado = getFeriadoParaData(dateKey);
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`min-h-[80px] p-1 rounded-lg border ${
+                        isCurrentDay ? "ring-2 ring-primary bg-primary/5" : ""
+                      } ${!isCurrentMonthDay ? "opacity-40 bg-muted/30" : "bg-card"}`}
+                    >
+                      <p className={`text-xs text-center mb-1 ${isCurrentDay ? "font-bold text-primary" : ""}`}>
+                        {format(day, "d")}
+                      </p>
+                      <div className="space-y-0.5">
+                        {feriado && (
+                          <div
+                            className="text-[10px] px-1 py-0.5 rounded truncate font-bold"
+                            style={{ backgroundColor: "#a3e635", color: "#1a2e05" }}
+                          >
+                            🎉 {feriado.nome}
+                          </div>
+                        )}
+                        {eventosDay.slice(0, feriado ? 1 : 2).map((evento, i) => (
+                          <div
+                            key={`${evento.id}-${i}`}
+                            className="text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 truncate"
+                            style={{
+                              backgroundColor: evento.cor || "hsl(var(--primary))",
+                              color: "white",
+                            }}
+                            onClick={() =>
+                              setCompartilharEvento({
+                                id: evento.id,
+                                titulo: evento.titulo,
+                                data_evento: dateKey,
+                                hora_inicio: evento.hora_inicio,
+                                local: evento.local,
+                                flyer_url: evento.flyer_url,
+                                cor: evento.cor,
+                              })
+                            }
+                          >
+                            {evento.titulo}
+                          </div>
+                        ))}
+                        {eventosDay.length > (feriado ? 1 : 2) && (
+                          <p className="text-[10px] text-muted-foreground text-center">+{eventosDay.length - (feriado ? 1 : 2)}</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()
+      ) : eventosExpandidos.length === 0 ? (
         <Card className="bg-muted/30">
           <CardContent className="py-12 text-center">
             <CalendarIcon className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
