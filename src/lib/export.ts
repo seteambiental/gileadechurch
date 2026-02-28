@@ -279,15 +279,48 @@ export interface ExportColumn {
   type?: 'currency' | 'number';
 }
 
+const parseLocalizedNumber = (value: any): number | null => {
+  if (value == null || value === "" || value === "—" || value === "-") return null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+
+  let cleaned = String(value)
+    .replace(/\s/g, "")
+    .replace(/R\$\s*/g, "")
+    .replace(/[^\d,.-]/g, "");
+
+  if (!cleaned) return null;
+
+  const lastDot = cleaned.lastIndexOf(".");
+  const lastComma = cleaned.lastIndexOf(",");
+
+  if (lastDot > -1 && lastComma > -1) {
+    if (lastComma > lastDot) {
+      // pt-BR: 1.234,56
+      cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+    } else {
+      // en-US: 1,234.56
+      cleaned = cleaned.replace(/,/g, "");
+    }
+  } else if (lastComma > -1) {
+    // only comma present; treat as decimal separator
+    cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+  }
+
+  const parsed = parseFloat(cleaned);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 // Extract raw numeric value from a column for a given row
 const getRawNumericValue = (row: any, col: ExportColumn): number => {
+  if (!col.type) return 0;
+
+  const header = (col.header || "").toLowerCase();
+  const accessorKey = typeof col.accessor === "string" ? col.accessor.toLowerCase() : "";
+  const isIdentifierLike = /(telefone|phone|whatsapp|celular|contato)/i.test(`${header} ${accessorKey}`);
+  if (isIdentifierLike) return 0;
+
   const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
-  if (value == null || value === "" || value === "—" || value === "-") return 0;
-  if (typeof value === "number") return value;
-  // Try parsing formatted currency string
-  const cleaned = String(value).replace(/R\$\s*/g, "").replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
-  const num = parseFloat(cleaned);
-  return isNaN(num) ? 0 : num;
+  return parseLocalizedNumber(value) ?? 0;
 };
 
 const formatAsCurrency = (val: number): string => {
@@ -439,19 +472,34 @@ export const exportGenericToPDF = (
   const tableHeaders = columns.map((col) => col.header);
   const tableData = data.map((row) =>
     columns.map((col) => {
-      const value = typeof col.accessor === "function" 
-        ? col.accessor(row) 
+      const value = typeof col.accessor === "function"
+        ? col.accessor(row)
         : row[col.accessor];
+
       if (col.format) return col.format(value);
-      // Format typed columns for PDF display
+
       if (col.type === 'currency') {
-        const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
-        return isNaN(num) ? "R$ 0,00" : formatAsCurrency(num);
+        const num = parseLocalizedNumber(value) ?? 0;
+        return formatAsCurrency(num);
       }
+
       if (col.type === 'number') {
-        const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
-        return isNaN(num) ? "0" : num.toLocaleString("pt-BR");
+        const num = parseLocalizedNumber(value) ?? 0;
+        return num.toLocaleString("pt-BR");
       }
+
+      const header = (col.header || "").toLowerCase();
+      const accessorKey = typeof col.accessor === "string" ? col.accessor.toLowerCase() : "";
+      const keyHint = `${header} ${accessorKey}`;
+
+      if (/(telefone|phone|whatsapp|celular|contato)/i.test(keyHint)) {
+        return value ? formatPhone(String(value)) : "-";
+      }
+
+      if (/(^|\s)cpf(\s|$)/i.test(keyHint)) {
+        return value ? formatCPF(String(value)) : "-";
+      }
+
       return value ?? "-";
     })
   );
