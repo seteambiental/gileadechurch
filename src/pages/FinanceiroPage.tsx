@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
+import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -12,6 +12,7 @@ const FinanceiroPage = () => {
   const navigate = useNavigate();
   const { isAdmin } = useUserAccess(user?.id);
   const bypassed = isAuthBypassed();
+  const [eventoId, setEventoId] = useState("");
 
   useEffect(() => {
     if (!loading && !user && !bypassed) {
@@ -46,7 +47,7 @@ const FinanceiroPage = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <PortalFinancasTab />
+        <ImpactoFinanceiroTab eventoSelecionado={eventoId} onEventoChange={setEventoId} />
       </main>
     </div>
   );
