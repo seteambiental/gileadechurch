@@ -57,7 +57,7 @@ const HomepageProgramacaoTab = () => {
       if (ceiaEvento && tituloNorm.includes("celebracao") && e.dia_semana === ceiaEvento.dia_semana) {
         return false;
       }
-      if (quartaPCEvento && e.id !== quartaPCEvento.id && e.tipo_evento === "culto" && tituloNorm.includes("proposito") && e.dia_semana === quartaPCEvento.dia_semana) {
+      if (quartaPCEvento && e.id !== quartaPCEvento.id && tituloNorm.includes("proposito") && !tituloNorm.includes("prestacao") && e.dia_semana === quartaPCEvento.dia_semana) {
         return false;
       }
       return true;
