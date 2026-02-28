@@ -537,22 +537,26 @@ export const exportGenericToPDF = (
       textColor: 255,
       fontStyle: "bold",
     },
-    willDrawCell: (hookData: any) => {
+    didParseCell: (hookData: any) => {
       if (hookData.section !== "body") return;
 
-      // Alternate row background (zebra stripes) — only for rows WITHOUT custom style
       const rowIdx = hookData.row.index;
       const customStyle = rowStyles[rowIdx];
 
+      // TOTAL row always last when exists
+      if (hasTotals && rowIdx === tableData.length - 1) {
+        hookData.cell.styles.fillColor = [230, 230, 230];
+        hookData.cell.styles.fontStyle = "bold";
+        return;
+      }
+
       if (customStyle) {
-        // Apply per-row styling (e.g. pending tarja)
         if (customStyle.fillColor) {
           const hex = customStyle.fillColor.replace("#", "");
           const r = parseInt(hex.substring(0, 2), 16);
           const g = parseInt(hex.substring(2, 4), 16);
           const b = parseInt(hex.substring(4, 6), 16);
-          doc.setFillColor(r, g, b);
-          doc.rect(hookData.cell.x, hookData.cell.y, hookData.cell.width, hookData.cell.height, "F");
+          hookData.cell.styles.fillColor = [r, g, b];
         }
         if (customStyle.fontColor) {
           const hex = customStyle.fontColor.replace("#", "");
@@ -565,16 +569,8 @@ export const exportGenericToPDF = (
           hookData.cell.styles.fontStyle = "italic";
         }
       } else if (rowIdx % 2 === 1) {
-        // Manual zebra stripe for rows without custom style
-        doc.setFillColor(248, 249, 250);
-        doc.rect(hookData.cell.x, hookData.cell.y, hookData.cell.width, hookData.cell.height, "F");
-      }
-
-      // Bold the TOTAL row (last row if totals exist)
-      if (hasTotals && rowIdx === tableData.length - 1) {
-        doc.setFillColor(230, 230, 230);
-        doc.rect(hookData.cell.x, hookData.cell.y, hookData.cell.width, hookData.cell.height, "F");
-        hookData.cell.styles.fontStyle = "bold";
+        // Zebra stripe for rows without custom style
+        hookData.cell.styles.fillColor = [248, 249, 250];
       }
     },
   });
