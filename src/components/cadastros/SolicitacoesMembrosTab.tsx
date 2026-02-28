@@ -202,11 +202,47 @@ const SolicitacoesMembrosTab = () => {
       // Criar usuário de autenticação automaticamente se tiver email
       if (request.email) {
         try {
+          // Determinar se precisa de email fictício (familiar com mesmo email do titular)
+          let authEmail: string | undefined = undefined;
+          
+          if (request.parent_request_id && request.cpf) {
+            // É um dependente/cônjuge - verificar se o email é o mesmo do titular
+            const { data: parentRequest } = await supabase
+              .from("member_requests")
+              .select("email")
+              .eq("id", request.parent_request_id)
+              .single();
+            
+            if (parentRequest?.email && parentRequest.email === request.email) {
+              // Mesmo email do titular - gerar email fictício baseado no CPF
+              const cpfClean = request.cpf.replace(/\D/g, "");
+              if (cpfClean.length >= 11) {
+                authEmail = `${cpfClean}@gileade.app`;
+              }
+            }
+          } else if (!request.parent_request_id && request.cpf) {
+            // É o titular - verificar se já existe outro membro com o mesmo email
+            const { data: existingMembers } = await supabase
+              .from("members")
+              .select("id")
+              .eq("email", request.email)
+              .limit(1);
+            
+            if (existingMembers && existingMembers.length > 0) {
+              // Email já existe para outro membro - gerar email fictício
+              const cpfClean = request.cpf.replace(/\D/g, "");
+              if (cpfClean.length >= 11) {
+                authEmail = `${cpfClean}@gileade.app`;
+              }
+            }
+          }
+
           const { data: userResult, error: userError } = await supabase.functions.invoke(
             "criar-usuario-membro",
             {
               body: {
                 email: request.email,
+                auth_email: authEmail,
                 cpf: request.cpf || null,
                 member_id: newMember.id,
                 perfil: "membro",

@@ -11,6 +11,7 @@ const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
 interface RequestBody {
   email: string;
+  auth_email?: string;
   cpf?: string | null;
   member_id: string;
   perfil?: string;
@@ -46,12 +47,16 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   return result;
 }
 
-function gerarMensagemBoasVindasMembro(nome: string, email: string, isCpfPassword: boolean) {
+function gerarMensagemBoasVindasMembro(nome: string, loginEmail: string, realEmail: string | null, isCpfPassword: boolean, isCpfLogin: boolean) {
   const primeiroNome = nome.split(' ')[0];
 
   const senhaInfo = isCpfPassword
     ? `🔑 Senha: *Os 6 primeiros dígitos do seu CPF*`
     : `🔑 Senha temporária foi enviada separadamente. Consulte a secretaria.`;
+
+  const loginInfo = isCpfLogin
+    ? `📧 Login: ${loginEmail}\n_(login gerado a partir do seu CPF)_`
+    : `📧 Email: ${loginEmail}`;
 
   return `🎉 *Bem-vindo(a) à Igreja Gileade, ${primeiroNome}!*
 
@@ -61,7 +66,7 @@ Seu cadastro foi realizado com sucesso! 🙏
 🔗 https://gileadechurch.lovable.app
 
 🔐 *Seus dados de acesso:*
-📧 Email: ${email}
+${loginInfo}
 ${senhaInfo}
 
 ⚠️ *Importante:* por segurança, altere sua senha após o primeiro acesso.
@@ -81,7 +86,6 @@ function generateSecurePassword(length = 14): string {
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
 
-  // Ensure at least one char from each set
   const pick = (set: string, b: number) => set[b % set.length];
   const pwdChars: string[] = [
     pick(upper, bytes[0]),
@@ -94,7 +98,6 @@ function generateSecurePassword(length = 14): string {
     pwdChars.push(pick(all, bytes[i]));
   }
 
-  // Shuffle
   for (let i = pwdChars.length - 1; i > 0; i--) {
     const j = bytes[i] % (i + 1);
     [pwdChars[i], pwdChars[j]] = [pwdChars[j], pwdChars[i]];
@@ -104,13 +107,11 @@ function generateSecurePassword(length = 14): string {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -121,9 +122,8 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Não autorizado' }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { email, cpf: _cpf, member_id, perfil } = await req.json() as RequestBody;
+    const { email, auth_email, cpf: _cpf, member_id, perfil } = await req.json() as RequestBody;
 
-    // Authorization: only admins/pastoral staff can create accounts
     const { data: hasAccess, error: accessErr } = await _authClient.rpc('has_full_access');
     if (accessErr || !hasAccess) {
       return new Response(JSON.stringify({ error: 'Proibido' }), {
@@ -146,19 +146,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Buscar CPF do membro para gerar senha padrão (6 primeiros dígitos)
-    const { data: memberCpfData } = await supabaseAdmin
-      .from("members")
-      .select("cpf")
-      .eq("id", member_id)
-      .single();
-
-    const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
-    // Se o CPF tiver pelo menos 6 dígitos, usar os 6 primeiros; senão, gerar senha aleatória
-    const defaultPassword = cpfDigits.length >= 6
-      ? cpfDigits.slice(0, 6)
-      : generateSecurePassword(14);
-
     // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -171,6 +158,18 @@ Deno.serve(async (req) => {
       }
     );
 
+    // Buscar CPF do membro para gerar senha padrão (6 primeiros dígitos)
+    const { data: memberCpfData } = await supabaseAdmin
+      .from("members")
+      .select("cpf")
+      .eq("id", member_id)
+      .single();
+
+    const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
+    const defaultPassword = cpfDigits.length >= 6
+      ? cpfDigits.slice(0, 6)
+      : generateSecurePassword(14);
+
     // Verificar se membro já tem user_id vinculado
     const { data: usersByEmail } = await supabaseAdmin
       .from("members")
@@ -179,7 +178,6 @@ Deno.serve(async (req) => {
       .single();
     
     if (usersByEmail?.user_id) {
-      // Membro já tem user_id vinculado
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -191,27 +189,32 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Criar novo usuário
+    // Determinar qual email usar para autenticação
+    // Se auth_email foi informado (ex: CPF@gileade.app para familiares), usar esse
+    const loginEmail = auth_email || email;
+    const isCpfLogin = !!auth_email && auth_email !== email;
+
+    // Criar novo usuário com o email de login
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
+      email: loginEmail,
       password: defaultPassword,
       email_confirm: true,
       user_metadata: {
         member_id: member_id,
         perfil: perfil || "membro",
+        real_email: email,
+        is_cpf_login: isCpfLogin,
       },
     });
 
     if (createError) {
-      // Se o email já existe no auth, tentar buscar e vincular
       if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
-        // Buscar todos os users e encontrar pelo email
         let page = 1;
         let found = null;
         while (!found) {
           const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 50 });
           if (!usersPage?.users?.length) break;
-          found = usersPage.users.find((u: any) => u.email === email);
+          found = usersPage.users.find((u: any) => u.email === loginEmail);
           if (usersPage.users.length < 50) break;
           page++;
         }
@@ -238,7 +241,6 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error("Erro ao vincular usuário ao membro:", updateError);
-      // Não retornar erro pois o usuário foi criado com sucesso
     }
 
     // Buscar dados do membro para enviar WhatsApp
@@ -256,14 +258,15 @@ Deno.serve(async (req) => {
         const isCpfPassword = cpfDigits.length >= 6;
         const mensagem = gerarMensagemBoasVindasMembro(
           nomeCompleto,
+          loginEmail,
           email,
-          isCpfPassword
+          isCpfPassword,
+          isCpfLogin
         );
         await enviarMensagemZAPI(memberData.whatsapp, mensagem);
         console.log("Mensagem de boas-vindas enviada com sucesso para:", memberData.whatsapp);
       } catch (whatsappError) {
         console.error("Erro ao enviar WhatsApp de boas-vindas:", whatsappError);
-        // Não retornar erro pois o usuário foi criado com sucesso
       }
     } else {
       console.log("WhatsApp não disponível para o membro, mensagem não enviada");
@@ -272,9 +275,11 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Usuário criado com sucesso",
+        message: isCpfLogin ? "Usuário criado com login por CPF" : "Usuário criado com sucesso",
         user_id: newUser.user.id,
-        was_existing: false
+        was_existing: false,
+        login_email: loginEmail,
+        is_cpf_login: isCpfLogin,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
