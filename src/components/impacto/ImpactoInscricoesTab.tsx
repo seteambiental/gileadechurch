@@ -66,14 +66,13 @@ const ALL_COLUMNS = [
   { key: "nome", label: "Nome" },
   { key: "tipo", label: "Tipo" },
   { key: "genero", label: "Gênero" },
-  { key: "telefone", label: "Telefone" },
+  { key: "telefone", label: "Contato" },
   { key: "local", label: "Casa Refúgio / Condomínio" },
   { key: "forma_pagamento", label: "Forma Pagamento" },
   { key: "valor_inscricao", label: "Valor Inscrição" },
   { key: "valor_pago", label: "Valor Pago" },
   { key: "a_pagar", label: "A Pagar" },
   { key: "status", label: "Status" },
-  { key: "whatsapp", label: "WhatsApp" },
 ] as const;
 
 type ColumnKey = typeof ALL_COLUMNS[number]["key"];
@@ -469,7 +468,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         if (!g) return "—";
         return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
       }},
-      telefone: { header: "Telefone", accessor: (row: any) => getPhone(row) },
+      telefone: { header: "Contato", accessor: (row: any) => getPhone(row) },
       local: { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
       forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
       valor_inscricao: { header: "Valor Inscrição", type: 'currency' as const, accessor: (row: any) => {
@@ -481,7 +480,6 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         return getValorAPagar(row);
       }},
       status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
-      whatsapp: { header: "WhatsApp", accessor: (row: any) => row.member?.whatsapp || "—" },
     };
     return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((c) => allCols[c.key]);
   };
@@ -647,14 +645,13 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                 {isCol("nome") && <TableHead>Nome</TableHead>}
                 {isCol("tipo") && <TableHead>Tipo</TableHead>}
                 {isCol("genero") && <TableHead>Gênero</TableHead>}
-                {isCol("telefone") && <TableHead>Telefone</TableHead>}
+                {isCol("telefone") && <TableHead>Contato</TableHead>}
                 {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
                 {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
                 {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
                 {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
                 {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
                 {isCol("status") && <TableHead>Status</TableHead>}
-                {isCol("whatsapp") && <TableHead>WhatsApp</TableHead>}
                 <TableHead className="w-20"></TableHead>
               </TableRow>
             </TableHeader>
@@ -748,7 +745,6 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                       </TableCell>
                     )}
                     {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
-                    {isCol("whatsapp") && <TableCell>{inscricao.member?.whatsapp || "—"}</TableCell>}
                     <TableCell>
                       <div className="flex gap-1">
                         <Button
