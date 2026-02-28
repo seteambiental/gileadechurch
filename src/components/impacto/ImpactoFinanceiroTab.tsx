@@ -281,7 +281,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   };
 
   const pendingRowStyle = (row: any) => {
-    const status = row.status_pagamento;
+    const status = String(row.status_pagamento || "").toLowerCase().trim();
     if (!status || status === "pendente") {
       return { fillColor: "#FFF3CD", fontColor: "#856404" };
     }
