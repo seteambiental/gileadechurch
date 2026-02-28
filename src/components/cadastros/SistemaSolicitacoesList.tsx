@@ -307,17 +307,21 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                   {/* Description */}
                   <p className="text-sm text-foreground">{item.descricao}</p>
 
-                  {/* Image */}
+                  {/* Image or Video */}
                   {item.imagem_url && (
                     <div>
-                      <button
-                        type="button"
-                        onClick={() => setExpandedImage(item.imagem_url)}
-                        className="flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        <ImageIcon className="w-3 h-3" />
-                        Ver imagem anexada
-                      </button>
+                      {/\.(mp4|mov|webm|avi|mkv)(\?|$)/i.test(item.imagem_url) ? (
+                        <video src={item.imagem_url} controls className="w-full max-h-48 rounded-md border border-border mt-1" />
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedImage(item.imagem_url)}
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <ImageIcon className="w-3 h-3" />
+                          Ver imagem anexada
+                        </button>
+                      )}
                     </div>
                   )}
 
