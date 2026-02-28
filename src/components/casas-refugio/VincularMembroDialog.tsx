@@ -127,28 +127,8 @@ export const VincularMembroDialog = ({
       conflicts.push(`Já está vinculado à Casa Refúgio "${membro.casa_refugio?.name || "outra"}"`);
     }
 
-    // Has leadership roles in casas refugio
-    const leadershipRoles = membro.funcoes.filter(
-      (f) =>
-        ["lider_casa_refugio", "supervisor_casa_refugio"].includes(f.function_type) &&
-        f.casa_refugio_id &&
-        f.casa_refugio_id !== casaRefugioId
-    );
-    if (leadershipRoles.length > 0) {
-      const roleLabels: Record<string, string> = {
-        lider_casa_refugio: "Líder",
-        supervisor_casa_refugio: "Supervisor",
-      };
-      leadershipRoles.forEach((r) => {
-        conflicts.push(`É ${roleLabels[r.function_type] || r.function_type} em outra Casa Refúgio`);
-      });
-    }
-
-    // Sindico
-    const sindicoRoles = membro.funcoes.filter((f) => f.function_type === "sindico_condominio");
-    if (sindicoRoles.length > 0) {
-      conflicts.push("É Síndico de Condomínio");
-    }
+    // Leadership roles (supervisor, líder, síndico) are now allowed to accumulate
+    // No conflicts generated for these roles
 
     return conflicts;
   };
