@@ -22,7 +22,7 @@ import {
   Cell,
   Legend
 } from "recharts";
-import { Loader2, Users, CreditCard, CheckCircle, Clock, Send, Bell } from "lucide-react";
+import { Loader2, Users, CreditCard, CheckCircle, Clock, Send, Bell, DollarSign, TrendingUp, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -36,6 +36,7 @@ interface Inscricao {
   nome_participante: string;
   telefone_contato: string;
   lista_espera: boolean | null;
+  valor_inscricao: number | null;
 }
 
 interface Evento {
@@ -84,7 +85,7 @@ export const InscricoesDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("id, evento_id, forma_pagamento, status_pagamento, nome_participante, telefone_contato, lista_espera");
+        .select("id, evento_id, forma_pagamento, status_pagamento, nome_participante, telefone_contato, lista_espera, valor_inscricao");
       if (error) throw error;
       return data as Inscricao[];
     },
@@ -161,10 +162,28 @@ export const InscricoesDashboard = () => {
   }
 
   // Stats
-  const totalInscricoes = inscricoesFiltradas.filter(i => !i.lista_espera).length;
-  const confirmadas = inscricoesFiltradas.filter(i => i.status_pagamento === "confirmado" && !i.lista_espera).length;
-  const pendentes = inscricoesFiltradas.filter(i => i.status_pagamento === "pendente" && !i.lista_espera).length;
+  const inscricoesAtivas = inscricoesFiltradas.filter(i => !i.lista_espera);
+  const totalInscricoes = inscricoesAtivas.length;
+  const confirmadas = inscricoesAtivas.filter(i => i.status_pagamento === "confirmado").length;
+  const pendentes = inscricoesAtivas.filter(i => i.status_pagamento === "pendente").length;
   const listaEspera = inscricoesFiltradas.filter(i => i.lista_espera).length;
+
+  // Financial stats
+  const receitaPrevista = inscricoesAtivas.reduce((sum, i) => {
+    const valor = i.valor_inscricao ?? 0;
+    return sum + valor;
+  }, 0);
+  
+  const receitaConfirmada = inscricoesAtivas
+    .filter(i => i.status_pagamento === "confirmado")
+    .reduce((sum, i) => sum + (i.valor_inscricao ?? 0), 0);
+  
+  const receitaPendente = inscricoesAtivas
+    .filter(i => i.status_pagamento === "pendente" || !i.status_pagamento)
+    .reduce((sum, i) => sum + (i.valor_inscricao ?? 0), 0);
+
+  const formatCurrency = (value: number) => 
+    value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   // Inscriptions by event (only when showing all)
   const inscricoesPorEvento = selectedEvento === "todos" ? eventos.map(evento => {
@@ -322,6 +341,49 @@ export const InscricoesDashboard = () => {
         </Card>
       </div>
 
+      {/* Financial Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <DollarSign className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{formatCurrency(receitaPrevista)}</p>
+                <p className="text-sm text-muted-foreground">Receita Prevista</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-green-500/10 rounded-full">
+                <TrendingUp className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-green-600">{formatCurrency(receitaConfirmada)}</p>
+                <p className="text-sm text-muted-foreground">Receita Confirmada</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-yellow-500/10 rounded-full">
+                <AlertCircle className="w-6 h-6 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-yellow-600">{formatCurrency(receitaPendente)}</p>
+                <p className="text-sm text-muted-foreground">Receita Pendente</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Inscriptions by Event - only show when filtering by all */}
@@ -368,6 +430,18 @@ export const InscricoesDashboard = () => {
                   <span className="text-lg font-bold text-green-600">
                     {totalInscricoes > 0 ? Math.round((confirmadas / totalInscricoes) * 100) : 0}%
                   </span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm">Receita Prevista</span>
+                  <span className="text-lg font-bold">{formatCurrency(receitaPrevista)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm">Receita Confirmada</span>
+                  <span className="text-lg font-bold text-green-600">{formatCurrency(receitaConfirmada)}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm">Receita Pendente</span>
+                  <span className="text-lg font-bold text-yellow-600">{formatCurrency(receitaPendente)}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm">Pagamentos Pendentes</span>
