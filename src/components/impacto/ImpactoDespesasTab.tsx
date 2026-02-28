@@ -40,7 +40,7 @@ const CATEGORIAS_DESPESA = [
   "Chácara",
   "Decoração",
   "Embalagens",
-  "Gás para balões",
+  "Outros",
   "Impressos",
   "Maquiagem",
   "Ônibus",
