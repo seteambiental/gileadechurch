@@ -50,8 +50,8 @@ interface Evento {
  
 interface AgendaCalendarProps {
   eventos: Evento[];
-  onEventoClick: (evento: Evento) => void;
-  onNovoCompromisso: () => void;
+  onEventoClick?: (evento: Evento) => void;
+  onNovoCompromisso?: () => void;
   isLoading?: boolean;
 }
  
@@ -214,7 +214,7 @@ interface AgendaCalendarProps {
                     key={evento.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
                     style={{ borderLeft: `4px solid ${evento.cor || "hsl(var(--primary))"}` }}
-                    onClick={() => onEventoClick(evento)}
+                    onClick={() => onEventoClick?.(evento)}
                   >
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="w-4 h-4" />
@@ -276,7 +276,7 @@ interface AgendaCalendarProps {
                           backgroundColor: evento.cor ? `${evento.cor}20` : "hsl(var(--primary) / 0.1)",
                           borderLeft: `3px solid ${evento.cor || "hsl(var(--primary))"}`,
                         }}
-                        onClick={() => onEventoClick(evento)}
+                        onClick={() => onEventoClick?.(evento)}
                       >
                         <span className="font-medium">{evento.hora_inicio?.substring(0, 5)}</span> {evento.titulo}
                       </div>
@@ -345,7 +345,7 @@ interface AgendaCalendarProps {
                           backgroundColor: evento.cor || "hsl(var(--primary))",
                           color: "white",
                         }}
-                        onClick={() => onEventoClick(evento)}
+                        onClick={() => onEventoClick?.(evento)}
                       >
                         {evento.titulo}
                       </div>
@@ -436,10 +436,12 @@ interface AgendaCalendarProps {
              </TabsList>
            </Tabs>
            
-            <Button variant="secondary" onClick={onNovoCompromisso}>
-              <Plus className="w-4 h-4 mr-2" />
-              Compromisso
-            </Button>
+            {onNovoCompromisso && (
+              <Button variant="secondary" onClick={onNovoCompromisso}>
+                <Plus className="w-4 h-4 mr-2" />
+                Compromisso
+              </Button>
+            )}
          </div>
        </div>
  
