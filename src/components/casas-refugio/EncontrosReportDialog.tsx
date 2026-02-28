@@ -22,7 +22,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Loader2, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Loader2, Download, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -820,24 +826,24 @@ export const EncontrosReportDialog = ({
 
         {/* Export Buttons + Stats */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExcelExport}
-            disabled={reportData.length === 0}
-          >
-            <FileSpreadsheet className="w-4 h-4 mr-2" />
-            Exportar Excel
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePdfExport}
-            disabled={reportData.length === 0}
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Exportar PDF
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" disabled={reportData.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleExcelExport}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Excel (.xlsx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handlePdfExport}>
+                <FileText className="w-4 h-4 mr-2" />
+                PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <div className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
             <span>{filledCount} preenchido{filledCount !== 1 ? "s" : ""}</span>
             <span className="text-amber-500">{blankCount} pendente{blankCount !== 1 ? "s" : ""}</span>

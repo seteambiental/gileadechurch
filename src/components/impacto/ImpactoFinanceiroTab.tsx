@@ -23,6 +23,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Table,
   TableBody,
   TableCell,
@@ -30,7 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -325,14 +331,24 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   </div>
                 </PopoverContent>
               </Popover>
-              <Button variant="outline" size="sm" onClick={handleExportReceitasExcel}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleExportReceitasPDF}>
-                <FileText className="w-4 h-4 mr-2" />
-                PDF
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleExportReceitasExcel}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Excel (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportReceitasPDF}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
         </div>
