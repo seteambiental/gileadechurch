@@ -274,8 +274,8 @@ const Index = () => {
       if (ceiaEvento && tituloNorm.includes("celebracao") && e.dia_semana === ceiaEvento.dia_semana) {
         return false;
       }
-      // Se existe Prestação de Contas e este é o culto regular de quarta com propósito
-      if (quartaPCEvento && e.id !== quartaPCEvento.id && e.tipo_evento === "culto" && tituloNorm.includes("proposito") && e.dia_semana === quartaPCEvento.dia_semana) {
+      // Se existe Prestação de Contas e este é o quarta com propósito regular no mesmo dia, ocultar o regular
+      if (quartaPCEvento && e.id !== quartaPCEvento.id && tituloNorm.includes("proposito") && !tituloNorm.includes("prestacao") && e.dia_semana === quartaPCEvento.dia_semana) {
         return false;
       }
       return true;
@@ -309,6 +309,10 @@ const Index = () => {
       if (ceiaEvento && e.id === ceiaEvento.id) {
         const weekNum = Math.ceil(eventDate.getDate() / 7);
         titulo = `Culto de Ceia (${weekNum}º Domingo)`;
+      }
+      // Se é Prestação de Contas, exibir apenas como "Quarta com Propósito"
+      if (quartaPCEvento && e.id === quartaPCEvento.id) {
+        titulo = "Quarta com Propósito";
       }
 
       return {
