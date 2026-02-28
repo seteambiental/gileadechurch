@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/masks";
+import { formatCurrency, formatPhone } from "@/lib/masks";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -308,8 +308,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     return "-";
   };
 
-  const getPhone = (inscricao: any) => {
-    return inscricao.telefone || inscricao.member?.whatsapp || "-";
+   const getPhone = (inscricao: any) => {
+    const raw = inscricao.telefone || inscricao.member?.whatsapp || "";
+    return raw ? formatPhone(raw) : "-";
   };
 
   const getValorPago = (inscricao: any): number => {
