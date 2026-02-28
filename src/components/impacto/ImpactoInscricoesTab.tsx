@@ -631,7 +631,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         </Card>
       ) : (
         <Card className="overflow-x-auto">
-          <Table className="min-w-[1200px]">
+          <Table className="min-w-max">
              <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
