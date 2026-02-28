@@ -470,23 +470,34 @@ export const exportGenericToPDF = (
   doc.text(`Total: ${data.length} registro${data.length !== 1 ? "s" : ""}`, 14, 36);
 
   const tableHeaders = columns.map((col) => col.header);
+  const pendingStatusTokens = [
+    "pendente",
+    "a pagar",
+    "aguardando",
+    "em aberto",
+    "em_aberto",
+  ];
+
   const tableData = data.map((row) =>
     columns.map((col) => {
       const value = typeof col.accessor === "function"
         ? col.accessor(row)
         : row[col.accessor];
 
-      if (col.format) return col.format(value);
-
+      // Força formatação monetária no PDF para colunas financeiras
       if (col.type === 'currency') {
-        const num = parseLocalizedNumber(value) ?? 0;
+        const formattedOrRaw = col.format ? col.format(value) : value;
+        const num = parseLocalizedNumber(formattedOrRaw) ?? parseLocalizedNumber(value) ?? 0;
         return formatAsCurrency(num);
       }
 
       if (col.type === 'number') {
-        const num = parseLocalizedNumber(value) ?? 0;
+        const formattedOrRaw = col.format ? col.format(value) : value;
+        const num = parseLocalizedNumber(formattedOrRaw) ?? parseLocalizedNumber(value) ?? 0;
         return num.toLocaleString("pt-BR");
       }
+
+      if (col.format) return col.format(value);
 
       const header = (col.header || "").toLowerCase();
       const accessorKey = typeof col.accessor === "string" ? col.accessor.toLowerCase() : "";
@@ -505,8 +516,8 @@ export const exportGenericToPDF = (
   );
 
   // Build row style map for PDF
-  const rowStyles = rowStyleFn 
-    ? data.map((row, i) => rowStyleFn(row, i)) 
+  const rowStyles = rowStyleFn
+    ? data.map((row, i) => rowStyleFn(row, i))
     : [];
 
   // Add TOTAL row
@@ -523,6 +534,13 @@ export const exportGenericToPDF = (
     });
     tableData.push(totalRowData);
   }
+
+  const isPendingRow = (rowValues: any[]): boolean => {
+    return rowValues.some((cell) => {
+      const cellText = String(cell ?? "").toLowerCase().trim();
+      return pendingStatusTokens.some((token) => cellText === token || cellText.includes(token));
+    });
+  };
 
   autoTable(doc, {
     head: [tableHeaders],
@@ -568,6 +586,9 @@ export const exportGenericToPDF = (
         if (customStyle.italic) {
           hookData.cell.styles.fontStyle = "italic";
         }
+      } else if (isPendingRow(tableData[rowIdx] || [])) {
+        hookData.cell.styles.fillColor = [255, 243, 205];
+        hookData.cell.styles.textColor = [133, 100, 4];
       } else if (rowIdx % 2 === 1) {
         // Zebra stripe for rows without custom style
         hookData.cell.styles.fillColor = [248, 249, 250];
