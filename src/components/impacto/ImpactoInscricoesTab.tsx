@@ -492,14 +492,22 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   const eventoNome = eventos?.find((e) => e.id === selectedEventoId)?.titulo || "inscricoes";
 
+  const pendingRowStyle = (row: any) => {
+    const status = row.status_pagamento;
+    if (!status || status === "pendente") {
+      return { fillColor: "#FFF3CD", fontColor: "#856404" };
+    }
+    return null;
+  };
+
   const handleExportExcel = async () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    await exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições");
+    await exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições", pendingRowStyle);
   };
 
   const handleExportPDF = () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`);
+    exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`, pendingRowStyle);
   };
 
   const toggleColumn = (key: string) => {
