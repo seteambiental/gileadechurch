@@ -31,11 +31,11 @@ import { ptBR } from "date-fns/locale";
 interface Inscricao {
   id: string;
   evento_id: string;
-  forma_pagamento: string;
-  status_pagamento: string;
+  forma_pagamento: string | null;
+  status_pagamento: string | null;
   nome_participante: string;
   telefone_contato: string;
-  lista_espera: boolean;
+  lista_espera: boolean | null;
 }
 
 interface Evento {
@@ -43,12 +43,18 @@ interface Evento {
   titulo: string;
   data_evento: string;
   local: string | null;
+  necessita_inscricao: boolean;
+  limite_vagas: number | null;
+  tem_custo: boolean | null;
+  valor_custo: number | null;
 }
 
-const COLORS = {
+const COLORS: Record<string, string> = {
   pix: "#16a34a",
   cartao_credito: "#2563eb",
   cartao_debito: "#7c3aed",
+  dinheiro: "#f59e0b",
+  nao_informado: "#94a3b8",
   pendente: "#eab308",
   confirmado: "#16a34a",
   cancelado: "#dc2626",
@@ -58,6 +64,8 @@ const PAYMENT_LABELS: Record<string, string> = {
   pix: "PIX",
   cartao_credito: "Crédito",
   cartao_debito: "Débito",
+  dinheiro: "Dinheiro",
+  nao_informado: "Não informado",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -87,9 +95,10 @@ export const InscricoesDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, data_evento, local")
+        .select("id, titulo, data_evento, local, necessita_inscricao, limite_vagas, tem_custo, valor_custo")
         .eq("ativo", true)
         .eq("recorrente", false)
+        .eq("necessita_inscricao", true)
         .order("data_evento", { ascending: false });
       if (error) throw error;
       return data as Evento[];
@@ -166,28 +175,30 @@ export const InscricoesDashboard = () => {
     };
   }).filter(e => e.inscricoes > 0).sort((a, b) => b.inscricoes - a.inscricoes).slice(0, 10) : [];
 
-  // Payment methods
+  // Payment methods - handle null as "nao_informado"
   const formasPagamento = Object.entries(
     inscricoesFiltradas.filter(i => !i.lista_espera).reduce((acc, i) => {
-      acc[i.forma_pagamento] = (acc[i.forma_pagamento] || 0) + 1;
+      const key = i.forma_pagamento || "nao_informado";
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({
     name: PAYMENT_LABELS[name] || name,
     value,
-    color: COLORS[name as keyof typeof COLORS] || "#888",
+    color: COLORS[name] || "#888",
   }));
 
-  // Payment status
+  // Payment status - handle null as "pendente"
   const statusPagamento = Object.entries(
     inscricoesFiltradas.filter(i => !i.lista_espera).reduce((acc, i) => {
-      acc[i.status_pagamento] = (acc[i.status_pagamento] || 0) + 1;
+      const key = i.status_pagamento || "pendente";
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   ).map(([name, value]) => ({
     name: STATUS_LABELS[name] || name,
     value,
-    color: COLORS[name as keyof typeof COLORS] || "#888",
+    color: COLORS[name] || "#888",
   }));
 
   // Check if event is upcoming (for reminder button)
@@ -241,12 +252,14 @@ export const InscricoesDashboard = () => {
             )}
           </div>
           
-          {selectedEvento !== "todos" && eventoSelecionado && (
+           {selectedEvento !== "todos" && eventoSelecionado && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <h3 className="font-semibold">{eventoSelecionado.titulo}</h3>
               <p className="text-sm text-muted-foreground">
                 {format(parseLocalDate(eventoSelecionado.data_evento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                 {eventoSelecionado.local && ` • ${eventoSelecionado.local}`}
+                {eventoSelecionado.limite_vagas && ` • ${totalInscricoes}/${eventoSelecionado.limite_vagas} vagas`}
+                {eventoSelecionado.tem_custo && eventoSelecionado.valor_custo && ` • R$ ${eventoSelecionado.valor_custo.toFixed(2)}`}
               </p>
             </div>
           )}
@@ -342,6 +355,14 @@ export const InscricoesDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {eventoSelecionado?.limite_vagas && (
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="text-sm">Vagas Ocupadas</span>
+                    <span className="text-lg font-bold">
+                      {totalInscricoes}/{eventoSelecionado.limite_vagas}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm">Taxa de Confirmação</span>
                   <span className="text-lg font-bold text-green-600">
