@@ -442,7 +442,17 @@ export const exportGenericToPDF = (
       const value = typeof col.accessor === "function" 
         ? col.accessor(row) 
         : row[col.accessor];
-      return col.format ? col.format(value) : (value ?? "-");
+      if (col.format) return col.format(value);
+      // Format typed columns for PDF display
+      if (col.type === 'currency') {
+        const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
+        return isNaN(num) ? "R$ 0,00" : formatAsCurrency(num);
+      }
+      if (col.type === 'number') {
+        const num = typeof value === 'number' ? value : parseFloat(String(value ?? 0));
+        return isNaN(num) ? "0" : num.toLocaleString("pt-BR");
+      }
+      return value ?? "-";
     })
   );
 
@@ -483,12 +493,7 @@ export const exportGenericToPDF = (
       fillColor: [248, 249, 250],
     },
     didParseCell: (hookData: any) => {
-      // Bold the TOTAL row (last row if totals exist)
-      if (hasTotals && hookData.section === "body" && hookData.row.index === tableData.length - 1) {
-        hookData.cell.styles.fontStyle = "bold";
-        hookData.cell.styles.fillColor = [230, 230, 230];
-      }
-      // Apply per-row styling
+      // Apply per-row styling FIRST (pending tarja) — must override alternateRowStyles
       if (hookData.section === "body" && rowStyles[hookData.row.index]) {
         const style = rowStyles[hookData.row.index];
         if (style?.fillColor) {
@@ -508,6 +513,11 @@ export const exportGenericToPDF = (
         if (style?.italic) {
           hookData.cell.styles.fontStyle = "italic";
         }
+      }
+      // Bold the TOTAL row (last row if totals exist)
+      if (hasTotals && hookData.section === "body" && hookData.row.index === tableData.length - 1) {
+        hookData.cell.styles.fontStyle = "bold";
+        hookData.cell.styles.fillColor = [230, 230, 230];
       }
     },
   });
