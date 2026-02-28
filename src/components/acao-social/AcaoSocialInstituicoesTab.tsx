@@ -96,7 +96,7 @@ export function AcaoSocialInstituicoesTab() {
               { header: "Tipo de Ajuda", accessor: "tipo_ajuda" },
               { header: "Status", accessor: (r) => r.ativo ? "Ativo" : "Inativo" },
               { header: "Cidade", accessor: "cidade" },
-              { header: "Telefone", accessor: "telefone" },
+              { header: "WhatsApp", accessor: "whatsapp" },
             ]}
             filename="instituicoes"
             title="Instituições - Ação Social"
