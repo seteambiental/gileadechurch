@@ -64,20 +64,44 @@ export const PortalLideresAgendaTab = ({
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
 
-  // Buscar todos os eventos aprovados para o calendário
-  const { data: eventosCalendario = [], isLoading: loadingCalendario } = useQuery({
-    queryKey: ["agenda-igreja-lideres"],
+  // Buscar eventos recorrentes (programação) - igual ao ADM
+  const { data: eventosRecorrentes = [], isLoading: loadingRecorrentes } = useQuery({
+    queryKey: ["agenda-recorrentes-lideres"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
         .select("*")
         .eq("ativo", true)
-        .eq("status", "aprovado")
+        .eq("recorrente", true)
+        .order("dia_semana", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Buscar eventos únicos - igual ao ADM
+  const { data: eventosUnicos = [], isLoading: loadingUnicos } = useQuery({
+    queryKey: ["agenda-eventos-lideres"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("*")
+        .eq("recorrente", false)
         .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
     },
   });
+
+  const eventosCalendario = [...eventosRecorrentes, ...eventosUnicos];
+  const loadingCalendario = loadingRecorrentes || loadingUnicos;
+
+  // Tipos que são compromissos (igual ao ADM)
+  const TIPOS_COMPROMISSO = [
+    "culto", "ceia", "conexao_lider", "quarta_proposito",
+    "quarta_proposito_prestacao", "cursos", "aulas", "apresentacao_criancas",
+    "casamento", "confraternizacao", "churrasco", "outros",
+  ];
 
   // Roles que podem aprovar eventos
   const canApprove =
@@ -315,8 +339,13 @@ export const PortalLideresAgendaTab = ({
       <AgendaCalendar
         eventos={eventosCalendario}
         onEventoClick={(evento) => {
+          const isCompromissoByType = TIPOS_COMPROMISSO.includes(evento.tipo_evento);
+          const hasEventFeatures = (evento as any).necessita_inscricao || (evento as any).flyer_url;
+          const isCompromisso = evento.tipo_evento === "outros"
+            ? (!hasEventFeatures)
+            : isCompromissoByType;
           setEditingEvento(evento);
-          setFormModeLocal("compromisso");
+          setFormModeLocal(isCompromisso ? "compromisso" : "evento");
           setShowEventoForm(true);
         }}
         onNovoCompromisso={() => {
