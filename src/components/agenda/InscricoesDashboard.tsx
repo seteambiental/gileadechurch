@@ -167,7 +167,7 @@ export const InscricoesDashboard = () => {
       }
     });
     return Array.from(eventMap.values()).sort((a, b) => 
-      b.data_evento.localeCompare(a.data_evento)
+      a.data_evento.localeCompare(b.data_evento)
     );
   }, [agendaEventos, impactoEventos]);
 
