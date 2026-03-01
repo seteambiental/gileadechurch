@@ -104,7 +104,7 @@ export const PortalLideresCasaRefugio = ({
     supervisorCondominios.length === 0 &&
     casasRefugioIds.length === 0;
   const isSindico = sindicoCondominios.length > 0;
-  const isSupervisorCondominio = supervisorCondominios.length > 0;
+  const isSupervisorCondominio = supervisorCondominios.length > 0; // kept for filter visibility
 
   const isLiderDaCasa = (casaId: string) => {
     return memberCasasRefugio.some((c) => c.id === casaId && c.isLider);
@@ -135,8 +135,6 @@ export const PortalLideresCasaRefugio = ({
 
       if (isSindico) {
         query = query.in("condominio", sindicoCondominios);
-      } else if (isSupervisorCondominio) {
-        query = query.in("condominio", supervisorCondominios);
       } else if (!isFullAccess && casasRefugioIds.length > 0) {
         query = query.in("id", casasRefugioIds);
       }
