@@ -76,6 +76,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     { key: "nome", label: "Nome" },
     { key: "tipo", label: "Tipo" },
     { key: "referencia", label: "Referência" },
+    { key: "casa_refugio", label: "Casa Refúgio" },
+    { key: "condominio", label: "Condomínio" },
+    { key: "funcao", label: "Função" },
     { key: "valor_inscricao", label: "Valor Inscrição" },
     { key: "valor_pago", label: "Valor Pago" },
     { key: "saldo", label: "Saldo" },
@@ -158,6 +161,84 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     },
     enabled: !!selectedEventoId,
   });
+
+  // Fetch member details for Casa Refúgio, Condomínio, and Função
+  const memberIds = useMemo(() => {
+    return (rawImpactoInscricoes || []).map((i) => i.member_id).filter(Boolean) as string[];
+  }, [rawImpactoInscricoes]);
+
+  const { data: memberDetails } = useQuery({
+    queryKey: ["financeiro-member-details", memberIds],
+    queryFn: async () => {
+      if (memberIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
+        .in("id", memberIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: memberIds.length > 0,
+  });
+
+  const memberMap = useMemo(() => {
+    const map = new Map<string, any>();
+    (memberDetails || []).forEach((m: any) => map.set(m.id, m));
+    return map;
+  }, [memberDetails]);
+
+  const { data: condominios } = useQuery({
+    queryKey: ["condominios-lookup"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("condominios").select("id, name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const condominioMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (condominios || []).forEach((c: any) => map.set(c.id, c.name));
+    return map;
+  }, [condominios]);
+
+  const functionTypeLabels: Record<string, string> = {
+    lider_casa_refugio: "Líder de CR",
+    lider_ministerio: "Líder de Ministério",
+    pastor_geral: "Pastor Geral",
+    pastor_auxiliar: "Pastor Auxiliar",
+    supervisor_condominio: "Supervisor",
+    sindico_condominio: "Síndico",
+    integrante_ministerio: "Integrante",
+  };
+
+  const getMemberCasaRefugio = (memberId: string | null): string => {
+    if (!memberId) return "—";
+    const m = memberMap.get(memberId);
+    if (!m) return "—";
+    const cr = m.casas_refugio as any;
+    return cr?.name || "—";
+  };
+
+  const getMemberCondominio = (memberId: string | null): string => {
+    if (!memberId) return "—";
+    const m = memberMap.get(memberId);
+    if (!m) return "—";
+    const cr = m.casas_refugio as any;
+    if (cr?.condominio) return condominioMap.get(cr.condominio) || cr.condominio;
+    return "—";
+  };
+
+  const getMemberFuncoes = (memberId: string | null): string => {
+    if (!memberId) return "—";
+    const m = memberMap.get(memberId);
+    if (!m || !m.member_functions || m.member_functions.length === 0) return "—";
+    return m.member_functions.map((fn: any) => {
+      const label = functionTypeLabels[fn.function_type] || fn.function_type;
+      const sub = fn.ministries?.name || fn.casas_refugio?.name || fn.condominios?.name || "";
+      return sub ? `${label} (${sub})` : label;
+    }).join("; ");
+  };
 
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
@@ -306,6 +387,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       nome: { header: "Nome", accessor: (row: any) => row.nome },
       tipo: { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
       referencia: { header: "Referência", accessor: (row: any) => row.referencia || "—" },
+      casa_refugio: { header: "Casa Refúgio", accessor: (row: any) => getMemberCasaRefugio(row.member_id) },
+      condominio: { header: "Condomínio", accessor: (row: any) => getMemberCondominio(row.member_id) },
+      funcao: { header: "Função", accessor: (row: any) => getMemberFuncoes(row.member_id) },
       valor_inscricao: { header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
       valor_pago: { header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
       saldo: { header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
@@ -680,17 +764,20 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                 <Card className="overflow-x-auto">
                   <Table className="min-w-max">
                     <TableHeader>
-                      <TableRow>
+                       <TableRow>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead>Tipo</TableHead>}
                          {isCol("referencia") && <TableHead>Referência</TableHead>}
+                         {isCol("casa_refugio") && <TableHead>Casa Refúgio</TableHead>}
+                         {isCol("condominio") && <TableHead>Condomínio</TableHead>}
+                         {isCol("funcao") && <TableHead>Função</TableHead>}
                          {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
                          {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
                          {isCol("saldo") && <TableHead>Saldo</TableHead>}
                          {isCol("previsoes") && <TableHead>Previsões</TableHead>}
                          {isCol("forma_pagamento") && <TableHead>Forma Pgto</TableHead>}
                          {isCol("status") && <TableHead>Status</TableHead>}
-                      </TableRow>
+                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {inscricoesFiltradas.map((inscricao) => {
@@ -713,6 +800,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                             )}
                             {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
                             {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
+                            {isCol("casa_refugio") && <TableCell>{getMemberCasaRefugio(inscricao.member_id)}</TableCell>}
+                            {isCol("condominio") && <TableCell>{getMemberCondominio(inscricao.member_id)}</TableCell>}
+                            {isCol("funcao") && <TableCell className="text-xs max-w-[200px]">{getMemberFuncoes(inscricao.member_id)}</TableCell>}
                             {isCol("valor_inscricao") && <TableCell>{formatCurrency(valorInsc)}</TableCell>}
                             {isCol("valor_pago") && <TableCell className="font-medium text-green-600">{formatCurrency(valorPg)}</TableCell>}
                             {isCol("saldo") && (
