@@ -255,20 +255,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     },
   });
 
-  // Fetch member functions for supervisor/sindico identification
-  const { data: memberFunctions = [] } = useQuery({
-    queryKey: ["member-functions-supervisores"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("member_functions")
-        .select("member_id, function_type, casa_refugio_id, condominio_id")
-        .in("function_type", ["supervisor_casa_refugio", "sindico_condominio"]);
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  // Fetch condominios for sindico lookup
+  // Fetch condominios for condominio name lookup from CR
   const { data: condominios = [] } = useQuery({
     queryKey: ["condominios-lookup"],
     queryFn: async () => {
@@ -283,22 +270,6 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const getLocationLabel = (inscricao: any) => {
     const member = inscricao.member;
     if (!member) return "-";
-    
-    const sindicoFunc = memberFunctions.find(
-      (mf) => mf.member_id === member.id && mf.function_type === "sindico_condominio"
-    );
-    if (sindicoFunc?.condominio_id) {
-      const cond = condominios.find((c) => c.id === sindicoFunc.condominio_id);
-      if (cond) return cond.name;
-    }
-    
-    const supervisorFunc = memberFunctions.find(
-      (mf) => mf.member_id === member.id && mf.function_type === "supervisor_casa_refugio"
-    );
-    if (supervisorFunc?.casa_refugio_id) {
-      const cr = casasRefugio.find((c) => c.id === supervisorFunc.casa_refugio_id);
-      if (cr?.condominio) return cr.condominio;
-    }
     
     if (member.casa_refugio_id) {
       const cr = casasRefugio.find((c) => c.id === member.casa_refugio_id);
