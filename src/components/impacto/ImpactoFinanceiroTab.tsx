@@ -202,16 +202,6 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return map;
   }, [condominios]);
 
-  const functionTypeLabels: Record<string, string> = {
-    lider_casa_refugio: "Líder de CR",
-    lider_ministerio: "Líder de Ministério",
-    pastor_geral: "Pastor Geral",
-    pastor_auxiliar: "Pastor Auxiliar",
-    supervisor_condominio: "Supervisor",
-    sindico_condominio: "Síndico",
-    integrante_ministerio: "Integrante",
-  };
-
   const getMemberCasaRefugio = (memberId: string | null): string => {
     if (!memberId) return "—";
     const m = memberMap.get(memberId);
@@ -229,15 +219,35 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return "—";
   };
 
+  const getFuncaoLabel = (fn: any): string => {
+    const type = fn.function_type;
+    const entityName = fn.ministries?.name || fn.casas_refugio?.name || fn.condominios?.name || "";
+    
+    switch (type) {
+      case "lider_ministerio":
+        return entityName ? `Líder de ${entityName}` : "Líder de Ministério";
+      case "integrante_ministerio":
+        return entityName ? `Equipe de ${entityName}` : "Integrante de Ministério";
+      case "lider_casa_refugio":
+        return entityName ? `Líder de ${entityName}` : "Líder de Casa Refúgio";
+      case "supervisor_casa_refugio":
+        return entityName ? `Supervisor de ${entityName}` : "Supervisor";
+      case "sindico_condominio":
+        return entityName ? `Síndico de ${entityName}` : "Síndico";
+      case "pastor_geral":
+        return "Pastor Geral";
+      case "pastor_auxiliar":
+        return "Pastor Auxiliar";
+      default:
+        return entityName ? `${type} - ${entityName}` : type;
+    }
+  };
+
   const getMemberFuncoes = (memberId: string | null): string => {
     if (!memberId) return "—";
     const m = memberMap.get(memberId);
     if (!m || !m.member_functions || m.member_functions.length === 0) return "—";
-    return m.member_functions.map((fn: any) => {
-      const label = functionTypeLabels[fn.function_type] || fn.function_type;
-      const sub = fn.ministries?.name || fn.casas_refugio?.name || fn.condominios?.name || "";
-      return sub ? `${label} (${sub})` : label;
-    }).join("; ");
+    return m.member_functions.map((fn: any) => getFuncaoLabel(fn)).join("; ");
   };
 
   const inscricoes = useMemo(() => {
