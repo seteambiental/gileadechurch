@@ -124,7 +124,22 @@ const Index = () => {
     },
   });
 
-  // Buscar eventos recorrentes (programação)
+  // Buscar programação customizada da homepage
+  const { data: programacaoCustom } = useQuery({
+    queryKey: ["homepage-programacao-public"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("homepage_programacao")
+        .select("*")
+        .eq("ativo", true)
+        .order("dia_semana", { ascending: true })
+        .order("ordem", { ascending: true });
+      if (error) return [];
+      return data;
+    },
+  });
+
+  // Buscar eventos recorrentes (programação) - fallback se não houver customização
   const { data: eventosRecorrentes } = useQuery({
     queryKey: ["eventos-recorrentes-public"],
     queryFn: async () => {
@@ -138,6 +153,7 @@ const Index = () => {
       if (error) return [];
       return data;
     },
+    enabled: !programacaoCustom || programacaoCustom.length === 0,
   });
 
   // Buscar eventos com flyer (próximos eventos especiais) - até 4
@@ -239,30 +255,46 @@ const Index = () => {
     },
   });
 
-  // Formatar programação - eventos recorrentes dos próximos 7 dias, sem repetições
+  // Formatar programação - usar customização se existir, senão fallback automático
   const scheduleItems = useMemo(() => {
+    // Se há programação customizada, usar ela
+    if (programacaoCustom && programacaoCustom.length > 0) {
+      const today = new Date();
+      const todayDow = today.getDay();
+
+      return programacaoCustom.map((item: any) => ({
+        day: diasSemana[item.dia_semana],
+        time: item.horario ? item.horario.slice(0, 5) : "—",
+        event: item.titulo,
+        subtitle: item.subtitulo || null,
+      })).sort((a: any, b: any) => {
+        const diaA = ((diasSemana.indexOf(a.day)) - todayDow + 7) % 7;
+        const diaB = ((diasSemana.indexOf(b.day)) - todayDow + 7) % 7;
+        if (diaA !== diaB) return diaA - diaB;
+        return (a.time || "").localeCompare(b.time || "");
+      });
+    }
+
+    // Fallback: lógica automática da agenda
     if (!eventosRecorrentes || eventosRecorrentes.length === 0) {
       return [
-        { day: "Domingo", time: "09:00", event: "Culto de Celebração" },
-        { day: "Quarta", time: "19:30", event: "Quarta com Propósito" },
+        { day: "Domingo", time: "09:00", event: "Culto de Celebração", subtitle: null },
+        { day: "Quarta", time: "19:30", event: "Quarta com Propósito", subtitle: null },
       ];
     }
 
     const today = new Date();
-    const todayDow = today.getDay(); // 0=Dom, 6=Sab
+    const todayDow = today.getDay();
 
-    // Calcular quais dias da semana caem nos próximos 7 dias
     const next7DaysDow = new Set<number>();
     for (let i = 0; i < 7; i++) {
       next7DaysDow.add((todayDow + i) % 7);
     }
 
-    // Filtrar eventos que caem nos próximos 7 dias
     const eventosDaSemana = eventosRecorrentes.filter(
       (e) => e.dia_semana != null && next7DaysDow.has(e.dia_semana)
     );
 
-    // Deduplicação: se houver Culto de Ceia no mesmo dia do Culto de Celebração, remove o Celebração
     const ceiaEvento = eventosDaSemana.find((e) =>
       normalizeText(e.titulo).includes("ceia")
     );
@@ -272,18 +304,15 @@ const Index = () => {
 
     const filtrados = eventosDaSemana.filter((e) => {
       const tituloNorm = normalizeText(e.titulo);
-      // Se existe Ceia e este é o Celebração no mesmo dia, ocultar
       if (ceiaEvento && tituloNorm.includes("celebracao") && e.dia_semana === ceiaEvento.dia_semana) {
         return false;
       }
-      // Se existe Prestação de Contas e este é o quarta com propósito regular no mesmo dia, ocultar o regular
       if (quartaPCEvento && e.id !== quartaPCEvento.id && tituloNorm.includes("proposito") && !tituloNorm.includes("prestacao") && e.dia_semana === quartaPCEvento.dia_semana) {
         return false;
       }
       return true;
     });
 
-    // Remover duplicatas por título (manter apenas 1 ocorrência de cada)
     const vistos = new Set<string>();
     const unicos = filtrados.filter((e) => {
       const key = normalizeText(e.titulo);
@@ -292,7 +321,6 @@ const Index = () => {
       return true;
     });
 
-    // Ordenar por dia da semana relativo a hoje
     const sorted = [...unicos].sort((a, b) => {
       const diaA = ((a.dia_semana ?? 0) - todayDow + 7) % 7;
       const diaB = ((b.dia_semana ?? 0) - todayDow + 7) % 7;
@@ -301,18 +329,15 @@ const Index = () => {
     });
 
     const items = sorted.map((e) => {
-      // Calcular a data real do evento
       const diffDays = ((e.dia_semana ?? 0) - todayDow + 7) % 7;
       const eventDate = new Date(today);
       eventDate.setDate(today.getDate() + diffDays);
 
       let titulo = e.titulo;
-      // Se é Ceia, renomear
       if (ceiaEvento && e.id === ceiaEvento.id) {
         const weekNum = Math.ceil(eventDate.getDate() / 7);
         titulo = `Culto de Ceia (${weekNum}º Domingo)`;
       }
-      // Se é Prestação de Contas, exibir apenas como "Quarta com Propósito"
       if (quartaPCEvento && e.id === quartaPCEvento.id) {
         titulo = "Quarta com Propósito";
       }
@@ -321,18 +346,19 @@ const Index = () => {
         day: diasSemana[e.dia_semana ?? 0],
         time: e.hora_inicio ? e.hora_inicio.slice(0, 5) : "—",
         event: titulo,
+        subtitle: null as string | null,
       };
     });
 
     if (items.length === 0) {
       return [
-        { day: "Domingo", time: "09:00", event: "Culto de Celebração" },
-        { day: "Quarta", time: "19:30", event: "Quarta com Propósito" },
+        { day: "Domingo", time: "09:00", event: "Culto de Celebração", subtitle: null },
+        { day: "Quarta", time: "19:30", event: "Quarta com Propósito", subtitle: null },
       ];
     }
 
     return items;
-  }, [eventosRecorrentes]);
+  }, [programacaoCustom, eventosRecorrentes]);
 
   // Formatar testemunhos
   const testimonies = useMemo(() => {
@@ -565,7 +591,7 @@ const Index = () => {
                         {item.event}
                       </h4>
                       <p className="text-sm text-muted-foreground">
-                        {item.day === "Domingo" ? "Sede da Igreja" : "Confira o local"}
+                        {item.subtitle || (item.day === "Domingo" ? "Sede da Igreja" : "Confira o local")}
                       </p>
                     </div>
                   </div>

@@ -2085,6 +2085,42 @@ export type Database = {
         }
         Relationships: []
       }
+      homepage_programacao: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          dia_semana: number
+          horario: string | null
+          id: string
+          ordem: number | null
+          subtitulo: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          dia_semana: number
+          horario?: string | null
+          id?: string
+          ordem?: number | null
+          subtitulo?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          dia_semana?: number
+          horario?: string | null
+          id?: string
+          ordem?: number | null
+          subtitulo?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       homepage_videos: {
         Row: {
           ativo: boolean
