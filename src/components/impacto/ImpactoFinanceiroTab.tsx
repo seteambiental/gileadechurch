@@ -232,6 +232,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         return entityName ? `Equipe de ${entityName}` : "Integrante de Ministério";
       case "lider_casa_refugio":
         return entityName ? `Líder de ${entityName}` : "Líder de Casa Refúgio";
+      case "anfitriao_casa_refugio":
+        return entityName ? `Anfitrião(ã) de ${entityName}` : "Anfitrião(ã) de Casa Refúgio";
       case "supervisor_casa_refugio":
         return entityName ? `Supervisor de ${entityName}` : "Supervisor";
       case "sindico_condominio":

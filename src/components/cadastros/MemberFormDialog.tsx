@@ -45,6 +45,7 @@ import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
   { value: "lider_casa_refugio", label: "Líder de Casa Refúgio" },
+  { value: "anfitriao_casa_refugio", label: "Anfitrião(ã) de Casa Refúgio" },
   { value: "secretario_casa_refugio", label: "Secretário(a) de Casa Refúgio" },
   { value: "lider_ministerio", label: "Líder de Ministério" },
   { value: "pastor_geral", label: "Pastor Geral" },
@@ -604,6 +605,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
       case "integrante_ministerio":
         return { type: "ministry", options: ministries };
       case "lider_casa_refugio":
+      case "anfitriao_casa_refugio":
       case "secretario_casa_refugio":
         return { type: "casa_refugio", options: casasRefugio };
       case "supervisor_condominio":
