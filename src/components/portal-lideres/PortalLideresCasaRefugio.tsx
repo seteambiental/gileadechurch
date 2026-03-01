@@ -137,6 +137,9 @@ export const PortalLideresCasaRefugio = ({
         query = query.in("condominio", sindicoCondominios);
       } else if (!isFullAccess && casasRefugioIds.length > 0) {
         query = query.in("id", casasRefugioIds);
+      } else if (!isFullAccess) {
+        // Sem acesso específico - não retornar nada
+        return [];
       }
 
       const { data, error } = await query;
