@@ -41,7 +41,9 @@ import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
-import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+import { exportGenericToExcel, exportGenericToPDF, savePDF } from "@/lib/export";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 
@@ -299,19 +301,19 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return previsoes.map((p: any) => `${formatDateBR(p.data)}: ${formatCurrency(parseFloat(String(p.valor)) || 0)}`).join("; ");
   };
 
-  const getExportColumnsReceitas = () => {
-    const all = [
-      { key: "nome", header: "Nome", accessor: (row: any) => row.nome },
-      { key: "tipo", header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
-      { key: "referencia", header: "Referência", accessor: (row: any) => row.referencia || "—" },
-      { key: "valor_inscricao", header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
-      { key: "valor_pago", header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
-      { key: "saldo", header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
-      { key: "previsoes", header: "Previsões Pgto", accessor: (row: any) => formatPrevisoes(row.previsoes_pagamento) },
-      { key: "forma_pagamento", header: "Forma Pagamento", accessor: (row: any) => formatFormaPagamentoComValor(row) },
-      { key: "status", header: "Status", accessor: (row: any) => getStatusLabel(row.status_pagamento) },
-    ];
-    return all.filter((c) => visibleColumns.has(c.key));
+  const getExportColumnsReceitas = (): import("@/lib/export").ExportColumn[] => {
+    const all: Record<string, import("@/lib/export").ExportColumn> = {
+      nome: { header: "Nome", accessor: (row: any) => row.nome },
+      tipo: { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
+      referencia: { header: "Referência", accessor: (row: any) => row.referencia || "—" },
+      valor_inscricao: { header: "Valor Inscrição", accessor: (row: any) => row.valor_inscricao || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
+      valor_pago: { header: "Valor Pago", accessor: (row: any) => row.valor_pago || 0, format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
+      saldo: { header: "Saldo", accessor: (row: any) => Math.max(0, (row.valor_inscricao || 0) - (row.valor_pago || 0)), format: (value: any) => formatCurrency(Number(value) || 0), type: 'currency' as const },
+      previsoes: { header: "Previsões Pgto", accessor: (row: any) => formatPrevisoes(row.previsoes_pagamento) },
+      forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => formatFormaPagamentoComValor(row) },
+      status: { header: "Status", accessor: (row: any) => getStatusLabel(row.status_pagamento) },
+    };
+    return allColumns.filter((c) => visibleColumns.has(c.key)).map((c) => all[c.key]).filter(Boolean);
   };
 
   const pendingRowStyle = (row: any) => {
@@ -330,7 +332,111 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const handleExportReceitasPDF = () => {
     if (!inscricoes.length) return;
-    exportGenericToPDF(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, `Financeiro — Receitas — ${eventoNomeFinanceiro}`, pendingRowStyle);
+
+    const doc = new jsPDF({ orientation: "landscape" });
+
+    // Title
+    doc.setFontSize(16);
+    doc.text(`Financeiro — Receitas — ${eventoNomeFinanceiro}`, 14, 18);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 25);
+
+    // Summary cards matching what's on screen
+    let yPos = 32;
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+
+    const summaryItems = [
+      `Inscrições: ${totalInscritos}`,
+      `Previsão de Valores: ${formatCurrency(totalPrevisao)}`,
+      `Valor Já Pago: ${formatCurrency(totalPago)}`,
+      `Valor a Receber: ${formatCurrency(totalAReceber)}`,
+      `Total de Despesas: ${formatCurrency(totalDespesas)}`,
+      `Saldo do Evento: ${formatCurrency(saldoEvento)}`,
+    ];
+    const statusSummary = `${pagos} pagos, ${parciais} parciais, ${pendentes} pendentes`;
+    summaryItems.push(`Status: ${statusSummary}`);
+
+    if (Object.keys(totalByPaymentMethod).length > 0) {
+      const methodParts = Object.entries(totalByPaymentMethod)
+        .sort(([, a], [, b]) => b - a)
+        .map(([method, value]) => `${FORMAS_PAGAMENTO_LABELS[method] || method}: ${formatCurrency(value)}`);
+      summaryItems.push(`Formas de Pgto: ${methodParts.join(" | ")}`);
+    }
+
+    // Render summary in 2 columns
+    const colWidth = 130;
+    const half = Math.ceil(summaryItems.length / 2);
+    summaryItems.forEach((item, idx) => {
+      const col = idx < half ? 0 : 1;
+      const row = idx < half ? idx : idx - half;
+      doc.text(item, 14 + col * colWidth, yPos + row * 5);
+    });
+
+    yPos += Math.ceil(summaryItems.length / 2) * 5 + 4;
+
+    // Build table data using same columns as screen
+    const exportCols = getExportColumnsReceitas();
+    const tableHeaders = exportCols.map((c) => c.header);
+    const tableData = inscricoes.map((row) =>
+      exportCols.map((col) => {
+        const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
+        if (col.type === 'currency') return formatCurrency(Number(value) || 0);
+        if (col.format) return col.format(value);
+        return value ?? "—";
+      })
+    );
+
+    // Total row
+    const totalsRow = exportCols.map((col) => {
+      if (!col.type) return "";
+      const sum = inscricoes.reduce((s, row) => {
+        const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
+        return s + (Number(value) || 0);
+      }, 0);
+      return formatCurrency(sum);
+    });
+    if (totalsRow[0] === "") totalsRow[0] = "TOTAL";
+    tableData.push(totalsRow);
+
+    autoTable(doc, {
+      head: [tableHeaders],
+      body: tableData,
+      startY: yPos,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: {
+        fillColor: [220, 53, 69],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      didParseCell: (hookData: any) => {
+        if (hookData.section !== "body") return;
+        const rowIdx = hookData.row.index;
+
+        // Total row styling
+        if (rowIdx === tableData.length - 1) {
+          hookData.cell.styles.fillColor = [230, 230, 230];
+          hookData.cell.styles.fontStyle = "bold";
+          return;
+        }
+
+        // Pending row styling (matching screen's yellow highlight)
+        const originalRow = inscricoes[rowIdx];
+        if (originalRow) {
+          const normalized = normalizeStatus(originalRow.status_pagamento);
+          if (normalized === "pendente") {
+            hookData.cell.styles.fillColor = [255, 243, 205];
+            hookData.cell.styles.textColor = [133, 100, 4];
+          } else if (rowIdx % 2 === 1) {
+            hookData.cell.styles.fillColor = [248, 249, 250];
+          }
+        }
+      },
+    });
+
+    savePDF(doc, `Financeiro_${eventoNomeFinanceiro}.pdf`);
   };
 
   return (
