@@ -296,7 +296,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
           } else {
             const { error } = await supabase
               .from("impacto_inscricoes")
-              .insert({ ...payload, member_id: inscricao.member_id || null });
+              .insert({ ...payload, member_id: inscricao.member_id || null, aprovado: true });
             if (error) throw error;
           }
         } else {
@@ -356,7 +356,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
           }
         }
 
-        const { error } = await supabase.from("impacto_inscricoes").insert(payload);
+        const { error } = await supabase.from("impacto_inscricoes").insert({ ...payload, aprovado: true });
         if (error) throw error;
       }
     },
