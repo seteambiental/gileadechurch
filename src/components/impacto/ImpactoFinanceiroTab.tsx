@@ -61,6 +61,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     onEventoChange?.(id);
   };
   const [searchNome, setSearchNome] = useState("");
+  const [filtroGenero, setFiltroGenero] = useState("todos");
   const [dataPrevisaoInput, setDataPrevisaoInput] = useState("");
   const [dataPrevisao, setDataPrevisao] = useState("");
 
@@ -75,6 +76,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const allColumns = [
     { key: "nome", label: "Nome" },
     { key: "tipo", label: "Tipo" },
+    { key: "genero", label: "Gênero" },
     { key: "referencia", label: "Referência" },
     { key: "casa_refugio", label: "Casa Refúgio" },
     { key: "condominio", label: "Condomínio" },
@@ -152,7 +154,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado")
+        .select("id, member_id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado")
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", true)
         .order("nome");
@@ -273,12 +275,18 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const inscricoesFiltradas = useMemo(() => {
     if (!inscricoes) return [];
-    if (!searchNome.trim()) return inscricoes;
-    const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return inscricoes.filter((i) =>
-      i.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
-    );
-  }, [inscricoes, searchNome]);
+    let resultado = inscricoes;
+    if (filtroGenero !== "todos") {
+      resultado = resultado.filter((i) => (i as any).genero === filtroGenero);
+    }
+    if (searchNome.trim()) {
+      const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      resultado = resultado.filter((i) =>
+        i.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+      );
+    }
+    return resultado;
+  }, [inscricoes, searchNome, filtroGenero]);
 
   const totalInscritos = inscricoes?.length || 0;
 
@@ -396,6 +404,11 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     const all: Record<string, import("@/lib/export").ExportColumn> = {
       nome: { header: "Nome", accessor: (row: any) => row.nome },
       tipo: { header: "Tipo", accessor: (row: any) => TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—" },
+      genero: { header: "Gênero", accessor: (row: any) => {
+        const g = row.genero;
+        if (!g) return "—";
+        return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
+      }},
       referencia: { header: "Referência", accessor: (row: any) => row.referencia || "—" },
       casa_refugio: { header: "Casa Refúgio", accessor: (row: any) => getMemberCasaRefugio(row.member_id) },
       condominio: { header: "Condomínio", accessor: (row: any) => getMemberCondominio(row.member_id) },
@@ -753,14 +766,26 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
             </TabsList>
 
             <TabsContent value="receitas" className="space-y-3">
-              <div className="relative max-w-sm w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome..."
-                  value={searchNome}
-                  onChange={(e) => setSearchNome(e.target.value)}
-                  className="pl-9"
-                />
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="relative max-w-sm w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome..."
+                    value={searchNome}
+                    onChange={(e) => setSearchNome(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Select value={filtroGenero} onValueChange={setFiltroGenero}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Gênero" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="M">Masculino</SelectItem>
+                    <SelectItem value="F">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               {isLoading ? (
                 <div className="text-center py-8">Carregando...</div>
@@ -777,6 +802,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                        <TableRow>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead>Tipo</TableHead>}
+                         {isCol("genero") && <TableHead>Gênero</TableHead>}
                          {isCol("referencia") && <TableHead>Referência</TableHead>}
                          {isCol("casa_refugio") && <TableHead>Casa Refúgio</TableHead>}
                          {isCol("condominio") && <TableHead>Condomínio</TableHead>}
@@ -808,8 +834,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                                 </span>
                               </TableCell>
                             )}
-                            {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
-                            {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
+                             {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
+                             {isCol("genero") && <TableCell>{(inscricao as any).genero === "M" ? "Masculino" : (inscricao as any).genero === "F" ? "Feminino" : "—"}</TableCell>}
+                             {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
                             {isCol("casa_refugio") && <TableCell>{getMemberCasaRefugio(inscricao.member_id)}</TableCell>}
                             {isCol("condominio") && <TableCell>{getMemberCondominio(inscricao.member_id)}</TableCell>}
                             {isCol("funcao") && <TableCell className="text-xs max-w-[200px]">{getMemberFuncoes(inscricao.member_id)}</TableCell>}
