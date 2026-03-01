@@ -700,7 +700,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                         const previsoes = inscricao.previsoes_pagamento as Array<{ data: string; valor: number }> | null;
                         const temPrevisao = previsoes && Array.isArray(previsoes) && previsoes.length > 0;
                         return (
-                          <TableRow key={inscricao.id}>
+                          <TableRow key={inscricao.id} className={normalizeStatus(inscricao.status_pagamento) === "pendente" ? "bg-yellow-50 hover:bg-yellow-100" : ""}>
                             {isCol("nome") && (
                               <TableCell className="font-medium">
                                 <span className="flex items-center gap-1.5">
