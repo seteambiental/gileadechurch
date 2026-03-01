@@ -97,12 +97,16 @@ interface Member {
 
 const functionTypeLabels: Record<string, string> = {
   lider_casa_refugio: "Líder de Casa Refúgio",
+  anfitriao_casa_refugio: "Anfitrião(ã) de Casa Refúgio",
+  secretario_casa_refugio: "Secretário(a) de Casa Refúgio",
+  supervisor_casa_refugio: "Supervisor de Casa Refúgio",
   lider_ministerio: "Líder de Ministério",
   pastor_geral: "Pastor Geral",
   pastor_auxiliar: "Pastor Auxiliar",
   supervisor_condominio: "Supervisor de Condomínio",
   sindico_condominio: "Síndico de Condomínio",
   integrante_ministerio: "Integrante de Ministério",
+  membro: "Membro",
 };
 
 const functionTypeOptions = Object.entries(functionTypeLabels).map(([value, label]) => ({
