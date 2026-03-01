@@ -5185,6 +5185,7 @@ export type Database = {
         | "membro"
         | "supervisor_casa_refugio"
         | "secretario_casa_refugio"
+        | "anfitriao_casa_refugio"
       conversion_type: "conversao" | "reconciliacao" | "visitante"
       kids_turma: "laranja" | "amarelo" | "verde" | "azul" | "bercario"
     }
@@ -5343,6 +5344,7 @@ export const Constants = {
         "membro",
         "supervisor_casa_refugio",
         "secretario_casa_refugio",
+        "anfitriao_casa_refugio",
       ],
       conversion_type: ["conversao", "reconciliacao", "visitante"],
       kids_turma: ["laranja", "amarelo", "verde", "azul", "bercario"],

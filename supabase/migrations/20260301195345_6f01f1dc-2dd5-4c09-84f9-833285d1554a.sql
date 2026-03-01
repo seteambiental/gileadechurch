@@ -1,0 +1,1 @@
+ALTER TYPE church_function_type ADD VALUE 'anfitriao_casa_refugio';
