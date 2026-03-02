@@ -320,6 +320,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       toast.success("Inscrição removida!");
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes", selectedEventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
     },
   });
 

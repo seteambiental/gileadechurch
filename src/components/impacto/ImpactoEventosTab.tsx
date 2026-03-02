@@ -29,8 +29,8 @@ const ImpactoEventosTab = () => {
     },
   });
 
-  // Count from impacto_inscricoes (accepted/authoritative) + pending from inscricoes_eventos
-  const { data: impactoCount } = useQuery({
+  // Count only from impacto_inscricoes (the authoritative source, matching the Inscrições tab)
+  const { data: inscricoesAgendaCount } = useQuery({
     queryKey: ["impacto-inscricoes-count"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,32 +44,6 @@ const ImpactoEventosTab = () => {
       return counts;
     },
   });
-
-  const { data: pendingCount } = useQuery({
-    queryKey: ["inscricoes-eventos-pending-count"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("inscricoes_eventos")
-        .select("evento_id")
-        .eq("aprovado", false);
-      if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach((i) => {
-        counts[i.evento_id] = (counts[i.evento_id] || 0) + 1;
-      });
-      return counts;
-    },
-  });
-
-  const inscricoesAgendaCount = (() => {
-    const merged: Record<string, number> = { ...(impactoCount || {}) };
-    if (pendingCount) {
-      Object.entries(pendingCount).forEach(([eventId, count]) => {
-        merged[eventId] = (merged[eventId] || 0) + count;
-      });
-    }
-    return merged;
-  })();
 
   if (isLoading) {
     return <div className="text-center py-8">Carregando...</div>;
