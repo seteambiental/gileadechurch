@@ -140,9 +140,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       titulo: e.titulo,
       data_inicio: e.data_evento,
     }));
-    // Deduplicate by ID (same event can exist in both tables)
-    const impactoIds = new Set(impacto.map((e) => e.id));
-    const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id));
+    // Deduplicate by title (impacto takes priority over agenda)
+    const impactoTitles = new Set(impacto.map((e) => e.titulo));
+    const uniqueAgenda = agenda.filter((e) => !impactoTitles.has(e.titulo));
     return [...impacto, ...uniqueAgenda].sort((a, b) =>
       new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
     );
