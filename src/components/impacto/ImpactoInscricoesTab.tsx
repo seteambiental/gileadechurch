@@ -397,12 +397,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     printWindow.document.close();
   };
 
-  const printEtiquetas = () => {
+  const printEtiquetas = async () => {
     const selected = inscricoes.filter((i) => selectedIds.includes(i.id));
     if (selected.length === 0) {
       toast.error("Selecione pelo menos uma inscrição");
       return;
     }
+
+    // Fetch church logo
+    const { data: configData } = await supabase
+      .from("igreja_config")
+      .select("logo_url, logo_dark_url")
+      .limit(1)
+      .single();
+    const logoUrl = configData?.logo_dark_url || configData?.logo_url || "";
 
     const evento = eventos?.find((e) => e.id === selectedEventoId);
     const printWindow = window.open("", "_blank");
@@ -410,24 +418,30 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
     const etiquetasHtml = selected.map((inscricao) => `
       <div class="etiqueta">
-        <div class="nome">${inscricao.nome}</div>
-        ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
-        <div class="evento">${evento?.titulo || "Impacto"}</div>
-        <div class="data">${evento?.data_inicio ? format(parseLocalDate(evento.data_inicio), "dd/MM/yyyy") : ''}</div>
+        <div class="logo-area">
+          ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="Logo" />` : ''}
+        </div>
+        <div class="divider"></div>
+        <div class="info-area">
+          <div class="nome">${inscricao.nome.toUpperCase()}</div>
+          ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
+        </div>
       </div>
     `).join("");
 
     printWindow.document.write(`
       <!DOCTYPE html><html><head><title>Etiquetas de Mala - ${evento?.titulo}</title>
       <style>
-        @page { size: A4; margin: 5mm; }
+        @page { size: A4; margin: 13.5mm 4.7mm; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
         .container { display: flex; flex-wrap: wrap; }
-        .etiqueta { width: 63.5mm; height: 38.1mm; border: 1px dashed #ccc; padding: 5mm; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; page-break-inside: avoid; }
-        .nome { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-        .ref { font-size: 11px; font-weight: bold; color: #444; letter-spacing: 1px; margin-bottom: 2px; }
-        .evento { font-size: 11px; color: #333; }
-        .data { font-size: 10px; color: #666; }
+        .etiqueta { width: 101.6mm; height: 25.4mm; box-sizing: border-box; display: flex; flex-direction: row; align-items: center; page-break-inside: avoid; padding: 2mm 3mm; overflow: hidden; }
+        .logo-area { width: 22mm; min-width: 22mm; display: flex; align-items: center; justify-content: center; }
+        .logo { max-width: 18mm; max-height: 18mm; object-fit: contain; }
+        .divider { width: 1px; height: 16mm; background: #ccc; margin: 0 3mm; flex-shrink: 0; }
+        .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+        .nome { font-size: 11pt; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ref { font-size: 9pt; font-weight: bold; color: #555; letter-spacing: 0.5px; margin-top: 1mm; }
       </style></head><body>
       <div class="container">${etiquetasHtml}</div>
       <script>window.onload = function() { window.print(); }</script>
