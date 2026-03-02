@@ -79,11 +79,52 @@ const NovasInscricoesTab = () => {
         valorInscricao = (inscricao.evento.valores_por_tipo as Record<string, number>)[tipo] ?? null;
       }
 
+      // Find or create the corresponding impacto_evento for this agenda event
+      const agendaEventoId = inscricao.evento_id;
+      let impactoEventoId: string;
+
+      // Check if an impacto_evento already exists with matching title
+      const { data: existingImpactoEvento } = await supabase
+        .from("impacto_inscricoes")
+        .select("evento_id")
+        .limit(1);
+
+      // Try to find an impacto_evento by matching the agenda event title
+      const agendaTitulo = inscricao.evento?.titulo;
+      const agendaData = inscricao.evento?.data_evento;
+      const agendaDataFim = inscricao.evento?.data_fim;
+
+      const { data: matchingEvento } = await supabase
+        .from("impacto_eventos")
+        .select("id")
+        .eq("titulo", agendaTitulo || "")
+        .maybeSingle();
+
+      if (matchingEvento) {
+        impactoEventoId = matchingEvento.id;
+      } else {
+        // Create a new impacto_evento based on the agenda event
+        const { data: newEvento, error: createError } = await supabase
+          .from("impacto_eventos")
+          .insert({
+            titulo: agendaTitulo || "Evento",
+            data_inicio: agendaData || new Date().toISOString().split("T")[0],
+            data_fim: agendaDataFim || agendaData || null,
+            ativo: true,
+            tem_custo: !!(inscricao.evento?.valores_por_tipo),
+            valores_por_tipo: inscricao.evento?.valores_por_tipo || null,
+          } as any)
+          .select("id")
+          .single();
+        if (createError) throw createError;
+        impactoEventoId = newEvento.id;
+      }
+
       // Create a mirror record in impacto_inscricoes so the referência trigger fires
       const { error: insertError } = await supabase
         .from("impacto_inscricoes")
         .insert({
-          evento_id: inscricao.evento_id,
+          evento_id: impactoEventoId,
           nome: inscricao.nome_participante,
           telefone: inscricao.telefone_contato,
           tipo_inscricao: inscricao.tipo_inscricao || "membro",
@@ -143,8 +184,39 @@ const NovasInscricoesTab = () => {
           valorInscricao = (inscricao.evento.valores_por_tipo as Record<string, number>)[tipo] ?? null;
         }
 
+        // Find or create impacto_evento
+        const agendaTitulo = inscricao.evento?.titulo;
+        const agendaData = inscricao.evento?.data_evento;
+        const agendaDataFim = inscricao.evento?.data_fim;
+
+        const { data: matchingEvento } = await supabase
+          .from("impacto_eventos")
+          .select("id")
+          .eq("titulo", agendaTitulo || "")
+          .maybeSingle();
+
+        let impactoEventoId: string;
+        if (matchingEvento) {
+          impactoEventoId = matchingEvento.id;
+        } else {
+          const { data: newEvento, error: createError } = await supabase
+            .from("impacto_eventos")
+            .insert({
+              titulo: agendaTitulo || "Evento",
+              data_inicio: agendaData || new Date().toISOString().split("T")[0],
+              data_fim: agendaDataFim || agendaData || null,
+              ativo: true,
+              tem_custo: !!(inscricao.evento?.valores_por_tipo),
+              valores_por_tipo: inscricao.evento?.valores_por_tipo || null,
+            } as any)
+            .select("id")
+            .single();
+          if (createError) throw createError;
+          impactoEventoId = newEvento.id;
+        }
+
         await supabase.from("impacto_inscricoes").insert({
-          evento_id: inscricao.evento_id,
+          evento_id: impactoEventoId,
           nome: inscricao.nome_participante,
           telefone: inscricao.telefone_contato,
           tipo_inscricao: inscricao.tipo_inscricao || "membro",
