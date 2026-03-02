@@ -80,16 +80,8 @@ const NovasInscricoesTab = () => {
       }
 
       // Find or create the corresponding impacto_evento for this agenda event
-      const agendaEventoId = inscricao.evento_id;
       let impactoEventoId: string;
 
-      // Check if an impacto_evento already exists with matching title
-      const { data: existingImpactoEvento } = await supabase
-        .from("impacto_inscricoes")
-        .select("evento_id")
-        .limit(1);
-
-      // Try to find an impacto_evento by matching the agenda event title
       const agendaTitulo = inscricao.evento?.titulo;
       const agendaData = inscricao.evento?.data_evento;
       const agendaDataFim = inscricao.evento?.data_fim;
@@ -110,6 +102,7 @@ const NovasInscricoesTab = () => {
             titulo: agendaTitulo || "Evento",
             data_inicio: agendaData || new Date().toISOString().split("T")[0],
             data_fim: agendaDataFim || agendaData || null,
+            tipo: "geral",
             ativo: true,
             tem_custo: !!(inscricao.evento?.valores_por_tipo),
             valores_por_tipo: inscricao.evento?.valores_por_tipo || null,
@@ -205,6 +198,7 @@ const NovasInscricoesTab = () => {
               titulo: agendaTitulo || "Evento",
               data_inicio: agendaData || new Date().toISOString().split("T")[0],
               data_fim: agendaDataFim || agendaData || null,
+              tipo: "geral",
               ativo: true,
               tem_custo: !!(inscricao.evento?.valores_por_tipo),
               valores_por_tipo: inscricao.evento?.valores_por_tipo || null,
@@ -215,7 +209,7 @@ const NovasInscricoesTab = () => {
           impactoEventoId = newEvento.id;
         }
 
-        await supabase.from("impacto_inscricoes").insert({
+        const { error: insertError } = await supabase.from("impacto_inscricoes").insert({
           evento_id: impactoEventoId,
           nome: inscricao.nome_participante,
           telefone: inscricao.telefone_contato,
@@ -226,6 +220,7 @@ const NovasInscricoesTab = () => {
           member_id: inscricao.member_id || null,
           aprovado: true,
         });
+        if (insertError) throw insertError;
       }
 
       const { error } = await supabase
