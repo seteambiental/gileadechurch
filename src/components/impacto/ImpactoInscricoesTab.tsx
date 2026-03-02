@@ -433,18 +433,72 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     printWindow.document.write(`
       <!DOCTYPE html><html><head><title>Etiquetas de Mala - ${evento?.titulo}</title>
       <style>
-        @page { size: A4; margin: 13.5mm 4.7mm; }
+        /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm */
+        @page { size: letter; margin: 0; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        .container { display: flex; flex-wrap: wrap; }
-        .etiqueta { width: 101.6mm; height: 25.4mm; box-sizing: border-box; display: flex; flex-direction: row; align-items: center; page-break-inside: avoid; padding: 2mm 3mm; overflow: hidden; }
+        .page {
+          width: 215.9mm;
+          height: 279.4mm;
+          padding-top: 12.7mm;
+          padding-left: 4.0mm;
+          box-sizing: border-box;
+          page-break-after: always;
+          display: flex;
+          flex-wrap: wrap;
+          align-content: flex-start;
+        }
+        .page:last-child { page-break-after: auto; }
+        .cell {
+          /* Each cell = label width (101.6mm) + half of horizontal gap */
+          /* Horizontal distance between labels: 10.68mm total spacing between columns */
+          /* Gap between two labels = page_width - 2*margin_lateral - 2*label_width = 215.9 - 0.8 - 203.2 = 11.9mm ≈ 10.68mm */
+          width: 106.8mm; /* 101.6 + (10.68/2) on each side, but simpler: half page content */
+          height: 25.4mm; /* label height = vertical distance */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+        }
+        .etiqueta {
+          width: 101.6mm;
+          height: 25.4mm;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          padding: 1.5mm 3mm;
+          overflow: hidden;
+        }
         .logo-area { width: 22mm; min-width: 22mm; display: flex; align-items: center; justify-content: center; }
-        .logo { max-width: 18mm; max-height: 18mm; object-fit: contain; }
-        .divider { width: 1px; height: 16mm; background: #ccc; margin: 0 3mm; flex-shrink: 0; }
+        .logo { max-width: 18mm; max-height: 20mm; object-fit: contain; }
+        .divider { width: 1px; height: 16mm; background: #bbb; margin: 0 3mm; flex-shrink: 0; }
         .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        .nome { font-size: 11pt; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .nome { font-size: 10pt; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .ref { font-size: 9pt; font-weight: bold; color: #555; letter-spacing: 0.5px; margin-top: 1mm; }
       </style></head><body>
-      <div class="container">${etiquetasHtml}</div>
+      ${(() => {
+        // 20 labels per page (2 cols x 10 rows)
+        const pages: string[] = [];
+        for (let i = 0; i < selected.length; i += 20) {
+          const pageLabels = selected.slice(i, i + 20);
+          const cells = pageLabels.map((inscricao) => `
+            <div class="cell">
+              <div class="etiqueta">
+                <div class="logo-area">
+                  ${logoUrl ? '<img class="logo" src="' + logoUrl + '" alt="Logo" />' : ''}
+                </div>
+                <div class="divider"></div>
+                <div class="info-area">
+                  <div class="nome">${inscricao.nome.toUpperCase()}</div>
+                  ${inscricao.referencia ? '<div class="ref">' + inscricao.referencia + '</div>' : ''}
+                </div>
+              </div>
+            </div>
+          `).join("");
+          pages.push('<div class="page">' + cells + '</div>');
+        }
+        return pages.join("");
+      })()}
       <script>window.onload = function() { window.print(); }</script>
       </body></html>
     `);
