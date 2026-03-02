@@ -244,6 +244,11 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     );
   }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
 
+  // Keep selected IDs in sync with currently visible inscrições
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => inscricoes.some((i) => i.id === id)));
+  }, [inscricoes]);
+
   // Fetch casas refugio for name/condominio lookup
   const { data: casasRefugio = [] } = useQuery({
     queryKey: ["casas-refugio-lookup"],
@@ -580,7 +585,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-heading font-bold">Inscrições</h2>
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); }}>
+          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); setSelectedIds([]); }}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>

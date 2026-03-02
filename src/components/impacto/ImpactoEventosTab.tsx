@@ -29,18 +29,66 @@ const ImpactoEventosTab = () => {
     },
   });
 
-  // Count only from impacto_inscricoes (the authoritative source, matching the Inscrições tab)
+  // Count using the same source logic as the Inscrições tab:
+  // impacto_inscricoes + pendentes de inscricoes_eventos (sem duplicar por member_id/nome)
   const { data: inscricoesAgendaCount } = useQuery({
     queryKey: ["impacto-inscricoes-count"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("impacto_inscricoes")
-        .select("evento_id");
-      if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach((i) => {
-        counts[i.evento_id] = (counts[i.evento_id] || 0) + 1;
+      const [{ data: impactoData, error: impactoError }, { data: agendaPendentes, error: agendaError }] = await Promise.all([
+        supabase.from("impacto_inscricoes").select("evento_id, member_id, nome"),
+        supabase
+          .from("inscricoes_eventos")
+          .select("evento_id, member_id, nome_participante")
+          .eq("aprovado", false),
+      ]);
+
+      if (impactoError) throw impactoError;
+      if (agendaError) throw agendaError;
+
+      const normalize = (value: string | null | undefined) =>
+        (value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
+
+      const impactoByEvent = new Map<string, { memberIds: Set<string>; nomes: Set<string>; count: number }>();
+
+      (impactoData || []).forEach((row) => {
+        const eventId = row.evento_id;
+        if (!eventId) return;
+        if (!impactoByEvent.has(eventId)) {
+          impactoByEvent.set(eventId, { memberIds: new Set(), nomes: new Set(), count: 0 });
+        }
+        const eventState = impactoByEvent.get(eventId)!;
+        if (row.member_id) eventState.memberIds.add(row.member_id);
+        const nomeNorm = normalize(row.nome);
+        if (nomeNorm) eventState.nomes.add(nomeNorm);
+        eventState.count += 1;
       });
+
+      (agendaPendentes || []).forEach((row) => {
+        const eventId = row.evento_id;
+        if (!eventId) return;
+        if (!impactoByEvent.has(eventId)) {
+          impactoByEvent.set(eventId, { memberIds: new Set(), nomes: new Set(), count: 0 });
+        }
+        const eventState = impactoByEvent.get(eventId)!;
+
+        if (row.member_id && eventState.memberIds.has(row.member_id)) return;
+        const nomeNorm = normalize(row.nome_participante);
+        if (nomeNorm && eventState.nomes.has(nomeNorm)) return;
+
+        if (row.member_id) eventState.memberIds.add(row.member_id);
+        if (nomeNorm) eventState.nomes.add(nomeNorm);
+        eventState.count += 1;
+      });
+
+      const counts: Record<string, number> = {};
+      impactoByEvent.forEach((value, key) => {
+        counts[key] = value.count;
+      });
+
       return counts;
     },
   });
