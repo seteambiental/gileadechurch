@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -260,6 +261,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return [...imp].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
   }, [rawImpactoInscricoes]);
 
+  // Column filter state: key -> Set of selected values
+  const [columnFilters, setColumnFilters] = useState<Record<string, Set<string>>>({});
+
   const { data: despesas = [] } = useQuery({
     queryKey: ["impacto-despesas", selectedEventoId],
     queryFn: async () => {
@@ -276,7 +280,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 
-  const inscricoesFiltradas = useMemo(() => {
+  const inscricoesPreFiltradas = useMemo(() => {
     if (!inscricoes) return [];
     let resultado = inscricoes;
     if (filtroGenero !== "todos") {
@@ -384,6 +388,52 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     if (normalized === "parcial") return "Parcial";
     return "Pendente";
   };
+
+  // Helper to get display value per column for a row
+  const getColumnValue = useCallback((row: any, colKey: string): string => {
+    switch (colKey) {
+      case "nome": return row.nome || "—";
+      case "tipo": return TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—";
+      case "genero": return row.genero === "M" ? "Masculino" : row.genero === "F" ? "Feminino" : "—";
+      case "referencia": return row.referencia || "—";
+      case "casa_refugio": return getMemberCasaRefugio(row.member_id);
+      case "condominio": return getMemberCondominio(row.member_id);
+      case "funcao": return getMemberFuncoes(row.member_id);
+      case "status": return getStatusLabel(row.status_pagamento);
+      case "forma_pagamento": return formatFormaPagamentoComValor(row);
+      default: return "—";
+    }
+  }, [memberMap, condominioMap]);
+
+  // Filterable columns (exclude numeric/preview columns)
+  const filterableColumns = ["tipo", "genero", "referencia", "casa_refugio", "condominio", "funcao", "status", "forma_pagamento"];
+
+  // Compute unique values for each filterable column
+  const columnUniqueValues = useMemo(() => {
+    const result: Record<string, string[]> = {};
+    filterableColumns.forEach((key) => {
+      const vals = new Set<string>();
+      (inscricoes || []).forEach((row) => vals.add(getColumnValue(row, key)));
+      result[key] = Array.from(vals).sort((a, b) => a.localeCompare(b, "pt-BR"));
+    });
+    return result;
+  }, [inscricoes, getColumnValue]);
+
+  const setColumnFilter = useCallback((colKey: string, selected: Set<string>) => {
+    setColumnFilters((prev) => ({ ...prev, [colKey]: selected }));
+  }, []);
+
+  // Final filtered list with column filters applied
+  const inscricoesFiltradas = useMemo(() => {
+    let resultado = [...inscricoesPreFiltradas];
+    filterableColumns.forEach((colKey) => {
+      const filter = columnFilters[colKey];
+      if (filter && filter.size > 0 && filter.size < (columnUniqueValues[colKey]?.length || 0)) {
+        resultado = resultado.filter((row) => filter.has(getColumnValue(row, colKey)));
+      }
+    });
+    return resultado;
+  }, [inscricoesPreFiltradas, columnFilters, columnUniqueValues, getColumnValue]);
 
   const getStatusBadge = (status: string | null) => {
     const normalized = normalizeStatus(status);
@@ -805,18 +855,18 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                     <TableHeader className="sticky top-0 z-10 bg-card">
                        <TableRow>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
-                         {isCol("tipo") && <TableHead>Tipo</TableHead>}
-                         {isCol("genero") && <TableHead>Gênero</TableHead>}
-                         {isCol("referencia") && <TableHead>Referência</TableHead>}
-                         {isCol("casa_refugio") && <TableHead>Casa Refúgio</TableHead>}
-                         {isCol("condominio") && <TableHead>Condomínio</TableHead>}
-                         {isCol("funcao") && <TableHead>Função</TableHead>}
+                         {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={columnUniqueValues["tipo"] || []} selected={columnFilters["tipo"] || new Set(columnUniqueValues["tipo"] || [])} onChange={(s) => setColumnFilter("tipo", s)} /></TableHead>}
+                         {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={columnUniqueValues["genero"] || []} selected={columnFilters["genero"] || new Set(columnUniqueValues["genero"] || [])} onChange={(s) => setColumnFilter("genero", s)} /></TableHead>}
+                         {isCol("referencia") && <TableHead><ColumnFilterPopover title="Referência" options={columnUniqueValues["referencia"] || []} selected={columnFilters["referencia"] || new Set(columnUniqueValues["referencia"] || [])} onChange={(s) => setColumnFilter("referencia", s)} /></TableHead>}
+                         {isCol("casa_refugio") && <TableHead><ColumnFilterPopover title="Casa Refúgio" options={columnUniqueValues["casa_refugio"] || []} selected={columnFilters["casa_refugio"] || new Set(columnUniqueValues["casa_refugio"] || [])} onChange={(s) => setColumnFilter("casa_refugio", s)} /></TableHead>}
+                         {isCol("condominio") && <TableHead><ColumnFilterPopover title="Condomínio" options={columnUniqueValues["condominio"] || []} selected={columnFilters["condominio"] || new Set(columnUniqueValues["condominio"] || [])} onChange={(s) => setColumnFilter("condominio", s)} /></TableHead>}
+                         {isCol("funcao") && <TableHead><ColumnFilterPopover title="Função" options={columnUniqueValues["funcao"] || []} selected={columnFilters["funcao"] || new Set(columnUniqueValues["funcao"] || [])} onChange={(s) => setColumnFilter("funcao", s)} /></TableHead>}
                          {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
                          {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
                          {isCol("saldo") && <TableHead>Saldo</TableHead>}
                          {isCol("previsoes") && <TableHead>Previsões</TableHead>}
-                         {isCol("forma_pagamento") && <TableHead>Forma Pgto</TableHead>}
-                         {isCol("status") && <TableHead>Status</TableHead>}
+                         {isCol("forma_pagamento") && <TableHead><ColumnFilterPopover title="Forma Pgto" options={columnUniqueValues["forma_pagamento"] || []} selected={columnFilters["forma_pagamento"] || new Set(columnUniqueValues["forma_pagamento"] || [])} onChange={(s) => setColumnFilter("forma_pagamento", s)} /></TableHead>}
+                         {isCol("status") && <TableHead><ColumnFilterPopover title="Status" options={columnUniqueValues["status"] || []} selected={columnFilters["status"] || new Set(columnUniqueValues["status"] || [])} onChange={(s) => setColumnFilter("status", s)} /></TableHead>}
                        </TableRow>
                     </TableHeader>
                     <TableBody>
