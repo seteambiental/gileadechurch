@@ -702,10 +702,10 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           </CardContent>
         </Card>
       ) : (
-        <div className="[transform:rotateX(180deg)] overflow-x-auto">
-          <Card className="[transform:rotateX(180deg)]">
+        <Card>
+          <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
           <Table className="min-w-max">
-             <TableHeader>
+             <TableHeader className="sticky top-0 z-10 bg-card">
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
@@ -841,8 +841,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
               })}
             </TableBody>
           </Table>
-          </Card>
-        </div>
+          </div>
+        </Card>
       )}
 
       {selectedEventoId && (
