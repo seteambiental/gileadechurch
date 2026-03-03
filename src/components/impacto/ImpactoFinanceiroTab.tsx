@@ -799,7 +799,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   </CardContent>
                 </Card>
               ) : (
-                <Card className="overflow-x-auto">
+                <div className="[transform:rotateX(180deg)] overflow-x-auto">
+                  <Card className="[transform:rotateX(180deg)]">
                   <Table className="min-w-max">
                     <TableHeader>
                        <TableRow>
@@ -868,7 +869,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                       })}
                     </TableBody>
                   </Table>
-                </Card>
+                  </Card>
+                </div>
               )}
             </TabsContent>
 

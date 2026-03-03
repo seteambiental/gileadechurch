@@ -702,7 +702,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-x-auto">
+        <div className="[transform:rotateX(180deg)] overflow-x-auto">
+          <Card className="[transform:rotateX(180deg)]">
           <Table className="min-w-max">
              <TableHeader>
               <TableRow>
@@ -840,7 +841,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
               })}
             </TableBody>
           </Table>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {selectedEventoId && (
