@@ -86,19 +86,22 @@ const NovasInscricoesTab = () => {
       const agendaData = inscricao.evento?.data_evento;
       const agendaDataFim = inscricao.evento?.data_fim;
 
-      const { data: matchingEvento } = await supabase
+      // First try to find by agenda event ID (same ID shared between tables)
+      const agendaEventId = inscricao.evento_id;
+      const { data: matchById } = await supabase
         .from("impacto_eventos")
         .select("id")
-        .eq("titulo", agendaTitulo || "")
+        .eq("id", agendaEventId)
         .maybeSingle();
 
-      if (matchingEvento) {
-        impactoEventoId = matchingEvento.id;
+      if (matchById) {
+        impactoEventoId = matchById.id;
       } else {
-        // Create a new impacto_evento based on the agenda event
+        // Create a new impacto_evento using the agenda event ID to keep them linked
         const { data: newEvento, error: createError } = await supabase
           .from("impacto_eventos")
           .insert({
+            id: agendaEventId,
             titulo: agendaTitulo || "Evento",
             data_inicio: agendaData || new Date().toISOString().split("T")[0],
             data_fim: agendaDataFim || agendaData || null,
@@ -182,19 +185,22 @@ const NovasInscricoesTab = () => {
         const agendaData = inscricao.evento?.data_evento;
         const agendaDataFim = inscricao.evento?.data_fim;
 
-        const { data: matchingEvento } = await supabase
+        // First try to find by agenda event ID (same ID shared between tables)
+        const agendaEventId = inscricao.evento_id;
+        const { data: matchById } = await supabase
           .from("impacto_eventos")
           .select("id")
-          .eq("titulo", agendaTitulo || "")
+          .eq("id", agendaEventId)
           .maybeSingle();
 
         let impactoEventoId: string;
-        if (matchingEvento) {
-          impactoEventoId = matchingEvento.id;
+        if (matchById) {
+          impactoEventoId = matchById.id;
         } else {
           const { data: newEvento, error: createError } = await supabase
             .from("impacto_eventos")
             .insert({
+              id: agendaEventId,
               titulo: agendaTitulo || "Evento",
               data_inicio: agendaData || new Date().toISOString().split("T")[0],
               data_fim: agendaDataFim || agendaData || null,
