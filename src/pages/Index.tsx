@@ -106,17 +106,35 @@ const Index = () => {
   const { data: avisosDb } = useQuery({
     queryKey: ["homepage-avisos-public"],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
       const { data, error } = await supabase
         .from("homepage_avisos")
         .select("*")
         .eq("ativo", true);
       if (error) return [];
+
+      // Helper: parse "dd/MM/yyyy" to Date
+      const parseDataAviso = (d: string): Date | null => {
+        const parts = d.split("/");
+        if (parts.length !== 3) return null;
+        const [dd, mm, yyyy] = parts;
+        return new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd));
+      };
+
       // Filtra avisos com data passada
-      const filtered = (data || []).filter((a) => !a.data || a.data >= today);
+      const filtered = (data || []).filter((a) => {
+        if (!a.data) return true;
+        const parsed = parseDataAviso(a.data);
+        return parsed ? parsed >= today : true;
+      });
       // Ordena cronologicamente: avisos com data primeiro (asc), sem data por ordem
       return filtered.sort((a, b) => {
-        if (a.data && b.data) return a.data.localeCompare(b.data);
+        if (a.data && b.data) {
+          const dateA = parseDataAviso(a.data);
+          const dateB = parseDataAviso(b.data);
+          if (dateA && dateB) return dateA.getTime() - dateB.getTime();
+        }
         if (a.data && !b.data) return -1;
         if (!a.data && b.data) return 1;
         return (a.ordem ?? 0) - (b.ordem ?? 0);
