@@ -116,18 +116,57 @@ const InscricaoEvento = () => {
     enabled: !!eventoId,
   });
 
-  // Fetch inscriptions count for this event (excluding waiting list)
+  // Fetch inscriptions count for this event using the same logic as Impacto/Agenda Eventos
+  // Fonte: impacto_inscricoes + pendentes de inscricoes_eventos (sem duplicar por member_id/nome)
   const { data: inscricoesCount = 0 } = useQuery({
     queryKey: ["inscricoes-count", eventoId],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("inscricoes_eventos")
-        .select("*", { count: "exact", head: true })
-        .eq("evento_id", eventoId)
-        .eq("lista_espera", false)
-        .neq("status_pagamento", "cancelado");
-      if (error) throw error;
-      return count || 0;
+      const [{ data: impactoData, error: impactoError }, { data: agendaPendentes, error: agendaError }] = await Promise.all([
+        supabase
+          .from("impacto_inscricoes")
+          .select("member_id, nome")
+          .eq("evento_id", eventoId),
+        supabase
+          .from("inscricoes_eventos")
+          .select("member_id, nome_participante")
+          .eq("evento_id", eventoId)
+          .eq("aprovado", false)
+          .eq("lista_espera", false)
+          .neq("status_pagamento", "cancelado"),
+      ]);
+
+      if (impactoError) throw impactoError;
+      if (agendaError) throw agendaError;
+
+      const normalize = (value: string | null | undefined) =>
+        (value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .trim();
+
+      const memberIds = new Set<string>();
+      const nomes = new Set<string>();
+      let total = 0;
+
+      (impactoData || []).forEach((row) => {
+        if (row.member_id) memberIds.add(row.member_id);
+        const nomeNorm = normalize(row.nome);
+        if (nomeNorm) nomes.add(nomeNorm);
+        total += 1;
+      });
+
+      (agendaPendentes || []).forEach((row) => {
+        if (row.member_id && memberIds.has(row.member_id)) return;
+        const nomeNorm = normalize(row.nome_participante);
+        if (nomeNorm && nomes.has(nomeNorm)) return;
+
+        if (row.member_id) memberIds.add(row.member_id);
+        if (nomeNorm) nomes.add(nomeNorm);
+        total += 1;
+      });
+
+      return total;
     },
     enabled: !!eventoId,
   });
