@@ -292,16 +292,33 @@ const HomepageAvisosTab = () => {
                   <Label>Data</Label>
                   <Input
                     value={formData.data}
-                    onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                    placeholder="Ex: 25/12/2024"
+                    onChange={(e) => {
+                      const numbers = e.target.value.replace(/\D/g, "");
+                      let formatted = numbers;
+                      if (numbers.length <= 2) formatted = numbers;
+                      else if (numbers.length <= 4) formatted = `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
+                      else formatted = `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+                      setFormData(prev => ({ ...prev, data: formatted }));
+                    }}
+                    placeholder="DD/MM/AAAA"
+                    maxLength={10}
+                    inputMode="numeric"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Horário</Label>
                   <Input
                     value={formData.horario}
-                    onChange={(e) => setFormData(prev => ({ ...prev, horario: e.target.value }))}
-                    placeholder="Ex: 19h"
+                    onChange={(e) => {
+                      const numbers = e.target.value.replace(/\D/g, "");
+                      let formatted = numbers;
+                      if (numbers.length <= 2) formatted = numbers;
+                      else formatted = `${numbers.slice(0, 2)}:${numbers.slice(2, 4)}`;
+                      setFormData(prev => ({ ...prev, horario: formatted }));
+                    }}
+                    placeholder="HH:MM"
+                    maxLength={5}
+                    inputMode="numeric"
                   />
                 </div>
               </div>
