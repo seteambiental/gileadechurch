@@ -990,17 +990,7 @@ const Auth = () => {
             <div className="mt-6 text-center">
               <button
                 type="button"
-                onClick={() => {
-                  setIsLogin(false);
-                  setIsPreCheck(true);
-                  setPreCheckPassed(false);
-                  setPreCheckName("");
-                  setPreCheckBirthDate("");
-                  setPreCheckEstadoCivil("");
-                  setPreCheckGenero("");
-                  setExistingMemberEmail(null);
-                  setErrors({});
-                }}
+                onClick={() => navigate("/cadastro")}
                 className="text-sm text-secondary hover:underline"
               >
                 Não tem conta? Cadastre-se
