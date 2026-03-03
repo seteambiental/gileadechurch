@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { SearchInput } from "@/components/ui/search-input";
+import { includesNormalized } from "@/lib/text-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +35,8 @@ export const AgendaReservasTab = () => {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [motivoRejeicao, setMotivoRejeicao] = useState("");
   const [ocupacaoAmbiente, setOcupacaoAmbiente] = useState<any>(null);
+  const [reservaSearch, setReservaSearch] = useState("");
+  const [ambienteSearch, setAmbienteSearch] = useState("");
 
   // Fetch ambientes
   const { data: ambientes = [], isLoading: loadingAmbientes } = useQuery({
@@ -134,6 +138,20 @@ export const AgendaReservasTab = () => {
   const reservasAtivas = reservas.filter((r: any) => r.status !== "cancelado");
   const ambientesAtivos = ambientes.filter((a: any) => a.ativo);
 
+  // Filtrar por busca
+  const ambientesAtivosFiltered = reservaSearch.trim()
+    ? ambientesAtivos.filter((a: any) => includesNormalized(a.nome, reservaSearch))
+    : ambientesAtivos;
+  const reservasPendentesFiltered = reservaSearch.trim()
+    ? reservasPendentes.filter((r: any) => includesNormalized(r.titulo, reservaSearch) || includesNormalized(r.ambiente?.nome || "", reservaSearch))
+    : reservasPendentes;
+  const reservasAtivasFiltered = reservaSearch.trim()
+    ? reservasAtivas.filter((r: any) => r.status !== "pendente" && (includesNormalized(r.titulo, reservaSearch) || includesNormalized(r.ambiente?.nome || "", reservaSearch)))
+    : reservasAtivas.filter((r: any) => r.status !== "pendente");
+  const ambientesFiltered = ambienteSearch.trim()
+    ? ambientes.filter((a: any) => includesNormalized(a.nome, ambienteSearch))
+    : ambientes;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -165,9 +183,10 @@ export const AgendaReservasTab = () => {
 
         {/* Sub-aba Reservas — Lista de ambientes com ocupação */}
         <TabsContent value="reservas" className="space-y-4 mt-4">
+          <SearchInput value={reservaSearch} onChange={setReservaSearch} onClear={() => setReservaSearch("")} placeholder="Buscar reserva ou ambiente..." />
           {loadingAmbientes || loadingReservas ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-          ) : ambientesAtivos.length === 0 ? (
+          ) : ambientesAtivosFiltered.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <DoorOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -179,7 +198,7 @@ export const AgendaReservasTab = () => {
             <div className="space-y-3">
               {/* Lista de ambientes */}
               <div className="grid gap-3">
-                {ambientesAtivos.map((amb: any) => {
+                {ambientesAtivosFiltered.map((amb: any) => {
                   const count = reservasPorAmbiente(amb.id);
                   return (
                     <Card key={amb.id} className="hover:shadow-sm transition-shadow">
@@ -222,13 +241,13 @@ export const AgendaReservasTab = () => {
               </div>
 
               {/* Reservas pendentes */}
-              {reservasPendentes.length > 0 && (
+              {reservasPendentesFiltered.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-                    Reservas Pendentes ({reservasPendentes.length})
+                    Reservas Pendentes ({reservasPendentesFiltered.length})
                   </h3>
                   <div className="space-y-2">
-                    {reservasPendentes.map((reserva: any) => (
+                    {reservasPendentesFiltered.map((reserva: any) => (
                       <Card key={reserva.id} className="border-yellow-300">
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -281,13 +300,13 @@ export const AgendaReservasTab = () => {
               )}
 
               {/* Todas as reservas ativas (não pendentes) */}
-              {reservasAtivas.filter((r: any) => r.status !== "pendente").length > 0 && (
+              {reservasAtivasFiltered.length > 0 && (
                 <div className="mt-4">
                   <h3 className="text-sm font-semibold text-muted-foreground mb-3">
                     Reservas Aprovadas/Rejeitadas
                   </h3>
                   <div className="space-y-2">
-                    {reservasAtivas.filter((r: any) => r.status !== "pendente").map((reserva: any) => (
+                    {reservasAtivasFiltered.map((reserva: any) => (
                       <Card key={reserva.id}>
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between gap-3">
@@ -335,20 +354,22 @@ export const AgendaReservasTab = () => {
           )}
         </TabsContent>
 
-        {/* Sub-aba Ambientes */}
         <TabsContent value="ambientes" className="space-y-4 mt-4">
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex-1 min-w-[200px]">
+              <SearchInput value={ambienteSearch} onChange={setAmbienteSearch} onClear={() => setAmbienteSearch("")} placeholder="Buscar ambiente..." />
+            </div>
             <Button variant="outline" onClick={() => { setEditingAmbiente(null); setShowAmbienteForm(true); }}>
               <Plus className="w-4 h-4 mr-2" /> Novo Ambiente
             </Button>
           </div>
           {loadingAmbientes ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
-          ) : ambientes.length === 0 ? (
+          ) : ambientesFiltered.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <DoorOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="font-semibold mb-2">Nenhum ambiente cadastrado</h3>
+                <h3 className="font-semibold mb-2">Nenhum ambiente encontrado</h3>
                 <p className="text-sm text-muted-foreground mb-4">Cadastre salas de reunião e espaços disponíveis.</p>
                 <Button onClick={() => { setEditingAmbiente(null); setShowAmbienteForm(true); }}>
                   <Plus className="w-4 h-4 mr-2" /> Cadastrar Ambiente
@@ -357,7 +378,7 @@ export const AgendaReservasTab = () => {
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {ambientes.map((amb: any) => (
+              {ambientesFiltered.map((amb: any) => (
                 <Card key={amb.id} className={!amb.ativo ? "opacity-60" : ""}>
                   {amb.foto_url && (
                     <div className="aspect-video overflow-hidden rounded-t-lg">
