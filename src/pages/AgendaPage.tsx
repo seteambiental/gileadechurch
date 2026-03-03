@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SearchInput } from "@/components/ui/search-input";
+import { includesNormalized } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -121,6 +123,8 @@ const AgendaPage = () => {
   } | null>(null);
   const [eventoParaExcluir, setEventoParaExcluir] = useState<Evento | null>(null);
 
+  const [eventoSearch, setEventoSearch] = useState("");
+
   const excluirEventoMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("agenda_igreja").delete().eq("id", id);
@@ -190,6 +194,11 @@ const AgendaPage = () => {
       return !TIPOS_COMPROMISSO.includes(e.tipo_evento);
     }
   );
+
+  // Filtrar por busca
+  const eventosParaExibir = eventoSearch.trim()
+    ? eventosParaCards.filter((e) => includesNormalized(e.titulo, eventoSearch))
+    : eventosParaCards;
 
   // Agrupar eventos recorrentes por dia da semana
   const eventosAgrupados = eventosRecorrentes.reduce((acc, evento) => {
@@ -295,11 +304,18 @@ const AgendaPage = () => {
               </Button>
             </div>
 
+            <SearchInput
+              value={eventoSearch}
+              onChange={setEventoSearch}
+              onClear={() => setEventoSearch("")}
+              placeholder="Buscar evento..."
+            />
+
             {loadingUnicos ? (
               <div className="flex justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </div>
-            ) : eventosParaCards.length === 0 ? (
+            ) : eventosParaExibir.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <PartyPopper className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -319,7 +335,7 @@ const AgendaPage = () => {
               </Card>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {eventosParaCards.map((evento) => {
+                {eventosParaExibir.map((evento) => {
                   const dataEvento = parseLocalDate(evento.data_evento);
                   const isPast = dataEvento < new Date();
                   
