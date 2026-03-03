@@ -126,6 +126,7 @@ const HomepageAvisosTab = () => {
     onSuccess: () => {
       toast.success("Aviso criado com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
       setFormOpen(false);
       resetForm();
     },
@@ -145,6 +146,7 @@ const HomepageAvisosTab = () => {
     onSuccess: () => {
       toast.success("Aviso atualizado!");
       queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
       setFormOpen(false);
       setEditingAviso(null);
       resetForm();
@@ -162,6 +164,7 @@ const HomepageAvisosTab = () => {
     onSuccess: () => {
       toast.success("Aviso removido!");
       queryClient.invalidateQueries({ queryKey: ["homepage-avisos"] });
+      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
     },
     onError: () => {
       toast.error("Erro ao remover aviso");
