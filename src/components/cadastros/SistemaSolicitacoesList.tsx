@@ -316,10 +316,21 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                         <button
                           type="button"
                           onClick={() => setExpandedImage(item.imagem_url)}
-                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="block mt-1"
                         >
-                          <ImageIcon className="w-3 h-3" />
-                          Ver imagem anexada
+                          <img 
+                            src={item.imagem_url} 
+                            alt="Imagem anexada"
+                            className="max-w-full max-h-48 rounded-md border border-border object-contain cursor-pointer hover:opacity-80 transition-opacity"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const fallback = document.createElement('span');
+                              fallback.className = 'flex items-center gap-1 text-xs text-primary hover:underline';
+                              fallback.innerHTML = '📎 Ver imagem anexada';
+                              target.parentElement?.appendChild(fallback);
+                            }}
+                          />
                         </button>
                       )}
                     </div>
