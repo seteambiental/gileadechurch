@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,6 +66,24 @@ const TeologiaFinanceiroTab = () => {
   const [pgtoData, setPgtoData] = useState(todayDateStr());
   const [pgtoForma, setPgtoForma] = useState("");
   const [pgtoValor, setPgtoValor] = useState("");
+  const [syncing, setSyncing] = useState(false);
+
+  // Auto-sync on mount
+  useEffect(() => {
+    const doSync = async () => {
+      setSyncing(true);
+      try {
+        const { error } = await supabase.functions.invoke("sync-teologia-alunos");
+        if (error) console.error("Sync error:", error);
+        else queryClient.invalidateQueries({ queryKey: ["teologia-alunos"] });
+      } catch (e) {
+        console.error("Sync failed:", e);
+      } finally {
+        setSyncing(false);
+      }
+    };
+    doSync();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: alunos = [], isLoading } = useQuery({
     queryKey: ["teologia-alunos"],
