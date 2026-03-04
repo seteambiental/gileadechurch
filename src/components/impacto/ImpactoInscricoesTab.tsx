@@ -25,10 +25,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive } from "lucide-react";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
+import FinalizarEventoDialog from "./FinalizarEventoDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -103,6 +104,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
   }, [eventoSelecionado]);
@@ -114,6 +116,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         .from("impacto_eventos")
         .select("*")
         .eq("ativo", true)
+        .eq("finalizado", false)
         .order("data_inicio", { ascending: false });
       if (error) throw error;
       return data || [];
@@ -661,6 +664,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
               Nova Inscrição
             </Button>
           )}
+          {selectedEventoId && inscricoes.length > 0 && (
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
+              <Archive className="w-4 h-4 mr-2" />
+              Finalizar Evento
+            </Button>
+          )}
         </div>
       </div>
 
@@ -879,6 +888,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         description={`Deseja excluir a inscrição de "${deletingInscricao?.nome || ""}"? Esta ação não pode ser desfeita.`}
         confirmLabel="Excluir"
       />
+
+      {selectedEventoId && (
+        <FinalizarEventoDialog
+          open={finalizarOpen}
+          onOpenChange={setFinalizarOpen}
+          eventoId={selectedEventoId}
+          eventoNome={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
+        />
+      )}
     </div>
   );
 };

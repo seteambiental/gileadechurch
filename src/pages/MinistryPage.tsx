@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2 } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +51,7 @@ import ImpactoEventosTab from "@/components/impacto/ImpactoEventosTab";
 import ImpactoInscricoesTab from "@/components/impacto/ImpactoInscricoesTab";
 
 import NovasInscricoesTab from "@/components/impacto/NovasInscricoesTab";
+import EventosFinalizadosTab from "@/components/impacto/EventosFinalizadosTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
@@ -425,6 +426,10 @@ const MinistryPage = () => {
                     <ClipboardList className="w-4 h-4" />
                     <span className="hidden sm:inline">Inscrições</span>
                   </TabsTrigger>
+                  <TabsTrigger value="finalizados" className="flex items-center gap-2">
+                    <Archive className="w-4 h-4" />
+                    <span className="hidden sm:inline">Finalizados</span>
+                  </TabsTrigger>
                 </>
               ) : isIntercessao ? (
                 <>
@@ -582,6 +587,9 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="inscricoes-impacto">
                   <ImpactoInscricoesTab eventoSelecionado={impactoEventoId} onEventoChange={setImpactoEventoId} />
+                </TabsContent>
+                <TabsContent value="finalizados">
+                  <EventosFinalizadosTab />
                 </TabsContent>
               </>
             ) : isIntercessao ? (
