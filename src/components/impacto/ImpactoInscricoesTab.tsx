@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle } from "lucide-react";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
@@ -99,6 +100,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
+  const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
+  const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
@@ -215,11 +218,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   const isLoading = loadingImpacto || loadingAgenda;
 
+  const resolveGeneroLabel = (inscricao: any): string => {
+    const g = inscricao.genero || inscricao.member?.genero;
+    if (!g) return "—";
+    return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
+  };
+
   const inscricoes = useMemo(() => {
     const impacto = rawImpactoInscricoes || [];
     const agenda = rawAgendaInscricoes || [];
 
-    // Build lookup sets from impacto_inscricoes (the authoritative source)
     const impactoMemberIds = new Set(impacto.map((i: any) => i.member_id).filter(Boolean));
     const impactoNomes = new Set(
       impacto.map((i: any) =>
@@ -227,7 +235,6 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       ).filter(Boolean)
     );
 
-    // Exclude agenda records that already have a counterpart in impacto_inscricoes
     const uniqueAgenda = agenda.filter((i: any) => {
       if (i.member_id && impactoMemberIds.has(i.member_id)) return false;
       const nomeNorm = (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -235,14 +242,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       return true;
     });
 
-    const all = [...impacto, ...uniqueAgenda];
-    const sorted = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-    if (!searchNome.trim()) return sorted;
+    let all = [...impacto, ...uniqueAgenda];
+    all = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+
+    // Gender filter
+    if (filtroGenero.size < GENERO_OPTIONS.length) {
+      all = all.filter((i: any) => filtroGenero.has(resolveGeneroLabel(i)));
+    }
+
+    if (!searchNome.trim()) return all;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return sorted.filter((i: any) =>
+    return all.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero]);
 
   // Keep selected IDs in sync with currently visible inscrições
   useEffect(() => {
@@ -717,7 +730,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                 <TableHead></TableHead>
                 {isCol("nome") && <TableHead>Nome</TableHead>}
                 {isCol("tipo") && <TableHead>Tipo</TableHead>}
-                {isCol("genero") && <TableHead>Gênero</TableHead>}
+                {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
                 {isCol("telefone") && <TableHead>Contato</TableHead>}
                 {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
                 {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
@@ -786,11 +799,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                     )}
                     {isCol("genero") && (
                       <TableCell className="text-sm">
-                        {(() => {
-                          const g = inscricao.genero || inscricao.member?.genero;
-                          if (!g) return "—";
-                          return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
-                        })()}
+                        {resolveGeneroLabel(inscricao)}
                       </TableCell>
                     )}
                     {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
