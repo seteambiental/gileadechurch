@@ -579,29 +579,8 @@ export const EncontrosReportDialog = ({
       ? `${formatDateBR(appliedStartDate)}-${formatDateBR(appliedEndDate)}` 
       : "todos";
     
-    // Add totals row to exported data
-    const dataWithTotals = [
-      ...filteredReportData,
-      {
-        casa_refugio_id: "",
-        casa_nome: "TOTAL",
-        condominio: "",
-        lideres: "",
-        data_encontro: "",
-        qtd_lideres: totals.qtd_lideres,
-        qtd_membros: totals.qtd_membros,
-        qtd_criancas: totals.qtd_criancas,
-        qtd_visitantes: totals.qtd_visitantes,
-        total_presentes: totals.total_presentes,
-        ofertas_dinheiro: totals.ofertas_dinheiro,
-        ofertas_pix: totals.ofertas_pix,
-        ofertas_total: totals.ofertas_total,
-        kilos_arrecadados: totals.kilos_arrecadados,
-        is_blank: false,
-        is_cancelled: false,
-        conferido: false,
-      },
-    ];
+    // Export data directly - export.ts automatically adds TOTAL row
+    const dataForExport = [...filteredReportData];
     
     const blankRowStyle = (row: any): ExportRowStyle | null => {
       if (row.is_blank) return { fillColor: "#D9D9D9", fontColor: "#666666", italic: true };
@@ -610,7 +589,7 @@ export const EncontrosReportDialog = ({
     };
 
     await exportGenericToExcel(
-      dataWithTotals,
+      dataForExport,
       filteredExportColumns,
       `relatorio-encontros-${periodLabel}`,
       "Encontros",
@@ -623,30 +602,6 @@ export const EncontrosReportDialog = ({
       ? `${formatDateBR(appliedStartDate)} a ${formatDateBR(appliedEndDate)}` 
       : "Todos os períodos";
     
-    // Add totals row to exported data
-    const dataWithTotals = [
-      ...filteredReportData,
-      {
-        casa_refugio_id: "",
-        casa_nome: "TOTAL",
-        condominio: "",
-        lideres: "",
-        data_encontro: "",
-        qtd_lideres: totals.qtd_lideres,
-        qtd_membros: totals.qtd_membros,
-        qtd_criancas: totals.qtd_criancas,
-        qtd_visitantes: totals.qtd_visitantes,
-        total_presentes: totals.total_presentes,
-        ofertas_dinheiro: totals.ofertas_dinheiro,
-        ofertas_pix: totals.ofertas_pix,
-        ofertas_total: totals.ofertas_total,
-        kilos_arrecadados: totals.kilos_arrecadados,
-        is_blank: false,
-        is_cancelled: false,
-        conferido: false,
-      },
-    ];
-    
     const blankRowStyle = (row: any): ExportRowStyle | null => {
       if (row.is_blank) return { fillColor: "#D9D9D9", fontColor: "#666666", italic: true };
       if (row.is_cancelled) return { fillColor: "#E8E8E8", fontColor: "#999999", italic: true };
@@ -654,7 +609,7 @@ export const EncontrosReportDialog = ({
     };
 
     exportGenericToPDF(
-      dataWithTotals,
+      filteredReportData,
       filteredExportColumns,
       `relatorio-encontros`,
       `Relatório de Encontros - Casas Refúgio (${periodLabel})`,
