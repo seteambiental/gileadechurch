@@ -138,15 +138,21 @@ async function saveWorkbook(workbook: ExcelJS.Workbook, filename: string) {
 
 // Helper to save jsPDF document as file download (avoids webview navigation issues)
 export function savePDF(doc: jsPDF, filename: string) {
-  const blob = doc.output("blob");
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  try {
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Give more time for the download to start before revoking
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (error) {
+    console.error("Erro ao salvar PDF:", error);
+  }
 }
 
 export const exportToExcel = async (members: Member[], filename: string = "membros", faceIndexes: FaceIndex[] = [], casasRefugio: CasaRefugio[] = []) => {
