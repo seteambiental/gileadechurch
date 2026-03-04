@@ -46,11 +46,17 @@ const LogoUploadCard = ({
       <CardContent className="space-y-4">
         {currentUrl ? (
           <div className="space-y-3">
-            <div className="relative aspect-video bg-muted/50 rounded-lg overflow-hidden border border-border flex items-center justify-center">
+            <div className="relative aspect-video rounded-lg overflow-hidden border border-border flex items-center justify-center" style={{ background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--background)) 0% 50%) 50% / 20px 20px' }}>
               <img 
                 src={currentUrl} 
                 alt={title}
                 className="max-h-full max-w-full object-contain p-4"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '';
+                  target.alt = 'Erro ao carregar imagem';
+                  target.className = 'hidden';
+                }}
               />
             </div>
             <div className="flex gap-2">
