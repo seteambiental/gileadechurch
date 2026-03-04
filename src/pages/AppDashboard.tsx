@@ -158,6 +158,31 @@ const AppDashboard = () => {
     },
   });
 
+  // Contadores de pendências para alertas
+  const { data: pendingCadastros = 0 } = useQuery({
+    queryKey: ["pending-cadastros-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("member_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: pendingInscricoes = 0 } = useQuery({
+    queryKey: ["pending-inscricoes-dashboard"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("inscricoes_eventos")
+        .select("id", { count: "exact", head: true })
+        .eq("aprovado", false);
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   // Buscar líderes dos ministérios
   const { data: ministriesData = [] } = useQuery({
     queryKey: ["ministries-leaders-dashboard"],
@@ -339,6 +364,41 @@ const AppDashboard = () => {
           </div>
         </div>
         {/* Outros Módulos */}
+
+        {/* Alertas de pendências */}
+        {(pendingCadastros > 0 || pendingInscricoes > 0) && (
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+            {pendingCadastros > 0 && (
+              <button
+                onClick={() => navigate("/cadastros")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors animate-pulse"
+              >
+                <Users className="w-5 h-5 text-secondary flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-secondary text-sm">
+                    Novo Cadastro ({pendingCadastros})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+            {pendingInscricoes > 0 && (
+              <button
+                onClick={() => navigate("/ministerio/impacto")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/20 transition-colors animate-pulse"
+              >
+                <Zap className="w-5 h-5 text-destructive flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-destructive text-sm">
+                    Nova Inscrição ({pendingInscricoes})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+          </div>
+        )}
+
         <SectionTitle
           title="Gestão"
           subtitle="Módulos administrativos da igreja"
