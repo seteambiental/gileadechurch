@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -289,7 +290,21 @@ const MinistryPage = () => {
     },
     enabled: !!slug,
   });
+  // Count pending inscriptions for badge
+  const { data: pendingInscricoesCount = 0 } = useQuery({
+    queryKey: ["inscricoes-eventos-pending-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("inscricoes_eventos")
+        .select("id", { count: "exact", head: true })
+        .eq("aprovado", false);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!slug && ministriesData[slug!]?.isImpacto === true,
+  });
 
+  
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
       navigate("/auth");
@@ -397,9 +412,14 @@ const MinistryPage = () => {
                     <CalendarDays className="w-4 h-4" />
                     <span className="hidden sm:inline">Eventos</span>
                   </TabsTrigger>
-                  <TabsTrigger value="novas-inscricoes" className="flex items-center gap-2">
+                  <TabsTrigger value="novas-inscricoes" className="flex items-center gap-2 relative">
                     <UserPlus className="w-4 h-4" />
                     <span className="hidden sm:inline">Novas</span>
+                    {pendingInscricoesCount > 0 && (
+                      <Badge variant="destructive" className="h-5 min-w-5 px-1 text-[10px] leading-none rounded-full">
+                        {pendingInscricoesCount}
+                      </Badge>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger value="inscricoes-impacto" className="flex items-center gap-2">
                     <ClipboardList className="w-4 h-4" />
