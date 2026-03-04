@@ -67,13 +67,14 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch all members for matching
-    const { data: members } = await supabase
+    const { data: members, error: membersError } = await supabase
       .from("members")
-      .select("id, nome, cpf, email, whatsapp")
-      .eq("excluido", false);
+      .select("id, full_name, cpf, email, whatsapp")
+      .or("excluido.is.null,excluido.eq.false");
 
-    if (!members) {
-      return new Response(JSON.stringify({ error: "Failed to fetch members" }), {
+    if (membersError || !members) {
+      console.error("Failed to fetch members:", membersError);
+      return new Response(JSON.stringify({ error: "Failed to fetch members", details: membersError?.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -89,7 +90,7 @@ Deno.serve(async (req) => {
     for (const m of members) {
       const cpf = normalizeCpf(m.cpf);
       if (cpf.length >= 11) memberByCpf.set(cpf, m.id);
-      memberByNome.set(normalizeNome(m.nome), m.id);
+      memberByNome.set(normalizeNome(m.full_name), m.id);
     }
 
     let synced = 0;
