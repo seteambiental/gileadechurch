@@ -280,11 +280,19 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const selectedEvento = eventos?.find((e) => e.id === selectedEventoId);
 
+  const resolveGenero = (g: string | null | undefined): string => {
+    if (!g) return "";
+    const lower = g.toLowerCase();
+    if (lower === "m" || lower === "masculino") return "M";
+    if (lower === "f" || lower === "feminino") return "F";
+    return "";
+  };
+
   const inscricoesPreFiltradas = useMemo(() => {
     if (!inscricoes) return [];
     let resultado = inscricoes;
     if (filtroGenero !== "todos") {
-      resultado = resultado.filter((i) => (i as any).genero === filtroGenero);
+      resultado = resultado.filter((i) => resolveGenero((i as any).genero) === filtroGenero);
     }
     if (searchNome.trim()) {
       const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -394,7 +402,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     switch (colKey) {
       case "nome": return row.nome || "—";
       case "tipo": return TIPOS_INSCRICAO_LABELS[row.tipo_inscricao || ""] || row.tipo_inscricao || "—";
-      case "genero": return row.genero === "M" ? "Masculino" : row.genero === "F" ? "Feminino" : "—";
+      case "genero": {
+        const g = (row.genero || "").toLowerCase();
+        if (g === "m" || g === "masculino") return "Masculino";
+        if (g === "f" || g === "feminino") return "Feminino";
+        return "—";
+      }
       case "referencia": return row.referencia || "—";
       case "casa_refugio": return getMemberCasaRefugio(row.member_id);
       case "condominio": return getMemberCondominio(row.member_id);
@@ -889,7 +902,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                               </TableCell>
                             )}
                              {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
-                             {isCol("genero") && <TableCell>{(inscricao as any).genero === "M" ? "Masculino" : (inscricao as any).genero === "F" ? "Feminino" : "—"}</TableCell>}
+                             {isCol("genero") && <TableCell>{getColumnValue(inscricao, "genero")}</TableCell>}
                              {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
                             {isCol("casa_refugio") && <TableCell>{getMemberCasaRefugio(inscricao.member_id)}</TableCell>}
                             {isCol("condominio") && <TableCell>{getMemberCondominio(inscricao.member_id)}</TableCell>}
