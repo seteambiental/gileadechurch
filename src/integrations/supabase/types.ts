@@ -2441,6 +2441,9 @@ export type Database = {
           data_fim: string | null
           data_inicio: string
           descricao: string | null
+          finalizado: boolean
+          finalizado_em: string | null
+          finalizado_por: string | null
           id: string
           limite_vagas: number | null
           local: string | null
@@ -2459,6 +2462,9 @@ export type Database = {
           data_fim?: string | null
           data_inicio: string
           descricao?: string | null
+          finalizado?: boolean
+          finalizado_em?: string | null
+          finalizado_por?: string | null
           id?: string
           limite_vagas?: number | null
           local?: string | null
@@ -2477,6 +2483,9 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           descricao?: string | null
+          finalizado?: boolean
+          finalizado_em?: string | null
+          finalizado_por?: string | null
           id?: string
           limite_vagas?: number | null
           local?: string | null

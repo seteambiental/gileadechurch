@@ -37,11 +37,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
+import FinalizarEventoDialog from "./FinalizarEventoDialog";
 import { exportGenericToExcel, exportGenericToPDF, savePDF } from "@/lib/export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -65,6 +66,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [filtroGenero, setFiltroGenero] = useState("todos");
   const [dataPrevisaoInput, setDataPrevisaoInput] = useState("");
   const [dataPrevisao, setDataPrevisao] = useState("");
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
 
   const handleAplicarPrevisao = useCallback(() => {
     setDataPrevisao(dataPrevisaoInput);
@@ -111,6 +113,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       const { data, error } = await supabase
         .from("impacto_eventos")
         .select("id, titulo, data_inicio, data_fim, tipo, valor_inscricao, valores_por_tipo, tipos_inscricao, tem_custo")
+        .eq("finalizado", false)
         .order("data_inicio", { ascending: false });
       if (error) throw error;
       return data;
@@ -673,6 +676,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
               </DropdownMenu>
             </>
           )}
+          {selectedEventoId && inscricoes.length > 0 && (
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
+              <Archive className="w-4 h-4 mr-2" />
+              Finalizar Evento
+            </Button>
+          )}
         </div>
       </div>
 
@@ -942,6 +951,15 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
             </TabsContent>
           </Tabs>
         </>
+      )}
+
+      {selectedEventoId && (
+        <FinalizarEventoDialog
+          open={finalizarOpen}
+          onOpenChange={setFinalizarOpen}
+          eventoId={selectedEventoId}
+          eventoNome={selectedEvento?.titulo || ""}
+        />
       )}
     </div>
   );

@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.enviar-cr-express]
 verify_jwt = false
+
+[functions.finalizar-evento]
+verify_jwt = false
