@@ -4924,6 +4924,92 @@ export type Database = {
         }
         Relationships: []
       }
+      teologia_alunos: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teologia_alunos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teologia_alunos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teologia_pagamentos: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          data_pagamento: string
+          forma_pagamento: string
+          id: string
+          observacoes: string | null
+          registrado_por: string | null
+          valor: number
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          data_pagamento?: string
+          forma_pagamento: string
+          id?: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          valor: number
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          data_pagamento?: string
+          forma_pagamento?: string
+          id?: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teologia_pagamentos_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "teologia_alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       testemunhos: {
         Row: {
           anonimo: boolean

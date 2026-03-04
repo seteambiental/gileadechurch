@@ -4,8 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
+import TeologiaFinanceiroTab from "@/components/teologia/TeologiaFinanceiroTab";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Loader2, DollarSign, GraduationCap } from "lucide-react";
 
 const FinanceiroPage = () => {
   const { user, loading } = useAuth();
@@ -47,7 +49,26 @@ const FinanceiroPage = () => {
       </header>
 
       <main className="container mx-auto px-4 pt-24 pb-12">
-        <ImpactoFinanceiroTab eventoSelecionado={eventoId} onEventoChange={setEventoId} />
+        <Tabs defaultValue="eventos" className="w-full">
+          <TabsList className="w-full justify-start mb-6 overflow-x-auto">
+            <TabsTrigger value="eventos" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              <span>Eventos</span>
+            </TabsTrigger>
+            <TabsTrigger value="teologia" className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4" />
+              <span>Curso de Teologia</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="eventos">
+            <ImpactoFinanceiroTab eventoSelecionado={eventoId} onEventoChange={setEventoId} />
+          </TabsContent>
+
+          <TabsContent value="teologia">
+            <TeologiaFinanceiroTab />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
