@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
       // Try match by CPF first, then by name
       const cpf = normalizeCpf(aluno.cpf);
       let memberId = cpf ? memberByCpf.get(cpf) : undefined;
-      if (!memberId && aluno.nome) {
-        memberId = memberByNome.get(normalizeNome(aluno.nome));
+      if (!memberId && (aluno.nome_completo || aluno.nome)) {
+        memberId = memberByNome.get(normalizeNome(aluno.nome_completo || aluno.nome));
       }
 
       if (!memberId) {
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const valorTotal = parseFloat(String(aluno.total_devido)) || 0;
+      const valorTotal = parseFloat(String(aluno.financeiro?.total_devido ?? aluno.total_devido)) || 0;
 
       // Upsert: update valor_total if changed
       const { error: upsertError } = await supabase

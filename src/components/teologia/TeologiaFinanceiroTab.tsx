@@ -90,7 +90,7 @@ const TeologiaFinanceiroTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teologia_alunos")
-        .select("*, members!inner(nome)")
+        .select("*, members!inner(full_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -179,7 +179,7 @@ const TeologiaFinanceiroTab = () => {
   });
 
   const filtered = alunos.filter((a: any) =>
-    !search || a.members?.nome?.toLowerCase().includes(search.toLowerCase())
+    !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase())
   );
 
   // Totals
@@ -291,7 +291,7 @@ const TeologiaFinanceiroTab = () => {
                       <TableCell>
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </TableCell>
-                      <TableCell className="font-medium">{aluno.members?.nome}</TableCell>
+                      <TableCell className="font-medium">{aluno.members?.full_name}</TableCell>
                       <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
                       <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
