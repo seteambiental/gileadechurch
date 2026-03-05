@@ -251,7 +251,7 @@ const CasasRefugioPage = () => {
             placeholder="Buscar por nome, líder ou anfitrião..."
             value={searchTerm}
             onChange={setSearchTerm}
-            className="bg-card border-border"
+            className="bg-card border-border max-w-sm"
           />
 
           <div className="flex flex-wrap gap-3 items-center">
