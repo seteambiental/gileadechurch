@@ -116,6 +116,20 @@ const NovasInscricoesTab = () => {
         impactoEventoId = newEvento.id;
       }
 
+      // Resolve gender: use inscription's genero, or fall back to member's genero
+      let generoResolvido = inscricao.genero || null;
+      if (!generoResolvido && inscricao.member_id) {
+        const { data: memberData } = await supabase
+          .from("members")
+          .select("genero")
+          .eq("id", inscricao.member_id)
+          .maybeSingle();
+        if (memberData?.genero) {
+          const g = memberData.genero.toLowerCase();
+          generoResolvido = g === "masculino" ? "M" : g === "feminino" ? "F" : memberData.genero;
+        }
+      }
+
       // Create a mirror record in impacto_inscricoes so the referência trigger fires
       const { error: insertError } = await supabase
         .from("impacto_inscricoes")
@@ -124,7 +138,7 @@ const NovasInscricoesTab = () => {
           nome: inscricao.nome_participante,
           telefone: inscricao.telefone_contato,
           tipo_inscricao: inscricao.tipo_inscricao || "membro",
-          genero: inscricao.genero,
+          genero: generoResolvido,
           valor_inscricao: valorInscricao,
           status_pagamento: "pendente",
           member_id: inscricao.member_id || null,
@@ -215,12 +229,26 @@ const NovasInscricoesTab = () => {
           impactoEventoId = newEvento.id;
         }
 
+        // Resolve gender fallback from member
+        let generoResolvido = inscricao.genero || null;
+        if (!generoResolvido && inscricao.member_id) {
+          const { data: memberData } = await supabase
+            .from("members")
+            .select("genero")
+            .eq("id", inscricao.member_id)
+            .maybeSingle();
+          if (memberData?.genero) {
+            const g = memberData.genero.toLowerCase();
+            generoResolvido = g === "masculino" ? "M" : g === "feminino" ? "F" : memberData.genero;
+          }
+        }
+
         const { error: insertError } = await supabase.from("impacto_inscricoes").insert({
           evento_id: impactoEventoId,
           nome: inscricao.nome_participante,
           telefone: inscricao.telefone_contato,
           tipo_inscricao: inscricao.tipo_inscricao || "membro",
-          genero: inscricao.genero,
+          genero: generoResolvido,
           valor_inscricao: valorInscricao,
           status_pagamento: "pendente",
           member_id: inscricao.member_id || null,
