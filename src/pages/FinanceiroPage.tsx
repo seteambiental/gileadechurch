@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { isAuthBypassed } from "@/lib/auth-bypass";
@@ -12,9 +12,10 @@ import { ArrowLeft, Loader2, DollarSign, GraduationCap } from "lucide-react";
 const FinanceiroPage = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isAdmin } = useUserAccess(user?.id);
   const bypassed = isAuthBypassed();
-  const [eventoId, setEventoId] = useState("");
+  const [eventoId, setEventoId] = useState(searchParams.get("evento") || "");
 
   useEffect(() => {
     if (!loading && !user && !bypassed) {
