@@ -54,7 +54,7 @@ const CATEGORIAS_DESPESA = [
   "Maquiagem",
   "Ônibus",
   "Supermercado Alimentação",
-  "Supermercado Higiene e Limpeza",
+  "Higiene e Limpeza",
   "Toalhas",
 ];
 
