@@ -284,7 +284,7 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
         email: data.email || null,
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         genero: data.genero || null,
-        estado_civil: data.estado_civil || null,
+        estado_civil: needsResponsible(data.birth_date) ? "solteiro" : (data.estado_civil || null),
         birth_date: data.birth_date || null,
         cep: data.cep ? unformatCep(data.cep) : null,
         address: data.address ? toTitleCase(data.address) : null,
