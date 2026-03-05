@@ -31,10 +31,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { exportGenericToExcel, savePDF } from "@/lib/export";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const CATEGORIAS_DESPESA = [
   "Chácara",
@@ -65,9 +74,10 @@ const emptyForm: DespesaForm = {
 
 interface Props {
   eventoId: string;
+  eventoNome?: string;
 }
 
-const ImpactoDespesasTab = ({ eventoId }: Props) => {
+const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -149,15 +159,118 @@ const ImpactoDespesasTab = ({ eventoId }: Props) => {
 
   const totalDespesas = despesas.reduce((sum, d) => sum + (d.valor || 0), 0);
 
+  // Group totals by category
+  const totalByCategoria = despesas.reduce((acc, d) => {
+    acc[d.categoria] = (acc[d.categoria] || 0) + (d.valor || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  const exportColumns: import("@/lib/export").ExportColumn[] = [
+    { header: "Categoria", accessor: (row: any) => row.categoria },
+    { header: "Descrição", accessor: (row: any) => row.descricao || "—" },
+    { header: "Data", accessor: (row: any) => row.data_despesa ? format(parseLocalDate(row.data_despesa), "dd/MM/yyyy") : "—" },
+    { header: "Valor", accessor: (row: any) => row.valor || 0, format: (v: any) => formatCurrency(Number(v) || 0), type: "currency" as const },
+  ];
+
+  const handleExportExcel = async () => {
+    if (!despesas.length) return;
+    await exportGenericToExcel(despesas, exportColumns, `Despesas_${eventoNome}`, "Despesas");
+  };
+
+  const handleExportPDF = () => {
+    if (!despesas.length) return;
+
+    const doc = new jsPDF({ orientation: "portrait" });
+
+    doc.setFontSize(16);
+    doc.text(`Despesas — ${eventoNome}`, 14, 18);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 25);
+
+    // Summary
+    let yPos = 34;
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    doc.text(`Total de Despesas: ${formatCurrency(totalDespesas)}`, 14, yPos);
+    yPos += 6;
+
+    // Totals by category
+    const categoriasOrdenadas = Object.entries(totalByCategoria).sort(([, a], [, b]) => b - a);
+    if (categoriasOrdenadas.length > 0) {
+      doc.setFontSize(9);
+      categoriasOrdenadas.forEach(([cat, val]) => {
+        doc.text(`  ${cat}: ${formatCurrency(val)}`, 14, yPos);
+        yPos += 5;
+      });
+      yPos += 2;
+    }
+
+    // Table
+    const tableHeaders = exportColumns.map((c) => c.header);
+    const tableData = despesas.map((row) =>
+      exportColumns.map((col) => {
+        const value = typeof col.accessor === "function" ? col.accessor(row) : "";
+        if (col.type === "currency") return formatCurrency(Number(value) || 0);
+        if (col.format) return col.format(value);
+        return value ?? "—";
+      })
+    );
+
+    // Total row
+    tableData.push(["TOTAL", "", "", formatCurrency(totalDespesas)]);
+
+    autoTable(doc, {
+      head: [tableHeaders],
+      body: tableData,
+      startY: yPos,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: {
+        fillColor: [220, 53, 69],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      didParseCell: (hookData: any) => {
+        if (hookData.section !== "body") return;
+        if (hookData.row.index === tableData.length - 1) {
+          hookData.cell.styles.fillColor = [230, 230, 230];
+          hookData.cell.styles.fontStyle = "bold";
+        }
+      },
+    });
+
+    savePDF(doc, `Despesas_${eventoNome}.pdf`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
           Total de despesas: <span className="font-semibold text-foreground">{formatCurrency(totalDespesas)}</span>
         </div>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-1" /> Adicionar Despesa
-        </Button>
+        <div className="flex gap-2">
+          {despesas.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <Download className="w-4 h-4 mr-1" /> Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="w-4 h-4 mr-2" /> PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> Adicionar Despesa
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
