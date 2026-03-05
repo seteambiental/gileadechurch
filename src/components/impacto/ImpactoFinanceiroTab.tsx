@@ -947,7 +947,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
             </TabsContent>
 
             <TabsContent value="despesas">
-              <ImpactoDespesasTab eventoId={selectedEventoId} />
+              <ImpactoDespesasTab eventoId={selectedEventoId} eventoNome={eventoNomeFinanceiro} />
             </TabsContent>
           </Tabs>
         </>
