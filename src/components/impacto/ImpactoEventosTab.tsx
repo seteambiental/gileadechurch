@@ -5,16 +5,15 @@ import { ptBR } from "date-fns/locale";
 import { parseLocalDate } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Users, DollarSign, CalendarDays } from "lucide-react";
 
-const ImpactoEventosTab = () => {
+interface ImpactoEventosTabProps {
+  onGoToInscricoes?: (eventoId: string) => void;
+  onGoToFinanceiro?: (eventoId: string) => void;
+}
+
+const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEventosTabProps) => {
   const { data: eventosAgenda = [], isLoading } = useQuery({
     queryKey: ["agenda-eventos-inscricao"],
     queryFn: async () => {
@@ -29,8 +28,6 @@ const ImpactoEventosTab = () => {
     },
   });
 
-  // Count using the same source logic as the Inscrições tab:
-  // impacto_inscricoes + pendentes de inscricoes_eventos (sem duplicar por member_id/nome)
   const { data: inscricoesAgendaCount } = useQuery({
     queryKey: ["impacto-inscricoes-count"],
     queryFn: async () => {
@@ -107,44 +104,60 @@ const ImpactoEventosTab = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Evento</TableHead>
-                  <TableHead className="text-center">Inscritos</TableHead>
-                  <TableHead className="text-center">Vagas</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eventosAgenda.map((evento) => {
-                  const inscritos = inscricoesAgendaCount?.[evento.id] || 0;
-                  return (
-                    <TableRow key={evento.id}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
-                        {evento.data_fim && (
-                          <span className="text-muted-foreground"> - {format(parseLocalDate(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}</span>
-                        )}
-                      </TableCell>
-                      <TableCell>{evento.titulo}</TableCell>
-                      <TableCell className="text-center">{inscritos}</TableCell>
-                      <TableCell className="text-center">{evento.limite_vagas || "—"}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant={evento.ativo ? "outline" : "secondary"} className="text-xs">
-                          {evento.ativo ? "Ativo" : "Inativo"}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {eventosAgenda.map((evento) => {
+            const inscritos = inscricoesAgendaCount?.[evento.id] || 0;
+            const dataFormatada = format(parseLocalDate(evento.data_evento), "dd/MM/yyyy", { locale: ptBR });
+            const dataFimFormatada = evento.data_fim
+              ? format(parseLocalDate(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })
+              : null;
+
+            return (
+              <Card key={evento.id} className="flex flex-col justify-between">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-sm leading-tight">{evento.titulo}</h3>
+                    <Badge variant={evento.ativo ? "outline" : "secondary"} className="text-xs shrink-0">
+                      {evento.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="w-3.5 h-3.5" />
+                      <span>{dataFormatada}{dataFimFormatada ? ` - ${dataFimFormatada}` : ""}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" />
+                      <span>{inscritos} inscritos{evento.limite_vagas ? ` / ${evento.limite_vagas} vagas` : ""}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs h-8"
+                      onClick={() => onGoToInscricoes?.(evento.id)}
+                    >
+                      <Users className="w-3.5 h-3.5 mr-1" />
+                      Inscrições
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs h-8"
+                      onClick={() => onGoToFinanceiro?.(evento.id)}
+                    >
+                      <DollarSign className="w-3.5 h-3.5 mr-1" />
+                      Financeiro
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
     </div>
   );

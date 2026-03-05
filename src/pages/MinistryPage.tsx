@@ -580,7 +580,15 @@ const MinistryPage = () => {
             ) : isImpacto ? (
               <>
                 <TabsContent value="eventos">
-                  <ImpactoEventosTab />
+                  <ImpactoEventosTab
+                    onGoToInscricoes={(id) => {
+                      setImpactoEventoId(id);
+                      setActiveTab("inscricoes-impacto");
+                    }}
+                    onGoToFinanceiro={(id) => {
+                      navigate(`/financeiro?evento=${id}`);
+                    }}
+                  />
                 </TabsContent>
                 <TabsContent value="novas-inscricoes">
                   <NovasInscricoesTab />
