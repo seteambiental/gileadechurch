@@ -47,6 +47,7 @@ interface MemberRequest {
   email: string | null;
   whatsapp: string | null;
   genero: string | null;
+  estado_civil: string | null;
   birth_date: string | null;
   cep: string | null;
   address: string | null;
@@ -121,6 +122,7 @@ const SolicitacoesMembrosTab = () => {
           email: request.email,
           whatsapp: request.whatsapp,
           genero: request.genero,
+          estado_civil: request.estado_civil || null,
           birth_date: request.birth_date,
           cep: request.cep,
           address: request.address,
