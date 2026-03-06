@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive, DollarSign } from "lucide-react";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
@@ -90,6 +91,7 @@ const DEFAULT_VISIBLE_COLUMNS = new Set<string>(
 );
 
 const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInscricoesTabProps) => {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editingInscricao, setEditingInscricao] = useState<any>(null);
@@ -657,6 +659,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
+          )}
+          {selectedEventoId && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/financeiro?evento=${selectedEventoId}`)}>
+              <DollarSign className="w-4 h-4 mr-2" />
+              Financeiro
+            </Button>
           )}
           {selectedEventoId && (
             <Button onClick={handleNewInscricao}>
