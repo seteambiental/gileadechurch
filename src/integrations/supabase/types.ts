@@ -3170,6 +3170,101 @@ export type Database = {
           },
         ]
       }
+      kids_transferencias_turma: {
+        Row: {
+          aprovador_id: string | null
+          created_at: string
+          crianca_member_id: string | null
+          crianca_novo_convertido_id: string | null
+          data_aprovacao: string | null
+          id: string
+          motivo: string | null
+          solicitante_id: string
+          status: string
+          turma_destino: string
+          turma_origem: string
+          updated_at: string
+        }
+        Insert: {
+          aprovador_id?: string | null
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          data_aprovacao?: string | null
+          id?: string
+          motivo?: string | null
+          solicitante_id: string
+          status?: string
+          turma_destino: string
+          turma_origem: string
+          updated_at?: string
+        }
+        Update: {
+          aprovador_id?: string | null
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          data_aprovacao?: string | null
+          id?: string
+          motivo?: string | null
+          solicitante_id?: string
+          status?: string
+          turma_destino?: string
+          turma_origem?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_transferencias_turma_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_aprovador_id_fkey"
+            columns: ["aprovador_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_crianca_novo_convertido_id_fkey"
+            columns: ["crianca_novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transferencias_turma_solicitante_id_fkey"
+            columns: ["solicitante_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_turmas_config: {
         Row: {
           cor_hex: string
@@ -3570,6 +3665,7 @@ export type Database = {
           genero: string | null
           id: string
           kids_numero: number | null
+          kids_turma_override: string | null
           member_since: string | null
           ministerios_interesse: string[] | null
           nao_pretende_servir: boolean | null
@@ -3601,6 +3697,7 @@ export type Database = {
           genero?: string | null
           id?: string
           kids_numero?: number | null
+          kids_turma_override?: string | null
           member_since?: string | null
           ministerios_interesse?: string[] | null
           nao_pretende_servir?: boolean | null
@@ -3632,6 +3729,7 @@ export type Database = {
           genero?: string | null
           id?: string
           kids_numero?: number | null
+          kids_turma_override?: string | null
           member_since?: string | null
           ministerios_interesse?: string[] | null
           nao_pretende_servir?: boolean | null
@@ -4457,6 +4555,7 @@ export type Database = {
           genero: string | null
           id: string
           kids_numero: number | null
+          kids_turma_override: string | null
           member_id: string | null
           membro_vinculado_id: string | null
           mensagem_boas_vindas_enviada: boolean | null
@@ -4503,6 +4602,7 @@ export type Database = {
           genero?: string | null
           id?: string
           kids_numero?: number | null
+          kids_turma_override?: string | null
           member_id?: string | null
           membro_vinculado_id?: string | null
           mensagem_boas_vindas_enviada?: boolean | null
@@ -4549,6 +4649,7 @@ export type Database = {
           genero?: string | null
           id?: string
           kids_numero?: number | null
+          kids_turma_override?: string | null
           member_id?: string | null
           membro_vinculado_id?: string | null
           mensagem_boas_vindas_enviada?: boolean | null
