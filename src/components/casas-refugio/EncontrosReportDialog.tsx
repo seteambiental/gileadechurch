@@ -305,7 +305,7 @@ export const EncontrosReportDialog = ({
         .select("casa_refugio_id, dias, frequencia, vigente_desde")
         .order("vigente_desde", { ascending: true });
       if (error) throw error;
-      return (data || []) as DiaHistorico[];
+      return (data || []) as unknown as DiaHistorico[];
     },
     enabled: open,
   });
