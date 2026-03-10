@@ -22,6 +22,7 @@ import InscricaoEvento from "./pages/InscricaoEvento";
 import InscricaoCasais from "./pages/InscricaoCasais";
 import KidsPage from "./pages/KidsPage";
 import KidsCheckinPage from "./pages/KidsCheckinPage";
+import KidsCheckMePage from "./pages/KidsCheckMePage";
 import KidsCheckinScanPage from "./pages/KidsCheckinScanPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
