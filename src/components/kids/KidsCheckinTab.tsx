@@ -191,10 +191,10 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
               variant="outline"
               size="sm"
               onClick={handlePrintSelected}
-              disabled={selectedTurmasPrint.size === 0}
+              disabled={selectedTurmasPrint.size === 0 || generating}
             >
-              <Printer className="h-4 w-4 mr-1" />
-              Imprimir selecionados ({selectedTurmasPrint.size})
+              {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
+              {generating ? "Gerando PDF..." : `Imprimir selecionados (${selectedTurmasPrint.size})`}
             </Button>
           </div>
         </CardHeader>
