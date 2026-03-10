@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
