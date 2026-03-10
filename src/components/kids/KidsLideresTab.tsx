@@ -40,7 +40,7 @@ interface KidsLideresTabProps {
 const FUNCOES = [
   { value: "coordenador", label: "Coordenador(a)" },
   { value: "professor", label: "Professor(a)" },
-  { value: "auxiliar", label: "Auxiliar" },
+  { value: "auxiliar", label: "Monitor(a)" },
 ];
 
 export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
