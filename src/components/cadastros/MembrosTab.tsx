@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -189,6 +190,21 @@ const MembrosTab = () => {
       return data;
     },
   });
+
+  // Buscar IDs dos responsáveis que têm crianças vinculadas
+  const { data: responsaveisComCriancas = [] } = useQuery({
+    queryKey: ["responsaveis-com-criancas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_responsaveis")
+        .select("responsavel_member_id");
+      if (error) throw error;
+      const ids = new Set(data?.map(r => r.responsavel_member_id).filter(Boolean));
+      return [...ids] as string[];
+    },
+  });
+
+  const responsavelSet = new Set(responsaveisComCriancas);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -536,7 +552,17 @@ const MembrosTab = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground">{member.full_name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-foreground">{member.full_name}</p>
+                            {responsavelSet.has(member.id) && (
+                              <img 
+                                src={pgChurchKidsIcon} 
+                                alt="Responsável PG Kids" 
+                                className="h-4 w-auto" 
+                                title="Responsável por criança(s) no PG"
+                              />
+                            )}
+                          </div>
                           {member.email && (
                             <p className="text-xs text-muted-foreground">{member.email}</p>
                           )}
