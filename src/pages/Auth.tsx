@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,16 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield, Heart, Plus, Trash2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield, Heart, Plus, Trash2, Fingerprint } from "lucide-react";
+import {
+  isBiometricAvailable,
+  hasBiometricCredential,
+  getBiometricEmail,
+  registerBiometric,
+  authenticateWithBiometric,
+  removeBiometricCredential,
+  updateBiometricRefreshToken,
+} from "@/lib/webauthn";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
