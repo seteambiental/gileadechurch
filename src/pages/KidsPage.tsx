@@ -268,6 +268,55 @@ const KidsPage = () => {
 
   const isLoading = loadingTurmas || loadingMembers || loadingNovos;
 
+  const generateChamadaPDF = (turmaKey: string) => {
+    const turma = turmasConfig?.find((t) => t.turma === turmaKey);
+    if (!turma) return;
+    const criancas = criancasPorTurma[turmaKey] || [];
+    if (criancas.length === 0) {
+      toast({ title: "Nenhuma criança nesta turma", variant: "destructive" });
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const dataHoje = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Lista de Chamada — ${turma.nome_exibicao}`, 14, 18);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Faixa etária: ${turma.idade_minima} a ${turma.idade_maxima} anos  •  Total: ${criancas.length} crianças`, 14, 25);
+    doc.text(`Data: ____/____/________`, 14, 32);
+
+    // 5 empty columns for attendance dates
+    const blankCols = ["", "", "", "", ""];
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Nº", "Nome", "Idade", "Responsável", ...blankCols]],
+      body: criancas.map((c, i) => [
+        String(i + 1),
+        c.nome,
+        String(c.idade),
+        c.responsavelNome || "—",
+        ...blankCols,
+      ]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 100, 100], fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 14, halign: "center" },
+        3: { cellWidth: 40 },
+      },
+      theme: "grid",
+    });
+
+    savePDF(doc, `chamada_${turma.nome_exibicao.replace(/\s/g, "_")}.pdf`);
+    setChamadaDialogOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 md:p-6 space-y-6">
