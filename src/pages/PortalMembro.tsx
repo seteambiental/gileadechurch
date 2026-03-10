@@ -12,6 +12,7 @@ import {
   Home,
   User,
   Send,
+  Baby,
   HandHelping,
   ArrowRightLeft,
 } from "lucide-react";
