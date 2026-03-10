@@ -303,7 +303,7 @@ export function EditarCriancaDialog({ open, onOpenChange, crianca, turmaAtual, t
         } else {
           insertData.crianca_novo_convertido_id = crianca.id;
         }
-        await supabase.from("kids_transferencias_turma").insert(insertData);
+        await supabase.from("kids_transferencias_turma").insert(insertData as never);
       }
     },
     onSuccess: () => {
