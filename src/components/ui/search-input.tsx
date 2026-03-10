@@ -17,13 +17,13 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     };
 
     return (
-      <div className="relative w-full">
+      <div className={cn("relative", className)}>
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <Input
           ref={ref}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={cn("pl-10 pr-9", className)}
+          className="pl-10 pr-9 w-full"
           {...props}
         />
         {value && (
