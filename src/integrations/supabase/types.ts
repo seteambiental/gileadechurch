@@ -1313,6 +1313,41 @@ export type Database = {
           },
         ]
       }
+      casas_refugio_dia_historico: {
+        Row: {
+          casa_refugio_id: string
+          created_at: string
+          dias: string
+          frequencia: string | null
+          id: string
+          vigente_desde: string
+        }
+        Insert: {
+          casa_refugio_id: string
+          created_at?: string
+          dias: string
+          frequencia?: string | null
+          id?: string
+          vigente_desde?: string
+        }
+        Update: {
+          casa_refugio_id?: string
+          created_at?: string
+          dias?: string
+          frequencia?: string | null
+          id?: string
+          vigente_desde?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casas_refugio_dia_historico_casa_refugio_id_fkey"
+            columns: ["casa_refugio_id"]
+            isOneToOne: false
+            referencedRelation: "casas_refugio"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       condominios: {
         Row: {
           created_at: string
