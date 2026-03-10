@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -57,7 +58,8 @@ const NovasInscricoesTab = () => {
           created_at,
           evento_id,
           member_id,
-          evento:agenda_igreja(id, titulo, data_evento, data_fim, valores_por_tipo)
+          evento:agenda_igreja(id, titulo, data_evento, data_fim, valores_por_tipo),
+          member:members(id, photo_url)
         `)
         .eq("aprovado", false)
         .order("created_at", { ascending: false });
@@ -381,10 +383,24 @@ const NovasInscricoesTab = () => {
               {filtradas.map((inscricao) => (
                 <TableRow key={inscricao.id}>
                   <TableCell>
-                    <div className="font-medium">{inscricao.nome_participante}</div>
-                    {inscricao.telefone_contato && (
-                      <div className="text-xs text-muted-foreground">{inscricao.telefone_contato}</div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {inscricao.member?.photo_url ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={inscricao.member.photo_url} alt={inscricao.nome_participante} />
+                          <AvatarFallback className="text-xs">{(inscricao.nome_participante || "?")[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">{(inscricao.nome_participante || "?")[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div>
+                        <div className="font-medium">{inscricao.nome_participante}</div>
+                        {inscricao.telefone_contato && (
+                          <div className="text-xs text-muted-foreground">{inscricao.telefone_contato}</div>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{inscricao.evento?.titulo || "—"}</div>
