@@ -687,6 +687,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
               </DropdownMenu>
             </>
           )}
+          {selectedEventoId && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/ministerio/impacto?tab=inscricoes-impacto&evento=${selectedEventoId}`)}>
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Inscrições
+            </Button>
+          )}
           {selectedEventoId && inscricoes.length > 0 && (
             <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
               <Archive className="w-4 h-4 mr-2" />
