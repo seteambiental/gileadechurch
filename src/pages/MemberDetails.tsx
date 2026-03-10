@@ -16,6 +16,7 @@ import {
   Church,
   MessageCircle,
   Users,
+  Baby,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,6 +125,23 @@ const MemberDetails = () => {
     enabled: !!member?.responsavel_id,
   });
 
+  // Buscar crianças sob responsabilidade deste membro
+  const { data: criancasResponsavel } = useQuery({
+    queryKey: ["member-criancas-responsavel", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_responsaveis")
+        .select(`
+          id,
+          crianca_member:members!kids_responsaveis_crianca_member_id_fkey(id, full_name),
+          crianca_nc:novos_convertidos!kids_responsaveis_crianca_novo_convertido_id_fkey(id, full_name)
+        `)
+        .eq("responsavel_member_id", id!);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && (bypass || !!user),
+  });
 
   const getInitials = (name: string) => {
     return name
@@ -367,6 +385,22 @@ const MemberDetails = () => {
                     {responsavel.whatsapp && (
                       <p className="text-sm text-muted-foreground">{formatPhone(responsavel.whatsapp)}</p>
                     )}
+                  </div>
+                </div>
+              )}
+              {criancasResponsavel && criancasResponsavel.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Baby className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Crianças sob responsabilidade (PG)</p>
+                    <div className="space-y-1 mt-1">
+                      {criancasResponsavel.map((cr) => {
+                        const nome = cr.crianca_member?.full_name || cr.crianca_nc?.full_name || "—";
+                        return (
+                          <p key={cr.id} className="text-foreground font-medium">{nome}</p>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
