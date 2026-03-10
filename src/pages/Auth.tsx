@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,16 @@ import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield, Heart, Plus, Trash2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Church, Baby, Users, Shield, Heart, Plus, Trash2, Fingerprint } from "lucide-react";
+import {
+  isBiometricAvailable,
+  hasBiometricCredential,
+  getBiometricEmail,
+  registerBiometric,
+  authenticateWithBiometric,
+  removeBiometricCredential,
+  updateBiometricRefreshToken,
+} from "@/lib/webauthn";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { z } from "zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -161,6 +170,14 @@ const Auth = () => {
   const [showPortalChoice, setShowPortalChoice] = useState(false);
   const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean; hasMemberProfile: boolean } | null>(null);
 
+  // Biometria (WebAuthn)
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [biometricAvailableOnDevice, setBiometricAvailableOnDevice] = useState(false);
+  const [hasBiometric, setHasBiometric] = useState(() => hasBiometricCredential());
+  const [biometricEmail, setBiometricEmail] = useState(() => getBiometricEmail());
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const pendingNavigateRef = useRef<(() => void) | null>(null);
+
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -236,6 +253,8 @@ const Auth = () => {
     if (isRecovery) return;
     if (hasProcessedAuthRef.current) return;
     if (isLoginInProgressRef.current) return;
+    // Pausar redirecionamento enquanto o prompt de biometria está ativo
+    if (showBiometricPrompt) return;
 
     // Se o login NÃO foi feito explicitamente nesta página, fazer logout
     // para forçar o usuário a se autenticar novamente
@@ -291,7 +310,7 @@ const Auth = () => {
       // Permitir nova tentativa se algo falhar
       hasProcessedAuthRef.current = false;
     });
-  }, [user, loading, isRecovery, navigate]);
+  }, [user, loading, isRecovery, navigate, showBiometricPrompt]);
 
 
   const validateLoginForm = () => {
@@ -490,8 +509,13 @@ const Auth = () => {
         return;
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+
+        // Atualizar refresh token da biometria se já registrada
+        if (hasBiometricCredential()) {
+          updateBiometricRefreshToken(data.session.refresh_token);
+        }
 
         // Login concluído com sucesso - agora pode processar o redirecionamento
         // Resetar as flags para permitir que o useEffect processe
@@ -499,45 +523,58 @@ const Auth = () => {
         isLoginInProgressRef.current = false;
         loginCompletedRef.current = true;
         
-        // Verificar acesso e redirecionar imediatamente aqui (mais estável)
+        // Verificar acesso e preparar navegação
         try {
           const { checkUserAccess } = await import("@/hooks/useUserAccess");
           const access = await checkUserAccess(data.user.id);
 
-          // Contar quantos portais o usuário tem acesso
+          // Determinar destino de navegação
           const portals: string[] = [];
           if (access.isAdmin) portals.push("admin");
           if (access.isLeader) portals.push("lideres");
           if (access.hasMemberProfile) portals.push("membro");
 
-          // Se tem múltiplos portais, mostrar escolha
-          if (portals.length > 1) {
-            setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
-            setShowPortalChoice(true);
+          const doNavigate = () => {
+            if (portals.length > 1) {
+              setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
+              setShowPortalChoice(true);
+              hasProcessedAuthRef.current = true;
+              return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get("redirect");
+            if (redirect) {
+              navigate(getSafeRedirect());
+              hasProcessedAuthRef.current = true;
+              return;
+            }
             hasProcessedAuthRef.current = true;
-            return;
+            if (access.isAdmin) navigate("/app");
+            else if (access.isLeader) navigate("/lideres");
+            else if (access.hasMemberProfile) navigate("/portal");
+            else navigate("/app");
+          };
+
+          // Verificar se biometria está disponível e ainda não registrada
+          // (checagem assíncrona no momento do login)
+          if (!hasBiometricCredential()) {
+            const bioAvailable = await isBiometricAvailable();
+            if (bioAvailable) {
+              // Salvar a função de navegação para executar depois do prompt
+              pendingNavigateRef.current = doNavigate;
+              setBiometricAvailableOnDevice(true);
+              setShowBiometricPrompt(true);
+              // Guardar dados para registro
+              (window as any).__bio_pending = {
+                userId: data.user.id,
+                email: data.user.email || email,
+                refreshToken: data.session.refresh_token,
+              };
+              return; // NÃO navegar ainda — esperar resposta do prompt
+            }
           }
 
-          // Se vier de uma rota protegida, respeitar o redirect
-          const params = new URLSearchParams(window.location.search);
-          const redirect = params.get("redirect");
-          if (redirect) {
-            navigate(getSafeRedirect());
-            hasProcessedAuthRef.current = true;
-            return;
-          }
-
-          // Redirecionar para o único portal disponível
-          hasProcessedAuthRef.current = true;
-          if (access.isAdmin) {
-            navigate("/app");
-          } else if (access.isLeader) {
-            navigate("/lideres");
-          } else if (access.hasMemberProfile) {
-            navigate("/portal");
-          } else {
-            navigate("/app");
-          }
+          doNavigate();
         } catch (accessErr) {
           console.error("Erro ao verificar acesso:", accessErr);
           navigate("/");
@@ -558,6 +595,117 @@ const Auth = () => {
     if (portal === "admin") navigate("/app");
     else if (portal === "lideres") navigate("/lideres");
     else navigate("/portal");
+  };
+
+  // Biometria: aceitar ativação
+  const handleAcceptBiometric = async () => {
+    setIsBiometricLoading(true);
+    try {
+      const pending = (window as any).__bio_pending;
+      if (pending) {
+        const success = await registerBiometric(pending.userId, pending.email, pending.refreshToken);
+        if (success) {
+          setHasBiometric(true);
+          setBiometricEmail(pending.email);
+          toast({ title: "Biometria ativada!", description: "Nos próximos acessos, use sua digital ou Face ID para entrar." });
+        } else {
+          toast({ variant: "destructive", title: "Erro", description: "Não foi possível registrar a biometria." });
+        }
+        delete (window as any).__bio_pending;
+      }
+    } finally {
+      setIsBiometricLoading(false);
+      setShowBiometricPrompt(false);
+      // Executar a navegação pendente
+      if (pendingNavigateRef.current) {
+        pendingNavigateRef.current();
+        pendingNavigateRef.current = null;
+      }
+    }
+  };
+
+  // Biometria: recusar ativação
+  const handleDeclineBiometric = () => {
+    delete (window as any).__bio_pending;
+    setShowBiometricPrompt(false);
+    if (pendingNavigateRef.current) {
+      pendingNavigateRef.current();
+      pendingNavigateRef.current = null;
+    }
+  };
+
+  // Login via biometria
+  const handleBiometricLogin = async () => {
+    setIsBiometricLoading(true);
+    try {
+      const result = await authenticateWithBiometric();
+      if (!result) {
+        toast({ variant: "destructive", title: "Falha", description: "Autenticação biométrica cancelada ou falhou." });
+        return;
+      }
+
+      // Restaurar sessão com o refresh token armazenado
+      const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: result.refreshToken,
+      });
+
+      if (error || !data.session) {
+        // Token expirado — remover credencial e pedir login normal
+        removeBiometricCredential();
+        setHasBiometric(false);
+        setBiometricEmail(null);
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Faça login com email e senha para reativar a biometria.",
+        });
+        return;
+      }
+
+      // Atualizar o refresh token armazenado
+      updateBiometricRefreshToken(data.session.refresh_token);
+
+      toast({ title: "Bem-vindo!", description: "Login via biometria realizado com sucesso." });
+
+      loginCompletedRef.current = true;
+      hasProcessedAuthRef.current = false;
+      isLoginInProgressRef.current = false;
+
+      // Verificar acesso e navegar
+      try {
+        const { checkUserAccess } = await import("@/hooks/useUserAccess");
+        const access = await checkUserAccess(data.user!.id);
+        const portals: string[] = [];
+        if (access.isAdmin) portals.push("admin");
+        if (access.isLeader) portals.push("lideres");
+        if (access.hasMemberProfile) portals.push("membro");
+
+        if (portals.length > 1) {
+          setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
+          setShowPortalChoice(true);
+          hasProcessedAuthRef.current = true;
+          return;
+        }
+
+        hasProcessedAuthRef.current = true;
+        if (access.isAdmin) navigate("/app");
+        else if (access.isLeader) navigate("/lideres");
+        else if (access.hasMemberProfile) navigate("/portal");
+        else navigate("/app");
+      } catch {
+        navigate("/app");
+      }
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
+
+  // Remover biometria
+  const handleRemoveBiometric = () => {
+    removeBiometricCredential();
+    setHasBiometric(false);
+    setBiometricEmail(null);
+    toast({ title: "Biometria removida", description: "O acesso por biometria foi desvinculado deste dispositivo." });
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -812,6 +960,49 @@ const Auth = () => {
     );
   }
 
+  // Biometric prompt (after successful login)
+  if (showBiometricPrompt) {
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center">
+              <Fingerprint className="w-8 h-8 text-secondary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                Ativar Biometria?
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Use sua digital ou Face ID para acessar o app nos próximos logins, sem precisar digitar email e senha.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              className="w-full"
+              variant="secondary"
+              disabled={isBiometricLoading}
+              onClick={handleAcceptBiometric}
+            >
+              {isBiometricLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Fingerprint className="w-4 h-4 mr-2" />
+              Sim, ativar biometria
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              disabled={isBiometricLoading}
+              onClick={handleDeclineBiometric}
+            >
+              Agora não
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Forgot password form
   if (isForgotPassword) {
     return (
@@ -986,6 +1177,46 @@ const Auth = () => {
                 Entrar
               </Button>
             </form>
+
+            {/* Botão de login via biometria */}
+            {hasBiometric && (
+              <div className="mt-4 space-y-2">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  variant="outline"
+                  disabled={isBiometricLoading}
+                  onClick={handleBiometricLogin}
+                >
+                  {isBiometricLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Fingerprint className="w-4 h-4 mr-2" />
+                  )}
+                  Entrar com Biometria
+                  {biometricEmail && (
+                    <span className="ml-1 text-xs text-muted-foreground truncate max-w-[120px]">
+                      ({biometricEmail})
+                    </span>
+                  )}
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleRemoveBiometric}
+                  className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  Remover biometria deste dispositivo
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 text-center">
               <button
