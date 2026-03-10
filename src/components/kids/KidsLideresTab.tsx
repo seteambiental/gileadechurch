@@ -94,7 +94,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     if (!lideres) return [];
     
     return lideres.filter((lider) => {
-      const matchTurma = filterTurma === "todas" || lider.turma === filterTurma;
+      const matchTurma = filterTurma === "todas" || lider.turma === filterTurma || lider.turma === "todas";
       const matchFuncao = filterFuncao === "todas" || lider.funcao === filterFuncao;
       return matchTurma && matchFuncao;
     });
