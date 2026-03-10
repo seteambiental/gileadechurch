@@ -296,6 +296,31 @@ export const EncontrosReportDialog = ({
     enabled: open,
   });
 
+  // Fetch day/frequency change history for all casas
+  const { data: diaHistorico = [] } = useQuery({
+    queryKey: ["casas-refugio-dia-historico"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio_dia_historico" as any)
+        .select("casa_refugio_id, dias, frequencia, vigente_desde")
+        .order("vigente_desde", { ascending: true });
+      if (error) throw error;
+      return (data || []) as DiaHistorico[];
+    },
+    enabled: open,
+  });
+
+  // Group history by casa_refugio_id
+  const historicoMap = useMemo(() => {
+    const map = new Map<string, DiaHistorico[]>();
+    diaHistorico.forEach((h) => {
+      const list = map.get(h.casa_refugio_id) || [];
+      list.push(h);
+      map.set(h.casa_refugio_id, list);
+    });
+    return map;
+  }, [diaHistorico]);
+
   // Build filter options
   const condominios = useMemo(() => {
     const unique = [...new Set(allCasas.map((c) => c.condominio).filter(Boolean))];
