@@ -88,26 +88,39 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Print-only QR codes */}
+      {/* Print-only: meia folha A4 por QR */}
       {showQRPrint && (
-        <div className="fixed inset-0 bg-white z-[9999] print:block hidden" id="print-qrs">
-          <style>{`@media print { body * { visibility: hidden; } #print-qrs, #print-qrs * { visibility: visible; } #print-qrs { position: fixed; top: 0; left: 0; width: 100%; } }`}</style>
-          <div className="grid grid-cols-2 gap-8 p-8">
-            {turmasConfig.filter(t => t.turma !== "todas").map(turma => (
-              <div key={turma.turma} className="flex flex-col items-center p-8 border-2 rounded-xl" style={{ borderColor: turma.cor_hex }}>
-                <div className="w-8 h-8 rounded-full mb-2" style={{ backgroundColor: turma.cor_hex }} />
-                <h2 className="text-2xl font-bold mb-1">{turma.nome_exibicao}</h2>
-                <p className="text-sm text-gray-500 mb-4">{turma.idade_minima}-{turma.idade_maxima} anos</p>
+        <div className="fixed inset-0 bg-white z-[9999]" id="print-qrs">
+          <style>{`
+            @media print {
+              body * { visibility: hidden !important; }
+              #print-qrs, #print-qrs * { visibility: visible !important; }
+              #print-qrs { position: fixed; top: 0; left: 0; width: 100%; }
+              .print-qr-page { page-break-after: always; width: 210mm; height: 148.5mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+              .print-qr-page:last-child { page-break-after: auto; }
+            }
+            @media screen { #print-qrs { display: none; } }
+          `}</style>
+          {(printTurma
+            ? turmasConfig.filter(t => t.turma === printTurma)
+            : turmasConfig.filter(t => t.turma !== "todas" && selectedTurmasPrint.has(t.turma))
+          ).map(turma => (
+            <div key={turma.turma} className="print-qr-page">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 rounded-full mb-4" style={{ backgroundColor: turma.cor_hex }} />
+                <h1 className="text-4xl font-bold mb-1">{turma.nome_exibicao}</h1>
+                <p className="text-lg text-gray-500 mb-6">{turma.idade_minima} a {turma.idade_maxima} anos</p>
                 <QRCodeSVG
                   value={`${baseUrl}/kids/checkin/${turma.turma}`}
-                  size={200}
+                  size={280}
                   level="H"
                   fgColor={turma.cor_hex}
                 />
-                <p className="text-xs text-gray-400 mt-3">Escaneie para Check-in</p>
+                <p className="text-base text-gray-400 mt-6">Escaneie para fazer o Check-in</p>
+                <p className="text-xs text-gray-300 mt-2">Ministério Kids • Igreja Gileade</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -119,31 +132,59 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
               <QrCode className="h-5 w-5" />
               QR Codes das Turmas
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={handlePrintQRs}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrintSelected}
+              disabled={selectedTurmasPrint.size === 0}
+            >
               <Printer className="h-4 w-4 mr-1" />
-              Imprimir QR Codes
+              Imprimir selecionados ({selectedTurmasPrint.size})
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-            {turmasConfig.filter(t => t.turma !== "todas").map(turma => (
-              <div
-                key={turma.turma}
-                className="flex flex-col items-center p-4 rounded-xl border-2 bg-white"
-                style={{ borderColor: turma.cor_hex }}
-              >
-                <div className="w-5 h-5 rounded-full mb-1" style={{ backgroundColor: turma.cor_hex }} />
-                <p className="font-semibold text-sm mb-2">{turma.nome_exibicao}</p>
-                <QRCodeSVG
-                  value={`${baseUrl}/kids/checkin/${turma.turma}`}
-                  size={100}
-                  level="H"
-                  fgColor={turma.cor_hex}
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">{turma.idade_minima}-{turma.idade_maxima} anos</p>
-              </div>
-            ))}
+            {turmasConfig.filter(t => t.turma !== "todas").map(turma => {
+              const isSelected = selectedTurmasPrint.has(turma.turma);
+              return (
+                <div
+                  key={turma.turma}
+                  className={cn(
+                    "flex flex-col items-center p-4 rounded-xl border-2 bg-white relative cursor-pointer transition-all",
+                    isSelected && "ring-2 ring-offset-2 shadow-md"
+                  )}
+                  style={{ borderColor: turma.cor_hex, ...(isSelected ? { ringColor: turma.cor_hex } : {}) }}
+                  onClick={() => toggleTurmaPrint(turma.turma)}
+                >
+                  {/* Checkbox de seleção */}
+                  <div className="absolute top-2 left-2">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleTurmaPrint(turma.turma)}
+                      className="data-[state=checked]:bg-primary"
+                    />
+                  </div>
+                  {/* Botão imprimir individual */}
+                  <button
+                    className="absolute top-2 right-2 p-1 rounded hover:bg-muted transition-colors"
+                    onClick={(e) => { e.stopPropagation(); handlePrintSingle(turma.turma); }}
+                    title={`Imprimir ${turma.nome_exibicao}`}
+                  >
+                    <Printer className="h-3.5 w-3.5 text-muted-foreground" />
+                  </button>
+                  <div className="w-5 h-5 rounded-full mb-1 mt-2" style={{ backgroundColor: turma.cor_hex }} />
+                  <p className="font-semibold text-sm mb-2">{turma.nome_exibicao}</p>
+                  <QRCodeSVG
+                    value={`${baseUrl}/kids/checkin/${turma.turma}`}
+                    size={100}
+                    level="H"
+                    fgColor={turma.cor_hex}
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-1">{turma.idade_minima}-{turma.idade_maxima} anos</p>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
