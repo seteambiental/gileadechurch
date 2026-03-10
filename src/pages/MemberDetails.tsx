@@ -125,6 +125,23 @@ const MemberDetails = () => {
     enabled: !!member?.responsavel_id,
   });
 
+  // Buscar crianças sob responsabilidade deste membro
+  const { data: criancasResponsavel } = useQuery({
+    queryKey: ["member-criancas-responsavel", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_responsaveis")
+        .select(`
+          id,
+          crianca_member:members!kids_responsaveis_crianca_member_id_fkey(id, full_name),
+          crianca_nc:novos_convertidos!kids_responsaveis_crianca_novo_convertido_id_fkey(id, full_name)
+        `)
+        .eq("responsavel_member_id", id!);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && (bypass || !!user),
+  });
 
   const getInitials = (name: string) => {
     return name
