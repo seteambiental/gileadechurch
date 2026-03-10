@@ -216,7 +216,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               
               <p style="color: #6c757d; font-size: 14px;">
-                Acesse o Portal de Líderes para aprovar ou rejeitar esta solicitação.
+                Acesse o Portal Ministério para aprovar ou rejeitar esta solicitação.
               </p>
             </div>
             
