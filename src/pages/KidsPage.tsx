@@ -277,8 +277,7 @@ const KidsPage = () => {
       return;
     }
 
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const dataHoje = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
 
     // Header
     doc.setFontSize(16);
@@ -289,26 +288,24 @@ const KidsPage = () => {
     doc.text(`Faixa etária: ${turma.idade_minima} a ${turma.idade_maxima} anos  •  Total: ${criancas.length} crianças`, 14, 25);
     doc.text(`Data: ____/____/________`, 14, 32);
 
-    // 5 empty columns for attendance dates
-    const blankCols = ["", "", "", "", ""];
-
     autoTable(doc, {
       startY: 38,
-      head: [["Nº", "Nome", "Idade", "Responsável", ...blankCols]],
+      head: [["Nº", "Nome", "Idade", "Responsável", "Assinatura"]],
       body: criancas.map((c, i) => [
         String(i + 1),
         c.nome,
         String(c.idade),
         c.responsavelNome || "—",
-        ...blankCols,
+        "",
       ]),
-      styles: { fontSize: 9, cellPadding: 3 },
+      styles: { fontSize: 9, cellPadding: 3, overflow: "ellipsize" },
       headStyles: { fillColor: [100, 100, 100], fontSize: 9 },
       columnStyles: {
         0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 50 },
+        1: { cellWidth: 70 },
         2: { cellWidth: 14, halign: "center" },
-        3: { cellWidth: 40 },
+        3: { cellWidth: 60 },
+        4: { cellWidth: 50 },
       },
       theme: "grid",
     });
