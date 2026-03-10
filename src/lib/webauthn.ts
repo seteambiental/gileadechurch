@@ -138,7 +138,7 @@ export async function authenticateWithBiometric(): Promise<{
 
     const credential = (await navigator.credentials.get({
       publicKey: {
-        challenge: randomBuffer(32),
+        challenge: randomBuffer(32) as unknown as BufferSource,
         allowCredentials: [
           {
             id: base64ToBuffer(credentialIdB64),
