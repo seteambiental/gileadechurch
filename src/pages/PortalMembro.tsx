@@ -34,6 +34,7 @@ import { PortalCandidaturaTab } from "@/components/portal/PortalCandidaturaTab";
 import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
+import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 
 const PortalMembro = () => {
   const { user, loading: authLoading, signOut } = useAuth();
