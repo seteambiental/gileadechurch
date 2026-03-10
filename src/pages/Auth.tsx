@@ -310,7 +310,7 @@ const Auth = () => {
       // Permitir nova tentativa se algo falhar
       hasProcessedAuthRef.current = false;
     });
-  }, [user, loading, isRecovery, navigate]);
+  }, [user, loading, isRecovery, navigate, showBiometricPrompt]);
 
 
   const validateLoginForm = () => {
