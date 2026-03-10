@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
