@@ -509,8 +509,13 @@ const Auth = () => {
         return;
       }
 
-      if (data.user) {
+      if (data.user && data.session) {
         toast({ title: "Bem-vindo!", description: "Login realizado com sucesso." });
+
+        // Atualizar refresh token da biometria se já registrada
+        if (hasBiometricCredential()) {
+          updateBiometricRefreshToken(data.session.refresh_token);
+        }
 
         // Login concluído com sucesso - agora pode processar o redirecionamento
         // Resetar as flags para permitir que o useEffect processe
@@ -518,45 +523,58 @@ const Auth = () => {
         isLoginInProgressRef.current = false;
         loginCompletedRef.current = true;
         
-        // Verificar acesso e redirecionar imediatamente aqui (mais estável)
+        // Verificar acesso e preparar navegação
         try {
           const { checkUserAccess } = await import("@/hooks/useUserAccess");
           const access = await checkUserAccess(data.user.id);
 
-          // Contar quantos portais o usuário tem acesso
+          // Determinar destino de navegação
           const portals: string[] = [];
           if (access.isAdmin) portals.push("admin");
           if (access.isLeader) portals.push("lideres");
           if (access.hasMemberProfile) portals.push("membro");
 
-          // Se tem múltiplos portais, mostrar escolha
-          if (portals.length > 1) {
-            setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
-            setShowPortalChoice(true);
+          const doNavigate = () => {
+            if (portals.length > 1) {
+              setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
+              setShowPortalChoice(true);
+              hasProcessedAuthRef.current = true;
+              return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get("redirect");
+            if (redirect) {
+              navigate(getSafeRedirect());
+              hasProcessedAuthRef.current = true;
+              return;
+            }
             hasProcessedAuthRef.current = true;
-            return;
+            if (access.isAdmin) navigate("/app");
+            else if (access.isLeader) navigate("/lideres");
+            else if (access.hasMemberProfile) navigate("/portal");
+            else navigate("/app");
+          };
+
+          // Verificar se biometria está disponível e ainda não registrada
+          // (checagem assíncrona no momento do login)
+          if (!hasBiometricCredential()) {
+            const bioAvailable = await isBiometricAvailable();
+            if (bioAvailable) {
+              // Salvar a função de navegação para executar depois do prompt
+              pendingNavigateRef.current = doNavigate;
+              setBiometricAvailableOnDevice(true);
+              setShowBiometricPrompt(true);
+              // Guardar dados para registro
+              (window as any).__bio_pending = {
+                userId: data.user.id,
+                email: data.user.email || email,
+                refreshToken: data.session.refresh_token,
+              };
+              return; // NÃO navegar ainda — esperar resposta do prompt
+            }
           }
 
-          // Se vier de uma rota protegida, respeitar o redirect
-          const params = new URLSearchParams(window.location.search);
-          const redirect = params.get("redirect");
-          if (redirect) {
-            navigate(getSafeRedirect());
-            hasProcessedAuthRef.current = true;
-            return;
-          }
-
-          // Redirecionar para o único portal disponível
-          hasProcessedAuthRef.current = true;
-          if (access.isAdmin) {
-            navigate("/app");
-          } else if (access.isLeader) {
-            navigate("/lideres");
-          } else if (access.hasMemberProfile) {
-            navigate("/portal");
-          } else {
-            navigate("/app");
-          }
+          doNavigate();
         } catch (accessErr) {
           console.error("Erro ao verificar acesso:", accessErr);
           navigate("/");
