@@ -218,7 +218,83 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     if (turma) generateQRPdf([turma]);
   };
 
-  const stats = {
+  const generateCheckMePdf = async () => {
+    setGenerating(true);
+    try {
+      const pageW = 210;
+      const pageH = 148.5;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [pageW, pageH] });
+
+      const [headerImg, footerImg] = await Promise.all([
+        loadImage(logoPG),
+        loadImage(logoChurchKids),
+      ]);
+
+      const headerCanvas = document.createElement("canvas");
+      headerCanvas.width = headerImg.naturalWidth;
+      headerCanvas.height = headerImg.naturalHeight;
+      headerCanvas.getContext("2d")!.drawImage(headerImg, 0, 0);
+      const headerDataUrl = headerCanvas.toDataURL("image/png");
+      const headerAspect = headerImg.naturalWidth / headerImg.naturalHeight;
+
+      const footerCanvas = document.createElement("canvas");
+      footerCanvas.width = footerImg.naturalWidth;
+      footerCanvas.height = footerImg.naturalHeight;
+      footerCanvas.getContext("2d")!.drawImage(footerImg, 0, 0);
+      const footerDataUrl = footerCanvas.toDataURL("image/png");
+      const footerAspect = footerImg.naturalWidth / footerImg.naturalHeight;
+
+      const headerW = 45;
+      const headerH = headerW / headerAspect;
+      const qrSize = 55;
+      const footerW = 25;
+      const footerH = footerW / footerAspect;
+      const nameTextH = 8;
+      const subTextH = 5;
+      const scanTextH = 4;
+      const spacing = 4;
+
+      const totalH = headerH + spacing + nameTextH + subTextH + spacing + qrSize + spacing + scanTextH + spacing + footerH;
+      const startY = (pageH - totalH) / 2;
+      let y = startY;
+
+      pdf.addImage(headerDataUrl, "PNG", (pageW - headerW) / 2, y, headerW, headerH);
+      y += headerH + spacing;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(28);
+      pdf.setTextColor("#7c3aed");
+      pdf.text("Check-me Kids", pageW / 2, y + nameTextH * 0.7, { align: "center" });
+      y += nameTextH;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(14);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text("Escaneie para registrar a presença", pageW / 2, y + subTextH * 0.7, { align: "center" });
+      y += subTextH + spacing;
+
+      const qrDataUrl = await renderQRToDataURL(`${baseUrl}/kids/checkme`, "#7c3aed", 400);
+      if (qrDataUrl) {
+        pdf.addImage(qrDataUrl, "PNG", (pageW - qrSize) / 2, y, qrSize, qrSize);
+      }
+      y += qrSize + spacing;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(170, 170, 170);
+      pdf.text("A turma será identificada automaticamente", pageW / 2, y + scanTextH * 0.7, { align: "center" });
+      y += scanTextH + spacing;
+
+      pdf.addImage(footerDataUrl, "PNG", (pageW - footerW) / 2, y, footerW, footerH);
+
+      pdf.save("qrcode-checkme-kids.pdf");
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+
     checkMe: checkins?.filter(c => c.check_me_at && !c.check_in_at).length || 0,
     checkIn: checkins?.filter(c => c.check_in_at && !c.check_out_at).length || 0,
     checkOut: checkins?.filter(c => c.check_out_at).length || 0,
