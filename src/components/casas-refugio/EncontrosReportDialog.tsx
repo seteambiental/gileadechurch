@@ -131,6 +131,60 @@ const generateExpectedDates = (
   return dates;
 };
 
+interface DiaHistorico {
+  casa_refugio_id: string;
+  dias: string;
+  frequencia: string | null;
+  vigente_desde: string;
+}
+
+/**
+ * Generates expected dates considering historical day/frequency changes.
+ * Each period uses the day/frequency that was active at that time.
+ */
+const generateExpectedDatesWithHistory = (
+  reportStart: string,
+  reportEnd: string,
+  dataInicioCr: string,
+  historico: DiaHistorico[]
+): string[] => {
+  if (historico.length === 0) return [];
+
+  // Sort by vigente_desde ascending
+  const sorted = [...historico].sort((a, b) => a.vigente_desde.localeCompare(b.vigente_desde));
+
+  const allDates: string[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const period = sorted[i];
+    const dayNumber = dayNameToNumber[period.dias];
+    if (dayNumber === undefined || dayNumber === null) continue;
+
+    // Period starts at max(vigente_desde, reportStart, dataInicioCr)
+    const periodStart = [period.vigente_desde, reportStart, dataInicioCr]
+      .sort()
+      .pop()!;
+
+    // Period ends at the day before the next period starts, or reportEnd
+    const periodEnd = i < sorted.length - 1
+      ? (() => {
+          const nextStart = parseLocalDate(sorted[i + 1].vigente_desde);
+          nextStart.setDate(nextStart.getDate() - 1);
+          const nextEndStr = format(nextStart, "yyyy-MM-dd");
+          return nextEndStr < reportEnd ? nextEndStr : reportEnd;
+        })()
+      : reportEnd;
+
+    if (periodStart > periodEnd) continue;
+
+    const dates = generateExpectedDates(periodStart, periodEnd, dayNumber, period.frequencia, dataInicioCr);
+    allDates.push(...dates);
+  }
+
+  // Remove duplicates and sort
+  return [...new Set(allDates)].sort();
+};
+
 export const EncontrosReportDialog = ({
   open,
   onOpenChange,
@@ -242,6 +296,31 @@ export const EncontrosReportDialog = ({
     enabled: open,
   });
 
+  // Fetch day/frequency change history for all casas
+  const { data: diaHistorico = [] } = useQuery({
+    queryKey: ["casas-refugio-dia-historico"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casas_refugio_dia_historico" as any)
+        .select("casa_refugio_id, dias, frequencia, vigente_desde")
+        .order("vigente_desde", { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as DiaHistorico[];
+    },
+    enabled: open,
+  });
+
+  // Group history by casa_refugio_id
+  const historicoMap = useMemo(() => {
+    const map = new Map<string, DiaHistorico[]>();
+    diaHistorico.forEach((h) => {
+      const list = map.get(h.casa_refugio_id) || [];
+      list.push(h);
+      map.set(h.casa_refugio_id, list);
+    });
+    return map;
+  }, [diaHistorico]);
+
   // Build filter options
   const condominios = useMemo(() => {
     const unique = [...new Set(allCasas.map((c) => c.condominio).filter(Boolean))];
@@ -346,17 +425,29 @@ export const EncontrosReportDialog = ({
       : casasFiltradasParaSelect;
 
     casasToProcess.forEach((casa) => {
-      const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
-      if (dayNumber === null || dayNumber === undefined) return;
-
       // Skip CRs without data_inicio_cr
       if (!casa.data_inicio_cr) return;
 
-      // Use data_inicio_cr as start, but clamp to appliedStartDate
-      const casaStart = casa.data_inicio_cr > appliedStartDate 
-        ? casa.data_inicio_cr 
-        : appliedStartDate;
-      const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber, casa.frequencia, casa.data_inicio_cr);
+      // Use history if available, otherwise fall back to current config
+      const history = historicoMap.get(casa.id);
+      let expectedDates: string[];
+
+      if (history && history.length > 0) {
+        expectedDates = generateExpectedDatesWithHistory(
+          appliedStartDate,
+          appliedEndDate,
+          casa.data_inicio_cr,
+          history
+        );
+      } else {
+        // Fallback: use current dias/frequencia (no history recorded)
+        const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
+        if (dayNumber === null || dayNumber === undefined) return;
+        const casaStart = casa.data_inicio_cr > appliedStartDate 
+          ? casa.data_inicio_cr 
+          : appliedStartDate;
+        expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber, casa.frequencia, casa.data_inicio_cr);
+      }
 
       expectedDates.forEach((date) => {
         const existing = findEncontro(casa.id, date);
@@ -445,7 +536,7 @@ export const EncontrosReportDialog = ({
     });
 
     return rows;
-  }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap]);
+  }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap, historicoMap]);
 
   // Apply status filter
   const filteredReportData = useMemo(() => {
