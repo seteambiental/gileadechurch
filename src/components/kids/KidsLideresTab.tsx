@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, UserCheck, Filter } from "lucide-react";
-import { ClearableSelect } from "@/components/ui/clearable-select";
+import { Input } from "@/components/ui/input";
+import { Plus, Trash2, UserCheck, Filter, Search } from "lucide-react";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface TurmaConfig {
   id: string;
