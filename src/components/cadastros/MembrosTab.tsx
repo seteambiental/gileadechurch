@@ -191,6 +191,21 @@ const MembrosTab = () => {
     },
   });
 
+  // Buscar IDs dos responsáveis que têm crianças vinculadas
+  const { data: responsaveisComCriancas = [] } = useQuery({
+    queryKey: ["responsaveis-com-criancas"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_responsaveis")
+        .select("responsavel_member_id");
+      if (error) throw error;
+      const ids = new Set(data?.map(r => r.responsavel_member_id).filter(Boolean));
+      return [...ids] as string[];
+    },
+  });
+
+  const responsavelSet = new Set(responsaveisComCriancas);
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.functions.invoke("excluir-membro", {
