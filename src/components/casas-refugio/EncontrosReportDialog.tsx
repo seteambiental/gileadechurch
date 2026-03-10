@@ -536,7 +536,7 @@ export const EncontrosReportDialog = ({
     });
 
     return rows;
-  }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap]);
+  }, [encontros, allCasas, casasFiltradasParaSelect, casaRefugioFilter, appliedStartDate, appliedEndDate, casasMap, historicoMap]);
 
   // Apply status filter
   const filteredReportData = useMemo(() => {
