@@ -495,6 +495,40 @@ const KidsPage = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Dialog para selecionar turma e gerar chamada PDF */}
+      <Dialog open={chamadaDialogOpen} onOpenChange={setChamadaDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Lista de Chamada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Selecione a turma (PG)</label>
+              <Select value={chamadaTurma} onValueChange={setChamadaTurma}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma turma..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasConfig?.map((t) => (
+                    <SelectItem key={t.turma} value={t.turma}>
+                      {t.nome_exibicao} ({criancasPorTurma[t.turma]?.length || 0} crianças)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full"
+              disabled={!chamadaTurma}
+              onClick={() => generateChamadaPDF(chamadaTurma)}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Gerar PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
