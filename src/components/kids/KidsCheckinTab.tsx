@@ -31,6 +31,8 @@ interface KidsCheckinTabProps {
 export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showQRPrint, setShowQRPrint] = useState(false);
+  const [selectedTurmasPrint, setSelectedTurmasPrint] = useState<Set<string>>(new Set());
+  const [printTurma, setPrintTurma] = useState<string | null>(null);
   const dataFormatada = format(selectedDate, "yyyy-MM-dd");
 
   const { data: checkins, isLoading } = useQuery({
@@ -48,11 +50,32 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
 
   const baseUrl = window.location.origin;
 
-  const handlePrintQRs = () => {
+  const toggleTurmaPrint = (turma: string) => {
+    setSelectedTurmasPrint(prev => {
+      const next = new Set(prev);
+      if (next.has(turma)) next.delete(turma);
+      else next.add(turma);
+      return next;
+    });
+  };
+
+  const handlePrintSelected = () => {
+    if (selectedTurmasPrint.size === 0) return;
+    setShowQRPrint(true);
+    setPrintTurma(null);
+    setTimeout(() => {
+      window.print();
+      setShowQRPrint(false);
+    }, 500);
+  };
+
+  const handlePrintSingle = (turma: string) => {
+    setPrintTurma(turma);
     setShowQRPrint(true);
     setTimeout(() => {
       window.print();
       setShowQRPrint(false);
+      setPrintTurma(null);
     }, 500);
   };
 
