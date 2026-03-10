@@ -58,6 +58,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
 };
 
 const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSelecionado?: string; onEventoChange?: (id: string) => void }) => {
+  const navigate = useNavigate();
   const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
   const setSelectedEventoId = (id: string) => {
     setSelectedEventoIdLocal(id);
