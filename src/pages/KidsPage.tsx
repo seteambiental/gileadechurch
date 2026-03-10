@@ -19,6 +19,7 @@ import {
   ArrowLeft,
   Settings,
   CalendarDays,
+  FileText,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
@@ -30,6 +31,13 @@ import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { savePDF } from "@/lib/export";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface TurmaConfig {
   id: string;
@@ -50,6 +58,8 @@ const KidsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [chamadaDialogOpen, setChamadaDialogOpen] = useState(false);
+  const [chamadaTurma, setChamadaTurma] = useState("");
 
   // Buscar configuração das turmas
   const { data: turmasConfig, isLoading: loadingTurmas } = useQuery({
@@ -258,6 +268,55 @@ const KidsPage = () => {
 
   const isLoading = loadingTurmas || loadingMembers || loadingNovos;
 
+  const generateChamadaPDF = (turmaKey: string) => {
+    const turma = turmasConfig?.find((t) => t.turma === turmaKey);
+    if (!turma) return;
+    const criancas = criancasPorTurma[turmaKey] || [];
+    if (criancas.length === 0) {
+      toast({ title: "Nenhuma criança nesta turma", variant: "destructive" });
+      return;
+    }
+
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const dataHoje = format(new Date(), "dd/MM/yyyy", { locale: ptBR });
+
+    // Header
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Lista de Chamada — ${turma.nome_exibicao}`, 14, 18);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Faixa etária: ${turma.idade_minima} a ${turma.idade_maxima} anos  •  Total: ${criancas.length} crianças`, 14, 25);
+    doc.text(`Data: ____/____/________`, 14, 32);
+
+    // 5 empty columns for attendance dates
+    const blankCols = ["", "", "", "", ""];
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Nº", "Nome", "Idade", "Responsável", ...blankCols]],
+      body: criancas.map((c, i) => [
+        String(i + 1),
+        c.nome,
+        String(c.idade),
+        c.responsavelNome || "—",
+        ...blankCols,
+      ]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 100, 100], fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 10, halign: "center" },
+        1: { cellWidth: 50 },
+        2: { cellWidth: 14, halign: "center" },
+        3: { cellWidth: 40 },
+      },
+      theme: "grid",
+    });
+
+    savePDF(doc, `chamada_${turma.nome_exibicao.replace(/\s/g, "_")}.pdf`);
+    setChamadaDialogOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4 md:p-6 space-y-6">
@@ -375,6 +434,15 @@ const KidsPage = () => {
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 h-9"
+              onClick={() => setChamadaDialogOpen(true)}
+            >
+              <FileText className="h-4 w-4" />
+              Chamada PDF
+            </Button>
           </TabsList>
 
           <div className="mt-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm">
@@ -427,6 +495,40 @@ const KidsPage = () => {
           </div>
         </Tabs>
       </div>
+
+      {/* Dialog para selecionar turma e gerar chamada PDF */}
+      <Dialog open={chamadaDialogOpen} onOpenChange={setChamadaDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Lista de Chamada</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Selecione a turma (PG)</label>
+              <Select value={chamadaTurma} onValueChange={setChamadaTurma}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma turma..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {turmasConfig?.map((t) => (
+                    <SelectItem key={t.turma} value={t.turma}>
+                      {t.nome_exibicao} ({criancasPorTurma[t.turma]?.length || 0} crianças)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full"
+              disabled={!chamadaTurma}
+              onClick={() => generateChamadaPDF(chamadaTurma)}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Gerar PDF
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
