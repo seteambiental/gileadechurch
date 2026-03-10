@@ -52,9 +52,10 @@ interface Crianca {
 interface KidsTurmaTabProps {
   turma: TurmaConfig;
   criancas: Crianca[];
+  turmasConfig?: TurmaConfig[];
 }
 
-export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
+export const KidsTurmaTab = ({ turma, criancas, turmasConfig }: KidsTurmaTabProps) => {
   const [search, setSearch] = useState("");
   const [editingCrianca, setEditingCrianca] = useState<Crianca | null>(null);
   const [carteirinhaCrianca, setCarteirinhaCrianca] = useState<Crianca | null>(null);
@@ -409,6 +410,8 @@ export const KidsTurmaTab = ({ turma, criancas }: KidsTurmaTabProps) => {
         open={!!editingCrianca}
         onOpenChange={(open) => !open && setEditingCrianca(null)}
         crianca={editingCrianca}
+        turmaAtual={turma}
+        turmasConfig={turmasConfig || []}
       />
 
       {/* Dialog da carteirinha */}

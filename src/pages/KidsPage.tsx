@@ -81,7 +81,7 @@ const KidsPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero, responsavel_id")
+        .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero, responsavel_id, kids_turma_override")
         .not("birth_date", "is", null);
       
       if (error) throw error;
@@ -169,9 +169,11 @@ const KidsPage = () => {
       if (!member.birth_date) return;
       const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
       
-      const turma = turmasConfig.find(
-        (t) => idade >= t.idade_minima && idade <= t.idade_maxima
-      );
+      // Use override if set, otherwise age-based
+      const override = (member as Record<string, unknown>).kids_turma_override as string | null;
+      const turma = override
+        ? turmasConfig.find((t) => t.turma === override)
+        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
       
       if (turma) {
         // Buscar responsável via kids_responsaveis
@@ -209,9 +211,11 @@ const KidsPage = () => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
       
-      const turma = turmasConfig.find(
-        (t) => idade >= t.idade_minima && idade <= t.idade_maxima
-      );
+      // Use override if set, otherwise age-based
+      const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
+      const turma = override
+        ? turmasConfig.find((t) => t.turma === override)
+        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
       
       if (turma) {
         // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos
@@ -458,6 +462,7 @@ const KidsPage = () => {
             <KidsTurmaTab 
               turma={turma} 
               criancas={criancasPorTurma[turma.turma] || []} 
+              turmasConfig={turmasConfig || []}
             />
           </TabsContent>
         ))}
