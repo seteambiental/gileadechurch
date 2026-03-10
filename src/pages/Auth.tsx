@@ -597,7 +597,118 @@ const Auth = () => {
     else navigate("/portal");
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  // Biometria: aceitar ativação
+  const handleAcceptBiometric = async () => {
+    setIsBiometricLoading(true);
+    try {
+      const pending = (window as any).__bio_pending;
+      if (pending) {
+        const success = await registerBiometric(pending.userId, pending.email, pending.refreshToken);
+        if (success) {
+          setHasBiometric(true);
+          setBiometricEmail(pending.email);
+          toast({ title: "Biometria ativada!", description: "Nos próximos acessos, use sua digital ou Face ID para entrar." });
+        } else {
+          toast({ variant: "destructive", title: "Erro", description: "Não foi possível registrar a biometria." });
+        }
+        delete (window as any).__bio_pending;
+      }
+    } finally {
+      setIsBiometricLoading(false);
+      setShowBiometricPrompt(false);
+      // Executar a navegação pendente
+      if (pendingNavigateRef.current) {
+        pendingNavigateRef.current();
+        pendingNavigateRef.current = null;
+      }
+    }
+  };
+
+  // Biometria: recusar ativação
+  const handleDeclineBiometric = () => {
+    delete (window as any).__bio_pending;
+    setShowBiometricPrompt(false);
+    if (pendingNavigateRef.current) {
+      pendingNavigateRef.current();
+      pendingNavigateRef.current = null;
+    }
+  };
+
+  // Login via biometria
+  const handleBiometricLogin = async () => {
+    setIsBiometricLoading(true);
+    try {
+      const result = await authenticateWithBiometric();
+      if (!result) {
+        toast({ variant: "destructive", title: "Falha", description: "Autenticação biométrica cancelada ou falhou." });
+        return;
+      }
+
+      // Restaurar sessão com o refresh token armazenado
+      const { data, error } = await supabase.auth.refreshSession({
+        refresh_token: result.refreshToken,
+      });
+
+      if (error || !data.session) {
+        // Token expirado — remover credencial e pedir login normal
+        removeBiometricCredential();
+        setHasBiometric(false);
+        setBiometricEmail(null);
+        toast({
+          variant: "destructive",
+          title: "Sessão expirada",
+          description: "Faça login com email e senha para reativar a biometria.",
+        });
+        return;
+      }
+
+      // Atualizar o refresh token armazenado
+      updateBiometricRefreshToken(data.session.refresh_token);
+
+      toast({ title: "Bem-vindo!", description: "Login via biometria realizado com sucesso." });
+
+      loginCompletedRef.current = true;
+      hasProcessedAuthRef.current = false;
+      isLoginInProgressRef.current = false;
+
+      // Verificar acesso e navegar
+      try {
+        const { checkUserAccess } = await import("@/hooks/useUserAccess");
+        const access = await checkUserAccess(data.user!.id);
+        const portals: string[] = [];
+        if (access.isAdmin) portals.push("admin");
+        if (access.isLeader) portals.push("lideres");
+        if (access.hasMemberProfile) portals.push("membro");
+
+        if (portals.length > 1) {
+          setPendingUserAccess({ isAdmin: access.isAdmin, isLeader: access.isLeader, hasMemberProfile: access.hasMemberProfile });
+          setShowPortalChoice(true);
+          hasProcessedAuthRef.current = true;
+          return;
+        }
+
+        hasProcessedAuthRef.current = true;
+        if (access.isAdmin) navigate("/app");
+        else if (access.isLeader) navigate("/lideres");
+        else if (access.hasMemberProfile) navigate("/portal");
+        else navigate("/app");
+      } catch {
+        navigate("/app");
+      }
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
+
+  // Remover biometria
+  const handleRemoveBiometric = () => {
+    removeBiometricCredential();
+    setHasBiometric(false);
+    setBiometricEmail(null);
+    toast({ title: "Biometria removida", description: "O acesso por biometria foi desvinculado deste dispositivo." });
+  };
+
+
     e.preventDefault();
     if (!validateSignupStep(4)) return;
 
