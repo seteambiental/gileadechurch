@@ -410,6 +410,8 @@ export const KidsTurmaTab = ({ turma, criancas, turmasConfig }: KidsTurmaTabProp
         open={!!editingCrianca}
         onOpenChange={(open) => !open && setEditingCrianca(null)}
         crianca={editingCrianca}
+        turmaAtual={turma}
+        turmasConfig={turmasConfig || []}
       />
 
       {/* Dialog da carteirinha */}
