@@ -294,11 +294,12 @@ const KidsPage = () => {
 
     autoTable(doc, {
       startY: 38,
-      head: [["Nº", "Nome", "Idade", "Responsável", "Assinatura"]],
+      head: [["Nº", "Nome", "Idade", "Gênero", "Responsável", "Assinatura"]],
       body: criancas.map((c, i) => [
         String(i + 1),
         c.nome,
-        String(c.idade),
+        `${c.idade} anos`,
+        c.genero === "masculino" ? "Menino" : c.genero === "feminino" ? "Menina" : "—",
         c.responsavelNome || "—",
         "",
       ]),
@@ -306,10 +307,11 @@ const KidsPage = () => {
       headStyles: { fillColor: [100, 100, 100], fontSize: 9 },
       columnStyles: {
         0: { cellWidth: 10, halign: "center" },
-        1: { cellWidth: 70 },
-        2: { cellWidth: 14, halign: "center" },
-        3: { cellWidth: 60 },
-        4: { cellWidth: 50 },
+        1: { cellWidth: 65 },
+        2: { cellWidth: 18, halign: "center" },
+        3: { cellWidth: 18, halign: "center" },
+        4: { cellWidth: 55 },
+        5: { cellWidth: 50 },
       },
       theme: "grid",
     });
