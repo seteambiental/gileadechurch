@@ -12,6 +12,7 @@ import {
   Home,
   User,
   Send,
+  Baby,
   HandHelping,
   ArrowRightLeft,
 } from "lucide-react";
@@ -33,6 +34,7 @@ import { PortalCandidaturaTab } from "@/components/portal/PortalCandidaturaTab";
 import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
+import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 
 const PortalMembro = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -128,6 +130,9 @@ const PortalMembro = () => {
       icon: HandHeart,
     });
   });
+
+  // Aba Kids Check-in
+  availableTabs.push({ id: "kids-checkin", label: "Check-in PG", icon: Baby });
 
   // Aba de candidatura de serviço (Recepção/Estacionamento)
   availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
@@ -251,6 +256,10 @@ const PortalMembro = () => {
               </TabsContent>
             );
           })}
+
+          <TabsContent value="kids-checkin">
+            <PortalKidsCheckinTab memberId={memberProfile.id} memberName={memberProfile.full_name} />
+          </TabsContent>
 
           <TabsContent value="servico">
             <PortalCandidaturaServicoTab memberId={memberProfile.id} />

@@ -20,6 +20,7 @@ import {
   Settings,
   CalendarDays,
   FileText,
+  QrCode,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
@@ -29,6 +30,7 @@ import { KidsDashboard } from "@/components/kids/KidsDashboard";
 import { KidsEscalasTab } from "@/components/kids/KidsEscalasTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
+import { KidsCheckinTab } from "@/components/kids/KidsCheckinTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -433,6 +435,10 @@ const KidsPage = () => {
               <Bell className="h-4 w-4" />
               Notificações
             </TabsTrigger>
+            <TabsTrigger value="checkin" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
+              <QrCode className="h-4 w-4" />
+              Check-in
+            </TabsTrigger>
             <TabsTrigger value="config" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <Settings className="h-4 w-4" />
               Configurações
@@ -491,6 +497,11 @@ const KidsPage = () => {
         <TabsContent value="escalas">
           <KidsEscalasTab turmasConfig={turmasConfig || []} />
         </TabsContent>
+
+          {/* Check-in */}
+          <TabsContent value="checkin">
+            <KidsCheckinTab turmasConfig={turmasConfig || []} />
+          </TabsContent>
 
           {/* Configurações */}
           <TabsContent value="config">
