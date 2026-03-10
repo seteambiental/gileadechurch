@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
@@ -262,11 +262,14 @@ const ministriesData: Record<string, MinistryInfo> = {
 
 const MinistryPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("info");
+  const initialTab = searchParams.get("tab") || "info";
+  const initialEvento = searchParams.get("evento") || "";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
-  const [impactoEventoId, setImpactoEventoId] = useState("");
+  const [impactoEventoId, setImpactoEventoId] = useState(initialEvento);
 
   const bypass = isAuthBypassed();
 

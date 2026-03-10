@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -57,6 +58,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
 };
 
 const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSelecionado?: string; onEventoChange?: (id: string) => void }) => {
+  const navigate = useNavigate();
   const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
   const setSelectedEventoId = (id: string) => {
     setSelectedEventoIdLocal(id);
@@ -684,6 +686,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
+          )}
+          {selectedEventoId && (
+            <Button variant="outline" size="sm" onClick={() => navigate(`/ministerio/impacto?tab=inscricoes-impacto&evento=${selectedEventoId}`)}>
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Inscrições
+            </Button>
           )}
           {selectedEventoId && inscricoes.length > 0 && (
             <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
