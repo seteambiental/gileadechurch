@@ -497,6 +497,11 @@ const KidsPage = () => {
           <KidsEscalasTab turmasConfig={turmasConfig || []} />
         </TabsContent>
 
+          {/* Check-in */}
+          <TabsContent value="checkin">
+            <KidsCheckinTab turmasConfig={turmasConfig || []} />
+          </TabsContent>
+
           {/* Configurações */}
           <TabsContent value="config">
             <KidsConfigTab />

@@ -257,6 +257,10 @@ const PortalMembro = () => {
             );
           })}
 
+          <TabsContent value="kids-checkin">
+            <PortalKidsCheckinTab memberId={memberProfile.id} memberName={memberProfile.full_name} />
+          </TabsContent>
+
           <TabsContent value="servico">
             <PortalCandidaturaServicoTab memberId={memberProfile.id} />
           </TabsContent>
