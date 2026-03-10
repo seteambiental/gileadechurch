@@ -434,6 +434,15 @@ const KidsPage = () => {
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 h-9"
+              onClick={() => setChamadaDialogOpen(true)}
+            >
+              <FileText className="h-4 w-4" />
+              Chamada PDF
+            </Button>
           </TabsList>
 
           <div className="mt-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-sm">
