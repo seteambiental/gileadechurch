@@ -105,7 +105,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     mutationFn: async () => {
       const { error } = await supabase.from("kids_lideres").insert({
         member_id: selectedMember,
-        turma: selectedTurma as "laranja" | "amarelo" | "verde" | "azul",
+        turma: selectedTurma as "laranja" | "amarelo" | "verde" | "azul" | "bercario" | "todas",
         funcao: selectedFuncao,
       });
       if (error) throw error;
