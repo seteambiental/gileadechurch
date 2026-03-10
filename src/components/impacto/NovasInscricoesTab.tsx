@@ -58,7 +58,8 @@ const NovasInscricoesTab = () => {
           created_at,
           evento_id,
           member_id,
-          evento:agenda_igreja(id, titulo, data_evento, data_fim, valores_por_tipo)
+          evento:agenda_igreja(id, titulo, data_evento, data_fim, valores_por_tipo),
+          member:members(id, photo_url)
         `)
         .eq("aprovado", false)
         .order("created_at", { ascending: false });
