@@ -462,6 +462,7 @@ const KidsPage = () => {
             <KidsTurmaTab 
               turma={turma} 
               criancas={criancasPorTurma[turma.turma] || []} 
+              turmasConfig={turmasConfig || []}
             />
           </TabsContent>
         ))}
