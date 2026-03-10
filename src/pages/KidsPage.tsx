@@ -58,6 +58,8 @@ const KidsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [chamadaDialogOpen, setChamadaDialogOpen] = useState(false);
+  const [chamadaTurma, setChamadaTurma] = useState("");
 
   // Buscar configuração das turmas
   const { data: turmasConfig, isLoading: loadingTurmas } = useQuery({
