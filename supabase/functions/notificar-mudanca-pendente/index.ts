@@ -216,7 +216,7 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
               
               <p style="color: #6c757d; font-size: 14px;">
-                Acesse o Portal de Líderes para aprovar ou rejeitar esta solicitação.
+                Acesse o Portal Ministério para aprovar ou rejeitar esta solicitação.
               </p>
             </div>
             
@@ -249,7 +249,7 @@ const handler = async (req: Request): Promise<Response> => {
           substituicaoTexto = `\n🔄 Substituindo: *${membroAtualNome}*`;
         }
 
-        const mensagemWhatsapp = `📋 *APROVAÇÃO PENDENTE*\n\nOlá, ${primeiroNome}! Há uma solicitação aguardando sua aprovação:\n\n📌 *Ação:* ${acaoLabel}\n👤 *Tipo:* ${tipoLabel}\n🏠 *Local:* ${entidadeNome}\n👤 *Membro:* ${membroNome}${substituicaoTexto}\n📝 *Solicitado por:* ${solicitanteNome}\n\nAcesse o *Portal de Líderes* para aprovar ou rejeitar.\n\n_Igreja Gileade_ 💙`;
+        const mensagemWhatsapp = `📋 *APROVAÇÃO PENDENTE*\n\nOlá, ${primeiroNome}! Há uma solicitação aguardando sua aprovação:\n\n📌 *Ação:* ${acaoLabel}\n👤 *Tipo:* ${tipoLabel}\n🏠 *Local:* ${entidadeNome}\n👤 *Membro:* ${membroNome}${substituicaoTexto}\n📝 *Solicitado por:* ${solicitanteNome}\n\nAcesse o *Portal Ministério* para aprovar ou rejeitar.\n\n_Igreja Gileade_ 💙`;
 
         await enviarWhatsApp(aprovadorWhatsapp, mensagemWhatsapp);
         whatsappEnviado = true;

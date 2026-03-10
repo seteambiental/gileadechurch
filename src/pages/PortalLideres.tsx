@@ -267,7 +267,7 @@ const PortalLideres = () => {
             />
             <div>
               <h1 className="font-heading font-bold text-lg">
-                Portal de Líderes
+                Portal Ministério
               </h1>
               <p className="text-xs text-primary-foreground/70">
                 {igrejaConfig?.nome_fantasia || "Igreja Gileade"}

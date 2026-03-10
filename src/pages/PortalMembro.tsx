@@ -188,7 +188,7 @@ const PortalMembro = () => {
                     Portal ADM
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/lideres")}>
-                    Portal de Líderes
+                    Portal Ministério
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -285,7 +285,7 @@ const PortalMembro = () => {
                 onClick={() => navigate("/lideres")}
                 className="hover:text-foreground font-medium text-secondary"
               >
-                Portal de Líderes →
+                Portal Ministério →
               </button>
             )}
             <button
