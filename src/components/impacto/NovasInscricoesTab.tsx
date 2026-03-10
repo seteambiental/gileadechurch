@@ -383,10 +383,24 @@ const NovasInscricoesTab = () => {
               {filtradas.map((inscricao) => (
                 <TableRow key={inscricao.id}>
                   <TableCell>
-                    <div className="font-medium">{inscricao.nome_participante}</div>
-                    {inscricao.telefone_contato && (
-                      <div className="text-xs text-muted-foreground">{inscricao.telefone_contato}</div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {inscricao.member?.photo_url ? (
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={inscricao.member.photo_url} alt={inscricao.nome_participante} />
+                          <AvatarFallback className="text-xs">{(inscricao.nome_participante || "?")[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">{(inscricao.nome_participante || "?")[0]?.toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div>
+                        <div className="font-medium">{inscricao.nome_participante}</div>
+                        {inscricao.telefone_contato && (
+                          <div className="text-xs text-muted-foreground">{inscricao.telefone_contato}</div>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium text-sm">{inscricao.evento?.titulo || "—"}</div>
