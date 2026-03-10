@@ -240,7 +240,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                     className="pl-9"
                   />
                 </div>
-                {memberSearch.length >= 2 && (
+                {memberSearch.length >= 2 && !selectedMember && (
                   <div className="mt-1 max-h-40 overflow-y-auto border rounded-md bg-popover">
                     {(members || [])
                       .filter((m) => includesNormalized(m.full_name, memberSearch))
@@ -249,7 +249,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                         <button
                           key={m.id}
                           type="button"
-                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2 ${selectedMember === m.id ? "bg-accent font-medium" : ""}`}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2"
                           onClick={() => {
                             setSelectedMember(m.id);
                             setMemberSearch(m.full_name);
