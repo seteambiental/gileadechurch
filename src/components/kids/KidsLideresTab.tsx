@@ -49,8 +49,9 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState("");
-  const [selectedTurma, setSelectedTurma] = useState("");
+  const [selectedTurma, setSelectedTurma] = useState("todas");
   const [selectedFuncao, setSelectedFuncao] = useState("professor");
+  const [memberSearch, setMemberSearch] = useState("");
   
   // Filtros
   const [filterTurma, setFilterTurma] = useState<string>("todas");
