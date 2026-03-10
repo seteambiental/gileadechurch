@@ -552,7 +552,17 @@ const MembrosTab = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground">{member.full_name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-foreground">{member.full_name}</p>
+                            {responsavelSet.has(member.id) && (
+                              <img 
+                                src={pgChurchKidsIcon} 
+                                alt="Responsável PG Kids" 
+                                className="h-4 w-auto" 
+                                title="Responsável por criança(s) no PG"
+                              />
+                            )}
+                          </div>
                           {member.email && (
                             <p className="text-xs text-muted-foreground">{member.email}</p>
                           )}
