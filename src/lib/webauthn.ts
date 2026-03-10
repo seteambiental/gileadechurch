@@ -82,7 +82,7 @@ export async function registerBiometric(
   try {
     const credential = (await navigator.credentials.create({
       publicKey: {
-        challenge: randomBuffer(32),
+        challenge: randomBuffer(32) as unknown as BufferSource,
         rp: {
           name: "Gileade Church",
           id: window.location.hostname,
