@@ -708,7 +708,7 @@ const Auth = () => {
     toast({ title: "Biometria removida", description: "O acesso por biometria foi desvinculado deste dispositivo." });
   };
 
-
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateSignupStep(4)) return;
 
