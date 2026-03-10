@@ -960,6 +960,49 @@ const Auth = () => {
     );
   }
 
+  // Biometric prompt (after successful login)
+  if (showBiometricPrompt) {
+    return (
+      <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
+        <Card className="w-full max-w-md border-border/50 bg-card/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center">
+              <Fingerprint className="w-8 h-8 text-secondary" />
+            </div>
+            <div>
+              <CardTitle className="font-heading text-2xl text-foreground">
+                Ativar Biometria?
+              </CardTitle>
+              <CardDescription className="text-muted-foreground mt-2">
+                Use sua digital ou Face ID para acessar o app nos próximos logins, sem precisar digitar email e senha.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              className="w-full"
+              variant="secondary"
+              disabled={isBiometricLoading}
+              onClick={handleAcceptBiometric}
+            >
+              {isBiometricLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              <Fingerprint className="w-4 h-4 mr-2" />
+              Sim, ativar biometria
+            </Button>
+            <Button
+              className="w-full"
+              variant="outline"
+              disabled={isBiometricLoading}
+              onClick={handleDeclineBiometric}
+            >
+              Agora não
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   // Forgot password form
   if (isForgotPassword) {
     return (
