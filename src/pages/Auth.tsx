@@ -1178,6 +1178,46 @@ const Auth = () => {
               </Button>
             </form>
 
+            {/* Botão de login via biometria */}
+            {hasBiometric && (
+              <div className="mt-4 space-y-2">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">ou</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  variant="outline"
+                  disabled={isBiometricLoading}
+                  onClick={handleBiometricLogin}
+                >
+                  {isBiometricLoading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Fingerprint className="w-4 h-4 mr-2" />
+                  )}
+                  Entrar com Biometria
+                  {biometricEmail && (
+                    <span className="ml-1 text-xs text-muted-foreground truncate max-w-[120px]">
+                      ({biometricEmail})
+                    </span>
+                  )}
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleRemoveBiometric}
+                  className="w-full text-xs text-muted-foreground hover:text-destructive transition-colors"
+                >
+                  Remover biometria deste dispositivo
+                </button>
+              </div>
+            )}
+
             <div className="mt-6 text-center">
               <button
                 type="button"
