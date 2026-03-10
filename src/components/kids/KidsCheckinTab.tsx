@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { QrCode, Printer, CalendarIcon, UserCheck, LogIn, LogOut, Clock } from "lucide-react";
+import { QrCode, Printer, CalendarIcon, UserCheck, LogIn, LogOut, Clock, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -31,9 +33,9 @@ interface KidsCheckinTabProps {
 
 export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [showQRPrint, setShowQRPrint] = useState(false);
   const [selectedTurmasPrint, setSelectedTurmasPrint] = useState<Set<string>>(new Set());
-  const [printTurma, setPrintTurma] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
   const dataFormatada = format(selectedDate, "yyyy-MM-dd");
 
   const { data: checkins, isLoading } = useQuery({
@@ -60,24 +62,112 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     });
   };
 
-  const handlePrintSelected = () => {
-    if (selectedTurmasPrint.size === 0) return;
-    setShowQRPrint(true);
-    setPrintTurma(null);
-    setTimeout(() => {
-      window.print();
-      setShowQRPrint(false);
-    }, 500);
+  const generateQRPdf = async (turmasToprint: TurmaConfig[]) => {
+    if (turmasToprint.length === 0) return;
+    setGenerating(true);
+
+    try {
+      // Meia folha A4: 210mm x 148.5mm (landscape A5)
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [210, 148.5] });
+
+      for (let i = 0; i < turmasToprint.length; i++) {
+        const turma = turmasToprint[i];
+        if (i > 0) pdf.addPage([210, 148.5], "landscape");
+
+        // Criar container temporário visível para html2canvas
+        const container = document.createElement("div");
+        container.style.cssText = "position:fixed;top:0;left:0;width:794px;height:562px;background:white;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;";
+        
+        container.innerHTML = `
+          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;">
+            <div style="width:80px;height:80px;border-radius:50%;background-color:${turma.cor_hex};margin-bottom:20px;"></div>
+            <h1 style="font-size:48px;font-weight:bold;margin:0 0 4px 0;color:#111;">${turma.nome_exibicao}</h1>
+            <p style="font-size:20px;color:#888;margin:0 0 30px 0;">${turma.idade_minima} a ${turma.idade_maxima} anos</p>
+            <div id="qr-render-${turma.turma}"></div>
+            <p style="font-size:16px;color:#aaa;margin:30px 0 0 0;">Escaneie para fazer o Check-in</p>
+            <p style="font-size:12px;color:#ccc;margin:8px 0 0 0;">Ministério Kids • Igreja Gileade</p>
+          </div>
+        `;
+        document.body.appendChild(container);
+
+        // Renderizar QR code como SVG dentro do container
+        const qrContainer = container.querySelector(`#qr-render-${turma.turma}`);
+        if (qrContainer) {
+          const svgNs = "http://www.w3.org/2000/svg";
+          // Use a canvas-based QR to avoid SVG rendering issues
+          const qrCanvas = document.createElement("canvas");
+          qrCanvas.width = 280;
+          qrCanvas.height = 280;
+          
+          // Render QRCodeSVG to get SVG, then draw to canvas
+          const tempDiv = document.createElement("div");
+          document.body.appendChild(tempDiv);
+          const { createRoot } = await import("react-dom/client");
+          const root = createRoot(tempDiv);
+          
+          await new Promise<void>((resolve) => {
+            root.render(
+              <QRCodeSVG
+                value={`${baseUrl}/kids/checkin/${turma.turma}`}
+                size={280}
+                level="H"
+                fgColor={turma.cor_hex}
+              />
+            );
+            setTimeout(resolve, 100);
+          });
+
+          const svgEl = tempDiv.querySelector("svg");
+          if (svgEl) {
+            const svgData = new XMLSerializer().serializeToString(svgEl);
+            const img = new Image();
+            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+            await new Promise<void>((resolve) => {
+              img.onload = () => {
+                const ctx = qrCanvas.getContext("2d");
+                if (ctx) {
+                  ctx.fillStyle = "white";
+                  ctx.fillRect(0, 0, 280, 280);
+                  ctx.drawImage(img, 0, 0, 280, 280);
+                }
+                resolve();
+              };
+            });
+          }
+          root.unmount();
+          tempDiv.remove();
+          qrContainer.appendChild(qrCanvas);
+        }
+
+        const canvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+        });
+
+        document.body.removeChild(container);
+
+        const imgData = canvas.toDataURL("image/png");
+        pdf.addImage(imgData, "PNG", 0, 0, 210, 148.5);
+      }
+
+      pdf.save("qrcode-kids-checkin.pdf");
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const handlePrintSingle = (turma: string) => {
-    setPrintTurma(turma);
-    setShowQRPrint(true);
-    setTimeout(() => {
-      window.print();
-      setShowQRPrint(false);
-      setPrintTurma(null);
-    }, 500);
+  const handlePrintSelected = () => {
+    const turmas = turmasConfig.filter(t => t.turma !== "todas" && selectedTurmasPrint.has(t.turma));
+    generateQRPdf(turmas);
+  };
+
+  const handlePrintSingle = (turmaKey: string) => {
+    const turma = turmasConfig.find(t => t.turma === turmaKey);
+    if (turma) generateQRPdf([turma]);
   };
 
   const stats = {
@@ -89,42 +179,6 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Print-only: meia folha A4 por QR */}
-      {showQRPrint && (
-        <div className="fixed inset-0 bg-white z-[9999]" id="print-qrs">
-          <style>{`
-            @media print {
-              body * { visibility: hidden !important; }
-              #print-qrs, #print-qrs * { visibility: visible !important; }
-              #print-qrs { position: fixed; top: 0; left: 0; width: 100%; }
-              .print-qr-page { page-break-after: always; width: 210mm; height: 148.5mm; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-              .print-qr-page:last-child { page-break-after: auto; }
-            }
-            @media screen { #print-qrs { display: none; } }
-          `}</style>
-          {(printTurma
-            ? turmasConfig.filter(t => t.turma === printTurma)
-            : turmasConfig.filter(t => t.turma !== "todas" && selectedTurmasPrint.has(t.turma))
-          ).map(turma => (
-            <div key={turma.turma} className="print-qr-page">
-              <div className="flex flex-col items-center">
-                <div className="w-16 h-16 rounded-full mb-4" style={{ backgroundColor: turma.cor_hex }} />
-                <h1 className="text-4xl font-bold mb-1">{turma.nome_exibicao}</h1>
-                <p className="text-lg text-gray-500 mb-6">{turma.idade_minima} a {turma.idade_maxima} anos</p>
-                <QRCodeSVG
-                  value={`${baseUrl}/kids/checkin/${turma.turma}`}
-                  size={280}
-                  level="H"
-                  fgColor={turma.cor_hex}
-                />
-                <p className="text-base text-gray-400 mt-6">Escaneie para fazer o Check-in</p>
-                <p className="text-xs text-gray-300 mt-2">Ministério Kids • Igreja Gileade</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* QR Codes por turma */}
       <Card>
         <CardHeader className="pb-3">
@@ -137,10 +191,10 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
               variant="outline"
               size="sm"
               onClick={handlePrintSelected}
-              disabled={selectedTurmasPrint.size === 0}
+              disabled={selectedTurmasPrint.size === 0 || generating}
             >
-              <Printer className="h-4 w-4 mr-1" />
-              Imprimir selecionados ({selectedTurmasPrint.size})
+              {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
+              {generating ? "Gerando PDF..." : `Imprimir selecionados (${selectedTurmasPrint.size})`}
             </Button>
           </div>
         </CardHeader>
