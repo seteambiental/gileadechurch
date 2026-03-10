@@ -227,13 +227,52 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
 
   return (
     <div className="space-y-4">
+      {/* QR Code Geral - CHECK ME */}
+      <Card className="border-2 border-primary">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              QR Code Geral — Check-me
+            </CardTitle>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => generateCheckMePdf()}
+              disabled={generating}
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
+              Imprimir QR Code Check-me
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            QR Code único para o responsável escanear e registrar a presença da criança. A turma é identificada automaticamente.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center">
+            <div className="flex flex-col items-center p-6 rounded-xl border-2 border-primary bg-white">
+              <img src={logoPG} alt="Logo PG" className="h-10 object-contain mb-2" />
+              <p className="font-bold text-base mb-3">Check-me Kids</p>
+              <QRCodeSVG
+                value={`${baseUrl}/kids/checkme`}
+                size={140}
+                level="H"
+                fgColor="#7c3aed"
+              />
+              <p className="text-xs text-muted-foreground mt-2">Escaneie para fazer o Check-me</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* QR Codes por turma */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              QR Codes das Turmas
+              QR Codes por Turma
             </CardTitle>
             <Button
               variant="outline"
