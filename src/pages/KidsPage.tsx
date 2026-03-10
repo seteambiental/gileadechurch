@@ -211,9 +211,11 @@ const KidsPage = () => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
       
-      const turma = turmasConfig.find(
-        (t) => idade >= t.idade_minima && idade <= t.idade_maxima
-      );
+      // Use override if set, otherwise age-based
+      const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
+      const turma = override
+        ? turmasConfig.find((t) => t.turma === override)
+        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
       
       if (turma) {
         // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos
