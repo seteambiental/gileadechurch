@@ -131,6 +131,60 @@ const generateExpectedDates = (
   return dates;
 };
 
+interface DiaHistorico {
+  casa_refugio_id: string;
+  dias: string;
+  frequencia: string | null;
+  vigente_desde: string;
+}
+
+/**
+ * Generates expected dates considering historical day/frequency changes.
+ * Each period uses the day/frequency that was active at that time.
+ */
+const generateExpectedDatesWithHistory = (
+  reportStart: string,
+  reportEnd: string,
+  dataInicioCr: string,
+  historico: DiaHistorico[]
+): string[] => {
+  if (historico.length === 0) return [];
+
+  // Sort by vigente_desde ascending
+  const sorted = [...historico].sort((a, b) => a.vigente_desde.localeCompare(b.vigente_desde));
+
+  const allDates: string[] = [];
+
+  for (let i = 0; i < sorted.length; i++) {
+    const period = sorted[i];
+    const dayNumber = dayNameToNumber[period.dias];
+    if (dayNumber === undefined || dayNumber === null) continue;
+
+    // Period starts at max(vigente_desde, reportStart, dataInicioCr)
+    const periodStart = [period.vigente_desde, reportStart, dataInicioCr]
+      .sort()
+      .pop()!;
+
+    // Period ends at the day before the next period starts, or reportEnd
+    const periodEnd = i < sorted.length - 1
+      ? (() => {
+          const nextStart = parseLocalDate(sorted[i + 1].vigente_desde);
+          nextStart.setDate(nextStart.getDate() - 1);
+          const nextEndStr = format(nextStart, "yyyy-MM-dd");
+          return nextEndStr < reportEnd ? nextEndStr : reportEnd;
+        })()
+      : reportEnd;
+
+    if (periodStart > periodEnd) continue;
+
+    const dates = generateExpectedDates(periodStart, periodEnd, dayNumber, period.frequencia, dataInicioCr);
+    allDates.push(...dates);
+  }
+
+  // Remove duplicates and sort
+  return [...new Set(allDates)].sort();
+};
+
 export const EncontrosReportDialog = ({
   open,
   onOpenChange,
