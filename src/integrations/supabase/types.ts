@@ -2770,6 +2770,130 @@ export type Database = {
           },
         ]
       }
+      kids_checkins: {
+        Row: {
+          check_in_at: string | null
+          check_in_by: string | null
+          check_me_at: string | null
+          check_out_at: string | null
+          check_out_by: string | null
+          created_at: string | null
+          crianca_member_id: string | null
+          crianca_nome: string
+          crianca_novo_convertido_id: string | null
+          data_culto: string
+          id: string
+          responsavel_member_id: string | null
+          responsavel_nome: string | null
+          tipo_culto: string
+          token: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at: string | null
+        }
+        Insert: {
+          check_in_at?: string | null
+          check_in_by?: string | null
+          check_me_at?: string | null
+          check_out_at?: string | null
+          check_out_by?: string | null
+          created_at?: string | null
+          crianca_member_id?: string | null
+          crianca_nome: string
+          crianca_novo_convertido_id?: string | null
+          data_culto?: string
+          id?: string
+          responsavel_member_id?: string | null
+          responsavel_nome?: string | null
+          tipo_culto?: string
+          token: string
+          turma: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string | null
+        }
+        Update: {
+          check_in_at?: string | null
+          check_in_by?: string | null
+          check_me_at?: string | null
+          check_out_at?: string | null
+          check_out_by?: string | null
+          created_at?: string | null
+          crianca_member_id?: string | null
+          crianca_nome?: string
+          crianca_novo_convertido_id?: string | null
+          data_culto?: string
+          id?: string
+          responsavel_member_id?: string | null
+          responsavel_nome?: string | null
+          tipo_culto?: string
+          token?: string
+          turma?: Database["public"]["Enums"]["kids_turma"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_checkins_check_in_by_fkey"
+            columns: ["check_in_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_check_in_by_fkey"
+            columns: ["check_in_by"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_check_out_by_fkey"
+            columns: ["check_out_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_check_out_by_fkey"
+            columns: ["check_out_by"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_crianca_novo_convertido_id_fkey"
+            columns: ["crianca_novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_checkins_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_escalas: {
         Row: {
           created_at: string
