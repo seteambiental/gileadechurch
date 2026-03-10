@@ -218,6 +218,83 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     if (turma) generateQRPdf([turma]);
   };
 
+  const generateCheckMePdf = async () => {
+    setGenerating(true);
+    try {
+      const pageW = 210;
+      const pageH = 148.5;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [pageW, pageH] });
+
+      const [headerImg, footerImg] = await Promise.all([
+        loadImage(logoPG),
+        loadImage(logoChurchKids),
+      ]);
+
+      const headerCanvas = document.createElement("canvas");
+      headerCanvas.width = headerImg.naturalWidth;
+      headerCanvas.height = headerImg.naturalHeight;
+      headerCanvas.getContext("2d")!.drawImage(headerImg, 0, 0);
+      const headerDataUrl = headerCanvas.toDataURL("image/png");
+      const headerAspect = headerImg.naturalWidth / headerImg.naturalHeight;
+
+      const footerCanvas = document.createElement("canvas");
+      footerCanvas.width = footerImg.naturalWidth;
+      footerCanvas.height = footerImg.naturalHeight;
+      footerCanvas.getContext("2d")!.drawImage(footerImg, 0, 0);
+      const footerDataUrl = footerCanvas.toDataURL("image/png");
+      const footerAspect = footerImg.naturalWidth / footerImg.naturalHeight;
+
+      const headerW = 45;
+      const headerH = headerW / headerAspect;
+      const qrSize = 55;
+      const footerW = 25;
+      const footerH = footerW / footerAspect;
+      const nameTextH = 8;
+      const subTextH = 5;
+      const scanTextH = 4;
+      const spacing = 4;
+
+      const totalH = headerH + spacing + nameTextH + subTextH + spacing + qrSize + spacing + scanTextH + spacing + footerH;
+      const startY = (pageH - totalH) / 2;
+      let y = startY;
+
+      pdf.addImage(headerDataUrl, "PNG", (pageW - headerW) / 2, y, headerW, headerH);
+      y += headerH + spacing;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(28);
+      pdf.setTextColor("#7c3aed");
+      pdf.text("Check-me Kids", pageW / 2, y + nameTextH * 0.7, { align: "center" });
+      y += nameTextH;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(14);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text("Escaneie para registrar a presença", pageW / 2, y + subTextH * 0.7, { align: "center" });
+      y += subTextH + spacing;
+
+      const qrDataUrl = await renderQRToDataURL(`${baseUrl}/kids/checkme`, "#7c3aed", 400);
+      if (qrDataUrl) {
+        pdf.addImage(qrDataUrl, "PNG", (pageW - qrSize) / 2, y, qrSize, qrSize);
+      }
+      y += qrSize + spacing;
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(170, 170, 170);
+      pdf.text("A turma será identificada automaticamente", pageW / 2, y + scanTextH * 0.7, { align: "center" });
+      y += scanTextH + spacing;
+
+      pdf.addImage(footerDataUrl, "PNG", (pageW - footerW) / 2, y, footerW, footerH);
+
+      pdf.save("qrcode-checkme-kids.pdf");
+    } catch (err) {
+      console.error("Erro ao gerar PDF:", err);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+
   const stats = {
     checkMe: checkins?.filter(c => c.check_me_at && !c.check_in_at).length || 0,
     checkIn: checkins?.filter(c => c.check_in_at && !c.check_out_at).length || 0,
@@ -227,13 +304,52 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
 
   return (
     <div className="space-y-4">
+      {/* QR Code Geral - CHECK ME */}
+      <Card className="border-2 border-primary">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              QR Code Geral — Check-me
+            </CardTitle>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => generateCheckMePdf()}
+              disabled={generating}
+            >
+              {generating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
+              Imprimir QR Code Check-me
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground mt-1">
+            QR Code único para o responsável escanear e registrar a presença da criança. A turma é identificada automaticamente.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center">
+            <div className="flex flex-col items-center p-6 rounded-xl border-2 border-primary bg-white">
+              <img src={logoPG} alt="Logo PG" className="h-10 object-contain mb-2" />
+              <p className="font-bold text-base mb-3">Check-me Kids</p>
+              <QRCodeSVG
+                value={`${baseUrl}/kids/checkme`}
+                size={140}
+                level="H"
+                fgColor="#7c3aed"
+              />
+              <p className="text-xs text-muted-foreground mt-2">Escaneie para fazer o Check-me</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* QR Codes por turma */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <QrCode className="h-5 w-5" />
-              QR Codes das Turmas
+              QR Codes por Turma
             </CardTitle>
             <Button
               variant="outline"

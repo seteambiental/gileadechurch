@@ -22,6 +22,7 @@ import InscricaoEvento from "./pages/InscricaoEvento";
 import InscricaoCasais from "./pages/InscricaoCasais";
 import KidsPage from "./pages/KidsPage";
 import KidsCheckinPage from "./pages/KidsCheckinPage";
+import KidsCheckMePage from "./pages/KidsCheckMePage";
 import KidsCheckinScanPage from "./pages/KidsCheckinScanPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/ministerio/casas-refugio" element={<CasasRefugioPage />} />
             <Route path="/ministerio/consolidacao" element={<ConsolidacaoPage />} />
             <Route path="/ministerio/kids" element={<KidsPage />} />
+            <Route path="/kids/checkme" element={<KidsCheckMePage />} />
             <Route path="/kids/checkin/:turma" element={<KidsCheckinPage />} />
             <Route path="/kids/scan/:token" element={<KidsCheckinScanPage />} />
             <Route path="/ministerio/acao-social" element={<AcaoSocialPage />} />
