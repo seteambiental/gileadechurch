@@ -131,6 +131,9 @@ const PortalMembro = () => {
     });
   });
 
+  // Aba Kids Check-in
+  availableTabs.push({ id: "kids-checkin", label: "Check-in PG", icon: Baby });
+
   // Aba de candidatura de serviço (Recepção/Estacionamento)
   availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
 
