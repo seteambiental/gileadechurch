@@ -170,6 +170,14 @@ const Auth = () => {
   const [showPortalChoice, setShowPortalChoice] = useState(false);
   const [pendingUserAccess, setPendingUserAccess] = useState<{ isAdmin: boolean; isLeader: boolean; hasMemberProfile: boolean } | null>(null);
 
+  // Biometria (WebAuthn)
+  const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
+  const [biometricAvailableOnDevice, setBiometricAvailableOnDevice] = useState(false);
+  const [hasBiometric, setHasBiometric] = useState(() => hasBiometricCredential());
+  const [biometricEmail, setBiometricEmail] = useState(() => getBiometricEmail());
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const pendingNavigateRef = useRef<(() => void) | null>(null);
+
   const { signIn, signUp, user, loading, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
