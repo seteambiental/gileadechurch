@@ -115,8 +115,9 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
       queryClient.invalidateQueries({ queryKey: ["kids-lideres"] });
       setIsDialogOpen(false);
       setSelectedMember("");
-      setSelectedTurma("");
+      setSelectedTurma("todas");
       setSelectedFuncao("professor");
+      setMemberSearch("");
     },
     onError: (error: any) => {
       toast({ 
