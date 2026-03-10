@@ -142,7 +142,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   // Unify both sources into a single list for the dropdown
   const eventos = useMemo(() => {
-    const impacto = (impactoEventos || []).map((e) => ({
+    // Deduplicar impacto_eventos por título (mantém o primeiro de cada título)
+    const seenTitles = new Set<string>();
+    const impactoDeduped = (impactoEventos || []).filter((e) => {
+      const key = e.titulo?.trim().toLowerCase();
+      if (seenTitles.has(key)) return false;
+      seenTitles.add(key);
+      return true;
+    });
+
+    const impacto = impactoDeduped.map((e) => ({
       id: e.id,
       titulo: e.titulo,
       data_inicio: e.data_inicio,
@@ -154,10 +163,10 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       data_inicio: e.data_evento,
       source: "agenda" as const,
     }));
-    // Deduplicate by ID first, then by title (impacto takes priority)
+    // Deduplicate by ID first, then by normalized title (impacto takes priority)
     const impactoIds = new Set(impacto.map((e) => e.id));
-    const impactoTitles = new Set(impacto.map((e) => e.titulo));
-    const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id) && !impactoTitles.has(e.titulo));
+    const impactoTitlesNorm = new Set(impacto.map((e) => e.titulo?.trim().toLowerCase()));
+    const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id) && !impactoTitlesNorm.has(e.titulo?.trim().toLowerCase()));
     return [...impacto, ...uniqueAgenda].sort((a, b) =>
       new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
     );
