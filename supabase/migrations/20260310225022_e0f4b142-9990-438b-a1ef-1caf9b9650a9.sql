@@ -1,0 +1,1 @@
+ALTER TYPE public.kids_turma ADD VALUE IF NOT EXISTS 'todas';

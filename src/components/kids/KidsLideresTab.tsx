@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, UserCheck, Filter } from "lucide-react";
-import { ClearableSelect } from "@/components/ui/clearable-select";
+import { Input } from "@/components/ui/input";
+import { Plus, Trash2, UserCheck, Filter, Search } from "lucide-react";
+import { includesNormalized } from "@/lib/text-utils";
 
 interface TurmaConfig {
   id: string;
@@ -48,8 +49,9 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState("");
-  const [selectedTurma, setSelectedTurma] = useState("");
+  const [selectedTurma, setSelectedTurma] = useState("todas");
   const [selectedFuncao, setSelectedFuncao] = useState("professor");
+  const [memberSearch, setMemberSearch] = useState("");
   
   // Filtros
   const [filterTurma, setFilterTurma] = useState<string>("todas");
@@ -92,7 +94,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     if (!lideres) return [];
     
     return lideres.filter((lider) => {
-      const matchTurma = filterTurma === "todas" || lider.turma === filterTurma;
+      const matchTurma = filterTurma === "todas" || lider.turma === filterTurma || lider.turma === "todas";
       const matchFuncao = filterFuncao === "todas" || lider.funcao === filterFuncao;
       return matchTurma && matchFuncao;
     });
@@ -103,7 +105,7 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
     mutationFn: async () => {
       const { error } = await supabase.from("kids_lideres").insert({
         member_id: selectedMember,
-        turma: selectedTurma as "laranja" | "amarelo" | "verde" | "azul",
+        turma: selectedTurma as "laranja" | "amarelo" | "verde" | "azul" | "bercario" | "todas",
         funcao: selectedFuncao,
       });
       if (error) throw error;
@@ -113,8 +115,9 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
       queryClient.invalidateQueries({ queryKey: ["kids-lideres"] });
       setIsDialogOpen(false);
       setSelectedMember("");
-      setSelectedTurma("");
+      setSelectedTurma("todas");
       setSelectedFuncao("professor");
+      setMemberSearch("");
     },
     onError: (error: any) => {
       toast({ 
@@ -225,16 +228,45 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
             <div className="space-y-4 pt-4">
               <div>
                 <Label>Membro</Label>
-                <ClearableSelect
-                  value={selectedMember || null}
-                  onChange={(val) => setSelectedMember(val || "")}
-                  options={(members || []).map((m) => ({
-                    value: m.id,
-                    label: m.full_name,
-                  }))}
-                  placeholder="Selecione um membro"
-                  emptyLabel="Selecione..."
-                />
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar membro por nome..."
+                    value={memberSearch}
+                    onChange={(e) => {
+                      setMemberSearch(e.target.value);
+                      setSelectedMember("");
+                    }}
+                    className="pl-9"
+                  />
+                </div>
+                {memberSearch.length >= 2 && (
+                  <div className="mt-1 max-h-40 overflow-y-auto border rounded-md bg-popover">
+                    {(members || [])
+                      .filter((m) => includesNormalized(m.full_name, memberSearch))
+                      .slice(0, 10)
+                      .map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-accent flex items-center gap-2 ${selectedMember === m.id ? "bg-accent font-medium" : ""}`}
+                          onClick={() => {
+                            setSelectedMember(m.id);
+                            setMemberSearch(m.full_name);
+                          }}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={m.photo_url || undefined} />
+                            <AvatarFallback className="text-xs">{m.full_name.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {m.full_name}
+                        </button>
+                      ))}
+                    {(members || []).filter((m) => includesNormalized(m.full_name, memberSearch)).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">Nenhum membro encontrado</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div>
@@ -244,6 +276,12 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                     <SelectValue placeholder="Selecione a turma" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="todas">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-400 to-purple-400" />
+                        Todas as turmas
+                      </div>
+                    </SelectItem>
                     {turmasConfig.map((t) => (
                       <SelectItem key={t.turma} value={t.turma}>
                         <div className="flex items-center gap-2">
@@ -322,14 +360,18 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                           <Badge variant="outline" className="text-xs">
                             {FUNCOES.find((f) => f.value === lider.funcao)?.label}
                           </Badge>
-                          {turmaConfig && (
+                          {lider.turma === "todas" ? (
+                            <Badge className="text-xs text-white bg-gradient-to-r from-pink-400 to-purple-400">
+                              Todas
+                            </Badge>
+                          ) : turmaConfig ? (
                             <Badge 
                               className="text-xs text-white"
                               style={{ backgroundColor: turmaConfig.cor_hex }}
                             >
                               {turmaConfig.nome_exibicao}
                             </Badge>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
