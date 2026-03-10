@@ -360,14 +360,18 @@ export const KidsLideresTab = ({ turmasConfig }: KidsLideresTabProps) => {
                           <Badge variant="outline" className="text-xs">
                             {FUNCOES.find((f) => f.value === lider.funcao)?.label}
                           </Badge>
-                          {turmaConfig && (
+                          {lider.turma === "todas" ? (
+                            <Badge className="text-xs text-white bg-gradient-to-r from-pink-400 to-purple-400">
+                              Todas
+                            </Badge>
+                          ) : turmaConfig ? (
                             <Badge 
                               className="text-xs text-white"
                               style={{ backgroundColor: turmaConfig.cor_hex }}
                             >
                               {turmaConfig.nome_exibicao}
                             </Badge>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </div>
