@@ -253,6 +253,8 @@ const Auth = () => {
     if (isRecovery) return;
     if (hasProcessedAuthRef.current) return;
     if (isLoginInProgressRef.current) return;
+    // Pausar redirecionamento enquanto o prompt de biometria está ativo
+    if (showBiometricPrompt) return;
 
     // Se o login NÃO foi feito explicitamente nesta página, fazer logout
     // para forçar o usuário a se autenticar novamente
