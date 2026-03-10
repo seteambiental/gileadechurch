@@ -425,17 +425,29 @@ export const EncontrosReportDialog = ({
       : casasFiltradasParaSelect;
 
     casasToProcess.forEach((casa) => {
-      const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
-      if (dayNumber === null || dayNumber === undefined) return;
-
       // Skip CRs without data_inicio_cr
       if (!casa.data_inicio_cr) return;
 
-      // Use data_inicio_cr as start, but clamp to appliedStartDate
-      const casaStart = casa.data_inicio_cr > appliedStartDate 
-        ? casa.data_inicio_cr 
-        : appliedStartDate;
-      const expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber, casa.frequencia, casa.data_inicio_cr);
+      // Use history if available, otherwise fall back to current config
+      const history = historicoMap.get(casa.id);
+      let expectedDates: string[];
+
+      if (history && history.length > 0) {
+        expectedDates = generateExpectedDatesWithHistory(
+          appliedStartDate,
+          appliedEndDate,
+          casa.data_inicio_cr,
+          history
+        );
+      } else {
+        // Fallback: use current dias/frequencia (no history recorded)
+        const dayNumber = casa.dias ? dayNameToNumber[casa.dias] : null;
+        if (dayNumber === null || dayNumber === undefined) return;
+        const casaStart = casa.data_inicio_cr > appliedStartDate 
+          ? casa.data_inicio_cr 
+          : appliedStartDate;
+        expectedDates = generateExpectedDates(casaStart, appliedEndDate, dayNumber, casa.frequencia, casa.data_inicio_cr);
+      }
 
       expectedDates.forEach((date) => {
         const existing = findEncontro(casa.id, date);
