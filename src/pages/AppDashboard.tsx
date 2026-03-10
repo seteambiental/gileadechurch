@@ -312,7 +312,7 @@ const AppDashboard = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => navigate("/lideres")}>
-                      Portal de Líderes
+                      Portal Ministério
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/portal")}>
                       Portal do Membro

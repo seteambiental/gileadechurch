@@ -285,7 +285,7 @@ const PortalMembro = () => {
                 onClick={() => navigate("/lideres")}
                 className="hover:text-foreground font-medium text-secondary"
               >
-                Portal de Líderes →
+                Portal Ministério →
               </button>
             )}
             <button
