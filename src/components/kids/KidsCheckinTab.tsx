@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import logoPG from "@/assets/logo-pg.png";
+import logoChurchKids from "@/assets/pg-church-kids.png";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,94 +63,141 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     });
   };
 
+  const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  };
+
+  const renderQRToDataURL = async (url: string, color: string, size: number): Promise<string> => {
+    const tempDiv = document.createElement("div");
+    tempDiv.style.cssText = "position:fixed;top:-9999px;left:-9999px;";
+    document.body.appendChild(tempDiv);
+    const { createRoot } = await import("react-dom/client");
+    const root = createRoot(tempDiv);
+
+    await new Promise<void>((resolve) => {
+      root.render(<QRCodeSVG value={url} size={size} level="H" fgColor={color} />);
+      setTimeout(resolve, 150);
+    });
+
+    const svgEl = tempDiv.querySelector("svg");
+    let dataUrl = "";
+    if (svgEl) {
+      const svgData = new XMLSerializer().serializeToString(svgEl);
+      const svgImg = await loadImage("data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData))));
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(svgImg, 0, 0, size, size);
+      dataUrl = canvas.toDataURL("image/png");
+    }
+    root.unmount();
+    tempDiv.remove();
+    return dataUrl;
+  };
+
   const generateQRPdf = async (turmasToprint: TurmaConfig[]) => {
     if (turmasToprint.length === 0) return;
     setGenerating(true);
 
     try {
-      // Meia folha A4: 210mm x 148.5mm (landscape A5)
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [210, 148.5] });
+      // Meia folha A4 landscape: 210mm x 148.5mm
+      const pageW = 210;
+      const pageH = 148.5;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [pageW, pageH] });
+
+      // Pre-load logos
+      const [headerImg, footerImg] = await Promise.all([
+        loadImage(logoPG),
+        loadImage(logoChurchKids),
+      ]);
+
+      const headerCanvas = document.createElement("canvas");
+      headerCanvas.width = headerImg.naturalWidth;
+      headerCanvas.height = headerImg.naturalHeight;
+      headerCanvas.getContext("2d")!.drawImage(headerImg, 0, 0);
+      const headerDataUrl = headerCanvas.toDataURL("image/png");
+      const headerAspect = headerImg.naturalWidth / headerImg.naturalHeight;
+
+      const footerCanvas = document.createElement("canvas");
+      footerCanvas.width = footerImg.naturalWidth;
+      footerCanvas.height = footerImg.naturalHeight;
+      footerCanvas.getContext("2d")!.drawImage(footerImg, 0, 0);
+      const footerDataUrl = footerCanvas.toDataURL("image/png");
+      const footerAspect = footerImg.naturalWidth / footerImg.naturalHeight;
 
       for (let i = 0; i < turmasToprint.length; i++) {
         const turma = turmasToprint[i];
-        if (i > 0) pdf.addPage([210, 148.5], "landscape");
+        if (i > 0) pdf.addPage([pageW, pageH], "landscape");
 
-        // Criar container temporário visível para html2canvas
-        const container = document.createElement("div");
-        container.style.cssText = "position:fixed;top:0;left:0;width:794px;height:562px;background:white;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;";
-        
-        container.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;width:100%;">
-            <div style="width:80px;height:80px;border-radius:50%;background-color:${turma.cor_hex};margin-bottom:20px;"></div>
-            <h1 style="font-size:48px;font-weight:bold;margin:0 0 4px 0;color:#111;">${turma.nome_exibicao}</h1>
-            <p style="font-size:20px;color:#888;margin:0 0 30px 0;">${turma.idade_minima} a ${turma.idade_maxima} anos</p>
-            <div id="qr-render-${turma.turma}"></div>
-            <p style="font-size:16px;color:#aaa;margin:30px 0 0 0;">Escaneie para fazer o Check-in</p>
-            <p style="font-size:12px;color:#ccc;margin:8px 0 0 0;">Ministério Kids • Igreja Gileade</p>
-          </div>
-        `;
-        document.body.appendChild(container);
+        // --- Layout calculation (all centered) ---
+        // Header logo: ~45mm wide
+        const headerW = 45;
+        const headerH = headerW / headerAspect;
 
-        // Renderizar QR code como SVG dentro do container
-        const qrContainer = container.querySelector(`#qr-render-${turma.turma}`);
-        if (qrContainer) {
-          const svgNs = "http://www.w3.org/2000/svg";
-          // Use a canvas-based QR to avoid SVG rendering issues
-          const qrCanvas = document.createElement("canvas");
-          qrCanvas.width = 280;
-          qrCanvas.height = 280;
-          
-          // Render QRCodeSVG to get SVG, then draw to canvas
-          const tempDiv = document.createElement("div");
-          document.body.appendChild(tempDiv);
-          const { createRoot } = await import("react-dom/client");
-          const root = createRoot(tempDiv);
-          
-          await new Promise<void>((resolve) => {
-            root.render(
-              <QRCodeSVG
-                value={`${baseUrl}/kids/checkin/${turma.turma}`}
-                size={280}
-                level="H"
-                fgColor={turma.cor_hex}
-              />
-            );
-            setTimeout(resolve, 100);
-          });
+        // QR Code: ~55mm
+        const qrSize = 55;
 
-          const svgEl = tempDiv.querySelector("svg");
-          if (svgEl) {
-            const svgData = new XMLSerializer().serializeToString(svgEl);
-            const img = new Image();
-            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
-            await new Promise<void>((resolve) => {
-              img.onload = () => {
-                const ctx = qrCanvas.getContext("2d");
-                if (ctx) {
-                  ctx.fillStyle = "white";
-                  ctx.fillRect(0, 0, 280, 280);
-                  ctx.drawImage(img, 0, 0, 280, 280);
-                }
-                resolve();
-              };
-            });
-          }
-          root.unmount();
-          tempDiv.remove();
-          qrContainer.appendChild(qrCanvas);
+        // Footer logo: ~25mm wide
+        const footerW = 25;
+        const footerH = footerW / footerAspect;
+
+        // Text heights
+        const nameTextH = 8;
+        const ageTextH = 5;
+        const scanTextH = 4;
+        const spacing = 4;
+
+        // Total content height
+        const totalH = headerH + spacing + nameTextH + ageTextH + spacing + qrSize + spacing + scanTextH + spacing + footerH;
+        const startY = (pageH - totalH) / 2;
+        let y = startY;
+
+        // 1. Header logo (centered)
+        pdf.addImage(headerDataUrl, "PNG", (pageW - headerW) / 2, y, headerW, headerH);
+        y += headerH + spacing;
+
+        // 2. Turma name
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(28);
+        pdf.setTextColor(turma.cor_hex);
+        pdf.text(turma.nome_exibicao, pageW / 2, y + nameTextH * 0.7, { align: "center" });
+        y += nameTextH;
+
+        // 3. Age range
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(14);
+        pdf.setTextColor(150, 150, 150);
+        pdf.text(`${turma.idade_minima} a ${turma.idade_maxima} anos`, pageW / 2, y + ageTextH * 0.7, { align: "center" });
+        y += ageTextH + spacing;
+
+        // 4. QR Code (centered, largest element)
+        const qrDataUrl = await renderQRToDataURL(
+          `${baseUrl}/kids/checkin/${turma.turma}`,
+          turma.cor_hex,
+          400
+        );
+        if (qrDataUrl) {
+          pdf.addImage(qrDataUrl, "PNG", (pageW - qrSize) / 2, y, qrSize, qrSize);
         }
+        y += qrSize + spacing;
 
-        const canvas = await html2canvas(container, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-        });
+        // 5. "Escaneie para fazer o Check-in"
+        pdf.setFontSize(10);
+        pdf.setTextColor(170, 170, 170);
+        pdf.text("Escaneie para fazer o Check-in", pageW / 2, y + scanTextH * 0.7, { align: "center" });
+        y += scanTextH + spacing;
 
-        document.body.removeChild(container);
-
-        const imgData = canvas.toDataURL("image/png");
-        pdf.addImage(imgData, "PNG", 0, 0, 210, 148.5);
+        // 6. Footer logo (centered, smallest)
+        pdf.addImage(footerDataUrl, "PNG", (pageW - footerW) / 2, y, footerW, footerH);
       }
 
       pdf.save("qrcode-kids-checkin.pdf");
