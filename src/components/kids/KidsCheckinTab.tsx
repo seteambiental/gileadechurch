@@ -295,6 +295,7 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
   };
 
 
+  const stats = {
     checkMe: checkins?.filter(c => c.check_me_at && !c.check_in_at).length || 0,
     checkIn: checkins?.filter(c => c.check_in_at && !c.check_out_at).length || 0,
     checkOut: checkins?.filter(c => c.check_out_at).length || 0,
