@@ -388,6 +388,22 @@ const MemberDetails = () => {
                   </div>
                 </div>
               )}
+              {criancasResponsavel && criancasResponsavel.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Baby className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Crianças sob responsabilidade (PG)</p>
+                    <div className="space-y-1 mt-1">
+                      {criancasResponsavel.map((cr) => {
+                        const nome = cr.crianca_member?.full_name || cr.crianca_nc?.full_name || "—";
+                        return (
+                          <p key={cr.id} className="text-foreground font-medium">{nome}</p>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="flex items-start gap-3">
                 <Church className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
                 <div>
