@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   Music,
   Church,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
+import pgRetornoImg from "@/assets/pg-retorno.jpg";
 
 // Componentes das seções
 import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
@@ -42,6 +43,7 @@ import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
+import { PortalInscricoesTab } from "@/components/portal/PortalInscricoesTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
 
 interface MenuItemConfig {
@@ -50,6 +52,7 @@ interface MenuItemConfig {
   subtitle?: string;
   icon: React.ElementType;
   iconImg?: string;
+  iconImgClass?: string;
   color?: string;
   action?: () => void;
 }
