@@ -72,7 +72,10 @@ export const PortalLideresKidsMinisterio = ({
   memberId,
 }: Props) => {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const hoje = format(new Date(), "yyyy-MM-dd");
 
   // Detect kids role for current member
   const { data: kidsRole } = useQuery({
