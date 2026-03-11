@@ -68,6 +68,7 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
   const [selectedParentesco, setSelectedParentesco] = useState("responsavel");
   const [isPrincipal, setIsPrincipal] = useState(false);
   const [notificarAusencia, setNotificarAusencia] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Buscar responsáveis cadastrados
   const { data: responsaveis, isLoading } = useQuery({
