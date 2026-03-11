@@ -1094,7 +1094,7 @@ const Auth = () => {
                 onClick={() => handlePortalChoice("lideres")}
               >
                 <Shield className="w-5 h-5 mr-3" />
-                Líder
+                Ministério
               </Button>
             )}
             {pendingUserAccess?.isAdmin && (
