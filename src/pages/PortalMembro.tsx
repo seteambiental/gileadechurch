@@ -452,7 +452,7 @@ const PortalMembro = () => {
                         style={{ backgroundColor: `${item.color}15` }}
                       >
                         {item.iconImg ? (
-                          <img src={item.iconImg} alt={item.label} className="w-6 h-6 object-contain" />
+                          <img src={item.iconImg} alt={item.label} className={item.iconImgClass || "w-6 h-6 object-contain"} />
                         ) : (
                           <item.icon className="w-5.5 h-5.5" style={{ color: item.color }} />
                         )}
