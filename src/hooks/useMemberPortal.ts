@@ -20,6 +20,7 @@ export interface MemberProfile {
   email: string | null;
   whatsapp: string | null;
   user_id: string | null;
+  casa_refugio_id: string | null;
   member_functions: MemberPermission[];
 }
 
