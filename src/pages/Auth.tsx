@@ -536,10 +536,18 @@ const Auth = () => {
     
     try {
       const loginIdentifier = normalizeLoginIdentifier(email);
-      const { error, data } = await supabase.auth.signInWithPassword({
+      let { error, data } = await supabase.auth.signInWithPassword({
         email: loginIdentifier,
         password,
       });
+
+      if (error && loginIdentifier.includes("@")) {
+        const fallbackLogin = await tryLegacyCpfAliasLogin(loginIdentifier, password);
+        if (fallbackLogin && !fallbackLogin.error) {
+          error = null;
+          data = fallbackLogin.data;
+        }
+      }
       
       if (error) {
         isLoginInProgressRef.current = false;
