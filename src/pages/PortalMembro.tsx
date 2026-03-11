@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMemberPortal } from "@/hooks/useMemberPortal";
 import { useUserAccess } from "@/hooks/useUserAccess";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LogOut,
   Loader2,
@@ -15,9 +18,10 @@ import {
   Baby,
   HandHelping,
   ArrowRightLeft,
+  Rocket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -26,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 
 // Componentes das abas
 import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
@@ -35,6 +40,9 @@ import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
+import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
+import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PortalMembro = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -47,7 +55,30 @@ const PortalMembro = () => {
     memberCasasRefugio,
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
-  const [activeTab, setActiveTab] = useState("agenda");
+  const [activeTab, setActiveTab] = useState("home");
+  const [showCheckMePrompt, setShowCheckMePrompt] = useState(false);
+  const [checkMeDismissed, setCheckMeDismissed] = useState(false);
+  const { isNearChurch, loading: geoLoading } = useGeolocation();
+
+  // Check if member is responsible for kids
+  const { data: hasKids } = useQuery({
+    queryKey: ["portal-has-kids", memberProfile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("kids_responsaveis")
+        .select("id", { count: "exact", head: true })
+        .eq("responsavel_member_id", memberProfile!.id);
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
+  // Show check-me prompt when near church and has kids
+  useEffect(() => {
+    if (!geoLoading && isNearChurch && hasKids && !checkMeDismissed) {
+      setShowCheckMePrompt(true);
+    }
+  }, [geoLoading, isNearChurch, hasKids, checkMeDismissed]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -70,7 +101,6 @@ const PortalMembro = () => {
 
   if (!user) return null;
 
-  // Se não encontrou perfil de membro vinculado
   if (!memberProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -107,11 +137,10 @@ const PortalMembro = () => {
 
   // Determinar abas disponíveis
   const availableTabs: { id: string; label: string; icon: React.ElementType }[] = [
-    { id: "agenda", label: "Agenda", icon: Calendar },
+    { id: "home", label: "Início", icon: Home },
     { id: "financas", label: "Finanças", icon: DollarSign },
   ];
 
-  // Adicionar aba de Casas Refúgio se tiver acesso
   if (memberCasasRefugio.length > 0 || 
       portalAccess?.role === "pastor_geral" ||
       portalAccess?.role === "sindico_condominio" ||
@@ -119,7 +148,6 @@ const PortalMembro = () => {
     availableTabs.push({ id: "casas-refugio", label: "Casas Refúgio", icon: Home });
   }
 
-  // Adicionar abas de ministérios
   memberMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -131,19 +159,23 @@ const PortalMembro = () => {
     });
   });
 
-  // Aba Kids Check-in
   availableTabs.push({ id: "kids-checkin", label: "Check-in PG", icon: Baby });
-
-  // Aba de candidatura de serviço (Recepção/Estacionamento)
   availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
-
-  // Sempre adicionar candidatura a ministérios
   availableTabs.push({ id: "candidatura", label: "Quero Servir", icon: Send });
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Check-me prompt */}
+      {showCheckMePrompt && memberProfile && (
+        <CheckMePrompt
+          memberId={memberProfile.id}
+          memberName={memberProfile.full_name}
+          onDismiss={() => { setShowCheckMePrompt(false); setCheckMeDismissed(true); }}
+        />
+      )}
+
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img
@@ -209,7 +241,6 @@ const PortalMembro = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* Mobile: Scroll horizontal com abas compactas */}
           <div className="relative -mx-3 sm:mx-0 px-3 sm:px-0">
             <TabsList className="w-full overflow-x-auto flex-nowrap justify-start mb-4 sm:mb-6 h-auto p-1 gap-1 scrollbar-hide">
               {availableTabs.map((tab) => (
@@ -225,8 +256,69 @@ const PortalMembro = () => {
             </TabsList>
           </div>
 
-          <TabsContent value="agenda">
-            <PortalAgendaTab />
+          {/* Home Tab - reformulated */}
+          <TabsContent value="home">
+            <div className="space-y-6">
+              {/* Quick access cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {memberCasasRefugio.length > 0 && (
+                  <Card 
+                    className="cursor-pointer hover:border-secondary transition-colors"
+                    onClick={() => setActiveTab("casas-refugio")}
+                  >
+                    <CardContent className="py-5 text-center">
+                      <Home className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                      <p className="text-sm font-medium">Casa Refúgio</p>
+                      <p className="text-xs text-muted-foreground">{memberCasasRefugio[0]?.name}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {hasKids && (
+                  <Card 
+                    className="cursor-pointer hover:border-secondary transition-colors"
+                    onClick={() => navigate("/portal/kids")}
+                  >
+                    <CardContent className="py-5 text-center">
+                      <img src={pgChurchKidsIcon} alt="PG Kids" className="w-6 h-6 mx-auto mb-2" />
+                      <p className="text-sm font-medium">Portal Kids</p>
+                      <p className="text-xs text-muted-foreground">PG Crianças</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                <Card 
+                  className="cursor-pointer hover:border-secondary transition-colors"
+                  onClick={() => setActiveTab("financas")}
+                >
+                  <CardContent className="py-5 text-center">
+                    <DollarSign className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                    <p className="text-sm font-medium">Finanças</p>
+                    <p className="text-xs text-muted-foreground">PIX e ofertas</p>
+                  </CardContent>
+                </Card>
+
+                <Card 
+                  className="cursor-pointer hover:border-secondary transition-colors"
+                  onClick={() => setActiveTab("candidatura")}
+                >
+                  <CardContent className="py-5 text-center">
+                    <Send className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                    <p className="text-sm font-medium">Quero Servir</p>
+                    <p className="text-xs text-muted-foreground">Ministérios</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Calendar */}
+              <div>
+                <h2 className="font-heading font-bold text-xl mb-1">Agenda da Igreja</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Eventos e atividades programadas
+                </p>
+                <PortalAgendaTab />
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="financas">

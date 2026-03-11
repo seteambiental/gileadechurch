@@ -27,6 +27,7 @@ import KidsCheckinScanPage from "./pages/KidsCheckinScanPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
 import PortalLideres from "./pages/PortalLideres";
+import PortalKids from "./pages/PortalKids";
 import NotFound from "./pages/NotFound";
 import FinanceiroPage from "./pages/FinanceiroPage";
 import TermosPage from "./pages/TermosPage";
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/app" element={<AppDashboard />} />
             <Route path="/app/homepage" element={<HomepageAdmin />} />
             <Route path="/portal" element={<PortalMembro />} />
+            <Route path="/portal/kids" element={<PortalKids />} />
             <Route path="/lideres" element={<PortalLideres />} />
             <Route path="/cadastros" element={<Cadastros />} />
             <Route path="/membro/:id" element={<MemberDetails />} />
