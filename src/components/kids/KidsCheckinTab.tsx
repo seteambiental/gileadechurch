@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { QRCodeSVG } from "qrcode.react";
 import jsPDF from "jspdf";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,11 +35,30 @@ interface KidsCheckinTabProps {
 }
 
 export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTurmasPrint, setSelectedTurmasPrint] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const dataFormatada = format(selectedDate, "yyyy-MM-dd");
+
+  // Get current member profile for check-in attribution
+  const { data: memberProfile } = useQuery({
+    queryKey: ["member-profile-checkin", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: checkins, isLoading } = useQuery({
     queryKey: ["kids-checkins", dataFormatada],
@@ -302,6 +323,30 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     total: checkins?.length || 0,
   };
 
+  // Children awaiting check-in (check-me done, check-in not done)
+  const aguardandoCheckin = checkins?.filter(c => c.check_me_at && !c.check_in_at) || [];
+
+  // Direct check-in mutation
+  const doCheckin = useMutation({
+    mutationFn: async (checkinId: string) => {
+      const { error } = await supabase
+        .from("kids_checkins")
+        .update({
+          check_in_at: new Date().toISOString(),
+          check_in_by: memberProfile?.id || null,
+        })
+        .eq("id", checkinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Check-in realizado com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
   return (
     <div className="space-y-4">
       {/* QR Code Geral - CHECK ME */}
@@ -464,6 +509,60 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Aguardando Check-in - ação rápida para equipe */}
+      {aguardandoCheckin.length > 0 && (
+        <Card className="border-2 border-amber-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <LogIn className="h-5 w-5 text-amber-600" />
+              Aguardando Check-in ({aguardandoCheckin.length})
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Crianças com Check-me realizado. Toque para confirmar a entrada na sala.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {aguardandoCheckin.map(checkin => {
+                const turma = turmasConfig.find(t => t.turma === checkin.turma);
+                return (
+                  <div
+                    key={checkin.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: turma?.cor_hex }} />
+                      <div>
+                        <p className="font-medium text-sm">{checkin.crianca_nome}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {turma?.nome_exibicao} • Responsável: {checkin.responsavel_nome || "—"}
+                          {checkin.check_me_at && ` • Check-me: ${format(new Date(checkin.check_me_at), "HH:mm")}`}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => doCheckin.mutate(checkin.id)}
+                      disabled={doCheckin.isPending}
+                      className="flex-shrink-0"
+                    >
+                      {doCheckin.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          <LogIn className="h-4 w-4 mr-1" />
+                          Check-in
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lista de check-ins do dia */}
       <Card>
