@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check
+    // Auth check - accept service role key directly
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
@@ -20,14 +20,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    const authClient = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const token = authHeader.replace("Bearer ", "");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    // Allow service role key OR authenticated admin user
+    let isAuthorized = token === serviceRoleKey;
+    
+    if (!isAuthorized) {
+      const authClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: hasAccess } = await authClient.rpc("has_full_access");
+      isAuthorized = !!hasAccess;
+    }
 
-    const { data: hasAccess } = await authClient.rpc("has_full_access");
-    if (!hasAccess) {
+    if (!isAuthorized) {
       return new Response(JSON.stringify({ error: "Proibido" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
