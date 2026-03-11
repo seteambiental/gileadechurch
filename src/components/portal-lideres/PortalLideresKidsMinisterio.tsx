@@ -328,7 +328,7 @@ export const PortalLideresKidsMinisterio = ({
       case "equipe":
         return <KidsLideresTab turmasConfig={turmasConfig || []} />;
       case "responsaveis":
-        return <KidsResponsaveisTab />;
+        return <KidsResponsaveisTab turmasConfig={turmasConfig || []} criancasPorTurma={criancasPorTurma} />;
       case "notificacoes":
         return <KidsNotificacoesTab />;
       case "config":
