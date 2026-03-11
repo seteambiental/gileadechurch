@@ -35,6 +35,7 @@ import { useUserAccess } from "@/hooks/useUserAccess";
 import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
 import { PortalLideresIndicadores } from "@/components/portal-lideres/PortalLideresIndicadores";
 import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLideresMinisterio";
+import { PortalLideresKidsMinisterio } from "@/components/portal-lideres/PortalLideresKidsMinisterio";
 import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLideresCasaRefugio";
 import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLideresCondominio";
 import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLideresAprovacoes";
@@ -388,16 +389,28 @@ const PortalLideres = () => {
             const slug = ministry.name.toLowerCase()
               .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
               .replace(/\s+/g, "-");
+            const isPG = slug.includes("infantil") || slug.includes("p-g") || slug.includes("kids");
             return (
               <TabsContent key={ministry.id} value={`ministerio-${slug}`}>
-                <PortalLideresMinisterio
-                  ministryId={ministry.id}
-                  ministryName={ministry.name}
-                  ministrySlug={slug}
-                  isLider={ministry.isLider}
-                  canEdit={ministry.isLider || portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar"}
-                  portalAccess={portalAccess}
-                />
+                {isPG ? (
+                  <PortalLideresKidsMinisterio
+                    ministryId={ministry.id}
+                    ministryName={ministry.name}
+                    isLider={ministry.isLider}
+                    canEdit={ministry.isLider || portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar"}
+                    portalAccess={portalAccess}
+                    memberId={memberProfile.id}
+                  />
+                ) : (
+                  <PortalLideresMinisterio
+                    ministryId={ministry.id}
+                    ministryName={ministry.name}
+                    ministrySlug={slug}
+                    isLider={ministry.isLider}
+                    canEdit={ministry.isLider || portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar"}
+                    portalAccess={portalAccess}
+                  />
+                )}
               </TabsContent>
             );
           })}
