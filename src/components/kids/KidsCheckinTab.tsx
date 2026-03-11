@@ -35,11 +35,30 @@ interface KidsCheckinTabProps {
 }
 
 export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTurmasPrint, setSelectedTurmasPrint] = useState<Set<string>>(new Set());
   const [generating, setGenerating] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   const dataFormatada = format(selectedDate, "yyyy-MM-dd");
+
+  // Get current member profile for check-in attribution
+  const { data: memberProfile } = useQuery({
+    queryKey: ["member-profile-checkin", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name")
+        .eq("user_id", user!.id)
+        .limit(1)
+        .maybeSingle();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: checkins, isLoading } = useQuery({
     queryKey: ["kids-checkins", dataFormatada],
