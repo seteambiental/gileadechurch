@@ -53,6 +53,7 @@ interface AgendaCalendarProps {
   onEventoClick?: (evento: Evento) => void;
   onNovoCompromisso?: () => void;
   isLoading?: boolean;
+  defaultView?: ViewType;
 }
  
  type ViewType = "dia" | "semana" | "mes" | "ano";
@@ -80,10 +81,10 @@ interface AgendaCalendarProps {
  const diasSemanaAbrev = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
  const mesesAbrev = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
  
- export const AgendaCalendar = ({ eventos, onEventoClick, onNovoCompromisso, isLoading }: AgendaCalendarProps) => {
+ export const AgendaCalendar = ({ eventos, onEventoClick, onNovoCompromisso, isLoading, defaultView }: AgendaCalendarProps) => {
    const [currentDate, setCurrentDate] = useState(new Date());
    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-   const [view, setView] = useState<ViewType>(isMobile ? "semana" : "mes");
+   const [view, setView] = useState<ViewType>(defaultView || (isMobile ? "semana" : "mes"));
  
    // Gera eventos recorrentes para um intervalo de datas
     const getEventosParaData = (date: Date) => {

@@ -65,6 +65,7 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
       <AgendaCalendar
         eventos={eventosCalendario}
         isLoading={isLoading}
+        defaultView="semana"
       />
     </div>
   );

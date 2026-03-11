@@ -21,6 +21,7 @@ import {
   ArrowLeft,
   Music,
   Church,
+  ClipboardList,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +33,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
+import pgRetornoImg from "@/assets/pg-retorno.jpg";
 
 // Componentes das seções
 import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
@@ -42,6 +43,7 @@ import { PortalCasaRefugioTab } from "@/components/portal/PortalCasaRefugioTab";
 import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
+import { PortalInscricoesTab } from "@/components/portal/PortalInscricoesTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
 
 interface MenuItemConfig {
@@ -50,6 +52,7 @@ interface MenuItemConfig {
   subtitle?: string;
   icon: React.ElementType;
   iconImg?: string;
+  iconImgClass?: string;
   color?: string;
   action?: () => void;
 }
@@ -194,9 +197,10 @@ const PortalMembro = () => {
     menuItems.push({
       id: "portal-kids",
       label: "Portal Kids",
-      subtitle: "PG Crianças",
+      subtitle: "PG Church Kids",
       icon: Baby,
-      iconImg: pgChurchKidsIcon,
+      iconImg: pgRetornoImg,
+      iconImgClass: "w-full h-full object-cover rounded-xl",
       color: "hsl(280, 70%, 55%)",
       action: () => navigate("/portal/kids"),
     });
@@ -209,6 +213,15 @@ const PortalMembro = () => {
       color: "hsl(200, 80%, 50%)",
     });
   }
+
+  // Inscrições
+  menuItems.push({
+    id: "inscricoes",
+    label: "Inscrições",
+    subtitle: "Eventos abertos",
+    icon: ClipboardList,
+    color: "hsl(340, 75%, 55%)",
+  });
 
   // Ministérios do membro
   memberMinistries.forEach((ministry) => {
@@ -257,6 +270,8 @@ const PortalMembro = () => {
     switch (activeSection) {
       case "agenda":
         return <PortalAgendaTab />;
+      case "inscricoes":
+        return <PortalInscricoesTab />;
       case "financas":
         return <PortalFinancasTab />;
       case "casas-refugio":
@@ -437,7 +452,7 @@ const PortalMembro = () => {
                         style={{ backgroundColor: `${item.color}15` }}
                       >
                         {item.iconImg ? (
-                          <img src={item.iconImg} alt={item.label} className="w-6 h-6 object-contain" />
+                          <img src={item.iconImg} alt={item.label} className={item.iconImgClass || "w-6 h-6 object-contain"} />
                         ) : (
                           <item.icon className="w-5.5 h-5.5" style={{ color: item.color }} />
                         )}
