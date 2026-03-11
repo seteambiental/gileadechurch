@@ -166,6 +166,44 @@ export const PortalLideresKidsMinisterio = ({
     },
   });
 
+  // Fetch today's checkins for quick check-in widget
+  const { data: todayCheckins } = useQuery({
+    queryKey: ["kids-checkins-today-portal", hoje],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kids_checkins")
+        .select("*")
+        .eq("data_culto", hoje)
+        .order("check_me_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const aguardandoCheckin = todayCheckins?.filter(c => c.check_me_at && !c.check_in_at) || [];
+
+  // Direct check-in mutation
+  const doCheckin = useMutation({
+    mutationFn: async (checkinId: string) => {
+      const { error } = await supabase
+        .from("kids_checkins")
+        .update({
+          check_in_at: new Date().toISOString(),
+          check_in_by: memberId || null,
+        })
+        .eq("id", checkinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Check-in realizado!" });
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins-today-portal"] });
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
   // Process children by turma
   const criancasPorTurma = useMemo(() => {
     if (!turmasConfig || (!members && !novosConvertidos)) return {};
