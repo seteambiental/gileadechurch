@@ -514,15 +514,16 @@ const Auth = () => {
     isLoginInProgressRef.current = true;
     
     try {
+      const loginIdentifier = normalizeLoginIdentifier(email);
       const { error, data } = await supabase.auth.signInWithPassword({
-        email,
+        email: loginIdentifier,
         password,
       });
       
       if (error) {
         isLoginInProgressRef.current = false;
         if (error.message.includes("Invalid login credentials")) {
-          toast({ variant: "destructive", title: "Erro ao entrar", description: "Email ou senha incorretos." });
+          toast({ variant: "destructive", title: "Erro ao entrar", description: "Email/CPF ou senha incorretos." });
         } else {
           toast({ variant: "destructive", title: "Erro ao entrar", description: error.message });
         }
