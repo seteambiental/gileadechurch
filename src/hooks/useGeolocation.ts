@@ -20,8 +20,8 @@ function getDistanceInMeters(lat1: number, lng1: number, lat2: number, lng2: num
 }
 
 export function useGeolocation() {
-  const [isNearChurch, setIsNearChurch] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isNearChurch, setIsNearChurch] = useState(true); // TODO: reativar geolocalização após testes
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
