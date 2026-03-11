@@ -41,7 +41,6 @@ import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
-import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PortalMembro = () => {
