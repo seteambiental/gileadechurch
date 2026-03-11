@@ -223,11 +223,13 @@ const SolicitacoesMembrosTab = () => {
               }
             }
           } else if (!request.parent_request_id && request.cpf) {
-            // É o titular - verificar se já existe outro membro com o mesmo email
+            // É o titular - verificar se já existe OUTRO membro com o mesmo email
+            const normalizedEmail = request.email.trim();
             const { data: existingMembers } = await supabase
               .from("members")
               .select("id")
-              .eq("email", request.email)
+              .ilike("email", normalizedEmail)
+              .neq("id", newMember.id)
               .limit(1);
             
             if (existingMembers && existingMembers.length > 0) {

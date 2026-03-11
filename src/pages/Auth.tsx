@@ -35,7 +35,16 @@ import { ResponsavelSelect } from "@/components/ui/responsavel-select";
 import { needsResponsible, getAgeString, calculateAge } from "@/lib/age-utils";
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email ou CPF é obrigatório")
+    .max(255, "Identificador muito longo")
+    .refine((value) => {
+      const cpfDigits = value.replace(/\D/g, "");
+      if (cpfDigits.length === 11) return true;
+      return z.string().email().safeParse(value).success;
+    }, "Digite um email ou CPF válido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(72, "Senha muito longa"),
 });
 
