@@ -53,6 +53,7 @@ interface AgendaCalendarProps {
   onEventoClick?: (evento: Evento) => void;
   onNovoCompromisso?: () => void;
   isLoading?: boolean;
+  defaultView?: ViewType;
 }
  
  type ViewType = "dia" | "semana" | "mes" | "ano";
