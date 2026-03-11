@@ -216,8 +216,29 @@ const Auth = () => {
     return cleanedValue.toLowerCase();
   };
 
-  // Gate para evitar redirecionamentos automáticos antes de checar permissões
-  const hasProcessedAuthRef = useRef(false);
+  const tryLegacyCpfAliasLogin = async (emailValue: string, passwordValue: string) => {
+    try {
+      const normalizedEmail = emailValue.trim().toLowerCase();
+      if (!normalizedEmail.includes("@")) return null;
+
+      const { data: legacyMember } = await supabase
+        .from("members_safe")
+        .select("cpf")
+        .ilike("email", normalizedEmail)
+        .limit(1)
+        .maybeSingle();
+
+      const cpfDigits = (legacyMember?.cpf || "").replace(/\D/g, "");
+      if (cpfDigits.length !== 11) return null;
+
+      return await supabase.auth.signInWithPassword({
+        email: `${cpfDigits}@gileade.app`,
+        password: passwordValue,
+      });
+    } catch {
+      return null;
+    }
+  };
   // Flag para indicar que um login foi iniciado (evita redirect durante processo)
   const isLoginInProgressRef = useRef(false);
   // Fetch ministries for selection
