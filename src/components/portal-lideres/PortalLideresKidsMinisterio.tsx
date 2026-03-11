@@ -466,15 +466,57 @@ export const PortalLideresKidsMinisterio = ({
       <QrScannerDialog
         open={scannerOpen}
         onClose={() => setScannerOpen(false)}
-        onScan={(decodedText) => {
+        onScan={async (decodedText) => {
           setScannerOpen(false);
           // Extract token from URL or use raw text
           const match = decodedText.match(/\/kids\/scan\/([a-zA-Z0-9_-]+)/);
-          if (match) {
-            navigate(`/kids/scan/${match[1]}`);
-          } else {
-            // Try as direct token
-            navigate(`/kids/scan/${decodedText}`);
+          const token = match ? match[1] : decodedText;
+
+          try {
+            // Look up checkin by token
+            const { data: checkin, error: fetchError } = await supabase
+              .from("kids_checkins")
+              .select("*")
+              .eq("token", token)
+              .single();
+
+            if (fetchError || !checkin) {
+              toast({ variant: "destructive", title: "Token inválido", description: "QR code não reconhecido." });
+              return;
+            }
+
+            if (!checkin.check_me_at) {
+              toast({ variant: "destructive", title: "Check-me pendente", description: `${checkin.crianca_nome} ainda não fez o check-me.` });
+              return;
+            }
+
+            if (checkin.check_in_at) {
+              toast({ title: "Já registrado", description: `${checkin.crianca_nome} já fez check-in.` });
+              return;
+            }
+
+            // Perform check-in
+            const { error: updateError } = await supabase
+              .from("kids_checkins")
+              .update({
+                check_in_at: new Date().toISOString(),
+                check_in_by: memberId,
+              })
+              .eq("id", checkin.id);
+
+            if (updateError) throw updateError;
+
+            // Find turma config for color/name
+            const turma = turmasConfig?.find(t => t.turma === checkin.turma);
+
+            toast({
+              title: `✅ Check-in: ${checkin.crianca_nome}`,
+              description: `Entrada confirmada na turma ${turma?.nome_exibicao || checkin.turma}.`,
+            });
+
+            queryClient.invalidateQueries({ queryKey: ["kids-checkins"] });
+          } catch (err: any) {
+            toast({ variant: "destructive", title: "Erro no check-in", description: err.message });
           }
         }}
       />
