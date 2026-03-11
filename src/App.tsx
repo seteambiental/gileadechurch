@@ -27,6 +27,7 @@ import KidsCheckinScanPage from "./pages/KidsCheckinScanPage";
 import AcaoSocialPage from "./pages/AcaoSocialPage";
 import CadastroPublico from "./pages/CadastroPublico";
 import PortalLideres from "./pages/PortalLideres";
+import PortalKids from "./pages/PortalKids";
 import NotFound from "./pages/NotFound";
 import FinanceiroPage from "./pages/FinanceiroPage";
 import TermosPage from "./pages/TermosPage";
