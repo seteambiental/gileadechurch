@@ -41,11 +41,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     queryKey: ["members-list"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe" as any)
         .select("id, full_name, whatsapp, genero, cpf, casa_refugio_id")
         .order("full_name");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
     enabled: open,
   });

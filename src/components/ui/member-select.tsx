@@ -42,11 +42,11 @@ export function MemberSelect({
     queryKey: ["members-select-list"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe" as any)
         .select("id, full_name")
         .order("full_name", { ascending: true });
       if (error) throw error;
-      return data as Member[];
+      return (data as unknown) as Member[];
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
@@ -77,7 +77,7 @@ export function MemberSelect({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0" align="start">
+        <PopoverContent className="w-[min(300px,calc(100vw-2rem))] p-0" align="start">
           <Command>
             <CommandInput placeholder="Buscar membro..." />
             <CommandList>
