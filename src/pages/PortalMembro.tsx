@@ -327,13 +327,7 @@ const PortalMembro = () => {
               </div>
 
               {/* Calendar */}
-              <div>
-                <h2 className="font-heading font-bold text-xl mb-1">Agenda da Igreja</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Eventos e atividades programadas
-                </p>
-                <PortalAgendaTab />
-              </div>
+              <PortalAgendaTab />
             </div>
           </TabsContent>
 
