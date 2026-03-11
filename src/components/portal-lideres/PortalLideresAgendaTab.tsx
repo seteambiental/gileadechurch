@@ -337,6 +337,7 @@ export const PortalLideresAgendaTab = ({
 
       {/* Calendário igual ao ADM */}
       <AgendaCalendar
+        defaultView="semana"
         eventos={eventosCalendario}
         onEventoClick={(evento) => {
           const isCompromissoByType = TIPOS_COMPROMISSO.includes(evento.tipo_evento);
