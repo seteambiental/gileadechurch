@@ -82,7 +82,8 @@ interface AgendaCalendarProps {
  
  export const AgendaCalendar = ({ eventos, onEventoClick, onNovoCompromisso, isLoading }: AgendaCalendarProps) => {
    const [currentDate, setCurrentDate] = useState(new Date());
-   const [view, setView] = useState<ViewType>("mes");
+   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+   const [view, setView] = useState<ViewType>(isMobile ? "semana" : "mes");
  
    // Gera eventos recorrentes para um intervalo de datas
     const getEventosParaData = (date: Date) => {
@@ -242,53 +243,53 @@ interface AgendaCalendarProps {
      const days = eachDayOfInterval({ start, end });
  
      return (
-       <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => {
-            const eventosDay = getEventosParaData(day);
-            const isCurrentDay = isToday(day);
-            const dayStr = format(day, "yyyy-MM-dd");
-            const feriado = getFeriadoParaData(dayStr);
+       <div className="space-y-2">
+         {days.map((day) => {
+           const eventosDay = getEventosParaData(day);
+           const isCurrentDay = isToday(day);
+           const dayStr = format(day, "yyyy-MM-dd");
+           const feriado = getFeriadoParaData(dayStr);
 
-            return (
-              <Card key={day.toISOString()} className={`min-h-[140px] ${isCurrentDay ? "ring-2 ring-primary" : ""}`}>
-                <CardContent className="p-2">
-                  <div className={`text-center mb-2 pb-2 border-b ${isCurrentDay ? "text-primary font-bold" : ""}`}>
-                    <p className="text-xs text-muted-foreground">{diasSemanaAbrev[getDay(day)]}</p>
-                    <p className={`text-lg ${isCurrentDay ? "bg-primary text-primary-foreground rounded-full w-8 h-8 flex items-center justify-center mx-auto" : ""}`}>
-                      {format(day, "d")}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-1 max-h-[100px] overflow-y-auto">
-                    {feriado && (
-                      <div
-                        className="text-xs p-1.5 rounded truncate font-bold"
-                        style={{ backgroundColor: "#a3e635", color: "#1a2e05" }}
-                      >
-                        🎉 {feriado.nome}
-                      </div>
-                    )}
-                    {eventosDay.slice(0, feriado ? 2 : 3).map((evento) => (
-                      <div
-                        key={evento.id}
-                        className="text-xs p-1.5 rounded cursor-pointer hover:opacity-80 truncate"
-                        style={{ 
-                          backgroundColor: evento.cor ? `${evento.cor}20` : "hsl(var(--primary) / 0.1)",
-                          borderLeft: `3px solid ${evento.cor || "hsl(var(--primary))"}`,
-                        }}
-                        onClick={() => onEventoClick?.(evento)}
-                      >
-                        <span className="font-medium">{evento.hora_inicio?.substring(0, 5)}</span> {evento.titulo}
-                      </div>
-                    ))}
-                    {eventosDay.length > (feriado ? 2 : 3) && (
-                      <p className="text-xs text-muted-foreground text-center">+{eventosDay.length - (feriado ? 2 : 3)} mais</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+           return (
+             <Card key={day.toISOString()} className={`${isCurrentDay ? "ring-2 ring-primary" : ""}`}>
+               <CardContent className="p-3">
+                 <div className={`flex items-center gap-3 mb-2 ${isCurrentDay ? "text-primary" : ""}`}>
+                   <div className={`text-center min-w-[40px] ${isCurrentDay ? "bg-primary text-primary-foreground rounded-lg py-1" : ""}`}>
+                     <p className="text-[10px] uppercase font-medium">{diasSemanaAbrev[getDay(day)]}</p>
+                     <p className="text-lg font-bold leading-tight">{format(day, "d")}</p>
+                   </div>
+                   <div className="flex-1 space-y-1">
+                     {feriado && (
+                       <div
+                         className="text-xs px-2 py-1 rounded font-bold"
+                         style={{ backgroundColor: "#a3e635", color: "#1a2e05" }}
+                       >
+                         🎉 {feriado.nome}
+                       </div>
+                     )}
+                     {eventosDay.length === 0 && !feriado && (
+                       <p className="text-xs text-muted-foreground">Sem eventos</p>
+                     )}
+                     {eventosDay.map((evento) => (
+                       <div
+                         key={evento.id}
+                         className="text-xs px-2 py-1.5 rounded cursor-pointer hover:opacity-80 flex items-center gap-2"
+                         style={{ 
+                           backgroundColor: evento.cor ? `${evento.cor}15` : "hsl(var(--primary) / 0.08)",
+                           borderLeft: `3px solid ${evento.cor || "hsl(var(--primary))"}`,
+                         }}
+                         onClick={() => onEventoClick?.(evento)}
+                       >
+                         <span className="font-semibold text-muted-foreground">{evento.hora_inicio?.substring(0, 5) || "—"}</span>
+                         <span className="font-medium truncate">{evento.titulo}</span>
+                       </div>
+                     ))}
+                   </div>
+                 </div>
+               </CardContent>
+             </Card>
+           );
+         })}
        </div>
      );
    };
@@ -410,36 +411,38 @@ interface AgendaCalendarProps {
    }
  
    return (
-     <div className="space-y-4">
+     <div className="space-y-3 sm:space-y-4">
        {/* Header com navegação e filtros */}
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-         <div className="flex items-center gap-2">
-           <Button variant="outline" size="icon" onClick={navigatePrev}>
-             <ChevronLeft className="w-4 h-4" />
-           </Button>
-           <Button variant="outline" size="icon" onClick={navigateNext}>
-             <ChevronRight className="w-4 h-4" />
-           </Button>
-           <Button variant="ghost" size="sm" onClick={goToToday}>
-             Hoje
-           </Button>
-           <h3 className="font-semibold text-lg capitalize ml-2">{getDateRangeLabel()}</h3>
+       <div className="flex flex-col gap-3">
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-1.5">
+             <Button variant="outline" size="icon" className="h-8 w-8" onClick={navigatePrev}>
+               <ChevronLeft className="w-4 h-4" />
+             </Button>
+             <Button variant="outline" size="icon" className="h-8 w-8" onClick={navigateNext}>
+               <ChevronRight className="w-4 h-4" />
+             </Button>
+             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={goToToday}>
+               Hoje
+             </Button>
+           </div>
+           <h3 className="font-semibold text-sm sm:text-lg capitalize">{getDateRangeLabel()}</h3>
          </div>
          
-         <div className="flex items-center gap-2">
-           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-             <TabsList>
-               <TabsTrigger value="dia">Dia</TabsTrigger>
-               <TabsTrigger value="semana">Semana</TabsTrigger>
-               <TabsTrigger value="mes">Mês</TabsTrigger>
-               <TabsTrigger value="ano">Ano</TabsTrigger>
+         <div className="flex items-center justify-between gap-2">
+           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)} className="flex-1">
+             <TabsList className="w-full">
+               <TabsTrigger value="dia" className="flex-1 text-xs sm:text-sm">Dia</TabsTrigger>
+               <TabsTrigger value="semana" className="flex-1 text-xs sm:text-sm">Semana</TabsTrigger>
+               <TabsTrigger value="mes" className="flex-1 text-xs sm:text-sm">Mês</TabsTrigger>
+               <TabsTrigger value="ano" className="flex-1 text-xs sm:text-sm">Ano</TabsTrigger>
              </TabsList>
            </Tabs>
            
             {onNovoCompromisso && (
-              <Button variant="secondary" onClick={onNovoCompromisso}>
-                <Plus className="w-4 h-4 mr-2" />
-                Compromisso
+              <Button variant="secondary" size="sm" onClick={onNovoCompromisso}>
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Compromisso</span>
               </Button>
             )}
          </div>
