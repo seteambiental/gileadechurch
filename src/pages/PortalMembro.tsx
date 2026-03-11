@@ -197,9 +197,10 @@ const PortalMembro = () => {
     menuItems.push({
       id: "portal-kids",
       label: "Portal Kids",
-      subtitle: "PG Crianças",
+      subtitle: "PG Church Kids",
       icon: Baby,
-      iconImg: pgChurchKidsIcon,
+      iconImg: pgRetornoImg,
+      iconImgClass: "w-full h-full object-cover rounded-xl",
       color: "hsl(280, 70%, 55%)",
       action: () => navigate("/portal/kids"),
     });
@@ -212,6 +213,15 @@ const PortalMembro = () => {
       color: "hsl(200, 80%, 50%)",
     });
   }
+
+  // Inscrições
+  menuItems.push({
+    id: "inscricoes",
+    label: "Inscrições",
+    subtitle: "Eventos abertos",
+    icon: ClipboardList,
+    color: "hsl(340, 75%, 55%)",
+  });
 
   // Ministérios do membro
   memberMinistries.forEach((ministry) => {
