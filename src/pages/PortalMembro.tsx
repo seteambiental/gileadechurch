@@ -53,6 +53,7 @@ const PortalMembro = () => {
     portalAccess,
     memberMinistries,
     memberCasasRefugio,
+    isAnfitriao,
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
   const [activeTab, setActiveTab] = useState("home");
