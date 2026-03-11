@@ -69,7 +69,8 @@ export const PortalLideresKidsMinisterio = ({
   portalAccess,
   memberId,
 }: Props) => {
-  const navigate = useNavigate();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
 
