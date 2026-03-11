@@ -42,11 +42,11 @@ export function MemberSelect({
     queryKey: ["members-select-list"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe" as any)
         .select("id, full_name")
         .order("full_name", { ascending: true });
       if (error) throw error;
-      return data as Member[];
+      return (data as unknown) as Member[];
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
