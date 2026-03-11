@@ -25,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, UserPlus, Bell, Phone } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 
 interface TurmaConfig {
   id: string;
