@@ -205,6 +205,17 @@ const Auth = () => {
 
   const redirectTo = getSafeRedirect();
 
+  const normalizeLoginIdentifier = (value: string) => {
+    const cleanedValue = value.trim();
+    const cpfDigits = cleanedValue.replace(/\D/g, "");
+
+    if (cpfDigits.length === 11) {
+      return `${cpfDigits}@gileade.app`;
+    }
+
+    return cleanedValue.toLowerCase();
+  };
+
   // Gate para evitar redirecionamentos automáticos antes de checar permissões
   const hasProcessedAuthRef = useRef(false);
   // Flag para indicar que um login foi iniciado (evita redirect durante processo)
