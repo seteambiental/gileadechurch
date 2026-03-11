@@ -82,7 +82,8 @@ interface AgendaCalendarProps {
  
  export const AgendaCalendar = ({ eventos, onEventoClick, onNovoCompromisso, isLoading }: AgendaCalendarProps) => {
    const [currentDate, setCurrentDate] = useState(new Date());
-   const [view, setView] = useState<ViewType>("mes");
+   const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+   const [view, setView] = useState<ViewType>(isMobile ? "semana" : "mes");
  
    // Gera eventos recorrentes para um intervalo de datas
     const getEventosParaData = (date: Date) => {
