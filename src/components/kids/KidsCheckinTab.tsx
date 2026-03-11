@@ -323,6 +323,30 @@ export const KidsCheckinTab = ({ turmasConfig }: KidsCheckinTabProps) => {
     total: checkins?.length || 0,
   };
 
+  // Children awaiting check-in (check-me done, check-in not done)
+  const aguardandoCheckin = checkins?.filter(c => c.check_me_at && !c.check_in_at) || [];
+
+  // Direct check-in mutation
+  const doCheckin = useMutation({
+    mutationFn: async (checkinId: string) => {
+      const { error } = await supabase
+        .from("kids_checkins")
+        .update({
+          check_in_at: new Date().toISOString(),
+          check_in_by: memberProfile?.id || null,
+        })
+        .eq("id", checkinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: "Check-in realizado com sucesso!" });
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+  });
+
   return (
     <div className="space-y-4">
       {/* QR Code Geral - CHECK ME */}
