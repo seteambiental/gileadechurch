@@ -137,16 +137,17 @@ const PortalMembro = () => {
   };
 
   // Determinar abas disponíveis
+  // Determinar se membro tem acesso à Casa Refúgio no portal do membro
+  // Apenas membros regulares (casa_refugio_id) ou anfitriões - líderes/supervisores/síndicos usam o Portal Ministério
+  const isMemberOfCasaRefugio = !!memberProfile?.casa_refugio_id || isAnfitriao;
+
   const availableTabs: { id: string; label: string; icon: React.ElementType }[] = [
     { id: "home", label: "Início", icon: Home },
-    { id: "financas", label: "Finanças", icon: DollarSign },
+    { id: "financas", label: "Contribuir", icon: DollarSign },
   ];
 
-  if (memberCasasRefugio.length > 0 || 
-      portalAccess?.role === "pastor_geral" ||
-      portalAccess?.role === "sindico_condominio" ||
-      portalAccess?.role === "supervisor_condominio") {
-    availableTabs.push({ id: "casas-refugio", label: "Casas Refúgio", icon: Home });
+  if (isMemberOfCasaRefugio) {
+    availableTabs.push({ id: "casas-refugio", label: "Casa Refúgio", icon: Home });
   }
 
   memberMinistries.forEach((ministry) => {
@@ -160,9 +161,11 @@ const PortalMembro = () => {
     });
   });
 
-  availableTabs.push({ id: "kids-checkin", label: "Check-in PG", icon: Baby });
+  if (hasKids) {
+    availableTabs.push({ id: "kids-checkin", label: "Check-me PG", icon: Baby });
+  }
   availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
-  availableTabs.push({ id: "candidatura", label: "Quero Servir", icon: Send });
+  availableTabs.push({ id: "candidatura", label: "Servir", icon: Send });
 
   return (
     <div className="min-h-screen bg-background">
