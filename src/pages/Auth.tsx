@@ -239,6 +239,9 @@ const Auth = () => {
       return null;
     }
   };
+
+  // Gate para evitar redirecionamentos automáticos antes de checar permissões
+  const hasProcessedAuthRef = useRef(false);
   // Flag para indicar que um login foi iniciado (evita redirect durante processo)
   const isLoginInProgressRef = useRef(false);
   // Fetch ministries for selection
