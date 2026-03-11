@@ -1,9 +1,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { QrScannerDialog } from "@/components/kids/QrScannerDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,8 +69,9 @@ export const PortalLideresKidsMinisterio = ({
   portalAccess,
   memberId,
 }: Props) => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Detect kids role for current member
   const { data: kidsRole } = useQuery({
@@ -388,7 +391,7 @@ export const PortalLideresKidsMinisterio = ({
         <Button
           size="lg"
           className="h-16 rounded-2xl text-base font-bold shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setActiveSection("checkin")}
+          onClick={() => setScannerOpen(true)}
         >
           <QrCode className="w-6 h-6 mr-2" />
           Check-in
@@ -457,6 +460,23 @@ export const PortalLideresKidsMinisterio = ({
           ))}
         </div>
       </div>
+
+      {/* QR Scanner Dialog */}
+      <QrScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={(decodedText) => {
+          setScannerOpen(false);
+          // Extract token from URL or use raw text
+          const match = decodedText.match(/\/kids\/scan\/([a-zA-Z0-9_-]+)/);
+          if (match) {
+            navigate(`/kids/scan/${match[1]}`);
+          } else {
+            // Try as direct token
+            navigate(`/kids/scan/${decodedText}`);
+          }
+        }}
+      />
     </div>
   );
 };
