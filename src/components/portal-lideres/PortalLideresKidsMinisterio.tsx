@@ -69,8 +69,9 @@ export const PortalLideresKidsMinisterio = ({
   portalAccess,
   memberId,
 }: Props) => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   // Detect kids role for current member
   const { data: kidsRole } = useQuery({
