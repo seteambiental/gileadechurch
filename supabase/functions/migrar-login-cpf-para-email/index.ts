@@ -72,9 +72,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const cpfDigits = (member.cpf || "").replace(/\D/g, "");
-      const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.slice(0, 6) : undefined;
-
       const updatePayload: Record<string, unknown> = {
         email: realEmail,
         email_confirm: true,
@@ -84,10 +81,6 @@ Deno.serve(async (req) => {
           is_cpf_login: false,
         },
       };
-
-      if (defaultPassword) {
-        updatePayload.password = defaultPassword;
-      }
 
       const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(
         member.user_id,
