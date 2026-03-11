@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { includesNormalized } from "@/lib/text-utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, UserPlus, Bell, Phone } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 
 interface TurmaConfig {
   id: string;
@@ -66,6 +68,7 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
   const [selectedParentesco, setSelectedParentesco] = useState("responsavel");
   const [isPrincipal, setIsPrincipal] = useState(false);
   const [notificarAusencia, setNotificarAusencia] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Buscar responsáveis cadastrados
   const { data: responsaveis, isLoading } = useQuery({
@@ -192,6 +195,17 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
     return acc;
   }, {} as Record<string, typeof responsaveis>);
 
+  // Filtrar responsáveis por busca
+  const filteredResponsaveis = useMemo(() => {
+    if (!responsaveis) return [];
+    if (!searchTerm) return responsaveis;
+    return responsaveis.filter((r) => {
+      const criancaNome = r.crianca_member?.full_name || r.crianca_nc?.full_name || "";
+      const respNome = r.responsavel?.full_name || "";
+      return includesNormalized(criancaNome, searchTerm) || includesNormalized(respNome, searchTerm);
+    });
+  }, [responsaveis, searchTerm]);
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -316,9 +330,14 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Vínculos Cadastrados</CardTitle>
+          <SearchInput
+            placeholder="Buscar por responsável ou criança..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
         </CardHeader>
         <CardContent>
-          {!responsaveis || responsaveis.length === 0 ? (
+          {!filteredResponsaveis || filteredResponsaveis.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">
               Nenhum responsável vinculado ainda
             </p>
@@ -336,7 +355,7 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {responsaveis.map((r) => (
+                  {filteredResponsaveis.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
