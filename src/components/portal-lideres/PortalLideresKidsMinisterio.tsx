@@ -426,55 +426,26 @@ export const PortalLideresKidsMinisterio = ({
         </div>
       </div>
 
-      {/* Quick Check-in Widget */}
-      {aguardandoCheckin.length > 0 && (
-        <Card className="border-2 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <LogIn className="h-5 w-5 text-amber-600" />
-              <h3 className="font-semibold text-foreground">
-                Aguardando Check-in ({aguardandoCheckin.length})
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {aguardandoCheckin.map(checkin => {
-                const turma = turmasConfig?.find(t => t.turma === checkin.turma);
-                return (
-                  <div
-                    key={checkin.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: turma?.cor_hex }} />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{checkin.crianca_nome}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {turma?.nome_exibicao} • {checkin.responsavel_nome || "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => doCheckin.mutate(checkin.id)}
-                      disabled={doCheckin.isPending}
-                      className="flex-shrink-0 ml-2"
-                    >
-                      {doCheckin.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <LogIn className="h-4 w-4 mr-1" />
-                          Check-in
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Quick action buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          size="lg"
+          className="h-16 rounded-2xl text-base font-bold shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => setActiveSection("checkin")}
+        >
+          <QrCode className="w-6 h-6 mr-2" />
+          Check-in
+        </Button>
+        <Button
+          size="lg"
+          variant="outline"
+          className="h-16 rounded-2xl text-base font-bold shadow-lg border-2 border-primary text-primary hover:bg-primary/10"
+          onClick={() => window.open("/cadastro", "_blank")}
+        >
+          <Baby className="w-6 h-6 mr-2" />
+          Cadastro
+        </Button>
+      </div>
 
       {/* Turmas cards - top section */}
       <div>
