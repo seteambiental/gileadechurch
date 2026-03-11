@@ -355,7 +355,7 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {responsaveis.map((r) => (
+                  {filteredResponsaveis.map((r) => (
                     <TableRow key={r.id}>
                       <TableCell>
                         <div className="flex items-center gap-2">
