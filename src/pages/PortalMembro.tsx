@@ -75,11 +75,20 @@ const PortalMembro = () => {
   const { data: hasKids } = useQuery({
     queryKey: ["portal-has-kids", memberProfile?.id],
     queryFn: async () => {
-      const { count } = await supabase
+      // Check kids_responsaveis table
+      const { count: countResp } = await supabase
         .from("kids_responsaveis")
         .select("id", { count: "exact", head: true })
         .eq("responsavel_member_id", memberProfile!.id);
-      return (count || 0) > 0;
+      if ((countResp || 0) > 0) return true;
+
+      // Also check direct children (responsavel_id on members)
+      const { count: countDirect } = await supabase
+        .from("members")
+        .select("id", { count: "exact", head: true })
+        .eq("responsavel_id", memberProfile!.id)
+        .not("birth_date", "is", null);
+      return (countDirect || 0) > 0;
     },
     enabled: !!memberProfile?.id,
   });
