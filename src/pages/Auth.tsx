@@ -35,7 +35,16 @@ import { ResponsavelSelect } from "@/components/ui/responsavel-select";
 import { needsResponsible, getAgeString, calculateAge } from "@/lib/age-utils";
 
 const loginSchema = z.object({
-  email: z.string().email("Email inválido").max(255, "Email muito longo"),
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email ou CPF é obrigatório")
+    .max(255, "Identificador muito longo")
+    .refine((value) => {
+      const cpfDigits = value.replace(/\D/g, "");
+      if (cpfDigits.length === 11) return true;
+      return z.string().email().safeParse(value).success;
+    }, "Digite um email ou CPF válido"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(72, "Senha muito longa"),
 });
 
@@ -195,6 +204,41 @@ const Auth = () => {
   };
 
   const redirectTo = getSafeRedirect();
+
+  const normalizeLoginIdentifier = (value: string) => {
+    const cleanedValue = value.trim();
+    const cpfDigits = cleanedValue.replace(/\D/g, "");
+
+    if (cpfDigits.length === 11) {
+      return `${cpfDigits}@gileade.app`;
+    }
+
+    return cleanedValue.toLowerCase();
+  };
+
+  const tryLegacyCpfAliasLogin = async (emailValue: string, passwordValue: string) => {
+    try {
+      const normalizedEmail = emailValue.trim().toLowerCase();
+      if (!normalizedEmail.includes("@")) return null;
+
+      const { data: legacyMember } = await supabase
+        .from("members_safe")
+        .select("cpf")
+        .ilike("email", normalizedEmail)
+        .limit(1)
+        .maybeSingle();
+
+      const cpfDigits = (legacyMember?.cpf || "").replace(/\D/g, "");
+      if (cpfDigits.length !== 11) return null;
+
+      return await supabase.auth.signInWithPassword({
+        email: `${cpfDigits}@gileade.app`,
+        password: passwordValue,
+      });
+    } catch {
+      return null;
+    }
+  };
 
   // Gate para evitar redirecionamentos automáticos antes de checar permissões
   const hasProcessedAuthRef = useRef(false);
@@ -494,15 +538,24 @@ const Auth = () => {
     isLoginInProgressRef.current = true;
     
     try {
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email,
+      const loginIdentifier = normalizeLoginIdentifier(email);
+      let { error, data } = await supabase.auth.signInWithPassword({
+        email: loginIdentifier,
         password,
       });
+
+      if (error && loginIdentifier.includes("@")) {
+        const fallbackLogin = await tryLegacyCpfAliasLogin(loginIdentifier, password);
+        if (fallbackLogin && !fallbackLogin.error) {
+          error = null;
+          data = fallbackLogin.data;
+        }
+      }
       
       if (error) {
         isLoginInProgressRef.current = false;
         if (error.message.includes("Invalid login credentials")) {
-          toast({ variant: "destructive", title: "Erro ao entrar", description: "Email ou senha incorretos." });
+          toast({ variant: "destructive", title: "Erro ao entrar", description: "Email/CPF ou senha incorretos." });
         } else {
           toast({ variant: "destructive", title: "Erro ao entrar", description: error.message });
         }
@@ -1137,11 +1190,11 @@ const Auth = () => {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email ou CPF</Label>
                 <Input
                   id="email"
-                  type="email"
-                  placeholder="seu@email.com"
+                  type="text"
+                  placeholder="seu@email.com ou 000.000.000-00"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
