@@ -204,7 +204,9 @@ const SolicitacoesMembrosTab = () => {
       // Criar usuário de autenticação automaticamente se tiver email
       if (request.email) {
         try {
-          // Determinar se precisa de email fictício (familiar com mesmo email do titular)
+          // Determinar se precisa de email fictício
+          // Regra: só usar CPF@gileade.app quando o dependente NÃO tem email próprio
+          // ou quando tem EXATAMENTE o mesmo email do titular (família compartilhando email)
           let authEmail: string | undefined = undefined;
           
           if (request.parent_request_id && request.cpf) {
@@ -215,25 +217,30 @@ const SolicitacoesMembrosTab = () => {
               .eq("id", request.parent_request_id)
               .single();
             
-            if (parentRequest?.email && parentRequest.email === request.email) {
+            const depEmail = (request.email || "").trim().toLowerCase();
+            const parentEmail = (parentRequest?.email || "").trim().toLowerCase();
+            
+            if (parentEmail && depEmail === parentEmail) {
               // Mesmo email do titular - gerar email fictício baseado no CPF
               const cpfClean = request.cpf.replace(/\D/g, "");
               if (cpfClean.length >= 11) {
                 authEmail = `${cpfClean}@gileade.app`;
               }
             }
+            // Se o dependente tem email DIFERENTE do titular, usar o email real (authEmail fica undefined)
           } else if (!request.parent_request_id && request.cpf) {
-            // É o titular - verificar se já existe OUTRO membro com o mesmo email
-            const normalizedEmail = request.email.trim();
+            // É o titular - verificar se já existe OUTRO usuário auth com o mesmo email
+            const normalizedEmail = request.email.trim().toLowerCase();
             const { data: existingMembers } = await supabase
               .from("members")
-              .select("id")
+              .select("id, user_id")
               .ilike("email", normalizedEmail)
               .neq("id", newMember.id)
+              .not("user_id", "is", null)
               .limit(1);
             
             if (existingMembers && existingMembers.length > 0) {
-              // Email já existe para outro membro - gerar email fictício
+              // Email já usado por outro membro COM conta auth - gerar email fictício
               const cpfClean = request.cpf.replace(/\D/g, "");
               if (cpfClean.length >= 11) {
                 authEmail = `${cpfClean}@gileade.app`;
