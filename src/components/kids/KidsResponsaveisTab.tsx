@@ -195,6 +195,17 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
     return acc;
   }, {} as Record<string, typeof responsaveis>);
 
+  // Filtrar responsáveis por busca
+  const filteredResponsaveis = useMemo(() => {
+    if (!responsaveis) return [];
+    if (!searchTerm) return responsaveis;
+    return responsaveis.filter((r) => {
+      const criancaNome = r.crianca_member?.full_name || r.crianca_nc?.full_name || "";
+      const respNome = r.responsavel?.full_name || "";
+      return includesNormalized(criancaNome, searchTerm) || includesNormalized(respNome, searchTerm);
+    });
+  }, [responsaveis, searchTerm]);
+
   return (
     <div className="space-y-4">
       {/* Header */}
