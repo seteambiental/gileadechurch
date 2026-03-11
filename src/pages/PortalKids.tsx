@@ -154,10 +154,6 @@ const PortalKids = () => {
             <ArrowLeft className="h-4 w-4 mr-1" />
             Portal do Membro
           </Button>
-          <Button size="sm" onClick={() => navigate("/kids/checkme")}>
-            <Baby className="h-4 w-4 mr-1" />
-            Check-me
-          </Button>
         </div>
       </header>
 
