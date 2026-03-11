@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // One-time migration - secured by verify_jwt=false, will be deleted after use
+    // One-time migration - will be deleted after use
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -19,7 +19,22 @@ Deno.serve(async (req) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Find all members with CPF@gileade.app auth but real email available
+    // Build a map of ALL auth emails to check for conflicts
+    const allAuthEmails = new Set<string>();
+    let page = 1;
+    while (true) {
+      const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (!usersPage?.users?.length) break;
+      for (const u of usersPage.users) {
+        if (u.email) allAuthEmails.add(u.email.toLowerCase());
+      }
+      if (usersPage.users.length < 1000) break;
+      page++;
+    }
+
+    console.log(`Total auth users indexed: ${allAuthEmails.size}`);
+
+    // Find members with CPF@gileade.app auth and real email
     const { data: members, error: fetchErr } = await supabaseAdmin
       .from("members")
       .select("id, full_name, email, cpf, user_id")
@@ -32,71 +47,44 @@ Deno.serve(async (req) => {
     const results = {
       total_checked: 0,
       migrated: 0,
-      skipped_no_conflict: 0,
+      skipped_not_cpf: 0,
       skipped_conflict: 0,
-      errors: [] as { name: string; email: string; error: string }[],
+      errors: [] as { name: string; error: string }[],
     };
 
     for (const member of members || []) {
-      // Get auth user
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(member.user_id);
       if (!authUser?.user) continue;
 
       const currentAuthEmail = (authUser.user.email || "").toLowerCase();
-
-      // Only process users with CPF@gileade.app login
-      if (!currentAuthEmail.endsWith("@gileade.app")) continue;
-
-      results.total_checked++;
-
-      const realEmail = member.email.trim().toLowerCase();
-
-      // Check if another auth user already has this email
-      // We need to search through users
-      let emailTaken = false;
-      let page = 1;
-      while (true) {
-        const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({
-          page,
-          perPage: 50,
-        });
-        if (!usersPage?.users?.length) break;
-        const conflict = usersPage.users.find(
-          (u: any) => u.email?.toLowerCase() === realEmail && u.id !== member.user_id
-        );
-        if (conflict) {
-          emailTaken = true;
-          break;
-        }
-        if (usersPage.users.length < 50) break;
-        page++;
-      }
-
-      if (emailTaken) {
-        results.skipped_conflict++;
-        results.errors.push({
-          name: member.full_name,
-          email: realEmail,
-          error: "Email já em uso por outro usuário auth",
-        });
+      if (!currentAuthEmail.endsWith("@gileade.app")) {
+        results.skipped_not_cpf++;
         continue;
       }
 
-      // Update auth email
-      const cpfDigits = (member.cpf || "").replace(/\D/g, "");
-      const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.slice(0, 6) : null;
+      results.total_checked++;
+      const realEmail = member.email.trim().toLowerCase();
 
-      const updatePayload: any = {
+      // Check conflict: is realEmail already used by ANOTHER auth user?
+      if (allAuthEmails.has(realEmail) && realEmail !== currentAuthEmail) {
+        results.skipped_conflict++;
+        results.errors.push({ name: member.full_name, error: `Email ${realEmail} já em uso` });
+        continue;
+      }
+
+      const cpfDigits = (member.cpf || "").replace(/\D/g, "");
+      const defaultPassword = cpfDigits.length >= 6 ? cpfDigits.slice(0, 6) : undefined;
+
+      const updatePayload: Record<string, unknown> = {
         email: realEmail,
         email_confirm: true,
         user_metadata: {
-          ...authUser.user.user_metadata,
+          ...(authUser.user.user_metadata || {}),
           real_email: realEmail,
           is_cpf_login: false,
         },
       };
 
-      // Also reset password to 6 digits CPF
       if (defaultPassword) {
         updatePayload.password = defaultPassword;
       }
@@ -107,16 +95,17 @@ Deno.serve(async (req) => {
       );
 
       if (updateErr) {
-        results.errors.push({
-          name: member.full_name,
-          email: realEmail,
-          error: updateErr.message,
-        });
+        results.errors.push({ name: member.full_name, error: updateErr.message });
       } else {
         results.migrated++;
-        console.log(`Migrado: ${member.full_name} | ${currentAuthEmail} → ${realEmail}`);
+        // Update set so subsequent checks see the new email
+        allAuthEmails.delete(currentAuthEmail);
+        allAuthEmails.add(realEmail);
+        console.log(`OK: ${member.full_name} | ${currentAuthEmail} → ${realEmail}`);
       }
     }
+
+    console.log(`Done: ${results.migrated} migrated, ${results.skipped_conflict} conflicts, ${results.errors.length} errors`);
 
     return new Response(JSON.stringify(results), {
       status: 200,
