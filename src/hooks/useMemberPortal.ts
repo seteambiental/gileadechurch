@@ -310,12 +310,27 @@ export const useMemberPortal = () => {
     return Array.from(casaMap.values());
   };
 
+  // Check if member is anfitrião of a casa refúgio
+  const { data: isAnfitriao = false } = useQuery({
+    queryKey: ["member-is-anfitriao", memberProfile?.id],
+    queryFn: async () => {
+      if (!memberProfile?.id) return false;
+      const { count } = await supabase
+        .from("casas_refugio")
+        .select("id", { count: "exact", head: true })
+        .or(`anfitriao_id.eq.${memberProfile.id},anfitriao_esposa_id.eq.${memberProfile.id}`);
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   return {
     memberProfile,
     loadingProfile,
     portalAccess: getPortalAccess(),
     memberMinistries: getMemberMinistries(),
     memberCasasRefugio: getMemberCasasRefugio(),
+    isAnfitriao,
     isAuthenticated: !!user && !!memberProfile,
   };
 };

@@ -246,8 +246,8 @@ const PortalLideres = () => {
     availableTabs.push({ id: "servir-porta", label: "Servir", icon: HandHeart });
   }
 
-  // Finanças - disponível para todos os líderes
-  availableTabs.push({ id: "financas", label: "Finanças", icon: DollarSign });
+  // Contribuir - disponível para todos os líderes
+  availableTabs.push({ id: "financas", label: "Contribuir", icon: DollarSign });
 
   // Sistema - disponível para todos os líderes
   availableTabs.push({ id: "sistema", label: "Sistema", icon: Settings });
