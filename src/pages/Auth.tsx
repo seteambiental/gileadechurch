@@ -629,6 +629,7 @@ const Auth = () => {
   // Biometria: recusar ativação
   const handleDeclineBiometric = () => {
     delete (window as any).__bio_pending;
+    localStorage.setItem("gileade_bio_declined", "true");
     setShowBiometricPrompt(false);
     if (pendingNavigateRef.current) {
       pendingNavigateRef.current();
