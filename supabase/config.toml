@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.sync-teologia-alunos]
 verify_jwt = false
+
+[functions.migrar-login-cpf-para-email]
+verify_jwt = false
