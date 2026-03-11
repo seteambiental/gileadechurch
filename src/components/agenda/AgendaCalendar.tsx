@@ -411,36 +411,38 @@ interface AgendaCalendarProps {
    }
  
    return (
-     <div className="space-y-4">
+     <div className="space-y-3 sm:space-y-4">
        {/* Header com navegação e filtros */}
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-         <div className="flex items-center gap-2">
-           <Button variant="outline" size="icon" onClick={navigatePrev}>
-             <ChevronLeft className="w-4 h-4" />
-           </Button>
-           <Button variant="outline" size="icon" onClick={navigateNext}>
-             <ChevronRight className="w-4 h-4" />
-           </Button>
-           <Button variant="ghost" size="sm" onClick={goToToday}>
-             Hoje
-           </Button>
-           <h3 className="font-semibold text-lg capitalize ml-2">{getDateRangeLabel()}</h3>
+       <div className="flex flex-col gap-3">
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-1.5">
+             <Button variant="outline" size="icon" className="h-8 w-8" onClick={navigatePrev}>
+               <ChevronLeft className="w-4 h-4" />
+             </Button>
+             <Button variant="outline" size="icon" className="h-8 w-8" onClick={navigateNext}>
+               <ChevronRight className="w-4 h-4" />
+             </Button>
+             <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={goToToday}>
+               Hoje
+             </Button>
+           </div>
+           <h3 className="font-semibold text-sm sm:text-lg capitalize">{getDateRangeLabel()}</h3>
          </div>
          
-         <div className="flex items-center gap-2">
-           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-             <TabsList>
-               <TabsTrigger value="dia">Dia</TabsTrigger>
-               <TabsTrigger value="semana">Semana</TabsTrigger>
-               <TabsTrigger value="mes">Mês</TabsTrigger>
-               <TabsTrigger value="ano">Ano</TabsTrigger>
+         <div className="flex items-center justify-between gap-2">
+           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)} className="flex-1">
+             <TabsList className="w-full">
+               <TabsTrigger value="dia" className="flex-1 text-xs sm:text-sm">Dia</TabsTrigger>
+               <TabsTrigger value="semana" className="flex-1 text-xs sm:text-sm">Semana</TabsTrigger>
+               <TabsTrigger value="mes" className="flex-1 text-xs sm:text-sm">Mês</TabsTrigger>
+               <TabsTrigger value="ano" className="flex-1 text-xs sm:text-sm">Ano</TabsTrigger>
              </TabsList>
            </Tabs>
            
             {onNovoCompromisso && (
-              <Button variant="secondary" onClick={onNovoCompromisso}>
-                <Plus className="w-4 h-4 mr-2" />
-                Compromisso
+              <Button variant="secondary" size="sm" onClick={onNovoCompromisso}>
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Compromisso</span>
               </Button>
             )}
          </div>
