@@ -41,7 +41,6 @@ import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
-import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const PortalMembro = () => {
@@ -327,13 +326,7 @@ const PortalMembro = () => {
               </div>
 
               {/* Calendar */}
-              <div>
-                <h2 className="font-heading font-bold text-xl mb-1">Agenda da Igreja</h2>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Eventos e atividades programadas
-                </p>
-                <PortalAgendaTab />
-              </div>
+              <PortalAgendaTab />
             </div>
           </TabsContent>
 
