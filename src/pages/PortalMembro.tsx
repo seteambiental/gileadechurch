@@ -270,6 +270,8 @@ const PortalMembro = () => {
     switch (activeSection) {
       case "agenda":
         return <PortalAgendaTab />;
+      case "inscricoes":
+        return <PortalInscricoesTab />;
       case "financas":
         return <PortalFinancasTab />;
       case "casas-refugio":
