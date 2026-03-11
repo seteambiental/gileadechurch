@@ -556,8 +556,10 @@ const Auth = () => {
           };
 
           // Verificar se biometria está disponível e ainda não registrada
-          // (checagem assíncrona no momento do login)
-          if (!hasBiometricCredential()) {
+          // Apenas em dispositivos móveis e se o usuário nunca recusou
+          const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) && window.innerWidth < 768;
+          const bioDeclined = localStorage.getItem("gileade_bio_declined") === "true";
+          if (isMobileDevice && !bioDeclined && !hasBiometricCredential()) {
             const bioAvailable = await isBiometricAvailable();
             if (bioAvailable) {
               // Salvar a função de navegação para executar depois do prompt
@@ -627,6 +629,7 @@ const Auth = () => {
   // Biometria: recusar ativação
   const handleDeclineBiometric = () => {
     delete (window as any).__bio_pending;
+    localStorage.setItem("gileade_bio_declined", "true");
     setShowBiometricPrompt(false);
     if (pendingNavigateRef.current) {
       pendingNavigateRef.current();
