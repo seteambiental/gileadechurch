@@ -330,9 +330,14 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Vínculos Cadastrados</CardTitle>
+          <SearchInput
+            placeholder="Buscar por responsável ou criança..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
         </CardHeader>
         <CardContent>
-          {!responsaveis || responsaveis.length === 0 ? (
+          {!filteredResponsaveis || filteredResponsaveis.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">
               Nenhum responsável vinculado ainda
             </p>
