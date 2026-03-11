@@ -75,16 +75,16 @@ export default function InscricaoCasais() {
     },
   });
 
-  // Fetch members for auto-fill
+  // Fetch members for auto-fill (using public-safe view to bypass RLS for unauthenticated users)
   const { data: allMembers } = useQuery({
     queryKey: ["members_for_inscricao_public"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("members")
+        .from("members_safe" as any)
         .select("id, full_name, whatsapp, email, cep, address, number, complement, neighborhood, city, state, casa_refugio_id")
         .order("full_name");
       if (error) throw error;
-      return data;
+      return data as any[];
     },
   });
 
