@@ -15,9 +15,12 @@ import {
   ClipboardCheck,
   DollarSign,
   ArrowRightLeft,
+  ArrowLeft,
+  Baby,
+  HandHelping,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,7 +34,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserAccess } from "@/hooks/useUserAccess";
 
-// Componentes das abas
+// Componentes das seções
 import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
 import { PortalLideresIndicadores } from "@/components/portal-lideres/PortalLideresIndicadores";
 import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLideresMinisterio";
@@ -56,6 +59,15 @@ const LEADER_ROLES: PortalRole[] = [
   "integrante_ministerio",
 ];
 
+interface MenuItemConfig {
+  id: string;
+  label: string;
+  subtitle?: string;
+  icon: React.ElementType;
+  color: string;
+  badge?: string | number;
+}
+
 const PortalLideres = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -67,8 +79,41 @@ const PortalLideres = () => {
     memberCasasRefugio,
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState("programacao");
+  // Detect if member is part of PG Kids team via kids_lideres
+  const { data: kidsLiderInfo } = useQuery({
+    queryKey: ["portal-lideres-kids-lider", memberProfile?.id],
+    queryFn: async () => {
+      if (!memberProfile?.id) return null;
+      const { data, error } = await supabase
+        .from("kids_lideres")
+        .select("funcao")
+        .eq("member_id", memberProfile.id)
+        .eq("ativo", true)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
+  // Fetch PG ministry info
+  const { data: pgMinistry } = useQuery({
+    queryKey: ["portal-lideres-pg-ministry"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ministries")
+        .select("id, name")
+        .or("name.ilike.%infantil%,name.ilike.%kids%,name.ilike.%p g%")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!kidsLiderInfo,
+  });
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -104,66 +149,46 @@ const PortalLideres = () => {
 
   if (!user) return null;
 
-  // Verificar se tem perfil de membro
   if (!memberProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h1 className="text-xl font-bold text-foreground mb-2">
-            Perfil não encontrado
-          </h1>
+          <h1 className="text-xl font-bold text-foreground mb-2">Perfil não encontrado</h1>
           <p className="text-muted-foreground mb-4">
             Seu usuário ainda não está vinculado a um cadastro de membro.
-            Entre em contato com a secretaria da igreja.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Voltar ao início
-            </Button>
-            <Button variant="secondary" onClick={handleSignOut}>
-              Sair
-            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>Voltar ao início</Button>
+            <Button variant="secondary" onClick={handleSignOut}>Sair</Button>
           </div>
         </div>
       </div>
     );
   }
 
-  // Verificar se tem acesso de líder
-  if (!portalAccess || !LEADER_ROLES.includes(portalAccess.role)) {
+  // Check access - also allow kids_lideres members
+  const hasKidsAccess = !!kidsLiderInfo;
+  if (!portalAccess || (!LEADER_ROLES.includes(portalAccess.role) && !hasKidsAccess)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-          <h1 className="text-xl font-bold text-foreground mb-2">
-            Acesso Restrito
-          </h1>
+          <h1 className="text-xl font-bold text-foreground mb-2">Acesso Restrito</h1>
           <p className="text-muted-foreground mb-4">
-            Este portal é exclusivo para líderes de ministérios, casas refúgio,
-            supervisores e síndicos.
+            Este portal é exclusivo para líderes de ministérios, casas refúgio, supervisores e síndicos.
           </p>
           <div className="flex gap-2 justify-center">
-            <Button variant="outline" onClick={() => navigate("/portal")}>
-              Portal do Membro
-            </Button>
-            <Button variant="secondary" onClick={() => navigate("/")}>
-              Voltar ao início
-            </Button>
+            <Button variant="outline" onClick={() => navigate("/portal")}>Portal do Membro</Button>
+            <Button variant="secondary" onClick={() => navigate("/")}>Voltar ao início</Button>
           </div>
         </div>
       </div>
     );
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  };
+  const getInitials = (name: string) =>
+    name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase();
 
   const getRoleLabel = (role: PortalRole): string => {
     const labels: Record<PortalRole, string> = {
@@ -183,260 +208,356 @@ const PortalLideres = () => {
     return labels[role] || role;
   };
 
-  // Verificar se pode editar (Líder) ou apenas visualizar (Equipe/Integrante)
-  const canEdit = portalAccess.role !== "integrante_ministerio";
+  const canEdit = portalAccess!.role !== "integrante_ministerio";
 
-  // Determinar abas disponíveis baseado no role
-  const availableTabs: { id: string; label: string; icon: React.ElementType }[] = [];
+  // Build combined ministries list (include PG from kids_lideres if not already present)
+  const allMinistries = [...memberMinistries];
+  if (kidsLiderInfo && pgMinistry) {
+    const alreadyHasPG = allMinistries.some((m) => m.id === pgMinistry.id);
+    if (!alreadyHasPG) {
+      allMinistries.push({
+        id: pgMinistry.id,
+        name: pgMinistry.name,
+        isLider: kidsLiderInfo.funcao === "coordenador",
+      });
+    }
+  }
 
-  // Todos têm acesso à Programação e Indicadores (visualização)
-  availableTabs.push({ id: "programacao", label: "Programação", icon: Calendar });
-  availableTabs.push({ id: "indicadores", label: "Indicadores", icon: BarChart3 });
+  // Build menu items
+  const menuItems: MenuItemConfig[] = [];
 
-  // Adicionar abas de ministérios
-  memberMinistries.forEach((ministry) => {
+  menuItems.push({
+    id: "programacao",
+    label: "Programação",
+    subtitle: "Agenda e eventos",
+    icon: Calendar,
+    color: "hsl(var(--secondary))",
+  });
+
+  menuItems.push({
+    id: "indicadores",
+    label: "Indicadores",
+    subtitle: "Estatísticas",
+    icon: BarChart3,
+    color: "hsl(280, 70%, 55%)",
+  });
+
+  // Ministries
+  allMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/\s+/g, "-");
-    availableTabs.push({
+    const isPG = slug.includes("infantil") || slug.includes("p-g") || slug.includes("kids");
+    menuItems.push({
       id: `ministerio-${slug}`,
       label: ministry.name,
-      icon: HandHeart,
+      subtitle: ministry.isLider ? "Líder" : "Equipe",
+      icon: isPG ? Baby : HandHeart,
+      color: isPG ? "hsl(280, 70%, 55%)" : "hsl(350, 70%, 50%)",
     });
   });
 
-  // Casas Refúgio para líderes/supervisores
+  // Casas Refúgio
   if (
     memberCasasRefugio.length > 0 ||
-    portalAccess.role === "pastor_geral" ||
-    portalAccess.role === "pastor_auxiliar" ||
-    portalAccess.role === "sindico_condominio" ||
-    portalAccess.role === "supervisor_condominio" ||
-    portalAccess.role === "supervisor_casa_refugio" ||
-    portalAccess.role === "lider_casa_refugio" ||
-    portalAccess.role === "secretario_casa_refugio"
+    ["pastor_geral", "pastor_auxiliar", "sindico_condominio", "supervisor_condominio", "supervisor_casa_refugio", "lider_casa_refugio", "secretario_casa_refugio"].includes(portalAccess!.role)
   ) {
-    availableTabs.push({ id: "casas-refugio", label: "Casas Refúgio", icon: Home });
+    menuItems.push({
+      id: "casas-refugio",
+      label: "Casas Refúgio",
+      subtitle: "Gestão de CRs",
+      icon: Home,
+      color: "hsl(160, 60%, 45%)",
+    });
   }
 
-  // Condomínios para síndicos
+  // Condomínios
+  if (["pastor_geral", "pastor_auxiliar", "sindico_condominio"].includes(portalAccess!.role)) {
+    menuItems.push({
+      id: "condominios",
+      label: "Condomínios",
+      subtitle: "Gestão de condomínios",
+      icon: Building2,
+      color: "hsl(30, 95%, 50%)",
+    });
+  }
+
+  // Aprovações
   if (
-    portalAccess.role === "pastor_geral" ||
-    portalAccess.role === "pastor_auxiliar" ||
-    portalAccess.role === "sindico_condominio"
+    ["pastor_geral", "pastor_auxiliar", "sindico_condominio", "supervisor_condominio", "supervisor_casa_refugio", "lider_casa_refugio", "secretario_casa_refugio", "lider_ministerio"].includes(portalAccess!.role)
   ) {
-    availableTabs.push({ id: "condominios", label: "Condomínios", icon: Building2 });
+    menuItems.push({
+      id: "aprovacoes",
+      label: "Aprovações",
+      subtitle: "Pendências",
+      icon: ClipboardCheck,
+      color: "hsl(340, 75%, 55%)",
+    });
   }
 
-  // Aprovações pendentes para quem pode aprovar
-  if (
-    portalAccess.role === "pastor_geral" ||
-    portalAccess.role === "pastor_auxiliar" ||
-    portalAccess.role === "sindico_condominio" ||
-    portalAccess.role === "supervisor_condominio" ||
-    portalAccess.role === "supervisor_casa_refugio" ||
-    portalAccess.role === "lider_casa_refugio" ||
-    portalAccess.role === "secretario_casa_refugio" ||
-    portalAccess.role === "lider_ministerio"
-  ) {
-    availableTabs.push({ id: "aprovacoes", label: "Aprovações", icon: ClipboardCheck });
-  }
-
-  // Servir na Porta - para líderes/supervisores de Casa Refúgio
+  // Servir na Porta
   if (memberCasasRefugio.length > 0) {
-    availableTabs.push({ id: "servir-porta", label: "Servir", icon: HandHeart });
+    menuItems.push({
+      id: "servir-porta",
+      label: "Servir",
+      subtitle: "Escalas e tarefas",
+      icon: HandHelping,
+      color: "hsl(220, 60%, 50%)",
+    });
   }
 
-  // Contribuir - disponível para todos os líderes
-  availableTabs.push({ id: "financas", label: "Contribuir", icon: DollarSign });
+  // Contribuir
+  menuItems.push({
+    id: "financas",
+    label: "Contribuir",
+    subtitle: "PIX e ofertas",
+    icon: DollarSign,
+    color: "hsl(30, 95%, 50%)",
+  });
 
-  // Sistema - disponível para todos os líderes
-  availableTabs.push({ id: "sistema", label: "Sistema", icon: Settings });
+  // Sistema
+  menuItems.push({
+    id: "sistema",
+    label: "Sistema",
+    subtitle: "Chamados técnicos",
+    icon: Settings,
+    color: "hsl(0, 0%, 45%)",
+  });
 
+  // Render section content
+  const renderSectionContent = () => {
+    if (!activeSection) return null;
+
+    switch (activeSection) {
+      case "programacao":
+        return <PortalLideresAgendaTab portalAccess={portalAccess!} memberId={memberProfile.id} />;
+      case "indicadores":
+        return <PortalLideresIndicadores portalAccess={portalAccess!} />;
+      case "casas-refugio":
+        return (
+          <PortalLideresCasaRefugio
+            portalAccess={portalAccess!}
+            memberCasasRefugio={memberCasasRefugio}
+            canEdit={canEdit}
+            memberId={memberProfile.id}
+          />
+        );
+      case "condominios":
+        return <PortalLideresCondominio portalAccess={portalAccess!} canEdit={canEdit} />;
+      case "aprovacoes":
+        return <PortalLideresAprovacoes portalAccess={portalAccess!} memberId={memberProfile.id} />;
+      case "servir-porta":
+        return <PortalLideresCandidaturaServico memberId={memberProfile.id} memberCasasRefugio={memberCasasRefugio} />;
+      case "financas":
+        return <PortalFinancasTab />;
+      case "sistema":
+        return <SistemaTab />;
+      default: {
+        // Ministry sections
+        const ministry = allMinistries.find((m) => {
+          const slug = m.name.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-");
+          return activeSection === `ministerio-${slug}`;
+        });
+        if (ministry) {
+          const slug = ministry.name.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-");
+          const isPG = slug.includes("infantil") || slug.includes("p-g") || slug.includes("kids");
+          if (isPG) {
+            return (
+              <PortalLideresKidsMinisterio
+                ministryId={ministry.id}
+                ministryName={ministry.name}
+                isLider={ministry.isLider}
+                canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
+                portalAccess={portalAccess}
+                memberId={memberProfile.id}
+              />
+            );
+          }
+          return (
+            <PortalLideresMinisterio
+              ministryId={ministry.id}
+              ministryName={ministry.name}
+              ministrySlug={slug}
+              isLider={ministry.isLider}
+              canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
+              portalAccess={portalAccess}
+            />
+          );
+        }
+        return null;
+      }
+    }
+  };
+
+  const activeSectionLabel = menuItems.find((m) => m.id === activeSection)?.label || "";
   const logoUrl = igrejaConfig?.logo_dark_url ?? logoGileade;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-surfaceInverse text-primary-foreground">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src={logoUrl}
-              alt={igrejaConfig?.nome_fantasia || "Logo"}
-              className="w-10 h-10 rounded-full object-cover"
-            />
+            {activeSection ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveSection(null)}
+                className="text-foreground -ml-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            ) : (
+              <img
+                src={logoUrl}
+                alt={igrejaConfig?.nome_fantasia || "Logo"}
+                className="w-9 h-9 rounded-full object-cover"
+              />
+            )}
             <div>
-              <h1 className="font-heading font-bold text-lg">
-                Portal Ministério
+              <h1 className="font-heading font-bold text-base sm:text-lg text-foreground leading-tight">
+                {activeSection ? activeSectionLabel : "Portal Ministério"}
               </h1>
-              <p className="text-xs text-primary-foreground/70">
-                {igrejaConfig?.nome_fantasia || "Igreja Gileade"}
-              </p>
+              {!activeSection && (
+                <p className="text-[11px] text-muted-foreground">
+                  {igrejaConfig?.nome_fantasia || "Igreja Gileade"}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2">
-              <Avatar className="w-8 h-8 border border-primary-foreground/20">
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="flex items-center gap-2">
+              <Avatar className="w-8 h-8 border border-border">
                 <AvatarImage src={memberProfile.photo_url || undefined} />
-                <AvatarFallback className="bg-primary-foreground/20 text-primary-foreground text-xs">
+                <AvatarFallback className="bg-secondary/20 text-secondary text-xs">
                   {getInitials(memberProfile.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="text-right">
+              <div className="hidden sm:block text-right">
                 <span className="text-sm font-medium block">{memberProfile.full_name.split(" ")[0]}</span>
-                <Badge variant="outline" className="text-[10px] border-primary-foreground/30 text-primary-foreground/80">
-                  {getRoleLabel(portalAccess.role)}
+                <Badge variant="outline" className="text-[10px]">
+                  {getRoleLabel(portalAccess!.role)}
                 </Badge>
               </div>
             </div>
             {isAdmin && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-2"
-                  >
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
                     <ArrowRightLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Trocar Portal</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/app")}>
-                    Portal ADM
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/portal")}>
-                    Portal do Membro
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/app")}>Portal ADM</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/portal")}>Portal do Membro</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={handleSignOut}
-              className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
             >
               <LogOut className="w-4 h-4" />
-              <span className="sr-only">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          {/* Mobile: Scroll horizontal com abas compactas */}
-          <div className="relative -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="w-full overflow-x-auto flex-nowrap justify-start mb-4 sm:mb-6 h-auto p-1 gap-1 scrollbar-hide">
-              {availableTabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap px-3 py-2 text-xs sm:text-sm min-w-fit flex-shrink-0"
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {activeSection ? (
+          <div className="animate-in fade-in slide-in-from-right-4 duration-200">
+            {renderSectionContent()}
           </div>
+        ) : (
+          <div className="space-y-5">
+            {/* Greeting */}
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12 border-2 border-secondary/30 sm:hidden">
+                <AvatarImage src={memberProfile.photo_url || undefined} />
+                <AvatarFallback className="bg-secondary/10 text-secondary font-bold">
+                  {getInitials(memberProfile.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="font-heading font-bold text-lg sm:text-xl">
+                  Olá, {memberProfile.full_name.split(" ")[0]}! 👋
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Bem-vindo(a) ao Portal Ministério
+                </p>
+              </div>
+            </div>
 
-          <TabsContent value="programacao">
-            <PortalLideresAgendaTab portalAccess={portalAccess} memberId={memberProfile.id} />
-          </TabsContent>
+            {/* Menu Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {menuItems.map((item) => (
+                <Card
+                  key={item.id}
+                  className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
+                  onClick={() => setActiveSection(item.id)}
+                >
+                  <CardContent className="p-0">
+                    <div className="flex flex-col items-center text-center py-5 px-3 relative">
+                      {/* Color accent bar */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1 opacity-80"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      {/* Icon */}
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110"
+                        style={{ backgroundColor: `${item.color}15` }}
+                      >
+                        <item.icon className="w-5 h-5" style={{ color: item.color }} />
+                      </div>
+                      {/* Label */}
+                      <p className="text-sm font-semibold text-foreground leading-tight">{item.label}</p>
+                      {item.subtitle && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{item.subtitle}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <TabsContent value="indicadores">
-            <PortalLideresIndicadores portalAccess={portalAccess} />
-          </TabsContent>
-
-          <TabsContent value="casas-refugio">
-            <PortalLideresCasaRefugio
-              portalAccess={portalAccess}
-              memberCasasRefugio={memberCasasRefugio}
-              canEdit={canEdit}
-              memberId={memberProfile.id}
-            />
-          </TabsContent>
-
-          <TabsContent value="condominios">
-            <PortalLideresCondominio portalAccess={portalAccess} canEdit={canEdit} />
-          </TabsContent>
-
-          <TabsContent value="aprovacoes">
-            <PortalLideresAprovacoes portalAccess={portalAccess} memberId={memberProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="servir-porta">
-            <PortalLideresCandidaturaServico
-              memberId={memberProfile.id}
-              memberCasasRefugio={memberCasasRefugio}
-            />
-          </TabsContent>
-
-          <TabsContent value="financas">
-            <PortalFinancasTab />
-          </TabsContent>
-
-          <TabsContent value="sistema">
-            <SistemaTab />
-          </TabsContent>
-
-          {memberMinistries.map((ministry) => {
-            const slug = ministry.name.toLowerCase()
-              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-              .replace(/\s+/g, "-");
-            const isPG = slug.includes("infantil") || slug.includes("p-g") || slug.includes("kids");
-            return (
-              <TabsContent key={ministry.id} value={`ministerio-${slug}`}>
-                {isPG ? (
-                  <PortalLideresKidsMinisterio
-                    ministryId={ministry.id}
-                    ministryName={ministry.name}
-                    isLider={ministry.isLider}
-                    canEdit={ministry.isLider || portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar"}
-                    portalAccess={portalAccess}
-                    memberId={memberProfile.id}
-                  />
-                ) : (
-                  <PortalLideresMinisterio
-                    ministryId={ministry.id}
-                    ministryName={ministry.name}
-                    ministrySlug={slug}
-                    isLider={ministry.isLider}
-                    canEdit={ministry.isLider || portalAccess.role === "pastor_geral" || portalAccess.role === "pastor_auxiliar"}
-                    portalAccess={portalAccess}
-                  />
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
+            {/* Quick link to Portal do Membro */}
+            <Card className="border-secondary/20 bg-secondary/5">
+              <CardContent className="py-3 px-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Portal do Membro</p>
+                  <p className="text-xs text-muted-foreground">Acesse seu portal pessoal</p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => navigate("/portal")}>
+                  Acessar →
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <button
-              onClick={() => navigate("/portal")}
-              className="hover:text-foreground"
-            >
-              Portal do Membro
-            </button>
-            <span>•</span>
+      {!activeSection && (
+        <footer className="py-4 border-t border-border">
+          <div className="container mx-auto px-4 text-center">
             <button
               onClick={() => navigate("/")}
-              className="hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
-              Homepage
+              ← Voltar para a homepage
             </button>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 };
