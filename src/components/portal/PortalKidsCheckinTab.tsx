@@ -1,14 +1,15 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Baby, CheckCircle2, LogIn, LogOut, Clock, QrCode, ExternalLink } from "lucide-react";
+import { Baby, CheckCircle2, LogIn, LogOut, Clock, QrCode, ExternalLink, Loader2 } from "lucide-react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface PortalKidsCheckinTabProps {
   memberId: string;
@@ -17,6 +18,7 @@ interface PortalKidsCheckinTabProps {
 
 export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckinTabProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const hoje = format(new Date(), "yyyy-MM-dd");
   const baseUrl = window.location.origin;
 
@@ -118,12 +120,59 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
     return todayCheckins?.find(c => c.crianca_member_id === childId || c.crianca_novo_convertido_id === childId);
   };
 
+  // Check-me mutation
+  const checkMeMutation = useMutation({
+    mutationFn: async (child: any) => {
+      const turmaConfig = getTurmaForChild(child);
+      if (!turmaConfig) throw new Error("Turma não encontrada");
+      const token = crypto.randomUUID().replace(/-/g, "").substring(0, 16);
+      const { data, error } = await supabase
+        .from("kids_checkins")
+        .insert({
+          crianca_member_id: child.tipo === "membro" ? child.id : null,
+          crianca_novo_convertido_id: child.tipo === "novo_convertido" ? child.id : null,
+          turma: turmaConfig.turma as any,
+          data_culto: hoje,
+          token,
+          responsavel_member_id: memberId,
+          responsavel_nome: memberName,
+          crianca_nome: child.nome,
+          check_me_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Check-me realizado!");
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins-portal"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
+  // Check-out mutation
+  const checkOutMutation = useMutation({
+    mutationFn: async (checkinId: string) => {
+      const { error } = await supabase
+        .from("kids_checkins")
+        .update({ check_out_at: new Date().toISOString() })
+        .eq("id", checkinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Check-out realizado! Criança entregue ao responsável.");
+      queryClient.invalidateQueries({ queryKey: ["kids-checkins-portal"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
+
   if (!filhos?.length) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
           <Baby className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-          <h3 className="font-bold text-lg mb-2">Check-in PG Kids</h3>
+          <h3 className="font-bold text-lg mb-2">Check-me PG Kids</h3>
           <p className="text-muted-foreground">
             Nenhum filho(a) cadastrado no ministério Kids.
           </p>
@@ -138,13 +187,15 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <QrCode className="h-5 w-5" />
-            Check-in PG Kids
+            Check-me PG Kids
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-muted-foreground mb-2">
+            <strong>Fluxo:</strong> Check-me (presença) → Check-in (entrada na sala pelo professor) → Check-out (retirada pelo responsável)
+          </p>
           <p className="text-sm text-muted-foreground mb-4">
-            Para fazer o check-in, escaneie o QR Code da turma do seu filho(a) disponível na sala
-            ou clique no botão abaixo.
+            Para fazer o check-me, escaneie o QR Code da turma ou clique no botão abaixo.
           </p>
 
           <div className="space-y-3">
@@ -202,15 +253,22 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
                       </div>
 
                       <div className="flex flex-col gap-1">
+                        {/* Botão Check-me: se ainda não tem checkin */}
                         {!checkin && turma && (
                           <Button
                             size="sm"
-                            onClick={() => navigate(`/kids/checkin/${turma.turma}`)}
+                            onClick={() => checkMeMutation.mutate(child)}
+                            disabled={checkMeMutation.isPending}
                           >
-                            <QrCode className="h-4 w-4 mr-1" />
-                            Check-in
+                            {checkMeMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4 mr-1" />
+                            )}
+                            Check-me
                           </Button>
                         )}
+                        {/* Ver etiqueta */}
                         {checkin && !hasCheckOut && (
                           <Button
                             size="sm"
@@ -218,8 +276,30 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
                             onClick={() => navigate(`/kids/scan/${checkin.token}`)}
                           >
                             <ExternalLink className="h-4 w-4 mr-1" />
-                            Ver etiqueta
+                            Etiqueta
                           </Button>
+                        )}
+                        {/* Botão Check-out: após check-in, antes de check-out */}
+                        {checkin && hasCheckIn && !hasCheckOut && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => checkOutMutation.mutate(checkin.id)}
+                            disabled={checkOutMutation.isPending}
+                          >
+                            {checkOutMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                            ) : (
+                              <LogOut className="h-4 w-4 mr-1" />
+                            )}
+                            Check-out
+                          </Button>
+                        )}
+                        {/* Aguardando check-in */}
+                        {checkin && hasCheckMe && !hasCheckIn && !hasCheckOut && (
+                          <span className="text-[10px] text-muted-foreground text-center">
+                            Aguardando entrada
+                          </span>
                         )}
                       </div>
                     </div>
@@ -234,8 +314,8 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
                           fgColor={turma?.cor_hex || "#000"}
                         />
                         <div className="text-xs text-muted-foreground">
-                          <p>Mostre este QR ao professor para <strong>entrada</strong>.</p>
-                          <p>Escaneie a etiqueta impressa para <strong>retirada</strong>.</p>
+                          <p>Mostre este QR ao professor para <strong>entrada na sala</strong>.</p>
+                          <p>Faça o <strong>check-out</strong> ao buscar a criança.</p>
                         </div>
                       </div>
                     )}

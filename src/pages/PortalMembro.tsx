@@ -53,6 +53,7 @@ const PortalMembro = () => {
     portalAccess,
     memberMinistries,
     memberCasasRefugio,
+    isAnfitriao,
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
   const [activeTab, setActiveTab] = useState("home");
@@ -136,16 +137,17 @@ const PortalMembro = () => {
   };
 
   // Determinar abas disponíveis
+  // Determinar se membro tem acesso à Casa Refúgio no portal do membro
+  // Apenas membros regulares (casa_refugio_id) ou anfitriões - líderes/supervisores/síndicos usam o Portal Ministério
+  const isMemberOfCasaRefugio = !!memberProfile?.casa_refugio_id || isAnfitriao;
+
   const availableTabs: { id: string; label: string; icon: React.ElementType }[] = [
     { id: "home", label: "Início", icon: Home },
-    { id: "financas", label: "Finanças", icon: DollarSign },
+    { id: "financas", label: "Contribuir", icon: DollarSign },
   ];
 
-  if (memberCasasRefugio.length > 0 || 
-      portalAccess?.role === "pastor_geral" ||
-      portalAccess?.role === "sindico_condominio" ||
-      portalAccess?.role === "supervisor_condominio") {
-    availableTabs.push({ id: "casas-refugio", label: "Casas Refúgio", icon: Home });
+  if (isMemberOfCasaRefugio) {
+    availableTabs.push({ id: "casas-refugio", label: "Casa Refúgio", icon: Home });
   }
 
   memberMinistries.forEach((ministry) => {
@@ -159,9 +161,11 @@ const PortalMembro = () => {
     });
   });
 
-  availableTabs.push({ id: "kids-checkin", label: "Check-in PG", icon: Baby });
+  if (hasKids) {
+    availableTabs.push({ id: "kids-checkin", label: "Check-me PG", icon: Baby });
+  }
   availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
-  availableTabs.push({ id: "candidatura", label: "Quero Servir", icon: Send });
+  availableTabs.push({ id: "candidatura", label: "Servir", icon: Send });
 
   return (
     <div className="min-h-screen bg-background">
@@ -261,7 +265,7 @@ const PortalMembro = () => {
             <div className="space-y-6">
               {/* Quick access cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {memberCasasRefugio.length > 0 && (
+                {isMemberOfCasaRefugio && (
                   <Card 
                     className="cursor-pointer hover:border-secondary transition-colors"
                     onClick={() => setActiveTab("casas-refugio")}
@@ -269,22 +273,34 @@ const PortalMembro = () => {
                     <CardContent className="py-5 text-center">
                       <Home className="w-6 h-6 mx-auto mb-2 text-secondary" />
                       <p className="text-sm font-medium">Casa Refúgio</p>
-                      <p className="text-xs text-muted-foreground">{memberCasasRefugio[0]?.name}</p>
+                      <p className="text-xs text-muted-foreground">{memberCasasRefugio[0]?.name || "Minha CR"}</p>
                     </CardContent>
                   </Card>
                 )}
 
                 {hasKids && (
-                  <Card 
-                    className="cursor-pointer hover:border-secondary transition-colors"
-                    onClick={() => navigate("/portal/kids")}
-                  >
-                    <CardContent className="py-5 text-center">
-                      <img src={pgChurchKidsIcon} alt="PG Kids" className="w-6 h-6 mx-auto mb-2" />
-                      <p className="text-sm font-medium">Portal Kids</p>
-                      <p className="text-xs text-muted-foreground">PG Crianças</p>
-                    </CardContent>
-                  </Card>
+                  <>
+                    <Card 
+                      className="cursor-pointer hover:border-secondary transition-colors"
+                      onClick={() => navigate("/portal/kids")}
+                    >
+                      <CardContent className="py-5 text-center">
+                        <img src={pgChurchKidsIcon} alt="PG Kids" className="w-6 h-6 mx-auto mb-2" />
+                        <p className="text-sm font-medium">Portal Kids</p>
+                        <p className="text-xs text-muted-foreground">PG Crianças</p>
+                      </CardContent>
+                    </Card>
+                    <Card 
+                      className="cursor-pointer hover:border-secondary transition-colors"
+                      onClick={() => setActiveTab("kids-checkin")}
+                    >
+                      <CardContent className="py-5 text-center">
+                        <Baby className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                        <p className="text-sm font-medium">Check-me PG</p>
+                        <p className="text-xs text-muted-foreground">Presença Kids</p>
+                      </CardContent>
+                    </Card>
+                  </>
                 )}
 
                 <Card 
@@ -293,7 +309,7 @@ const PortalMembro = () => {
                 >
                   <CardContent className="py-5 text-center">
                     <DollarSign className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                    <p className="text-sm font-medium">Finanças</p>
+                    <p className="text-sm font-medium">Contribuir</p>
                     <p className="text-xs text-muted-foreground">PIX e ofertas</p>
                   </CardContent>
                 </Card>
@@ -304,7 +320,7 @@ const PortalMembro = () => {
                 >
                   <CardContent className="py-5 text-center">
                     <Send className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                    <p className="text-sm font-medium">Quero Servir</p>
+                    <p className="text-sm font-medium">Servir</p>
                     <p className="text-xs text-muted-foreground">Ministérios</p>
                   </CardContent>
                 </Card>
