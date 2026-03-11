@@ -391,7 +391,7 @@ export const PortalLideresKidsMinisterio = ({
         <Button
           size="lg"
           className="h-16 rounded-2xl text-base font-bold shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
-          onClick={() => setActiveSection("checkin")}
+          onClick={() => setScannerOpen(true)}
         >
           <QrCode className="w-6 h-6 mr-2" />
           Check-in
