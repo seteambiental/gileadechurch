@@ -460,6 +460,23 @@ export const PortalLideresKidsMinisterio = ({
           ))}
         </div>
       </div>
+
+      {/* QR Scanner Dialog */}
+      <QrScannerDialog
+        open={scannerOpen}
+        onClose={() => setScannerOpen(false)}
+        onScan={(decodedText) => {
+          setScannerOpen(false);
+          // Extract token from URL or use raw text
+          const match = decodedText.match(/\/kids\/scan\/([a-zA-Z0-9_-]+)/);
+          if (match) {
+            navigate(`/kids/scan/${match[1]}`);
+          } else {
+            // Try as direct token
+            navigate(`/kids/scan/${decodedText}`);
+          }
+        }}
+      />
     </div>
   );
 };
