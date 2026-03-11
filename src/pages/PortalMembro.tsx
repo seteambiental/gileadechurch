@@ -18,7 +18,9 @@ import {
   Baby,
   HandHelping,
   ArrowRightLeft,
-  Rocket,
+  ArrowLeft,
+  Music,
+  Church,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,7 +34,7 @@ import {
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 
-// Componentes das abas
+// Componentes das seções
 import { PortalAgendaTab } from "@/components/portal/PortalAgendaTab";
 import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 import { PortalCandidaturaTab } from "@/components/portal/PortalCandidaturaTab";
@@ -41,7 +43,16 @@ import { PortalMinisterioTab } from "@/components/portal/PortalMinisterioTab";
 import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidaturaServicoTab";
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface MenuItemConfig {
+  id: string;
+  label: string;
+  subtitle?: string;
+  icon: React.ElementType;
+  iconImg?: string;
+  color?: string;
+  action?: () => void;
+}
 
 const PortalMembro = () => {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -55,7 +66,7 @@ const PortalMembro = () => {
     isAnfitriao,
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const [showCheckMePrompt, setShowCheckMePrompt] = useState(false);
   const [checkMeDismissed, setCheckMeDismissed] = useState(false);
   const { isNearChurch, loading: geoLoading } = useGeolocation();
@@ -135,39 +146,154 @@ const PortalMembro = () => {
       .toUpperCase();
   };
 
-  // Determinar abas disponíveis
-  // Determinar se membro tem acesso à Casa Refúgio no portal do membro
-  // Apenas membros regulares (casa_refugio_id) ou anfitriões - líderes/supervisores/síndicos usam o Portal Ministério
   const isMemberOfCasaRefugio = !!memberProfile?.casa_refugio_id || isAnfitriao;
 
-  const availableTabs: { id: string; label: string; icon: React.ElementType }[] = [
-    { id: "home", label: "Início", icon: Home },
-    { id: "financas", label: "Contribuir", icon: DollarSign },
-  ];
+  // Build menu items
+  const menuItems: MenuItemConfig[] = [];
 
+  // Agenda
+  menuItems.push({
+    id: "agenda",
+    label: "Agenda",
+    subtitle: "Eventos e cultos",
+    icon: Calendar,
+    color: "hsl(var(--secondary))",
+  });
+
+  // Contribuir
+  menuItems.push({
+    id: "financas",
+    label: "Contribuir",
+    subtitle: "PIX e ofertas",
+    icon: DollarSign,
+    color: "hsl(30, 95%, 50%)",
+  });
+
+  // Casa Refúgio
   if (isMemberOfCasaRefugio) {
-    availableTabs.push({ id: "casas-refugio", label: "Casa Refúgio", icon: Home });
+    menuItems.push({
+      id: "casas-refugio",
+      label: "Casa Refúgio",
+      subtitle: memberCasasRefugio[0]?.name || "Minha CR",
+      icon: Home,
+      color: "hsl(160, 60%, 45%)",
+    });
   }
 
+  // Kids
+  if (hasKids) {
+    menuItems.push({
+      id: "portal-kids",
+      label: "Portal Kids",
+      subtitle: "PG Crianças",
+      icon: Baby,
+      iconImg: pgChurchKidsIcon,
+      color: "hsl(280, 70%, 55%)",
+      action: () => navigate("/portal/kids"),
+    });
+
+    menuItems.push({
+      id: "kids-checkin",
+      label: "Check-me PG",
+      subtitle: "Presença Kids",
+      icon: Baby,
+      color: "hsl(200, 80%, 50%)",
+    });
+  }
+
+  // Ministérios do membro
   memberMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
       .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/\s+/g, "-");
-    availableTabs.push({
+    menuItems.push({
       id: `ministerio-${slug}`,
       label: ministry.name,
+      subtitle: ministry.isLider ? "Líder" : "Integrante",
       icon: HandHeart,
+      color: "hsl(350, 70%, 50%)",
     });
   });
 
-  if (hasKids) {
-    availableTabs.push({ id: "kids-checkin", label: "Check-me PG", icon: Baby });
-  }
-  availableTabs.push({ id: "servico", label: "Servir na Porta", icon: HandHelping });
-  availableTabs.push({ id: "candidatura", label: "Servir", icon: Send });
+  // Servir na Porta
+  menuItems.push({
+    id: "servico",
+    label: "Servir na Porta",
+    subtitle: "Escalas e tarefas",
+    icon: HandHelping,
+    color: "hsl(220, 60%, 50%)",
+  });
+
+  // Servir (candidatura)
+  menuItems.push({
+    id: "candidatura",
+    label: "Servir",
+    subtitle: "Ministérios",
+    icon: Send,
+    color: "hsl(260, 60%, 55%)",
+  });
+
+  const handleMenuClick = (item: MenuItemConfig) => {
+    if (item.action) {
+      item.action();
+    } else {
+      setActiveSection(item.id);
+    }
+  };
+
+  // Render section content
+  const renderSectionContent = () => {
+    if (!activeSection) return null;
+
+    switch (activeSection) {
+      case "agenda":
+        return <PortalAgendaTab />;
+      case "financas":
+        return <PortalFinancasTab />;
+      case "casas-refugio":
+        return (
+          <PortalCasaRefugioTab 
+            portalAccess={portalAccess} 
+            memberCasasRefugio={memberCasasRefugio}
+          />
+        );
+      case "kids-checkin":
+        return <PortalKidsCheckinTab memberId={memberProfile.id} memberName={memberProfile.full_name} />;
+      case "servico":
+        return <PortalCandidaturaServicoTab memberId={memberProfile.id} />;
+      case "candidatura":
+        return <PortalCandidaturaTab memberId={memberProfile.id} />;
+      default: {
+        // Ministry tabs
+        const ministry = memberMinistries.find((m) => {
+          const slug = m.name.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-");
+          return activeSection === `ministerio-${slug}`;
+        });
+        if (ministry) {
+          const slug = ministry.name.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, "-");
+          return (
+            <PortalMinisterioTab 
+              ministryId={ministry.id}
+              ministryName={ministry.name}
+              ministrySlug={slug}
+              isLider={ministry.isLider}
+              portalAccess={portalAccess}
+            />
+          );
+        }
+        return null;
+      }
+    }
+  };
+
+  const activeSectionLabel = menuItems.find(m => m.id === activeSection)?.label || "";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Check-me prompt */}
       {showCheckMePrompt && memberProfile && (
         <CheckMePrompt
@@ -179,43 +305,55 @@ const PortalMembro = () => {
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-card/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src={logoGileade}
-              alt="Gileade Church"
-              className="w-10 h-10 rounded-full object-cover shadow-red"
-            />
+            {activeSection ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveSection(null)}
+                className="text-foreground -ml-2"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </Button>
+            ) : (
+              <img
+                src={logoGileade}
+                alt="Gileade Church"
+                className="w-9 h-9 rounded-full object-cover"
+              />
+            )}
             <div>
-              <h1 className="font-heading font-bold text-lg text-foreground">
-                Portal do Membro
+              <h1 className="font-heading font-bold text-base sm:text-lg text-foreground leading-tight">
+                {activeSection ? activeSectionLabel : "Portal do Membro"}
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Igreja Gileade
-              </p>
+              {!activeSection && (
+                <p className="text-[11px] text-muted-foreground">
+                  Igreja Gileade
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <div className="flex items-center gap-2">
               <Avatar className="w-8 h-8 border border-border">
                 <AvatarImage src={memberProfile.photo_url || undefined} />
                 <AvatarFallback className="bg-secondary/20 text-secondary text-xs">
                   {getInitials(memberProfile.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium">{memberProfile.full_name.split(" ")[0]}</span>
+              <span className="hidden sm:block text-sm font-medium">{memberProfile.full_name.split(" ")[0]}</span>
             </div>
             {isAdmin && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground hover:text-foreground gap-2"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground h-8 w-8"
                   >
                     <ArrowRightLeft className="w-4 h-4" />
-                    <span className="hidden sm:inline">Trocar Portal</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -230,174 +368,123 @@ const PortalMembro = () => {
             )}
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               onClick={handleSignOut}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground h-8 w-8"
             >
               <LogOut className="w-4 h-4" />
-              <span className="sr-only">Sair</span>
             </Button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="relative -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="w-full overflow-x-auto flex-nowrap justify-start mb-4 sm:mb-6 h-auto p-1 gap-1 scrollbar-hide">
-              {availableTabs.map((tab) => (
-                <TabsTrigger
-                  key={tab.id}
-                  value={tab.id}
-                  className="flex items-center gap-1.5 sm:gap-2 whitespace-nowrap px-3 py-2 text-xs sm:text-sm min-w-fit flex-shrink-0"
-                >
-                  <tab.icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {activeSection ? (
+          // Section content view
+          <div className="animate-in fade-in slide-in-from-right-4 duration-200">
+            {renderSectionContent()}
           </div>
-
-          {/* Home Tab - reformulated */}
-          <TabsContent value="home">
-            <div className="space-y-6">
-              {/* Quick access cards */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {isMemberOfCasaRefugio && (
-                  <Card 
-                    className="cursor-pointer hover:border-secondary transition-colors"
-                    onClick={() => setActiveTab("casas-refugio")}
-                  >
-                    <CardContent className="py-5 text-center">
-                      <Home className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                      <p className="text-sm font-medium">Casa Refúgio</p>
-                      <p className="text-xs text-muted-foreground">{memberCasasRefugio[0]?.name || "Minha CR"}</p>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {hasKids && (
-                  <>
-                    <Card 
-                      className="cursor-pointer hover:border-secondary transition-colors"
-                      onClick={() => navigate("/portal/kids")}
-                    >
-                      <CardContent className="py-5 text-center">
-                        <img src={pgChurchKidsIcon} alt="PG Kids" className="w-6 h-6 mx-auto mb-2" />
-                        <p className="text-sm font-medium">Portal Kids</p>
-                        <p className="text-xs text-muted-foreground">PG Crianças</p>
-                      </CardContent>
-                    </Card>
-                    <Card 
-                      className="cursor-pointer hover:border-secondary transition-colors"
-                      onClick={() => setActiveTab("kids-checkin")}
-                    >
-                      <CardContent className="py-5 text-center">
-                        <Baby className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                        <p className="text-sm font-medium">Check-me PG</p>
-                        <p className="text-xs text-muted-foreground">Presença Kids</p>
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-
-                <Card 
-                  className="cursor-pointer hover:border-secondary transition-colors"
-                  onClick={() => setActiveTab("financas")}
-                >
-                  <CardContent className="py-5 text-center">
-                    <DollarSign className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                    <p className="text-sm font-medium">Contribuir</p>
-                    <p className="text-xs text-muted-foreground">PIX e ofertas</p>
-                  </CardContent>
-                </Card>
-
-                <Card 
-                  className="cursor-pointer hover:border-secondary transition-colors"
-                  onClick={() => setActiveTab("candidatura")}
-                >
-                  <CardContent className="py-5 text-center">
-                    <Send className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                    <p className="text-sm font-medium">Servir</p>
-                    <p className="text-xs text-muted-foreground">Ministérios</p>
-                  </CardContent>
-                </Card>
+        ) : (
+          // Home grid view
+          <div className="space-y-5">
+            {/* Greeting */}
+            <div className="flex items-center gap-3">
+              <Avatar className="w-12 h-12 border-2 border-secondary/30 sm:hidden">
+                <AvatarImage src={memberProfile.photo_url || undefined} />
+                <AvatarFallback className="bg-secondary/10 text-secondary font-bold">
+                  {getInitials(memberProfile.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="font-heading font-bold text-lg sm:text-xl">
+                  Olá, {memberProfile.full_name.split(" ")[0]}! 👋
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  Bem-vindo(a) ao seu portal
+                </p>
               </div>
-
-              {/* Calendar */}
-              <PortalAgendaTab />
             </div>
-          </TabsContent>
 
-          <TabsContent value="financas">
-            <PortalFinancasTab />
-          </TabsContent>
+            {/* Menu Grid - 2 columns mobile, 3 on tablet, 4 on desktop */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {menuItems.map((item) => (
+                <Card
+                  key={item.id}
+                  className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
+                  onClick={() => handleMenuClick(item)}
+                >
+                  <CardContent className="p-0">
+                    <div className="flex flex-col items-center text-center py-5 px-3 relative">
+                      {/* Color accent bar */}
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-1 opacity-80"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      
+                      {/* Icon */}
+                      <div
+                        className="w-11 h-11 rounded-xl flex items-center justify-center mb-2.5 transition-transform group-hover:scale-110"
+                        style={{ backgroundColor: `${item.color}15` }}
+                      >
+                        {item.iconImg ? (
+                          <img src={item.iconImg} alt={item.label} className="w-6 h-6 object-contain" />
+                        ) : (
+                          <item.icon className="w-5.5 h-5.5" style={{ color: item.color }} />
+                        )}
+                      </div>
+                      
+                      {/* Label */}
+                      <p className="text-sm font-semibold text-foreground leading-tight">{item.label}</p>
+                      {item.subtitle && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{item.subtitle}</p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <TabsContent value="casas-refugio">
-            <PortalCasaRefugioTab 
-              portalAccess={portalAccess} 
-              memberCasasRefugio={memberCasasRefugio}
-            />
-          </TabsContent>
-
-          {memberMinistries.map((ministry) => {
-            const slug = ministry.name.toLowerCase()
-              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-              .replace(/\s+/g, "-");
-            return (
-              <TabsContent key={ministry.id} value={`ministerio-${slug}`}>
-                <PortalMinisterioTab 
-                  ministryId={ministry.id}
-                  ministryName={ministry.name}
-                  ministrySlug={slug}
-                  isLider={ministry.isLider}
-                  portalAccess={portalAccess}
-                />
-              </TabsContent>
-            );
-          })}
-
-          <TabsContent value="kids-checkin">
-            <PortalKidsCheckinTab memberId={memberProfile.id} memberName={memberProfile.full_name} />
-          </TabsContent>
-
-          <TabsContent value="servico">
-            <PortalCandidaturaServicoTab memberId={memberProfile.id} />
-          </TabsContent>
-
-          <TabsContent value="candidatura">
-            <PortalCandidaturaTab memberId={memberProfile.id} />
-          </TabsContent>
-        </Tabs>
-      </main>
-
-      {/* Footer */}
-      <footer className="py-8 border-t border-border">
-        <div className="container mx-auto px-4 text-center">
-          <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
+            {/* Quick links */}
             {(portalAccess?.role === "lider_ministerio" ||
               portalAccess?.role === "lider_casa_refugio" ||
               portalAccess?.role === "sindico_condominio" ||
               portalAccess?.role === "supervisor_condominio" ||
               portalAccess?.role === "pastor_geral" ||
               portalAccess?.role === "pastor_auxiliar") && (
-              <button
-                onClick={() => navigate("/lideres")}
-                className="hover:text-foreground font-medium text-secondary"
-              >
-                Portal Ministério →
-              </button>
+              <Card className="border-secondary/20 bg-secondary/5">
+                <CardContent className="py-3 px-4 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Portal Ministério</p>
+                    <p className="text-xs text-muted-foreground">Acesse a gestão completa</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => navigate("/lideres")}
+                  >
+                    Acessar →
+                  </Button>
+                </CardContent>
+              </Card>
             )}
+          </div>
+        )}
+      </main>
+
+      {/* Footer - only on home */}
+      {!activeSection && (
+        <footer className="py-4 border-t border-border">
+          <div className="container mx-auto px-4 text-center">
             <button
               onClick={() => navigate("/")}
-              className="hover:text-foreground"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               ← Voltar para a homepage
             </button>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 };
