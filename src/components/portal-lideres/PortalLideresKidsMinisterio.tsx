@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { differenceInYears, format } from "date-fns";
+import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
-import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,10 +18,7 @@ import {
   UserCheck,
   Users,
   ArrowLeft,
-  ChevronRight,
   Baby,
-  LogIn,
-  Loader2,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 
@@ -72,10 +68,7 @@ export const PortalLideresKidsMinisterio = ({
   memberId,
 }: Props) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const hoje = format(new Date(), "yyyy-MM-dd");
 
   // Detect kids role for current member
   const { data: kidsRole } = useQuery({
@@ -166,43 +159,7 @@ export const PortalLideresKidsMinisterio = ({
     },
   });
 
-  // Fetch today's checkins for quick check-in widget
-  const { data: todayCheckins } = useQuery({
-    queryKey: ["kids-checkins-today-portal", hoje],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("kids_checkins")
-        .select("*")
-        .eq("data_culto", hoje)
-        .order("check_me_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
 
-  const aguardandoCheckin = todayCheckins?.filter(c => c.check_me_at && !c.check_in_at) || [];
-
-  // Direct check-in mutation
-  const doCheckin = useMutation({
-    mutationFn: async (checkinId: string) => {
-      const { error } = await supabase
-        .from("kids_checkins")
-        .update({
-          check_in_at: new Date().toISOString(),
-          check_in_by: memberId || null,
-        })
-        .eq("id", checkinId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({ title: "Check-in realizado!" });
-      queryClient.invalidateQueries({ queryKey: ["kids-checkins-today-portal"] });
-      queryClient.invalidateQueries({ queryKey: ["kids-checkins"] });
-    },
-    onError: (error: any) => {
-      toast({ variant: "destructive", title: "Erro", description: error.message });
-    },
-  });
 
   // Process children by turma
   const criancasPorTurma = useMemo(() => {
@@ -426,55 +383,26 @@ export const PortalLideresKidsMinisterio = ({
         </div>
       </div>
 
-      {/* Quick Check-in Widget */}
-      {aguardandoCheckin.length > 0 && (
-        <Card className="border-2 border-amber-300 bg-amber-50/50 dark:bg-amber-950/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <LogIn className="h-5 w-5 text-amber-600" />
-              <h3 className="font-semibold text-foreground">
-                Aguardando Check-in ({aguardandoCheckin.length})
-              </h3>
-            </div>
-            <div className="space-y-2">
-              {aguardandoCheckin.map(checkin => {
-                const turma = turmasConfig?.find(t => t.turma === checkin.turma);
-                return (
-                  <div
-                    key={checkin.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: turma?.cor_hex }} />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{checkin.crianca_nome}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {turma?.nome_exibicao} • {checkin.responsavel_nome || "—"}
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => doCheckin.mutate(checkin.id)}
-                      disabled={doCheckin.isPending}
-                      className="flex-shrink-0 ml-2"
-                    >
-                      {doCheckin.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <>
-                          <LogIn className="h-4 w-4 mr-1" />
-                          Check-in
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Quick action buttons */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          size="lg"
+          className="h-16 rounded-2xl text-base font-bold shadow-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+          onClick={() => setActiveSection("checkin")}
+        >
+          <QrCode className="w-6 h-6 mr-2" />
+          Check-in
+        </Button>
+        <Button
+          size="lg"
+          variant="outline"
+          className="h-16 rounded-2xl text-base font-bold shadow-lg border-2 border-primary text-primary hover:bg-primary/10"
+          onClick={() => window.open("/cadastro", "_blank")}
+        >
+          <Baby className="w-6 h-6 mr-2" />
+          Cadastro
+        </Button>
+      </div>
 
       {/* Turmas cards - top section */}
       <div>
