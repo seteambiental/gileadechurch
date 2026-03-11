@@ -289,12 +289,13 @@ export const CheckMePrompt = ({ memberId, memberName, onDismiss }: CheckMePrompt
 
   // Initial prompt
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur flex items-center justify-center p-4">
-      <Card className="max-w-sm w-full shadow-xl">
+    <div className="fixed inset-0 z-50 bg-gradient-to-br from-purple-900/95 via-indigo-900/95 to-blue-900/95 backdrop-blur flex items-center justify-center p-4">
+      <Card className="max-w-sm w-full shadow-2xl border-0 bg-gradient-to-b from-card to-card/95 overflow-hidden">
+        <div className="h-2 bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500" />
         <CardContent className="py-8 text-center space-y-5">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <MapPin className="h-8 w-8 text-green-600" />
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 flex items-center justify-center shadow-lg shadow-green-200/50">
+              <MapPin className="h-10 w-10 text-green-600" />
             </div>
           </div>
 
@@ -307,12 +308,12 @@ export const CheckMePrompt = ({ memberId, memberName, onDismiss }: CheckMePrompt
             </p>
           </div>
 
-          <div className="flex gap-3">
-            <Button className="flex-1" onClick={() => setShowChildren(true)}>
+          <div className="flex flex-col gap-2">
+            <Button className="w-full" size="lg" onClick={() => setShowChildren(true)}>
               <Baby className="h-4 w-4 mr-2" />
               Sim, fazer Check-me
             </Button>
-            <Button variant="outline" className="flex-1" onClick={onDismiss}>
+            <Button variant="ghost" className="w-full text-muted-foreground" onClick={onDismiss}>
               Não, obrigado
             </Button>
           </div>
