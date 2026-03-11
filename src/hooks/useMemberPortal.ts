@@ -71,6 +71,7 @@ export const useMemberPortal = () => {
           email,
           whatsapp,
           user_id,
+          casa_refugio_id,
           member_functions (
             id,
             function_type,
