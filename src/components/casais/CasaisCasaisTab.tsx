@@ -123,6 +123,22 @@ export function CasaisCasaisTab() {
     setIsCertificadoOpen(true);
   };
 
+  const handleChangeTurma = async () => {
+    if (!changingTurmaCasal || !newTurmaId) return;
+    const { error } = await supabase
+      .from("casais_inscritos")
+      .update({ turma_id: newTurmaId })
+      .eq("id", changingTurmaCasal.id);
+    if (error) {
+      toast({ title: "Erro ao alterar turma", variant: "destructive" });
+    } else {
+      toast({ title: "Turma alterada com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
+    }
+    setChangingTurmaCasal(null);
+    setNewTurmaId("");
+  };
+
   const filteredCasais = casais?.filter((c) => {
     const nomeM = c.membro_masculino?.full_name || c.nome_masculino || "";
     const nomeF = c.membro_feminino?.full_name || c.nome_feminino || "";
