@@ -59,6 +59,7 @@ interface Props {
   canEdit: boolean;
   portalAccess: PortalAccess | null;
   memberId: string;
+  onSubNavChange?: (backFn: (() => void) | null) => void;
 }
 
 export const PortalLideresKidsMinisterio = ({
