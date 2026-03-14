@@ -79,7 +79,7 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Adicionar Líder</DialogTitle>
+          <DialogTitle>Adicionar Professor</DialogTitle>
           <DialogDescription>
             Selecione o esposo e/ou a esposa e informe a função.
           </DialogDescription>
