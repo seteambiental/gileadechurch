@@ -253,7 +253,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
               </div>
 
               {lideres?.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">Nenhum líder cadastrado</p>
+                <p className="text-center py-8 text-muted-foreground">Nenhum professor cadastrado</p>
               ) : (
                 <div className="rounded-md border border-border overflow-hidden">
                   <Table>
