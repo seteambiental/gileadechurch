@@ -1407,6 +1407,310 @@ export type Database = {
           },
         ]
       }
+      contingencia_acoes: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          incidente_id: string
+          responsavel_id: string | null
+          tipo: string | null
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          incidente_id: string
+          responsavel_id?: string | null
+          tipo?: string | null
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          incidente_id?: string
+          responsavel_id?: string | null
+          tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencia_acoes_incidente_id_fkey"
+            columns: ["incidente_id"]
+            isOneToOne: false
+            referencedRelation: "contingencia_incidentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_acoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_acoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contingencia_backups: {
+        Row: {
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          hash_integridade: string | null
+          id: string
+          localizacao: string | null
+          observacoes: string | null
+          responsavel_id: string | null
+          status: string
+          tamanho_bytes: number | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          hash_integridade?: string | null
+          id?: string
+          localizacao?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tamanho_bytes?: number | null
+          tipo?: string
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          hash_integridade?: string | null
+          id?: string
+          localizacao?: string | null
+          observacoes?: string | null
+          responsavel_id?: string | null
+          status?: string
+          tamanho_bytes?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencia_backups_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_backups_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contingencia_incidentes: {
+        Row: {
+          analise_pos_incidente: string | null
+          checklist_contencao: boolean | null
+          checklist_encerramento: boolean | null
+          checklist_identificacao: boolean | null
+          checklist_recuperacao: boolean | null
+          checklist_validacao: boolean | null
+          created_at: string
+          descricao: string | null
+          hora_contencao: string | null
+          hora_encerramento: string | null
+          hora_inicio: string
+          hora_resolucao: string | null
+          id: string
+          impacto: string | null
+          plano_comunicacao: string | null
+          responsavel_id: string | null
+          rpo_minutos: number | null
+          rto_minutos: number | null
+          severidade: string
+          status: string
+          tipo_falha: string | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          analise_pos_incidente?: string | null
+          checklist_contencao?: boolean | null
+          checklist_encerramento?: boolean | null
+          checklist_identificacao?: boolean | null
+          checklist_recuperacao?: boolean | null
+          checklist_validacao?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          hora_contencao?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string
+          hora_resolucao?: string | null
+          id?: string
+          impacto?: string | null
+          plano_comunicacao?: string | null
+          responsavel_id?: string | null
+          rpo_minutos?: number | null
+          rto_minutos?: number | null
+          severidade?: string
+          status?: string
+          tipo_falha?: string | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          analise_pos_incidente?: string | null
+          checklist_contencao?: boolean | null
+          checklist_encerramento?: boolean | null
+          checklist_identificacao?: boolean | null
+          checklist_recuperacao?: boolean | null
+          checklist_validacao?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          hora_contencao?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string
+          hora_resolucao?: string | null
+          id?: string
+          impacto?: string | null
+          plano_comunicacao?: string | null
+          responsavel_id?: string | null
+          rpo_minutos?: number | null
+          rto_minutos?: number | null
+          severidade?: string
+          status?: string
+          tipo_falha?: string | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencia_incidentes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_incidentes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contingencia_procedimentos: {
+        Row: {
+          ativo: boolean
+          atualizado_por: string | null
+          categoria: string
+          conteudo: string
+          created_at: string
+          id: string
+          ordem: number | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          atualizado_por?: string | null
+          categoria: string
+          conteudo: string
+          created_at?: string
+          id?: string
+          ordem?: number | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          atualizado_por?: string | null
+          categoria?: string
+          conteudo?: string
+          created_at?: string
+          id?: string
+          ordem?: number | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencia_procedimentos_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_procedimentos_atualizado_por_fkey"
+            columns: ["atualizado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contingencia_versoes: {
+        Row: {
+          commit_hash: string | null
+          created_at: string
+          data_deploy: string
+          descricao: string | null
+          estavel: boolean
+          id: string
+          observacoes: string | null
+          responsavel_id: string | null
+          rollback_disponivel: boolean
+          versao: string
+        }
+        Insert: {
+          commit_hash?: string | null
+          created_at?: string
+          data_deploy?: string
+          descricao?: string | null
+          estavel?: boolean
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          rollback_disponivel?: boolean
+          versao: string
+        }
+        Update: {
+          commit_hash?: string | null
+          created_at?: string
+          data_deploy?: string
+          descricao?: string | null
+          estavel?: boolean
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string | null
+          rollback_disponivel?: boolean
+          versao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contingencia_versoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contingencia_versoes_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cr_express: {
         Row: {
           aprovado_em: string | null
