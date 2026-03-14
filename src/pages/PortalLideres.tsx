@@ -38,6 +38,7 @@ import { useUserAccess } from "@/hooks/useUserAccess";
 import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
 import { PortalLideresIndicadores } from "@/components/portal-lideres/PortalLideresIndicadores";
 import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLideresMinisterio";
+import { PortalLideresCasaisMinisterio } from "@/components/portal-lideres/PortalLideresCasaisMinisterio";
 import { PortalLideresKidsMinisterio } from "@/components/portal-lideres/PortalLideresKidsMinisterio";
 import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLideresCasaRefugio";
 import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLideresCondominio";
@@ -365,6 +366,7 @@ const PortalLideres = () => {
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
             .replace(/\s+/g, "-");
           const isPG = slug.includes("infantil") || slug.includes("p-g") || slug.includes("kids");
+          const isCasais = slug.includes("casais") || slug.includes("casal");
           if (isPG) {
             return (
               <PortalLideresKidsMinisterio
@@ -374,6 +376,17 @@ const PortalLideres = () => {
                 canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
                 portalAccess={portalAccess}
                 memberId={memberProfile.id}
+              />
+            );
+          }
+          if (isCasais) {
+            return (
+              <PortalLideresCasaisMinisterio
+                ministryId={ministry.id}
+                ministryName={ministry.name}
+                isLider={ministry.isLider}
+                canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
+                portalAccess={portalAccess}
               />
             );
           }
