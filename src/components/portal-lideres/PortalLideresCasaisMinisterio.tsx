@@ -91,9 +91,19 @@ export const PortalLideresCasaisMinisterio = ({
   isLider,
   canEdit,
   portalAccess,
+  onSubNavChange,
 }: PortalLideresCasaisMinisterioProps) => {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
+
+  // Notify parent about sub-navigation state
+  useEffect(() => {
+    if (activeTab) {
+      onSubNavChange?.(() => setActiveTab(null));
+    } else {
+      onSubNavChange?.(null);
+    }
+  }, [activeTab, onSubNavChange]);
 
   // Stats
   const { data: stats } = useQuery({

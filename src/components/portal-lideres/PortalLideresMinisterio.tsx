@@ -42,6 +42,7 @@ interface PortalLideresMinisterioProps {
   isLider: boolean;
   canEdit: boolean;
   portalAccess: PortalAccess | null;
+  onSubNavChange?: (backFn: (() => void) | null) => void;
 }
 
 export const PortalLideresMinisterio = ({
