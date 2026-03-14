@@ -168,7 +168,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
               </TabsTrigger>
               <TabsTrigger value="lideres" className="flex items-center gap-2">
                 <UserCheck className="w-4 h-4" />
-                Líderes ({lideres?.length || 0})
+                Professores ({lideres?.length || 0})
               </TabsTrigger>
             </TabsList>
 
