@@ -92,7 +92,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
     setSelectedMemberId(member.id);
     setNome(member.full_name);
     setWhatsapp(member.whatsapp || "");
-    setDataNascimento(member.data_nascimento || "");
+    setDataNascimento(member.birth_date || "");
     setMembroBusca(member.full_name);
   };
 
