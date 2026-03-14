@@ -47,11 +47,19 @@ async function enviarMensagemZAPI(telefone: string, mensagem: string) {
   return result;
 }
 
+function gerarIniciais(nomeCompleto: string): string {
+  const partes = nomeCompleto.trim().split(/\s+/);
+  if (partes.length < 2) return "";
+  const primeiraLetra = partes[0][0].toUpperCase();
+  const ultimaLetra = partes[partes.length - 1][0].toLowerCase();
+  return primeiraLetra + ultimaLetra;
+}
+
 function gerarMensagemBoasVindasMembro(nome: string, loginEmail: string, realEmail: string | null, isCpfPassword: boolean, isCpfLogin: boolean) {
   const primeiroNome = nome.split(' ')[0];
 
   const senhaInfo = isCpfPassword
-    ? `🔑 Senha: *Os 6 primeiros dígitos do seu CPF + Gc!*\n_(Exemplo: se CPF começa com 123456, a senha é 123456Gc!)_`
+    ? `🔑 Senha: *Primeira letra do nome (maiúscula) + primeira letra do sobrenome (minúscula) + 6 primeiros dígitos do CPF*\n_(Exemplo: Alessandro Costa, CPF 030073... → Ac030073)_`
     : `🔑 Senha temporária foi enviada separadamente. Consulte a secretaria.`;
 
   const loginInfo = isCpfLogin
@@ -158,16 +166,17 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Buscar CPF do membro para gerar senha padrão (6 primeiros dígitos)
+    // Buscar CPF e nome do membro para gerar senha padrão
     const { data: memberCpfData } = await supabaseAdmin
       .from("members")
-      .select("cpf")
+      .select("cpf, full_name")
       .eq("id", member_id)
       .single();
 
     const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
-    const defaultPassword = cpfDigits.length >= 6
-      ? cpfDigits.slice(0, 6) + "Gc!"
+    const iniciais = gerarIniciais(memberCpfData?.full_name || "");
+    const defaultPassword = cpfDigits.length >= 6 && iniciais.length === 2
+      ? iniciais + cpfDigits.slice(0, 6)
       : generateSecurePassword(14);
 
     // Verificar se membro já tem user_id vinculado
