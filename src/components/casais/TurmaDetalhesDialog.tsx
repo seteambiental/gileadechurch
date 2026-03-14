@@ -248,7 +248,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
               <div className="flex justify-end mb-4">
                 <Button size="sm" onClick={() => setIsLiderFormOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Líder
+                  Adicionar Professor
                 </Button>
               </div>
 
