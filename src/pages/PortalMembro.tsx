@@ -297,6 +297,8 @@ const PortalMembro = () => {
     switch (activeSection) {
       case "agenda":
         return <PortalAgendaTab />;
+      case "curso-casais":
+        return <PortalCursoCasaisTab memberId={memberProfile.id} />;
       case "inscricoes":
         return <PortalInscricoesTab />;
       case "financas":
