@@ -81,6 +81,20 @@ const PortalLideres = () => {
   } = useMemberPortal();
   const { isAdmin } = useUserAccess(user?.id);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [subNavBackFn, setSubNavBackFn] = useState<(() => void) | null>(null);
+
+  const handleHeaderBack = () => {
+    if (subNavBackFn) {
+      subNavBackFn();
+    } else {
+      setActiveSection(null);
+    }
+  };
+
+  // Reset sub-nav when section changes
+  useEffect(() => {
+    setSubNavBackFn(null);
+  }, [activeSection]);
 
   // Detect if member is part of PG Kids team via kids_lideres
   const { data: kidsLiderInfo } = useQuery({
