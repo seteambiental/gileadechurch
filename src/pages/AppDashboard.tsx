@@ -125,6 +125,7 @@ const allOtherModules = [
   { icon: Zap, title: "Eventos e Impacto", description: "Eventos com inscrição", path: "/ministerio/impacto", adminOnly: false, moduleKey: "impacto" },
   { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", path: "/financeiro", adminOnly: true, moduleKey: "financeiro" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
+  { icon: Shield, title: "Contingência", description: "Backups, incidentes e recuperação", path: "/contingencia", adminOnly: true, moduleKey: "contingencia" },
 ];
 
 const AppDashboard = () => {
