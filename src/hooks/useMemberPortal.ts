@@ -60,8 +60,9 @@ export const useMemberPortal = () => {
     queryFn: async () => {
       if (!user?.id) return null;
       
-      // Pode existir mais de um registro de membro vinculado ao mesmo user_id
-      // (ex.: duplicidade histórica). Para o portal, usamos o mais recente.
+      // Buscar TODOS os registros de membro vinculados ao user_id
+      // e agregar suas member_functions para cobrir casos de família
+      // compartilhando o mesmo user_id (ex.: mãe + filha).
       const { data, error } = await supabase
         .from("members")
         .select(`
@@ -84,12 +85,45 @@ export const useMemberPortal = () => {
           )
         `)
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data;
-      return (row ?? null) as unknown as MemberProfile | null;
+      if (!data || data.length === 0) return null;
+
+      // Usar o primeiro registro (mais recente) como perfil principal,
+      // mas agregar member_functions de TODOS os registros
+      const primary = data[0] as any;
+      const allFunctions: MemberPermission[] = [];
+      const seenFnIds = new Set<string>();
+
+      for (const member of data as any[]) {
+        if (member.member_functions) {
+          for (const fn of member.member_functions) {
+            if (!seenFnIds.has(fn.id)) {
+              seenFnIds.add(fn.id);
+              allFunctions.push(fn);
+            }
+          }
+        }
+      }
+
+      // Se o perfil principal não tem funções mas outro membro sim,
+      // usar o membro que tem funções como perfil principal
+      const primaryHasFunctions = (primary.member_functions?.length ?? 0) > 0;
+      let profileToUse = primary;
+      if (!primaryHasFunctions && allFunctions.length > 0) {
+        const memberWithFunctions = (data as any[]).find(
+          (m) => m.member_functions && m.member_functions.length > 0
+        );
+        if (memberWithFunctions) {
+          profileToUse = memberWithFunctions;
+        }
+      }
+
+      return {
+        ...profileToUse,
+        member_functions: allFunctions,
+      } as unknown as MemberProfile;
     },
     enabled: !!user?.id,
   });
