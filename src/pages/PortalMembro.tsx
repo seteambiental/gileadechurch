@@ -98,6 +98,20 @@ const PortalMembro = () => {
     enabled: !!memberProfile?.id,
   });
 
+  // Check if member is enrolled in casais course
+  const { data: hasCasaisCurso } = useQuery({
+    queryKey: ["portal-has-casais-curso", memberProfile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("casais_inscritos")
+        .select("id", { count: "exact", head: true })
+        .or(`membro_masculino_id.eq.${memberProfile!.id},membro_feminino_id.eq.${memberProfile!.id}`)
+        .eq("status", "aprovado");
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Show check-me prompt when near church and has kids
   useEffect(() => {
     if (!geoLoading && isNearChurch && hasKids && !checkMeDismissed) {
