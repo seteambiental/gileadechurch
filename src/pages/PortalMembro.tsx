@@ -46,6 +46,7 @@ import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidatu
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 import { PortalInscricoesTab } from "@/components/portal/PortalInscricoesTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
+import { PortalCursoCasaisTab } from "@/components/portal/PortalCursoCasaisTab";
 
 interface MenuItemConfig {
   id: string;
