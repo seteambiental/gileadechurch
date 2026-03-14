@@ -1147,11 +1147,20 @@ export const EncontroFormDialog = ({
                     <FormControl>
                       <Input
                         type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
+                        inputMode="decimal"
                         placeholder=""
                         value={field.value === 0 ? "" : field.value}
-                        onChange={(e) => handleNumericInput(e, field.onChange)}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(",", ".");
+                          if (raw === "" || raw === "0") {
+                            field.onChange(0);
+                            return;
+                          }
+                          if (/^\d*\.?\d*$/.test(raw)) {
+                            const parsed = parseFloat(raw);
+                            field.onChange(isNaN(parsed) ? 0 : parsed);
+                          }
+                        }}
                         className="[appearance:textfield]"
                       />
                     </FormControl>
