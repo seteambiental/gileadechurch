@@ -29,6 +29,7 @@ interface PortalLideresCasaisMinisterioProps {
   isLider: boolean;
   canEdit: boolean;
   portalAccess: PortalAccess | null;
+  onSubNavChange?: (backFn: (() => void) | null) => void;
 }
 
 interface MenuCard {
