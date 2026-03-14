@@ -37,6 +37,7 @@ import {
   Globe,
   Cake,
   ArrowRightLeft,
+  Swords,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
