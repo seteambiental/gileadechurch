@@ -38,6 +38,7 @@ import { useUserAccess } from "@/hooks/useUserAccess";
 import { PortalLideresAgendaTab } from "@/components/portal-lideres/PortalLideresAgendaTab";
 import { PortalLideresIndicadores } from "@/components/portal-lideres/PortalLideresIndicadores";
 import { PortalLideresMinisterio } from "@/components/portal-lideres/PortalLideresMinisterio";
+import { PortalLideresCasaisMinisterio } from "@/components/portal-lideres/PortalLideresCasaisMinisterio";
 import { PortalLideresKidsMinisterio } from "@/components/portal-lideres/PortalLideresKidsMinisterio";
 import { PortalLideresCasaRefugio } from "@/components/portal-lideres/PortalLideresCasaRefugio";
 import { PortalLideresCondominio } from "@/components/portal-lideres/PortalLideresCondominio";
