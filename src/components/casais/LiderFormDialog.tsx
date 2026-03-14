@@ -72,7 +72,7 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
   const resetForm = () => {
     setMembroMasculinoId("");
     setMembroFemininoId("");
-    setFuncao("lider");
+    setFuncao("professor");
   };
 
   return (
