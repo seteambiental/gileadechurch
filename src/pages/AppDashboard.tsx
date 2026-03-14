@@ -92,7 +92,7 @@ const ministries = [
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
-  { icon: Shield, title: "Jiu-Jitsu", description: "Artes marciais", path: "/ministerio/jiujitsu" },
+  { icon: Swords, title: "Jiu-Jitsu", description: "Artes marciais", path: "/ministerio/jiujitsu" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
