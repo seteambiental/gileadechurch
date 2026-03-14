@@ -51,6 +51,8 @@ export function CasaisCasaisTab() {
   const [selectedTurma, setSelectedTurma] = useState<any>(null);
   const [editingCasal, setEditingCasal] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [changingTurmaCasal, setChangingTurmaCasal] = useState<any>(null);
+  const [newTurmaId, setNewTurmaId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
