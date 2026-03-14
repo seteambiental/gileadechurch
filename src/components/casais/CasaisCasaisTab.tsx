@@ -365,6 +365,41 @@ export function CasaisCasaisTab() {
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleDelete}
       />
+
+      <Dialog open={!!changingTurmaCasal} onOpenChange={(open) => { if (!open) { setChangingTurmaCasal(null); setNewTurmaId(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Turma</DialogTitle>
+            <DialogDescription>
+              Selecione a nova turma para {changingTurmaCasal?.membro_masculino?.full_name || changingTurmaCasal?.nome_masculino || "este casal"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Turma atual</Label>
+              <p className="text-sm text-muted-foreground">{changingTurmaCasal?.turma?.nome || "-"}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nova turma *</Label>
+              <Select value={newTurmaId} onValueChange={setNewTurmaId}>
+                <SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger>
+                <SelectContent>
+                  {turmasAtivas.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setChangingTurmaCasal(null); setNewTurmaId(""); }}>Cancelar</Button>
+              <Button onClick={handleChangeTurma} disabled={!newTurmaId || newTurmaId === changingTurmaCasal?.turma_id}>
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
