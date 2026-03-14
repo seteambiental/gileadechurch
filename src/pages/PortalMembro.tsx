@@ -239,6 +239,17 @@ const PortalMembro = () => {
     color: "hsl(340, 75%, 55%)",
   });
 
+  // Curso de Casais
+  if (hasCasaisCurso) {
+    menuItems.push({
+      id: "curso-casais",
+      label: "Curso de Casais",
+      subtitle: "Materiais e turma",
+      icon: GraduationCap,
+      color: "hsl(350, 70%, 50%)",
+    });
+  }
+
   // Ministérios do membro
   memberMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
