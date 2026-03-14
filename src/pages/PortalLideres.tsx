@@ -433,7 +433,7 @@ const PortalLideres = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setActiveSection(null)}
+                onClick={handleHeaderBack}
                 className="text-foreground -ml-2"
               >
                 <ArrowLeft className="w-5 h-5" />
