@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
 
     const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
     const defaultPassword = cpfDigits.length >= 6
-      ? cpfDigits.slice(0, 6)
+      ? cpfDigits.slice(0, 6) + "Gc!"
       : generateSecurePassword(14);
 
     // Verificar se membro já tem user_id vinculado
