@@ -51,7 +51,7 @@ function gerarMensagemBoasVindasMembro(nome: string, loginEmail: string, realEma
   const primeiroNome = nome.split(' ')[0];
 
   const senhaInfo = isCpfPassword
-    ? `🔑 Senha: *Os 6 primeiros dígitos do seu CPF*`
+    ? `🔑 Senha: *Os 6 primeiros dígitos do seu CPF + Gc!*\n_(Exemplo: se CPF começa com 123456, a senha é 123456Gc!)_`
     : `🔑 Senha temporária foi enviada separadamente. Consulte a secretaria.`;
 
   const loginInfo = isCpfLogin
