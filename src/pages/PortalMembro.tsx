@@ -22,6 +22,7 @@ import {
   Music,
   Church,
   ClipboardList,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,6 +46,7 @@ import { PortalCandidaturaServicoTab } from "@/components/portal/PortalCandidatu
 import { PortalKidsCheckinTab } from "@/components/portal/PortalKidsCheckinTab";
 import { PortalInscricoesTab } from "@/components/portal/PortalInscricoesTab";
 import { CheckMePrompt } from "@/components/portal/CheckMePrompt";
+import { PortalCursoCasaisTab } from "@/components/portal/PortalCursoCasaisTab";
 
 interface MenuItemConfig {
   id: string;
@@ -92,6 +94,20 @@ const PortalMembro = () => {
         .eq("responsavel_id", memberProfile!.id)
         .not("birth_date", "is", null);
       return (countDirect || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
+  // Check if member is enrolled in casais course
+  const { data: hasCasaisCurso } = useQuery({
+    queryKey: ["portal-has-casais-curso", memberProfile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("casais_inscritos")
+        .select("id", { count: "exact", head: true })
+        .or(`membro_masculino_id.eq.${memberProfile!.id},membro_feminino_id.eq.${memberProfile!.id}`)
+        .eq("status", "aprovado");
+      return (count || 0) > 0;
     },
     enabled: !!memberProfile?.id,
   });
@@ -223,6 +239,17 @@ const PortalMembro = () => {
     color: "hsl(340, 75%, 55%)",
   });
 
+  // Curso de Casais
+  if (hasCasaisCurso) {
+    menuItems.push({
+      id: "curso-casais",
+      label: "Curso de Casais",
+      subtitle: "Materiais e turma",
+      icon: GraduationCap,
+      color: "hsl(350, 70%, 50%)",
+    });
+  }
+
   // Ministérios do membro
   memberMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
@@ -270,6 +297,8 @@ const PortalMembro = () => {
     switch (activeSection) {
       case "agenda":
         return <PortalAgendaTab />;
+      case "curso-casais":
+        return <PortalCursoCasaisTab memberId={memberProfile.id} />;
       case "inscricoes":
         return <PortalInscricoesTab />;
       case "financas":

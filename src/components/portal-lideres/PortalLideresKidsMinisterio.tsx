@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +59,7 @@ interface Props {
   canEdit: boolean;
   portalAccess: PortalAccess | null;
   memberId: string;
+  onSubNavChange?: (backFn: (() => void) | null) => void;
 }
 
 export const PortalLideresKidsMinisterio = ({
@@ -68,11 +69,21 @@ export const PortalLideresKidsMinisterio = ({
   canEdit,
   portalAccess,
   memberId,
+  onSubNavChange,
 }: Props) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+
+  // Notify parent about sub-navigation state
+  useEffect(() => {
+    if (activeSection) {
+      onSubNavChange?.(() => setActiveSection(null));
+    } else {
+      onSubNavChange?.(null);
+    }
+  }, [activeSection, onSubNavChange]);
 
   // Detect kids role for current member
   const { data: kidsRole } = useQuery({

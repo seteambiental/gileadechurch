@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ interface PortalLideresCasaisMinisterioProps {
   isLider: boolean;
   canEdit: boolean;
   portalAccess: PortalAccess | null;
+  onSubNavChange?: (backFn: (() => void) | null) => void;
 }
 
 interface MenuCard {
@@ -90,9 +91,19 @@ export const PortalLideresCasaisMinisterio = ({
   isLider,
   canEdit,
   portalAccess,
+  onSubNavChange,
 }: PortalLideresCasaisMinisterioProps) => {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
+
+  // Notify parent about sub-navigation state
+  useEffect(() => {
+    if (activeTab) {
+      onSubNavChange?.(() => setActiveTab(null));
+    } else {
+      onSubNavChange?.(null);
+    }
+  }, [activeTab, onSubNavChange]);
 
   // Stats
   const { data: stats } = useQuery({
