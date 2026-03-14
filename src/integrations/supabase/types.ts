@@ -2770,6 +2770,184 @@ export type Database = {
           },
         ]
       }
+      jiujitsu_alunos: {
+        Row: {
+          ativo: boolean
+          bairro: string | null
+          cep: string | null
+          cidade: string | null
+          contato_emergencia_nome: string | null
+          contato_emergencia_telefone: string | null
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          faixa: string
+          foto_url: string | null
+          graus: number
+          id: string
+          member_id: string | null
+          nome: string
+          telefone: string | null
+          tipo: string
+          tipo_sanguineo: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          faixa?: string
+          foto_url?: string | null
+          graus?: number
+          id?: string
+          member_id?: string | null
+          nome: string
+          telefone?: string | null
+          tipo?: string
+          tipo_sanguineo?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          bairro?: string | null
+          cep?: string | null
+          cidade?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          faixa?: string
+          foto_url?: string | null
+          graus?: number
+          id?: string
+          member_id?: string | null
+          nome?: string
+          telefone?: string | null
+          tipo?: string
+          tipo_sanguineo?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_alunos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_alunos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jiujitsu_graduacoes: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          data_graduacao: string
+          faixa_anterior: string | null
+          faixa_nova: string
+          graus: number
+          id: string
+          observacoes: string | null
+          professor: string | null
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          data_graduacao: string
+          faixa_anterior?: string | null
+          faixa_nova: string
+          graus?: number
+          id?: string
+          observacoes?: string | null
+          professor?: string | null
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          data_graduacao?: string
+          faixa_anterior?: string | null
+          faixa_nova?: string
+          graus?: number
+          id?: string
+          observacoes?: string | null
+          professor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_graduacoes_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "jiujitsu_alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jiujitsu_pagamentos: {
+        Row: {
+          aluno_id: string
+          created_at: string
+          data_pagamento: string | null
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          status: string
+          valor: number
+        }
+        Insert: {
+          aluno_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          status?: string
+          valor?: number
+        }
+        Update: {
+          aluno_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          status?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_pagamentos_aluno_id_fkey"
+            columns: ["aluno_id"]
+            isOneToOne: false
+            referencedRelation: "jiujitsu_alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_checkins: {
         Row: {
           check_in_at: string | null
