@@ -14,16 +14,16 @@ import { useEffect } from "react";
 export default function ContingenciaPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { hasFullAccess, loading } = useUserAccess();
+  const { isAdmin, loading } = useUserAccess(user?.id);
 
   useEffect(() => {
-    if (!loading && (!user || !hasFullAccess)) {
+    if (!loading && (!user || !isAdmin)) {
       navigate("/app");
     }
-  }, [user, hasFullAccess, loading, navigate]);
+  }, [user, isAdmin, loading, navigate]);
 
   if (loading) return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
-  if (!hasFullAccess) return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen bg-background">
