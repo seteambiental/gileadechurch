@@ -1215,6 +1215,12 @@ const Auth = () => {
                 {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
               </div>
 
+              <div className="p-3 bg-muted/50 rounded-lg border border-border text-xs text-muted-foreground">
+                <p className="font-medium text-foreground mb-1">💡 Sua senha padrão:</p>
+                <p>Primeira letra do nome (maiúscula) + primeira letra do sobrenome (minúscula) + 6 primeiros dígitos do CPF.</p>
+                <p className="mt-1 italic">Exemplo: Alessandro Costa, CPF 030.073... → <strong>Ac030073</strong></p>
+              </div>
+
               <div className="text-right">
                 <button
                   type="button"

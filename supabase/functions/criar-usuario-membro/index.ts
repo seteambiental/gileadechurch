@@ -166,16 +166,17 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Buscar CPF do membro para gerar senha padrão (6 primeiros dígitos)
+    // Buscar CPF e nome do membro para gerar senha padrão
     const { data: memberCpfData } = await supabaseAdmin
       .from("members")
-      .select("cpf")
+      .select("cpf, full_name")
       .eq("id", member_id)
       .single();
 
     const cpfDigits = (memberCpfData?.cpf || "").replace(/\D/g, "");
-    const defaultPassword = cpfDigits.length >= 6
-      ? cpfDigits.slice(0, 6) + "Gc!"
+    const iniciais = gerarIniciais(memberCpfData?.full_name || "");
+    const defaultPassword = cpfDigits.length >= 6 && iniciais.length === 2
+      ? iniciais + cpfDigits.slice(0, 6)
       : generateSecurePassword(14);
 
     // Verificar se membro já tem user_id vinculado
