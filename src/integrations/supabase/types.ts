@@ -2793,6 +2793,7 @@ export type Database = {
           telefone: string | null
           tipo: string
           tipo_sanguineo: string | null
+          turma_id: string | null
           updated_at: string
           whatsapp: string | null
         }
@@ -2818,6 +2819,7 @@ export type Database = {
           telefone?: string | null
           tipo?: string
           tipo_sanguineo?: string | null
+          turma_id?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -2843,6 +2845,7 @@ export type Database = {
           telefone?: string | null
           tipo?: string
           tipo_sanguineo?: string | null
+          turma_id?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
@@ -2859,6 +2862,13 @@ export type Database = {
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_alunos_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "jiujitsu_turmas"
             referencedColumns: ["id"]
           },
         ]
@@ -2907,6 +2917,76 @@ export type Database = {
           },
         ]
       }
+      jiujitsu_inscricoes: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          email: string | null
+          id: string
+          member_id: string | null
+          nome: string
+          observacoes: string | null
+          status: string
+          tipo: string
+          turma_id: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          member_id?: string | null
+          nome: string
+          observacoes?: string | null
+          status?: string
+          tipo?: string
+          turma_id?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string
+          member_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          status?: string
+          tipo?: string
+          turma_id?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_inscricoes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_inscricoes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_inscricoes_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "jiujitsu_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jiujitsu_pagamentos: {
         Row: {
           aluno_id: string
@@ -2944,6 +3024,63 @@ export type Database = {
             columns: ["aluno_id"]
             isOneToOne: false
             referencedRelation: "jiujitsu_alunos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jiujitsu_turmas: {
+        Row: {
+          ativo: boolean
+          categoria_idade: string
+          created_at: string
+          dia_semana: string | null
+          faixa_maxima: string
+          faixa_minima: string
+          horario: string | null
+          id: string
+          lider_id: string | null
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_idade?: string
+          created_at?: string
+          dia_semana?: string | null
+          faixa_maxima?: string
+          faixa_minima?: string
+          horario?: string | null
+          id?: string
+          lider_id?: string | null
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria_idade?: string
+          created_at?: string
+          dia_semana?: string | null
+          faixa_maxima?: string
+          faixa_minima?: string
+          horario?: string | null
+          id?: string
+          lider_id?: string | null
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_turmas_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_turmas_lider_id_fkey"
+            columns: ["lider_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
             referencedColumns: ["id"]
           },
         ]
