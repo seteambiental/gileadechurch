@@ -23,7 +23,7 @@ interface LiderFormDialogProps {
 export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialogProps) {
   const [membroMasculinoId, setMembroMasculinoId] = useState("");
   const [membroFemininoId, setMembroFemininoId] = useState("");
-  const [funcao, setFuncao] = useState("lider");
+  const [funcao, setFuncao] = useState("professor");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
