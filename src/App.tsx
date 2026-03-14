@@ -33,6 +33,7 @@ import FinanceiroPage from "./pages/FinanceiroPage";
 import TermosPage from "./pages/TermosPage";
 import PrivacidadePage from "./pages/PrivacidadePage";
 import JiuJitsuPage from "./pages/JiuJitsuPage";
+import ContingenciaPage from "./pages/ContingenciaPage";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/financeiro" element={<FinanceiroPage />} />
             <Route path="/privacidade" element={<PrivacidadePage />} />
             <Route path="/ministerio/jiujitsu" element={<JiuJitsuPage />} />
+            <Route path="/contingencia" element={<ContingenciaPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
