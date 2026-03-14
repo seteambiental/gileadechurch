@@ -26,7 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart, ArrowRightLeft } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { includesNormalized } from "@/lib/text-utils";
