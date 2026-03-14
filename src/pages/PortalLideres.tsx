@@ -401,6 +401,7 @@ const PortalLideres = () => {
                 isLider={ministry.isLider}
                 canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
                 portalAccess={portalAccess}
+                onSubNavChange={setSubNavBackFn}
               />
             );
           }
