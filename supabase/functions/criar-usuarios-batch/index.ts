@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
         // Usar 6 primeiros dígitos do CPF como senha padrão
         const cpfDigits = (member.cpf || "").replace(/\D/g, "");
         const defaultPassword = cpfDigits.length >= 6
-          ? cpfDigits.slice(0, 6)
+          ? cpfDigits.slice(0, 6) + "Gc!"
           : generateSecurePassword(14);
 
         // Criar novo usuário
