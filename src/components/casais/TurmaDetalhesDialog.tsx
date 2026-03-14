@@ -271,7 +271,9 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
                           <TableCell>{lider.membro_masculino?.full_name || "-"}</TableCell>
                           <TableCell>{lider.membro_feminino?.full_name || "-"}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{lider.funcao || "Líder"}</Badge>
+                            <Badge variant="outline">
+                              {lider.funcao === "professor_treinamento" ? "Professor em Treinamento" : lider.funcao === "professor" ? "Professor" : lider.funcao || "Professor"}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
