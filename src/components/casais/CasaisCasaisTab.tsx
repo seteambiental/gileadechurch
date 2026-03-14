@@ -26,7 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart, ArrowRightLeft } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { includesNormalized } from "@/lib/text-utils";
@@ -47,6 +51,8 @@ export function CasaisCasaisTab() {
   const [selectedTurma, setSelectedTurma] = useState<any>(null);
   const [editingCasal, setEditingCasal] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [changingTurmaCasal, setChangingTurmaCasal] = useState<any>(null);
+  const [newTurmaId, setNewTurmaId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -115,6 +121,22 @@ export function CasaisCasaisTab() {
     setSelectedCasal(casal);
     setSelectedTurma(casal.turma);
     setIsCertificadoOpen(true);
+  };
+
+  const handleChangeTurma = async () => {
+    if (!changingTurmaCasal || !newTurmaId) return;
+    const { error } = await supabase
+      .from("casais_inscritos")
+      .update({ turma_id: newTurmaId })
+      .eq("id", changingTurmaCasal.id);
+    if (error) {
+      toast({ title: "Erro ao alterar turma", variant: "destructive" });
+    } else {
+      toast({ title: "Turma alterada com sucesso" });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
+    }
+    setChangingTurmaCasal(null);
+    setNewTurmaId("");
   };
 
   const filteredCasais = casais?.filter((c) => {
@@ -252,27 +274,32 @@ export function CasaisCasaisTab() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditCasal(casal)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleEmitirCertificado(casal)}>
-                            <Award className="w-4 h-4 mr-2" />
-                            Emitir Certificado
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDeleteId(casal.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Remover
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditCasal(casal)} title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => { setChangingTurmaCasal(casal); setNewTurmaId(casal.turma_id || ""); }}>
+                              <ArrowRightLeft className="w-4 h-4 mr-2" />
+                              Alterar Turma
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEmitirCertificado(casal)}>
+                              <Award className="w-4 h-4 mr-2" />
+                              Emitir Certificado
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setDeleteId(casal.id)} className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Remover
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -338,6 +365,41 @@ export function CasaisCasaisTab() {
         onOpenChange={(open) => !open && setDeleteId(null)}
         onConfirm={handleDelete}
       />
+
+      <Dialog open={!!changingTurmaCasal} onOpenChange={(open) => { if (!open) { setChangingTurmaCasal(null); setNewTurmaId(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Turma</DialogTitle>
+            <DialogDescription>
+              Selecione a nova turma para {changingTurmaCasal?.membro_masculino?.full_name || changingTurmaCasal?.nome_masculino || "este casal"}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Turma atual</Label>
+              <p className="text-sm text-muted-foreground">{changingTurmaCasal?.turma?.nome || "-"}</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Nova turma *</Label>
+              <Select value={newTurmaId} onValueChange={setNewTurmaId}>
+                <SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger>
+                <SelectContent>
+                  {turmasAtivas.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setChangingTurmaCasal(null); setNewTurmaId(""); }}>Cancelar</Button>
+              <Button onClick={handleChangeTurma} disabled={!newTurmaId || newTurmaId === changingTurmaCasal?.turma_id}>
+                <ArrowRightLeft className="w-4 h-4 mr-2" />
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
