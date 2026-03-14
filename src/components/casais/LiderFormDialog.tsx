@@ -10,7 +10,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ClearableSelect } from "@/components/ui/clearable-select";
 
@@ -23,7 +22,7 @@ interface LiderFormDialogProps {
 export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialogProps) {
   const [membroMasculinoId, setMembroMasculinoId] = useState("");
   const [membroFemininoId, setMembroFemininoId] = useState("");
-  const [funcao, setFuncao] = useState("lider");
+  const [funcao, setFuncao] = useState("professor");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,9 +59,9 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
     const { error } = await supabase.from("casais_lideres").insert(payload);
 
     if (error) {
-      toast({ title: "Erro ao adicionar líder", variant: "destructive" });
+      toast({ title: "Erro ao adicionar professor", variant: "destructive" });
     } else {
-      toast({ title: "Líder adicionado com sucesso" });
+      toast({ title: "Professor adicionado com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["casais_lideres"] });
       resetForm();
       onOpenChange(false);
@@ -72,14 +71,14 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
   const resetForm = () => {
     setMembroMasculinoId("");
     setMembroFemininoId("");
-    setFuncao("lider");
+    setFuncao("professor");
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Adicionar Líder</DialogTitle>
+          <DialogTitle>Adicionar Professor</DialogTitle>
           <DialogDescription>
             Selecione o esposo e/ou a esposa e informe a função.
           </DialogDescription>
@@ -115,12 +114,15 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
 
           <div className="space-y-2">
             <Label htmlFor="funcao">Função</Label>
-            <Input
+            <select
               id="funcao"
               value={funcao}
               onChange={(e) => setFuncao(e.target.value)}
-              placeholder="Ex: Líder, Facilitador"
-            />
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="professor">Professor</option>
+              <option value="professor_treinamento">Professor em Treinamento</option>
+            </select>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

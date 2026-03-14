@@ -168,7 +168,7 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
               </TabsTrigger>
               <TabsTrigger value="lideres" className="flex items-center gap-2">
                 <UserCheck className="w-4 h-4" />
-                Líderes ({lideres?.length || 0})
+                Professores ({lideres?.length || 0})
               </TabsTrigger>
             </TabsList>
 
@@ -248,12 +248,12 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
               <div className="flex justify-end mb-4">
                 <Button size="sm" onClick={() => setIsLiderFormOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Líder
+                  Adicionar Professor
                 </Button>
               </div>
 
               {lideres?.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">Nenhum líder cadastrado</p>
+                <p className="text-center py-8 text-muted-foreground">Nenhum professor cadastrado</p>
               ) : (
                 <div className="rounded-md border border-border overflow-hidden">
                   <Table>
@@ -271,7 +271,9 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
                           <TableCell>{lider.membro_masculino?.full_name || "-"}</TableCell>
                           <TableCell>{lider.membro_feminino?.full_name || "-"}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{lider.funcao || "Líder"}</Badge>
+                            <Badge variant="outline">
+                              {lider.funcao === "professor_treinamento" ? "Professor em Treinamento" : lider.funcao === "professor" ? "Professor" : lider.funcao || "Professor"}
+                            </Badge>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
