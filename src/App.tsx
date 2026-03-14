@@ -32,6 +32,7 @@ import NotFound from "./pages/NotFound";
 import FinanceiroPage from "./pages/FinanceiroPage";
 import TermosPage from "./pages/TermosPage";
 import PrivacidadePage from "./pages/PrivacidadePage";
+import JiuJitsuPage from "./pages/JiuJitsuPage";
 
 const queryClient = new QueryClient();
 
