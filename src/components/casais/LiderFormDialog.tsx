@@ -60,9 +60,9 @@ export function LiderFormDialog({ open, onOpenChange, turmaId }: LiderFormDialog
     const { error } = await supabase.from("casais_lideres").insert(payload);
 
     if (error) {
-      toast({ title: "Erro ao adicionar líder", variant: "destructive" });
+      toast({ title: "Erro ao adicionar professor", variant: "destructive" });
     } else {
-      toast({ title: "Líder adicionado com sucesso" });
+      toast({ title: "Professor adicionado com sucesso" });
       queryClient.invalidateQueries({ queryKey: ["casais_lideres"] });
       resetForm();
       onOpenChange(false);
