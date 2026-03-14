@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -24,6 +24,7 @@ import { includesNormalized } from "@/lib/text-utils";
 import { useToast } from "@/hooks/use-toast";
 import { InscricaoCompletaFormDialog } from "./InscricaoCompletaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 export function CasaisInscricoesTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,6 +34,13 @@ export function CasaisInscricoesTab() {
   const [approvalTurmaId, setApprovalTurmaId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Column filters
+  const [filterEsposo, setFilterEsposo] = useState<Set<string>>(new Set());
+  const [filterEsposa, setFilterEsposa] = useState<Set<string>>(new Set());
+  const [filterModalidade, setFilterModalidade] = useState<Set<string>>(new Set());
+  const [filterCongrega, setFilterCongrega] = useState<Set<string>>(new Set());
+  const [filterStatus, setFilterStatus] = useState<Set<string>>(new Set());
 
   const { data: turmas } = useQuery({
     queryKey: ["casais_turmas"],
@@ -68,6 +76,56 @@ export function CasaisInscricoesTab() {
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const modalidadeLabel = (m: string | null) => {
+    const map: Record<string, string> = {
+      uniao_estavel: "União Estável",
+      morando_juntos: "Morando Juntos",
+      civil_religioso: "Civil e Religioso",
+      so_civil: "Só Civil",
+    };
+    return m ? map[m] || m : "-";
+  };
+
+  const getNomeEsposo = (insc: any) => insc.membro_masculino?.full_name || insc.nome_masculino || "-";
+  const getNomeEsposa = (insc: any) => insc.membro_feminino?.full_name || insc.nome_feminino || "-";
+  const getCongregaLabel = (insc: any) => insc.congrega_gileade ? "Sim" : "Não";
+
+  // Compute unique options for each column filter
+  const columnOptions = useMemo(() => {
+    if (!inscricoes) return { esposos: [], esposas: [], modalidades: [], congrega: [], status: [] };
+    const esposos = [...new Set(inscricoes.map(getNomeEsposo))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const esposas = [...new Set(inscricoes.map(getNomeEsposa))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const modalidades = [...new Set(inscricoes.map((i) => modalidadeLabel(i.modalidade_casamento)))].sort();
+    const congrega = [...new Set(inscricoes.map(getCongregaLabel))].sort();
+    const status = ["Pendente"];
+    return { esposos, esposas, modalidades, congrega, status };
+  }, [inscricoes]);
+
+  // Initialize filters when data loads
+  useMemo(() => {
+    if (filterEsposo.size === 0 && columnOptions.esposos.length > 0) setFilterEsposo(new Set(columnOptions.esposos));
+    if (filterEsposa.size === 0 && columnOptions.esposas.length > 0) setFilterEsposa(new Set(columnOptions.esposas));
+    if (filterModalidade.size === 0 && columnOptions.modalidades.length > 0) setFilterModalidade(new Set(columnOptions.modalidades));
+    if (filterCongrega.size === 0 && columnOptions.congrega.length > 0) setFilterCongrega(new Set(columnOptions.congrega));
+    if (filterStatus.size === 0 && columnOptions.status.length > 0) setFilterStatus(new Set(columnOptions.status));
+  }, [columnOptions]);
+
+  const filteredInscricoes = useMemo(() => {
+    if (!inscricoes) return [];
+    return inscricoes
+      .filter((c) => {
+        const nomeM = getNomeEsposo(c);
+        const nomeF = getNomeEsposa(c);
+        if (searchTerm && !includesNormalized(nomeM, searchTerm) && !includesNormalized(nomeF, searchTerm)) return false;
+        if (filterEsposo.size < columnOptions.esposos.length && !filterEsposo.has(nomeM)) return false;
+        if (filterEsposa.size < columnOptions.esposas.length && !filterEsposa.has(nomeF)) return false;
+        if (filterModalidade.size < columnOptions.modalidades.length && !filterModalidade.has(modalidadeLabel(c.modalidade_casamento))) return false;
+        if (filterCongrega.size < columnOptions.congrega.length && !filterCongrega.has(getCongregaLabel(c))) return false;
+        return true;
+      })
+      .sort((a, b) => getNomeEsposo(a).localeCompare(getNomeEsposo(b), "pt-BR"));
+  }, [inscricoes, searchTerm, filterEsposo, filterEsposa, filterModalidade, filterCongrega, filterStatus, columnOptions]);
+
   const handleDelete = async () => {
     if (!deleteId) return;
     const { error } = await supabase.from("casais_inscritos").delete().eq("id", deleteId);
@@ -101,23 +159,7 @@ export function CasaisInscricoesTab() {
     }
   };
 
-  const filteredInscricoes = inscricoes?.filter((c) => {
-    const nomeM = c.membro_masculino?.full_name || c.nome_masculino || "";
-    const nomeF = c.membro_feminino?.full_name || c.nome_feminino || "";
-    return includesNormalized(nomeM, searchTerm) || includesNormalized(nomeF, searchTerm);
-  });
-
   const turmasAtivas = turmas?.filter((t) => !!t?.id && !!t?.ativo) || [];
-
-  const modalidadeLabel = (m: string | null) => {
-    const map: Record<string, string> = {
-      uniao_estavel: "União Estável",
-      morando_juntos: "Morando Juntos",
-      civil_religioso: "Civil e Religioso",
-      so_civil: "Só Civil",
-    };
-    return m ? map[m] || m : "-";
-  };
 
   return (
     <Card className="bg-card border-border">
@@ -137,10 +179,10 @@ export function CasaisInscricoesTab() {
           <ExportButton
             data={filteredInscricoes || []}
             columns={[
-              { header: "Esposo", accessor: (r) => r.membro_masculino?.full_name || r.nome_masculino || "-" },
-              { header: "Esposa", accessor: (r) => r.membro_feminino?.full_name || r.nome_feminino || "-" },
-              { header: "Modalidade", accessor: (r) => modalidadeLabel(r.modalidade_casamento) },
-              { header: "Congrega", accessor: (r) => r.congrega_gileade ? "Sim" : "Não" },
+              { header: "Esposo", accessor: (r: any) => getNomeEsposo(r) },
+              { header: "Esposa", accessor: (r: any) => getNomeEsposa(r) },
+              { header: "Modalidade", accessor: (r: any) => modalidadeLabel(r.modalidade_casamento) },
+              { header: "Congrega", accessor: (r: any) => getCongregaLabel(r) },
             ]}
             filename="inscricoes-pendentes-casais"
             title="Inscrições Pendentes"
@@ -158,11 +200,21 @@ export function CasaisInscricoesTab() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Nome Completo do Esposo</TableHead>
-                  <TableHead>Nome Completo da Esposa</TableHead>
-                  <TableHead className="hidden md:table-cell">Modalidade</TableHead>
-                  <TableHead className="hidden lg:table-cell">Congrega</TableHead>
-                  <TableHead className="hidden md:table-cell">Status</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Nome do Esposo" options={columnOptions.esposos} selected={filterEsposo} onChange={setFilterEsposo} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Nome da Esposa" options={columnOptions.esposas} selected={filterEsposa} onChange={setFilterEsposa} />
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <ColumnFilterPopover title="Modalidade" options={columnOptions.modalidades} selected={filterModalidade} onChange={setFilterModalidade} />
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    <ColumnFilterPopover title="Congrega" options={columnOptions.congrega} selected={filterCongrega} onChange={setFilterCongrega} />
+                  </TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <ColumnFilterPopover title="Status" options={columnOptions.status} selected={filterStatus} onChange={setFilterStatus} />
+                  </TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -170,17 +222,17 @@ export function CasaisInscricoesTab() {
                 {filteredInscricoes?.map((insc) => (
                   <TableRow key={insc.id}>
                     <TableCell>
-                      <p className="font-medium">{insc.membro_masculino?.full_name || insc.nome_masculino || "-"}</p>
+                      <p className="font-medium">{getNomeEsposo(insc)}</p>
                       <p className="text-xs text-muted-foreground">{insc.whatsapp_masculino || insc.membro_masculino?.whatsapp || ""}</p>
                     </TableCell>
                     <TableCell>
-                      <p className="font-medium">{insc.membro_feminino?.full_name || insc.nome_feminino || "-"}</p>
+                      <p className="font-medium">{getNomeEsposa(insc)}</p>
                       <p className="text-xs text-muted-foreground">{insc.whatsapp_feminino || insc.membro_feminino?.whatsapp || ""}</p>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{modalidadeLabel(insc.modalidade_casamento)}</TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <Badge variant={insc.congrega_gileade ? "default" : "secondary"}>
-                        {insc.congrega_gileade ? "Sim" : "Não"}
+                        {getCongregaLabel(insc)}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -227,7 +279,6 @@ export function CasaisInscricoesTab() {
         turmas={turmasAtivas}
       />
 
-      {/* Dialog de Aprovação com seleção de turma */}
       <Dialog open={!!approvingId} onOpenChange={(open) => { if (!open) { setApprovingId(null); setApprovalTurmaId(""); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
