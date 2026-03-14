@@ -37,6 +37,7 @@ import {
   Globe,
   Cake,
   ArrowRightLeft,
+  Swords,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -66,6 +67,7 @@ const MINISTRY_COLORS: Record<string, string> = {
   "GT": "#eab308",                // Amarelo dourado (Sparkles)
   "Eventos e Impacto": "#7c3aed", // Violeta (Zap)
   "Intercessão": "#f97316",       // Laranja quente (HandHeart)
+  "Jiu-Jitsu": "#1e3a8a",          // Azul escuro (Swords)
   "Kids": "",                     // Usa gradient especial
   "Louvor": "#6366f1",            // Índigo (Music)
   "Mídia": "#0891b2",             // Ciano (Camera)
@@ -90,8 +92,8 @@ const ministries = [
   { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
   { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
   { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
-  
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
+  { icon: Swords, title: "Jiu-Jitsu", description: "Artes marciais", path: "/ministerio/jiujitsu" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
   { icon: Music, title: "Louvor", description: "Adoração e música", path: "/ministerio/louvor" },
   { icon: Camera, title: "Mídia", description: "Comunicação visual", path: "/ministerio/midia" },
