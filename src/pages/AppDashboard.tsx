@@ -67,6 +67,7 @@ const MINISTRY_COLORS: Record<string, string> = {
   "GT": "#eab308",                // Amarelo dourado (Sparkles)
   "Eventos e Impacto": "#7c3aed", // Violeta (Zap)
   "Intercessão": "#f97316",       // Laranja quente (HandHeart)
+  "Jiu-Jitsu": "#1e3a8a",          // Azul escuro (Swords)
   "Kids": "",                     // Usa gradient especial
   "Louvor": "#6366f1",            // Índigo (Music)
   "Mídia": "#0891b2",             // Ciano (Camera)
