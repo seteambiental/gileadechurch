@@ -40,6 +40,9 @@ export default function JiuJitsuPage() {
             <TabsTrigger value="turmas" className="flex items-center gap-1.5">
               <Layers className="h-4 w-4" /> Turmas
             </TabsTrigger>
+            <TabsTrigger value="inscricoes" className="flex items-center gap-1.5">
+              <ClipboardList className="h-4 w-4" /> Inscrições
+            </TabsTrigger>
             <TabsTrigger value="financeiro" className="flex items-center gap-1.5">
               <DollarSign className="h-4 w-4" /> Financeiro
             </TabsTrigger>
@@ -51,6 +54,7 @@ export default function JiuJitsuPage() {
           <TabsContent value="inicio"><JiuJitsuDashboard /></TabsContent>
           <TabsContent value="alunos"><JiuJitsuAlunosTab /></TabsContent>
           <TabsContent value="turmas"><JiuJitsuTurmasTab /></TabsContent>
+          <TabsContent value="inscricoes"><JiuJitsuInscricoesTab /></TabsContent>
           <TabsContent value="financeiro"><JiuJitsuFinanceiroTab /></TabsContent>
           <TabsContent value="graduacao"><JiuJitsuGraduacaoTab /></TabsContent>
         </Tabs>
