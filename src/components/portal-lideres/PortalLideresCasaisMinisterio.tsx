@@ -178,7 +178,7 @@ export const PortalLideresCasaisMinisterio = ({
               <CardContent className="pt-5 pb-4 flex flex-col items-center text-center gap-2">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center mb-1"
-                  style={{ backgroundColor: card.color + " / 0.15)" .replace("hsl(", "hsla(") }}
+                  style={{ backgroundColor: card.color.replace("hsl(", "hsla(").replace(")", ", 0.15)") }}
                 >
                   <Icon className="w-6 h-6" style={{ color: card.color }} />
                 </div>
