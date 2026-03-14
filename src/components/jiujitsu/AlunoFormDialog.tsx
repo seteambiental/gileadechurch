@@ -52,7 +52,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
     queryFn: async () => {
       const { data } = await supabase
         .from("members_safe")
-        .select("id, full_name, photo_url, whatsapp, data_nascimento")
+        .select("id, full_name, photo_url, whatsapp, birth_date")
         .ilike("full_name", `%${membroBusca}%`)
         .limit(10);
       return (data || []) as any[];
