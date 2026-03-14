@@ -51,10 +51,9 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
     enabled: tipoInscricao === "membro" && membroBusca.length >= 3,
     queryFn: async () => {
       const { data } = await supabase
-        .from("members")
+        .from("members_safe")
         .select("id, full_name, photo_url, whatsapp, data_nascimento")
         .ilike("full_name", `%${membroBusca}%`)
-        .eq("excluido", false)
         .limit(10);
       return (data || []) as any[];
     },
