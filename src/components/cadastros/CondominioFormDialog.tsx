@@ -81,10 +81,14 @@ const CondominioFormDialog = ({
   isSaving,
 }: CondominioFormDialogProps) => {
   const { user } = useAuth();
+  const { isAdmin, roles } = useUserAccess(user?.id);
   const { createMudanca, isCreating } = useMudancasPendentes();
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
   const [formDataToSave, setFormDataToSave] = useState<FormData | null>(null);
+
+  // Verifica se o usuário pode fazer alterações sem aprovação
+  const canBypassApproval = isAdmin || hasRoleSemAprovacao(roles);
 
   // Buscar o membro vinculado ao usuário atual
   const { data: currentMember } = useQuery({
