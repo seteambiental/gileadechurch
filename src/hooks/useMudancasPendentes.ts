@@ -56,7 +56,7 @@ export const acaoLabels: Record<string, string> = {
 export const FUNCTION_TYPES_SEM_APROVACAO = ["pastor_geral", "pastor_auxiliar"];
 
 // Roles que não precisam de aprovação (user_roles)
-export const ROLES_SEM_APROVACAO = ["admin", "pastor_geral", "pastor_auxiliar"];
+export const ROLES_SEM_APROVACAO = ["admin", "pastor_geral", "pastor_auxiliar", "lider_condominio"];
 
 // Função para verificar se um membro tem perfil que dispensa aprovação
 export async function isPerfilSemAprovacao(memberId: string): Promise<boolean> {

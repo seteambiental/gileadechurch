@@ -150,11 +150,22 @@ const CondominioFormDialog = ({
   }, [item, open, form]);
 
   const handleSubmit = async (data: FormData) => {
-    // Check for syndic changes that need approval
-    const leadershipChanges: PendingApproval[] = [];
-
     const newSindicoId = data.sindico_id && data.sindico_id !== "none" ? data.sindico_id : null;
     const newSindicoEsposaId = data.sindico_esposa_id && data.sindico_esposa_id !== "none" ? data.sindico_esposa_id : null;
+
+    // Se o usuário tem permissão para bypass, salvar diretamente
+    if (canBypassApproval) {
+      onSave({
+        name: formatNameField(data.name),
+        description: data.description || "",
+        sindico_id: newSindicoId,
+        sindico_esposa_id: newSindicoEsposaId,
+      });
+      return;
+    }
+
+    // Check for syndic changes that need approval
+    const leadershipChanges: PendingApproval[] = [];
 
     // Check síndico change
     if (item && newSindicoId !== item.sindico_id) {
