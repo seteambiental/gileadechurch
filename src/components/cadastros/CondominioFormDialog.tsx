@@ -7,7 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatNameField } from "@/lib/text-utils";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAprovadorId, useMudancasPendentes } from "@/hooks/useMudancasPendentes";
+import { getAprovadorId, useMudancasPendentes, hasRoleSemAprovacao } from "@/hooks/useMudancasPendentes";
+import { useUserAccess } from "@/hooks/useUserAccess";
 import {
   Dialog,
   DialogContent,
