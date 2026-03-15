@@ -395,7 +395,7 @@ const PortalLideres = () => {
                 canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
                 portalAccess={portalAccess}
                 memberId={memberProfile.id}
-                onSubNavChange={setSubNavBackFn}
+                onSubNavChange={handleSubNavChange}
               />
             );
           }
