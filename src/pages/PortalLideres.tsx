@@ -83,6 +83,11 @@ const PortalLideres = () => {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [subNavBackFn, setSubNavBackFn] = useState<(() => void) | null>(null);
 
+  // Wrapper to avoid React interpreting the function as a state updater
+  const handleSubNavChange = useCallback((backFn: (() => void) | null) => {
+    setSubNavBackFn(() => backFn);
+  }, []);
+
   const handleHeaderBack = () => {
     if (subNavBackFn) {
       subNavBackFn();
