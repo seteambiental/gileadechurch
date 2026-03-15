@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMemberPortal, PortalRole } from "@/hooks/useMemberPortal";
@@ -82,6 +82,11 @@ const PortalLideres = () => {
   const { isAdmin } = useUserAccess(user?.id);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [subNavBackFn, setSubNavBackFn] = useState<(() => void) | null>(null);
+
+  // Wrapper to avoid React interpreting the function as a state updater
+  const handleSubNavChange = useCallback((backFn: (() => void) | null) => {
+    setSubNavBackFn(() => backFn);
+  }, []);
 
   const handleHeaderBack = () => {
     if (subNavBackFn) {
@@ -390,7 +395,7 @@ const PortalLideres = () => {
                 canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
                 portalAccess={portalAccess}
                 memberId={memberProfile.id}
-                onSubNavChange={setSubNavBackFn}
+                onSubNavChange={handleSubNavChange}
               />
             );
           }
@@ -402,7 +407,7 @@ const PortalLideres = () => {
                 isLider={ministry.isLider}
                 canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
                 portalAccess={portalAccess}
-                onSubNavChange={setSubNavBackFn}
+                onSubNavChange={handleSubNavChange}
               />
             );
           }
@@ -414,7 +419,7 @@ const PortalLideres = () => {
               isLider={ministry.isLider}
               canEdit={ministry.isLider || portalAccess!.role === "pastor_geral" || portalAccess!.role === "pastor_auxiliar"}
               portalAccess={portalAccess}
-              onSubNavChange={setSubNavBackFn}
+              onSubNavChange={handleSubNavChange}
             />
           );
         }
