@@ -93,8 +93,15 @@ Deno.serve(async (req) => {
       memberByNome.set(normalizeNome(m.full_name), m.id);
     }
 
+    // Member IDs to exclude from sync (not actual students)
+    const excludedMemberIds = new Set([
+      "7eea844a-9ca7-4797-a86e-7c181ee0c34d", // Giovana de Deus Derzette
+      "e50a614b-ad60-4a63-a7ab-7690ed6e3bf7", // Carol. Silvia Carolina da Silva Mielevski
+    ]);
+
     let synced = 0;
     let skipped = 0;
+    const notFound: string[] = [];
 
     for (const aluno of alunos) {
       // Try match by CPF first, then by name
@@ -105,6 +112,13 @@ Deno.serve(async (req) => {
       }
 
       if (!memberId) {
+        notFound.push(aluno.nome_completo || aluno.nome || "sem nome");
+        skipped++;
+        continue;
+      }
+
+      // Skip excluded members
+      if (excludedMemberIds.has(memberId)) {
         skipped++;
         continue;
       }
@@ -134,8 +148,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (notFound.length > 0) {
+      console.log("Alunos não encontrados no cadastro:", notFound);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, synced, skipped, total: alunos.length }),
+      JSON.stringify({ success: true, synced, skipped, total: alunos.length, not_found: notFound }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
