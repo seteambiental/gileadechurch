@@ -260,6 +260,7 @@ const TeologiaFinanceiroTab = () => {
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>Aluno</TableHead>
+              <TableHead>Turma</TableHead>
               <TableHead>Valor Total</TableHead>
               <TableHead>Pago</TableHead>
               <TableHead>Saldo</TableHead>
