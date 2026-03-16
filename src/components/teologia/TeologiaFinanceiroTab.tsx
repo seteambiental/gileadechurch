@@ -53,6 +53,7 @@ const TeologiaFinanceiroTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [turmaFilter, setTurmaFilter] = useState("todas");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addAlunoOpen, setAddAlunoOpen] = useState(false);
   const [addPagamentoAlunoId, setAddPagamentoAlunoId] = useState<string | null>(null);
