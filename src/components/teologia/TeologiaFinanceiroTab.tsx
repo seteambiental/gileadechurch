@@ -293,6 +293,7 @@ const TeologiaFinanceiroTab = () => {
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </TableCell>
                       <TableCell className="font-medium">{aluno.members?.full_name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{(aluno as any).turma || "—"}</TableCell>
                       <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
                       <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
