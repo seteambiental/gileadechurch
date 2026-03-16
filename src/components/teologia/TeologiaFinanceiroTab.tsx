@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock } from "lucide-react";
+import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { todayDateStr } from "@/lib/date-utils";
 
