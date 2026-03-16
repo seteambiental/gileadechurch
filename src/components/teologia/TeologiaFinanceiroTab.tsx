@@ -324,7 +324,7 @@ const TeologiaFinanceiroTab = () => {
 
                     {isExpanded && (
                       <TableRow key={`${aluno.id}-detail`}>
-                        <TableCell colSpan={7} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-semibold text-sm">Pagamentos</h4>
