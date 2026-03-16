@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     // Normalize CPF for matching
     const normalizeCpf = (cpf: string | null) => cpf?.replace(/\D/g, "") || "";
-    const normalizeNome = (nome: string | null) => nome?.toLowerCase().trim() || "";
+    const normalizeNome = (nome: string | null) => nome?.toLowerCase().trim().replace(/\s+/g, " ") || "";
 
     // Build lookup maps
     const memberByCpf = new Map<string, string>();
