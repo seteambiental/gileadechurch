@@ -179,14 +179,36 @@ const TeologiaFinanceiroTab = () => {
     },
   });
 
-  const filtered = alunos.filter((a: any) =>
-    !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Get unique turmas
+  const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
 
-  // Totals
-  const totalDevido = alunos.reduce((s, a) => s + Number(a.valor_total || 0), 0);
-  const totalPago = pagamentos.reduce((s, p) => s + Number(p.valor || 0), 0);
+  const filtered = alunos.filter((a: any) => {
+    const matchSearch = !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase());
+    const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
+    return matchSearch && matchTurma;
+  });
+
+  // Totals (based on filtered)
+  const totalDevido = filtered.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
+  const filteredIds = new Set(filtered.map((a: any) => a.id));
+  const filteredPagamentos = pagamentos.filter(p => filteredIds.has(p.aluno_id));
+  const totalPago = filteredPagamentos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
   const totalSaldo = totalDevido - totalPago;
+
+  // Per-turma report
+  const turmaReport = turmas.map((turma) => {
+    const turmaAlunos = alunos.filter((a: any) => a.turma === turma);
+    const turmaIds = new Set(turmaAlunos.map((a: any) => a.id));
+    const turmaPagamentos = pagamentos.filter(p => turmaIds.has(p.aluno_id));
+    const devido = turmaAlunos.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
+    const pago = turmaPagamentos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const quitados = turmaAlunos.filter((a: any) => {
+      const pgtos = pagamentosByAluno[a.id] || [];
+      const totalPg = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+      return totalPg >= Number(a.valor_total || 0);
+    }).length;
+    return { turma, total: turmaAlunos.length, devido, pago, saldo: devido - pago, quitados };
+  });
 
   if (isLoading) {
     return (
