@@ -148,8 +148,12 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (notFound.length > 0) {
+      console.log("Alunos não encontrados no cadastro:", notFound);
+    }
+
     return new Response(
-      JSON.stringify({ success: true, synced, skipped, total: alunos.length }),
+      JSON.stringify({ success: true, synced, skipped, total: alunos.length, not_found: notFound }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
