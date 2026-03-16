@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock } from "lucide-react";
+import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { todayDateStr } from "@/lib/date-utils";
 
@@ -53,6 +53,7 @@ const TeologiaFinanceiroTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [turmaFilter, setTurmaFilter] = useState("todas");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addAlunoOpen, setAddAlunoOpen] = useState(false);
   const [addPagamentoAlunoId, setAddPagamentoAlunoId] = useState<string | null>(null);
@@ -178,14 +179,36 @@ const TeologiaFinanceiroTab = () => {
     },
   });
 
-  const filtered = alunos.filter((a: any) =>
-    !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Get unique turmas
+  const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
 
-  // Totals
-  const totalDevido = alunos.reduce((s, a) => s + Number(a.valor_total || 0), 0);
-  const totalPago = pagamentos.reduce((s, p) => s + Number(p.valor || 0), 0);
+  const filtered = alunos.filter((a: any) => {
+    const matchSearch = !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase());
+    const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
+    return matchSearch && matchTurma;
+  });
+
+  // Totals (based on filtered)
+  const totalDevido = filtered.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
+  const filteredIds = new Set(filtered.map((a: any) => a.id));
+  const filteredPagamentos = pagamentos.filter(p => filteredIds.has(p.aluno_id));
+  const totalPago = filteredPagamentos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
   const totalSaldo = totalDevido - totalPago;
+
+  // Per-turma report
+  const turmaReport = turmas.map((turma) => {
+    const turmaAlunos = alunos.filter((a: any) => a.turma === turma);
+    const turmaIds = new Set(turmaAlunos.map((a: any) => a.id));
+    const turmaPagamentos = pagamentos.filter(p => turmaIds.has(p.aluno_id));
+    const devido = turmaAlunos.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
+    const pago = turmaPagamentos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const quitados = turmaAlunos.filter((a: any) => {
+      const pgtos = pagamentosByAluno[a.id] || [];
+      const totalPg = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+      return totalPg >= Number(a.valor_total || 0);
+    }).length;
+    return { turma, total: turmaAlunos.length, devido, pago, saldo: devido - pago, quitados };
+  });
 
   if (isLoading) {
     return (
@@ -239,14 +262,28 @@ const TeologiaFinanceiroTab = () => {
 
       {/* Search + Add */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar aluno..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar aluno..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={turmaFilter} onValueChange={setTurmaFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+              <SelectValue placeholder="Filtrar por turma" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as turmas</SelectItem>
+              {turmas.map((t) => (
+                <SelectItem key={t} value={t}>{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Button onClick={() => setAddAlunoOpen(true)} size="sm">
           <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
@@ -390,7 +427,67 @@ const TeologiaFinanceiroTab = () => {
         </Table>
       </div>
 
-      {/* Dialog: Adicionar Aluno */}
+      {/* Relatório por Turma */}
+      {turmaReport.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Relatório por Turma
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Turma</TableHead>
+                    <TableHead className="text-center">Alunos</TableHead>
+                    <TableHead className="text-center">Quitados</TableHead>
+                    <TableHead>Total Devido</TableHead>
+                    <TableHead>Total Pago</TableHead>
+                    <TableHead>Saldo Devedor</TableHead>
+                    <TableHead className="text-center">% Arrecadado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {turmaReport.map((r) => {
+                    const pct = r.devido > 0 ? Math.round((r.pago / r.devido) * 100) : 0;
+                    return (
+                      <TableRow key={r.turma}>
+                        <TableCell className="font-medium">{r.turma}</TableCell>
+                        <TableCell className="text-center">{r.total}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
+                            {r.quitados}/{r.total}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatCurrency(r.devido)}</TableCell>
+                        <TableCell className="text-green-600">{formatCurrency(r.pago)}</TableCell>
+                        <TableCell className={r.saldo > 0 ? "text-destructive" : "text-green-600"}>
+                          {formatCurrency(r.saldo)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-2 justify-center">
+                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-green-500 rounded-full transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{pct}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={addAlunoOpen} onOpenChange={setAddAlunoOpen}>
         <DialogContent>
           <DialogHeader>

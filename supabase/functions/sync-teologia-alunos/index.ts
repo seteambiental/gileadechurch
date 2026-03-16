@@ -106,8 +106,11 @@ Deno.serve(async (req) => {
 
       const valorTotal = parseFloat(String(aluno.financeiro?.total_devido ?? aluno.total_devido)) || 0;
 
-      // Upsert: update valor_total if changed
-      const turma = aluno.turma || null;
+      // Extract turma from matriculas array
+      const matricula = Array.isArray(aluno.matriculas) && aluno.matriculas.length > 0 ? aluno.matriculas[0] : null;
+      const turma = matricula?.turma_nome || aluno.turma || null;
+      const cursoNome = matricula?.curso_nome || aluno.curso || null;
+      const statusMatricula = matricula?.status || aluno.status_matricula || "ativo";
 
       const { error: upsertError } = await supabase
         .from("teologia_alunos")
@@ -115,9 +118,9 @@ Deno.serve(async (req) => {
           {
             member_id: memberId,
             valor_total: valorTotal,
-            status: aluno.status_matricula || "ativo",
+            status: statusMatricula,
             turma,
-            observacoes: [aluno.curso].filter(Boolean).join(" - ") || null,
+            observacoes: cursoNome || null,
           },
           { onConflict: "member_id" }
         );
