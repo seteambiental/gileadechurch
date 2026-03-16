@@ -179,7 +179,7 @@ O documento "Casa Refúgio Express" deve conter:
 ${programacaoText}
    - Próximos 2 eventos da agenda:
 ${eventosText}
-   - Lembretes fixos: Oferta para missões (meta da CR – R$ 50,00), pix@gileade.com.br, Quilo do Amor (meta da CR – 28 kgs), reforçar importância da participação nos cultos e programações da Igreja.
+   - Lembretes fixos: Oferta para missões (meta da CR – R$ 100,00), pix@gileade.com.br, Quilo do Amor (meta da CR – 36 kgs), reforçar importância da participação nos cultos e programações da Igreja.
 
 Responda APENAS em formato JSON com as chaves: introducao, desenvolvimento, conclusao, avisos_importantes
 O desenvolvimento deve ser um texto corrido com os tópicos numerados.
