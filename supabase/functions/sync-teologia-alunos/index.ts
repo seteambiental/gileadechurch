@@ -43,6 +43,13 @@ Deno.serve(async (req) => {
     const externalData = await externalRes.json();
     const alunos = Array.isArray(externalData) ? externalData : externalData.alunos || [];
 
+    // Debug: log first 2 alunos structure
+    if (alunos.length > 0) {
+      console.log("Sample aluno keys:", JSON.stringify(Object.keys(alunos[0])));
+      console.log("Sample aluno[0]:", JSON.stringify(alunos[0]));
+      if (alunos.length > 1) console.log("Sample aluno[1]:", JSON.stringify(alunos[1]));
+    }
+
     // Use service role for DB operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
