@@ -5810,6 +5810,7 @@ export type Database = {
           member_id: string
           observacoes: string | null
           status: string
+          turma: string | null
           updated_at: string
           valor_total: number
         }
@@ -5819,6 +5820,7 @@ export type Database = {
           member_id: string
           observacoes?: string | null
           status?: string
+          turma?: string | null
           updated_at?: string
           valor_total?: number
         }
@@ -5828,6 +5830,7 @@ export type Database = {
           member_id?: string
           observacoes?: string | null
           status?: string
+          turma?: string | null
           updated_at?: string
           valor_total?: number
         }

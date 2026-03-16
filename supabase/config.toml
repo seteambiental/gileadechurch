@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.sync-teologia-alunos]
 verify_jwt = false
+
+[functions.api-teologia-pagamentos]
+verify_jwt = false

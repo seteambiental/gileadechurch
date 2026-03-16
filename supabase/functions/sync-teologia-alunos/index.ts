@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
       const valorTotal = parseFloat(String(aluno.financeiro?.total_devido ?? aluno.total_devido)) || 0;
 
       // Upsert: update valor_total if changed
+      const turma = aluno.turma || null;
+
       const { error: upsertError } = await supabase
         .from("teologia_alunos")
         .upsert(
@@ -119,7 +121,8 @@ Deno.serve(async (req) => {
             member_id: memberId,
             valor_total: valorTotal,
             status: aluno.status_matricula || "ativo",
-            observacoes: [aluno.curso, aluno.turma].filter(Boolean).join(" - ") || null,
+            turma,
+            observacoes: [aluno.curso].filter(Boolean).join(" - ") || null,
           },
           { onConflict: "member_id" }
         );

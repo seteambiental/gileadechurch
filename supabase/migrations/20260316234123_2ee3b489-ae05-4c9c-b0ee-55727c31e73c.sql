@@ -1,0 +1,1 @@
+ALTER TABLE public.teologia_alunos ADD COLUMN IF NOT EXISTS turma text;

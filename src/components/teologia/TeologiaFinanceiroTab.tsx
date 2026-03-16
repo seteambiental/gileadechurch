@@ -260,6 +260,7 @@ const TeologiaFinanceiroTab = () => {
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>Aluno</TableHead>
+              <TableHead>Turma</TableHead>
               <TableHead>Valor Total</TableHead>
               <TableHead>Pago</TableHead>
               <TableHead>Saldo</TableHead>
@@ -270,7 +271,7 @@ const TeologiaFinanceiroTab = () => {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   Nenhum aluno cadastrado
                 </TableCell>
               </TableRow>
@@ -292,6 +293,7 @@ const TeologiaFinanceiroTab = () => {
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </TableCell>
                       <TableCell className="font-medium">{aluno.members?.full_name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">{(aluno as any).turma || "—"}</TableCell>
                       <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
                       <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
@@ -322,7 +324,7 @@ const TeologiaFinanceiroTab = () => {
 
                     {isExpanded && (
                       <TableRow key={`${aluno.id}-detail`}>
-                        <TableCell colSpan={7} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <h4 className="font-semibold text-sm">Pagamentos</h4>
