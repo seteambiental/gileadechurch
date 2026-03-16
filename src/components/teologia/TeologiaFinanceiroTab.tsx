@@ -427,7 +427,67 @@ const TeologiaFinanceiroTab = () => {
         </Table>
       </div>
 
-      {/* Dialog: Adicionar Aluno */}
+      {/* Relatório por Turma */}
+      {turmaReport.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Relatório por Turma
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Turma</TableHead>
+                    <TableHead className="text-center">Alunos</TableHead>
+                    <TableHead className="text-center">Quitados</TableHead>
+                    <TableHead>Total Devido</TableHead>
+                    <TableHead>Total Pago</TableHead>
+                    <TableHead>Saldo Devedor</TableHead>
+                    <TableHead className="text-center">% Arrecadado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {turmaReport.map((r) => {
+                    const pct = r.devido > 0 ? Math.round((r.pago / r.devido) * 100) : 0;
+                    return (
+                      <TableRow key={r.turma}>
+                        <TableCell className="font-medium">{r.turma}</TableCell>
+                        <TableCell className="text-center">{r.total}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
+                            {r.quitados}/{r.total}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatCurrency(r.devido)}</TableCell>
+                        <TableCell className="text-green-600">{formatCurrency(r.pago)}</TableCell>
+                        <TableCell className={r.saldo > 0 ? "text-destructive" : "text-green-600"}>
+                          {formatCurrency(r.saldo)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center gap-2 justify-center">
+                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-green-500 rounded-full transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{pct}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={addAlunoOpen} onOpenChange={setAddAlunoOpen}>
         <DialogContent>
           <DialogHeader>
