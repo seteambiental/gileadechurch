@@ -23,24 +23,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate caller - accept authenticated user or service role
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      // Skip validation if it's the service role key (internal call)
-      if (token !== supabaseServiceKey) {
-        const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
-        if (userError || !user) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-      }
-    }
+    // Auth is handled by verify_jwt in config.toml
 
     // Fetch from external API
     const externalUrl = "https://likaqumfvhtxpmbyydmz.supabase.co/functions/v1/api-alunos";
