@@ -12,15 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate caller
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const externalApiKey = Deno.env.get("EXTERNAL_API_KEY");
@@ -32,18 +23,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify JWT
-    const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Auth is handled by verify_jwt in config.toml
 
     // Fetch from external API
     const externalUrl = "https://likaqumfvhtxpmbyydmz.supabase.co/functions/v1/api-alunos";
@@ -82,7 +62,8 @@ Deno.serve(async (req) => {
 
     // Normalize CPF for matching
     const normalizeCpf = (cpf: string | null) => cpf?.replace(/\D/g, "") || "";
-    const normalizeNome = (nome: string | null) => nome?.toLowerCase().trim() || "";
+    const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const normalizeNome = (nome: string | null) => removeAccents(nome?.toLowerCase().trim().replace(/\s+/g, " ") || "");
 
     // Build lookup maps
     const memberByCpf = new Map<string, string>();
