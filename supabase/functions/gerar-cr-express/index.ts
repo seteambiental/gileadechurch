@@ -42,26 +42,49 @@ serve(async (req) => {
     }
 
     // Fetch upcoming events for "avisos importantes" - only cultos, impactos, manains
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    
+    // Calculate next week range (next Monday to Sunday)
+    const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
+    const daysUntilNextMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+    const nextSunday = new Date(nextMonday);
+    nextSunday.setDate(nextMonday.getDate() + 6);
+    const nextMondayStr = nextMonday.toISOString().split("T")[0];
+    const nextSundayStr = nextSunday.toISOString().split("T")[0];
+
     const { data: eventos } = await supabaseAdmin
       .from("agenda_igreja")
       .select("titulo, data_evento, hora_inicio, local, tipo_evento")
-      .gte("data_evento", today)
+      .gte("data_evento", todayStr)
       .eq("ativo", true)
+      .eq("recorrente", false)
       .in("tipo_evento", ["culto", "impacto", "manaim"])
       .order("data_evento", { ascending: true })
       .limit(2);
 
-    // Fetch weekly schedule - only cultos, impactos, manains
-    const { data: programacao } = await supabaseAdmin
+    // Fetch next week's schedule - deduplicated by title
+    const { data: programacaoRaw } = await supabaseAdmin
       .from("agenda_igreja")
       .select("titulo, data_evento, hora_inicio, local, tipo_evento")
-      .gte("data_evento", today)
+      .gte("data_evento", nextMondayStr)
+      .lte("data_evento", nextSundayStr)
       .eq("ativo", true)
       .eq("recorrente", true)
       .in("tipo_evento", ["culto", "impacto", "manaim"])
       .order("data_evento", { ascending: true })
-      .limit(10);
+      .limit(20);
+
+    // Deduplicate by title - keep only first occurrence of each event
+    const seenTitles = new Set<string>();
+    const programacao = (programacaoRaw || []).filter(e => {
+      const key = e.titulo.trim().toLowerCase();
+      if (seenTitles.has(key)) return false;
+      seenTitles.add(key);
+      return true;
+    });
 
     let fileContent = "";
     
