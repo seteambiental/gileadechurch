@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import { QrScannerDialog } from "@/components/kids/QrScannerDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
