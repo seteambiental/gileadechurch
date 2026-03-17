@@ -102,6 +102,7 @@ const KidsCheckinPage = () => {
         const birthDate = (child as any).birth_date || (child as any).data_nascimento;
         if (!birthDate) return;
         const idade = differenceInYears(new Date(), parseLocalDate(birthDate));
+        const idadeTurma = kidsAgeForTurma(birthDate);
         const override = (child as any).kids_turma_override;
         const childTurma = override || null;
 
