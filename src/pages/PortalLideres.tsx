@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Baby,
   HandHelping,
+  Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -67,6 +68,7 @@ interface MenuItemConfig {
   icon: React.ElementType;
   color: string;
   badge?: string | number;
+  action?: () => void;
 }
 
 const PortalLideres = () => {
@@ -275,6 +277,15 @@ const PortalLideres = () => {
       icon: isPG ? Baby : HandHeart,
       color: isPG ? "hsl(280, 70%, 55%)" : "hsl(350, 70%, 50%)",
     });
+  });
+
+  menuItems.push({
+    id: "jiu-jitsu",
+    label: "Jiu-Jitsu",
+    subtitle: "Alunos e turmas",
+    icon: Swords,
+    color: "hsl(var(--primary))",
+    action: () => navigate("/ministerio/jiujitsu"),
   });
 
   // Casas Refúgio
@@ -537,7 +548,7 @@ const PortalLideres = () => {
                 <Card
                   key={item.id}
                   className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={item.action ?? (() => setActiveSection(item.id))}
                 >
                   <CardContent className="p-0">
                     <div className="flex flex-col items-center text-center py-5 px-3 relative">
