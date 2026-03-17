@@ -66,6 +66,7 @@ const App = () => (
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/inscricao/:eventoId" element={<InscricaoEvento />} />
             <Route path="/inscricao-casais" element={<InscricaoCasais />} />
+            <Route path="/inscricao-jiujitsu" element={<InscricaoJiuJitsu />} />
             <Route path="/ministerio/:slug" element={<MinistryPage />} />
             <Route path="/casa-refugio/:id" element={<CasaRefugioDetalhes />} />
             <Route path="/supervisor/:nome" element={<SupervisorDetalhes />} />
@@ -74,7 +75,6 @@ const App = () => (
             <Route path="/financeiro" element={<FinanceiroPage />} />
             <Route path="/privacidade" element={<PrivacidadePage />} />
             <Route path="/ministerio/jiujitsu" element={<JiuJitsuPage />} />
-            <Route path="/inscricao-jiujitsu" element={<InscricaoJiuJitsu />} />
             <Route path="/contingencia" element={<ContingenciaPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
