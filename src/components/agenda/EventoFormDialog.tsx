@@ -261,6 +261,7 @@ export const EventoFormDialog = ({
         const bloqueioInicio = (evento as any).bloqueio_inicio ? new Date((evento as any).bloqueio_inicio) : null;
         const bloqueioFim = (evento as any).bloqueio_fim ? new Date((evento as any).bloqueio_fim) : null;
         const valoresPorTipo = (evento as any).valores_por_tipo as Record<string, string> | null;
+        const vagasPorTipo = (evento as any).vagas_por_tipo as Record<string, number> | null;
         setFormData({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
@@ -297,6 +298,10 @@ export const EventoFormDialog = ({
           valor_nao_membro: valoresPorTipo?.nao_membro || "",
           valor_familia: valoresPorTipo?.familia || "",
           valor_equipe: valoresPorTipo?.equipe || "",
+          vagas_membro: vagasPorTipo?.membro?.toString() || "",
+          vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
+          vagas_familia: vagasPorTipo?.familia?.toString() || "",
+          vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
         });
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
