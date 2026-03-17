@@ -171,12 +171,13 @@ const KidsPage = () => {
     members?.forEach((member) => {
       if (!member.birth_date) return;
       const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
+      const idadeTurma = kidsAgeForTurma(member.birth_date);
       
-      // Use override if set, otherwise age-based
+      // Use override if set, otherwise year-based age for turma
       const override = (member as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
       
       if (turma) {
         // Buscar responsável via kids_responsaveis
