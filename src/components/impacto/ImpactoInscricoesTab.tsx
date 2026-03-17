@@ -266,12 +266,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       all = all.filter((i: any) => filtroGenero.has(resolveGeneroLabel(i)));
     }
 
+    // Tipo filter
+    if (filtroTipo.size < TIPO_OPTIONS.length) {
+      all = all.filter((i: any) => {
+        const tipoLabel = TIPOS_INSCRICAO_LABELS[i.tipo_inscricao] || i.tipo_inscricao || "—";
+        return filtroTipo.has(tipoLabel);
+      });
+    }
+
     if (!searchNome.trim()) return all;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return all.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo]);
 
   // Keep selected IDs in sync with currently visible inscrições
   useEffect(() => {
