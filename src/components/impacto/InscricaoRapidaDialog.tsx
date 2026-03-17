@@ -58,9 +58,30 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     mutationFn: async () => {
       if (isManual) {
         if (!manualName.trim()) throw new Error("Nome é obrigatório");
+        const nomeNorm = formatNameField(manualName);
+
+        // Check duplicate by name in inscricoes_eventos
+        const { data: dupNome } = await supabase
+          .from("inscricoes_eventos")
+          .select("id")
+          .eq("evento_id", eventoId)
+          .ilike("nome_participante", nomeNorm)
+          .neq("status_pagamento", "cancelado")
+          .maybeSingle();
+        if (dupNome) throw new Error("INSCRIÇÃO JÁ ENVIADA — esta pessoa já está inscrita neste evento.");
+
+        // Check duplicate by name in impacto_inscricoes
+        const { data: dupImpacto } = await supabase
+          .from("impacto_inscricoes")
+          .select("id")
+          .eq("evento_id", eventoId)
+          .ilike("nome", nomeNorm)
+          .maybeSingle();
+        if (dupImpacto) throw new Error("INSCRIÇÃO JÁ ENVIADA — esta pessoa já está inscrita neste evento.");
+
         const { error } = await supabase.from("inscricoes_eventos").insert({
           evento_id: eventoId,
-          nome_participante: formatNameField(manualName),
+          nome_participante: nomeNorm,
           telefone_contato: manualPhone || "N/A",
           telefone_emergencia: manualPhoneEmergencia || null,
           igreja_congrega: manualIgreja || null,
@@ -71,6 +92,26 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
         if (error) throw error;
       } else {
         if (!selectedMember) throw new Error("Selecione um membro");
+
+        // Check duplicate by member_id in inscricoes_eventos
+        const { data: dupMembro } = await supabase
+          .from("inscricoes_eventos")
+          .select("id")
+          .eq("evento_id", eventoId)
+          .eq("member_id", selectedMember.id)
+          .neq("status_pagamento", "cancelado")
+          .maybeSingle();
+        if (dupMembro) throw new Error("INSCRIÇÃO JÁ ENVIADA — este membro já está inscrito neste evento.");
+
+        // Check duplicate by member_id in impacto_inscricoes
+        const { data: dupImpactoMembro } = await supabase
+          .from("impacto_inscricoes")
+          .select("id")
+          .eq("evento_id", eventoId)
+          .eq("member_id", selectedMember.id)
+          .maybeSingle();
+        if (dupImpactoMembro) throw new Error("INSCRIÇÃO JÁ ENVIADA — este membro já está inscrito neste evento.");
+
         const { error } = await supabase.from("inscricoes_eventos").insert({
           evento_id: eventoId,
           member_id: selectedMember.id,
