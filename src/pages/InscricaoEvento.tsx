@@ -36,6 +36,7 @@ interface Evento {
   valor_custo: number | null;
   limite_vagas: number | null;
   valores_por_tipo: Record<string, string> | null;
+  vagas_por_tipo: Record<string, number> | null;
 }
 
 interface PessoaBusca {
