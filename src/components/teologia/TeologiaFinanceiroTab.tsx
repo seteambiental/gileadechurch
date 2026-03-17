@@ -212,7 +212,41 @@ const TeologiaFinanceiroTab = () => {
     return { turma, total: turmaAlunos.length, devido, pago, saldo: devido - pago, quitados };
   });
 
-  if (isLoading) {
+  // Export columns for alunos
+  const alunoExportColumns: ExportColumn[] = [
+    { header: "Aluno", accessor: (r: any) => r.nome },
+    { header: "Turma", accessor: (r: any) => r.turma },
+    { header: "Valor Total", accessor: (r: any) => r.valorTotal, type: "currency" },
+    { header: "Pago", accessor: (r: any) => r.pago, type: "currency" },
+    { header: "Saldo", accessor: (r: any) => r.saldo, type: "currency" },
+    { header: "Status", accessor: (r: any) => r.status },
+  ];
+
+  const alunoExportData = filtered.map((a: any) => {
+    const pgtos = pagamentosByAluno[a.id] || [];
+    const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const saldo = Number(a.valor_total || 0) - pago;
+    return {
+      nome: a.members?.full_name || "",
+      turma: a.turma || "—",
+      valorTotal: Number(a.valor_total || 0),
+      pago,
+      saldo,
+      status: saldo <= 0 ? "Quitado" : pago > 0 ? "Parcial" : "Pendente",
+    };
+  });
+
+  // Export columns for turma report
+  const turmaExportColumns: ExportColumn[] = [
+    { header: "Turma", accessor: "turma" },
+    { header: "Alunos", accessor: "total", type: "number" },
+    { header: "Quitados", accessor: "quitados", type: "number" },
+    { header: "Total Devido", accessor: "devido", type: "currency" },
+    { header: "Total Pago", accessor: "pago", type: "currency" },
+    { header: "Saldo Devedor", accessor: "saldo", type: "currency" },
+    { header: "% Arrecadado", accessor: (r: any) => r.devido > 0 ? `${Math.round((r.pago / r.devido) * 100)}%` : "0%" },
+  ];
+
     return (
       <div className="flex justify-center py-12">
         <Loader2 className="w-8 h-8 text-secondary animate-spin" />
