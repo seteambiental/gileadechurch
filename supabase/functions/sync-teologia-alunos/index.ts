@@ -92,12 +92,6 @@ Deno.serve(async (req) => {
         memberId = memberByNome.get(normalizeNome(aluno.nome_completo || aluno.nome));
       }
 
-      // Debug log for specific students
-      const nome = (aluno.nome_completo || aluno.nome || "").toLowerCase();
-      if (nome.includes("neli") || nome.includes("chipaki") || nome.includes("andre")) {
-        console.log("DEBUG aluno:", JSON.stringify({ nome: aluno.nome_completo || aluno.nome, matriculas: aluno.matriculas, turma: aluno.turma, curso: aluno.curso, status_matricula: aluno.status_matricula, keys: Object.keys(aluno) }));
-      }
-
       if (!memberId) {
         notFound.push(aluno.nome_completo || aluno.nome || "sem nome");
         skipped++;
