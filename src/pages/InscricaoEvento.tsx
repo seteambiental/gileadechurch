@@ -296,8 +296,8 @@ const InscricaoEvento = () => {
         }
       }
 
-      // Verificar novamente se há vagas (para evitar race condition)
-      const isListaEspera = esgotado;
+      // Verificar novamente se há vagas (global e por tipo)
+      const isListaEspera = esgotado || tipoEsgotado(tipoInscricao);
       
       // Montar observação com info do ministério
       let observacoesMinisterio = "";
