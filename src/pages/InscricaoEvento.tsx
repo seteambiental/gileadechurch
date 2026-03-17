@@ -269,18 +269,19 @@ const InscricaoEvento = () => {
   // Mutation to create inscription
   const inscricaoMutation = useMutation({
     mutationFn: async () => {
-      // Verificar se já existe inscrição desta pessoa neste evento
+      // Verificar duplicata por ID (membro ou convertido)
       if (selectedPerson?.id) {
+        const idColumn = selectedPerson.type === "member" ? "member_id" : "novo_convertido_id";
         const { data: existente } = await supabase
           .from("inscricoes_eventos")
           .select("id")
           .eq("evento_id", eventoId)
-          .eq(selectedPerson.type === "member" ? "member_id" : "novo_convertido_id", selectedPerson.id)
+          .eq(idColumn, selectedPerson.id)
           .neq("status_pagamento", "cancelado")
           .maybeSingle();
 
         if (existente) {
-          throw new Error("Esta pessoa já está inscrita neste evento.");
+          throw new Error("INSCRIÇÃO JÁ ENVIADA — esta pessoa já está inscrita neste evento.");
         }
 
         // Verificar também em impacto_inscricoes
@@ -292,7 +293,36 @@ const InscricaoEvento = () => {
           .maybeSingle();
 
         if (existenteImpacto) {
-          throw new Error("Esta pessoa já está inscrita neste evento.");
+          throw new Error("INSCRIÇÃO JÁ ENVIADA — esta pessoa já está inscrita neste evento.");
+        }
+      }
+
+      // Verificar duplicata por nome (para pessoas novas sem ID)
+      if (!selectedPerson?.id || selectedPerson?.type === "novo") {
+        const nomeNorm = nomeParticipante.trim();
+        if (nomeNorm) {
+          const { data: dupNome } = await supabase
+            .from("inscricoes_eventos")
+            .select("id")
+            .eq("evento_id", eventoId)
+            .ilike("nome_participante", nomeNorm)
+            .neq("status_pagamento", "cancelado")
+            .maybeSingle();
+
+          if (dupNome) {
+            throw new Error("INSCRIÇÃO JÁ ENVIADA — já existe uma inscrição com este nome neste evento.");
+          }
+
+          const { data: dupImpactoNome } = await supabase
+            .from("impacto_inscricoes")
+            .select("id")
+            .eq("evento_id", eventoId!)
+            .ilike("nome", nomeNorm)
+            .maybeSingle();
+
+          if (dupImpactoNome) {
+            throw new Error("INSCRIÇÃO JÁ ENVIADA — já existe uma inscrição com este nome neste evento.");
+          }
         }
       }
 
