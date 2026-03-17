@@ -10,6 +10,7 @@ import { Loader2, CheckCircle2, MapPin, X, Baby } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import { toast } from "sonner";
 import logoChurchKids from "@/assets/pg-church-kids.png";
 import kidsLogoPG from "@/assets/kids-logo-pg.png";

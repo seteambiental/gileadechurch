@@ -108,6 +108,7 @@ const KidsCheckMePage = () => {
         addedIds.add(child.id);
         if (!child.birth_date) return;
         const idade = differenceInYears(new Date(), parseLocalDate(child.birth_date));
+        const idadeTurma = kidsAgeForTurma(child.birth_date);
         allChildren.push({
           id: child.id,
           nome: child.full_name,

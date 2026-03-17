@@ -72,7 +72,8 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
         addedIds.add(child.id);
         if (!child.birth_date) return;
         const idade = differenceInYears(new Date(), parseLocalDate(child.birth_date));
-        if (idade > 12) return;
+        const idadeTurma = kidsAgeForTurma(child.birth_date);
+        if (idadeTurma > 12) return;
         allChildren.push({
           id: child.id,
           nome: child.full_name,
