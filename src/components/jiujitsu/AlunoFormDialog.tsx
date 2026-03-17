@@ -13,10 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search } from "lucide-react";
+import { differenceInYears, parse } from "date-fns";
 
 const FAIXAS = ["Branca", "Azul", "Roxa", "Marrom", "Preta"];
 const TIPOS_SANGUINEOS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const GENEROS = ["Masculino", "Feminino"];
 
 interface AlunoFormDialogProps {
   open: boolean;
@@ -36,15 +40,28 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
+  const [genero, setGenero] = useState("");
   const [endereco, setEndereco] = useState("");
   const [telefone, setTelefone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
   const [contatoEmergenciaNome, setContatoEmergenciaNome] = useState("");
   const [contatoEmergenciaTelefone, setContatoEmergenciaTelefone] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState("");
+  const [responsavelTelefone, setResponsavelTelefone] = useState("");
   const [tipoSanguineo, setTipoSanguineo] = useState("");
+  const [planoSaude, setPlanoSaude] = useState(false);
+  const [alergias, setAlergias] = useState("");
+  const [medicamentoContinuo, setMedicamentoContinuo] = useState("");
+  const [restricaoFisica, setRestricaoFisica] = useState("");
   const [faixa, setFaixa] = useState("Branca");
   const [graus, setGraus] = useState(0);
+  const [termoEmergencia, setTermoEmergencia] = useState(false);
+  const [termoImagem, setTermoImagem] = useState(false);
+
+  const isMenor = dataNascimento
+    ? differenceInYears(new Date(), new Date(dataNascimento)) < 18
+    : false;
 
   const { data: members = [] } = useQuery({
     queryKey: ["members_busca_jiujitsu", membroBusca],
@@ -64,28 +81,41 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
       setNome(aluno.nome || "");
       setCpf(aluno.cpf || "");
       setDataNascimento(aluno.data_nascimento || "");
+      setGenero(aluno.genero || "");
       setEndereco(aluno.endereco || "");
       setTelefone(aluno.telefone || "");
       setWhatsapp(aluno.whatsapp || "");
       setEmail(aluno.email || "");
       setContatoEmergenciaNome(aluno.contato_emergencia_nome || "");
       setContatoEmergenciaTelefone(aluno.contato_emergencia_telefone || "");
+      setResponsavelNome(aluno.responsavel_nome || "");
+      setResponsavelTelefone(aluno.responsavel_telefone || "");
       setTipoSanguineo(aluno.tipo_sanguineo || "");
+      setPlanoSaude(aluno.plano_saude || false);
+      setAlergias(aluno.alergias || "");
+      setMedicamentoContinuo(aluno.medicamento_continuo || "");
+      setRestricaoFisica(aluno.restricao_fisica || "");
       setFaixa(aluno.faixa || "Branca");
       setGraus(aluno.graus || 0);
       setTipoInscricao(aluno.tipo || "visitante");
       setSelectedMemberId(aluno.member_id || null);
+      setTermoEmergencia(aluno.termo_emergencia_aceito || false);
+      setTermoImagem(aluno.termo_imagem_aceito || false);
     } else {
       resetForm();
     }
   }, [aluno, open]);
 
   const resetForm = () => {
-    setNome(""); setCpf(""); setDataNascimento(""); setEndereco("");
+    setNome(""); setCpf(""); setDataNascimento(""); setGenero(""); setEndereco("");
     setTelefone(""); setWhatsapp(""); setEmail("");
     setContatoEmergenciaNome(""); setContatoEmergenciaTelefone("");
-    setTipoSanguineo(""); setFaixa("Branca"); setGraus(0);
+    setResponsavelNome(""); setResponsavelTelefone("");
+    setTipoSanguineo(""); setPlanoSaude(false);
+    setAlergias(""); setMedicamentoContinuo(""); setRestricaoFisica("");
+    setFaixa("Branca"); setGraus(0);
     setSelectedMemberId(null); setMembroBusca(""); setTipoInscricao("visitante");
+    setTermoEmergencia(false); setTermoImagem(false);
   };
 
   const handleSelectMembro = (member: any) => {
@@ -101,16 +131,33 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
       toast({ title: "Nome é obrigatório", variant: "destructive" });
       return;
     }
+    if (!termoEmergencia) {
+      toast({ title: "É necessário aceitar a declaração de emergência", variant: "destructive" });
+      return;
+    }
+    if (!termoImagem) {
+      toast({ title: "É necessário aceitar o termo de direito de imagem", variant: "destructive" });
+      return;
+    }
 
     const payload: any = {
       nome: nome.trim(),
-      cpf, data_nascimento: dataNascimento, endereco,
+      cpf, data_nascimento: dataNascimento, genero, endereco,
       telefone, whatsapp, email,
       contato_emergencia_nome: contatoEmergenciaNome,
       contato_emergencia_telefone: contatoEmergenciaTelefone,
-      tipo_sanguineo: tipoSanguineo, faixa, graus,
+      responsavel_nome: responsavelNome,
+      responsavel_telefone: responsavelTelefone,
+      tipo_sanguineo: tipoSanguineo,
+      plano_saude: planoSaude,
+      alergias: alergias || null,
+      medicamento_continuo: medicamentoContinuo || null,
+      restricao_fisica: restricaoFisica || null,
+      faixa, graus,
       tipo: tipoInscricao,
       member_id: selectedMemberId,
+      termo_emergencia_aceito: termoEmergencia,
+      termo_imagem_aceito: termoImagem,
     };
 
     let error;
@@ -131,13 +178,13 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? "Editar Aluno" : "Novo Aluno"}</DialogTitle>
         </DialogHeader>
 
         {!isEditing && (
-          <Tabs value={tipoInscricao} onValueChange={(v) => { setTipoInscricao(v); resetForm(); setTipoInscricao(v); }}>
+          <Tabs value={tipoInscricao} onValueChange={(v) => { resetForm(); setTipoInscricao(v); }}>
             <TabsList className="w-full">
               <TabsTrigger value="membro" className="flex-1">Membro da Igreja</TabsTrigger>
               <TabsTrigger value="visitante" className="flex-1">Visitante</TabsTrigger>
@@ -151,7 +198,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
                   <Input
                     placeholder="Digite o nome do membro..."
                     value={membroBusca}
-                    onChange={(e) => setMembroBusca(e.target.value)}
+                    onChange={(e) => { setMembroBusca(e.target.value); setSelectedMemberId(null); }}
                     className="pl-9"
                   />
                 </div>
@@ -177,80 +224,149 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
           </Tabs>
         )}
 
-        <div className="space-y-3 mt-2">
+        <div className="space-y-4 mt-2">
+          {/* Dados Pessoais */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Dados Pessoais</h3>
+          {(tipoInscricao === "visitante" || isEditing) && (
+            <div>
+              <Label>Nome Completo *</Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Data de Nascimento</Label>
+              <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+            </div>
+            <div>
+              <Label>Gênero</Label>
+              <Select value={genero} onValueChange={setGenero}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {GENEROS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>CPF</Label>
+              <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
+            </div>
+          </div>
+
           {(tipoInscricao === "visitante" || isEditing) && (
             <>
-              <div>
-                <Label>Nome Completo *</Label>
-                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>CPF</Label>
-                  <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Data de Nascimento</Label>
-                  <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
-                </div>
-              </div>
               <div>
                 <Label>Endereço</Label>
                 <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Telefone</Label>
+                  <Label>Telefone / WhatsApp</Label>
                   <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
                 </div>
                 <div>
-                  <Label>WhatsApp</Label>
-                  <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label>E-mail</Label>
-                <Input value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Contato Emergência</Label>
-                  <Input value={contatoEmergenciaNome} onChange={(e) => setContatoEmergenciaNome(e.target.value)} placeholder="Nome" />
-                </div>
-                <div>
-                  <Label>Tel. Emergência</Label>
-                  <Input value={contatoEmergenciaTelefone} onChange={(e) => setContatoEmergenciaTelefone(e.target.value)} />
+                  <Label>E-mail</Label>
+                  <Input value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
               </div>
             </>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
+          {/* Contato Emergência */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Contato de Emergência</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Nome</Label>
+              <Input value={contatoEmergenciaNome} onChange={(e) => setContatoEmergenciaNome(e.target.value)} />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input value={contatoEmergenciaTelefone} onChange={(e) => setContatoEmergenciaTelefone(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Responsável (menor) */}
+          {isMenor && (
+            <>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Responsável (Menor de Idade)</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Nome do Responsável *</Label>
+                  <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Telefone do Responsável *</Label>
+                  <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Saúde */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Informações de Saúde</h3>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Tipo Sanguíneo</Label>
               <Select value={tipoSanguineo} onValueChange={setTipoSanguineo}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {TIPOS_SANGUINEOS.map((t) => (
-                    <SelectItem key={t} value={t}>{t}</SelectItem>
-                  ))}
+                  {TIPOS_SANGUINEOS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-end gap-2 pb-1">
+              <Checkbox id="planoSaude" checked={planoSaude} onCheckedChange={(v) => setPlanoSaude(!!v)} />
+              <Label htmlFor="planoSaude" className="cursor-pointer">Possui plano de saúde</Label>
+            </div>
+          </div>
+          <div>
+            <Label>Possui alguma alergia?</Label>
+            <Input value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+          <div>
+            <Label>Toma algum medicamento contínuo?</Label>
+            <Input value={medicamentoContinuo} onChange={(e) => setMedicamentoContinuo(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+          <div>
+            <Label>Alguma restrição física?</Label>
+            <Input value={restricaoFisica} onChange={(e) => setRestricaoFisica(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+
+          {/* Graduação */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Graduação</h3>
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Faixa</Label>
               <Select value={faixa} onValueChange={setFaixa}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {FAIXAS.map((f) => (
-                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                  ))}
+                  {FAIXAS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label>Graus</Label>
               <Input type="number" min={0} max={4} value={graus} onChange={(e) => setGraus(Number(e.target.value))} />
+            </div>
+          </div>
+
+          {/* Termos */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Declarações e Termos</h3>
+          <div className="space-y-3 rounded-md border p-4 bg-muted/30">
+            <div className="flex items-start gap-3">
+              <Checkbox id="termoEmergencia" checked={termoEmergencia} onCheckedChange={(v) => setTermoEmergencia(!!v)} className="mt-0.5" />
+              <Label htmlFor="termoEmergencia" className="text-sm leading-relaxed cursor-pointer">
+                Declaro que, em caso de emergência, autorizo a Igreja Gileade a encaminhar o(a) aluno(a) ao posto de atendimento médico mais próximo, 
+                isentando a igreja e seus representantes de qualquer responsabilidade. 
+                {isMenor && " Comprometo-me, como responsável, a acompanhar o(a) menor durante as aulas e auxiliar sempre que necessário."}
+              </Label>
+            </div>
+            <div className="flex items-start gap-3">
+              <Checkbox id="termoImagem" checked={termoImagem} onCheckedChange={(v) => setTermoImagem(!!v)} className="mt-0.5" />
+              <Label htmlFor="termoImagem" className="text-sm leading-relaxed cursor-pointer">
+                Autorizo o uso da minha imagem (ou do menor sob minha responsabilidade) em fotos e vídeos para divulgação 
+                institucional da igreja e do ministério de Jiu-Jitsu, em mídias sociais e materiais de comunicação.
+              </Label>
             </div>
           </div>
         </div>

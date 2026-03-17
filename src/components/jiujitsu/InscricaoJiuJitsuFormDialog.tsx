@@ -12,7 +12,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search } from "lucide-react";
+import { differenceInYears } from "date-fns";
+
+const GENEROS = ["Masculino", "Feminino"];
 
 interface Props {
   open: boolean;
@@ -28,10 +33,27 @@ export function InscricaoJiuJitsuFormDialog({ open, onOpenChange }: Props) {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [nome, setNome] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
+  const [genero, setGenero] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [email, setEmail] = useState("");
   const [cpf, setCpf] = useState("");
+  const [contatoEmergenciaNome, setContatoEmergenciaNome] = useState("");
+  const [contatoEmergenciaTelefone, setContatoEmergenciaTelefone] = useState("");
+  const [responsavelNome, setResponsavelNome] = useState("");
+  const [responsavelTelefone, setResponsavelTelefone] = useState("");
+  const [planoSaude, setPlanoSaude] = useState(false);
+  const [alergias, setAlergias] = useState("");
+  const [medicamentoContinuo, setMedicamentoContinuo] = useState("");
+  const [restricaoFisica, setRestricaoFisica] = useState("");
+  const [possuiGraduacao, setPossuiGraduacao] = useState("");
   const [observacoes, setObservacoes] = useState("");
+  const [termoEmergencia, setTermoEmergencia] = useState(false);
+  const [termoImagem, setTermoImagem] = useState(false);
+
+  const isMenor = dataNascimento
+    ? differenceInYears(new Date(), new Date(dataNascimento)) < 18
+    : false;
 
   const { data: members = [] } = useQuery({
     queryKey: ["members_busca_jiujitsu_insc", membroBusca],
@@ -47,9 +69,14 @@ export function InscricaoJiuJitsuFormDialog({ open, onOpenChange }: Props) {
   });
 
   const resetForm = () => {
-    setNome(""); setDataNascimento(""); setWhatsapp(""); setEmail("");
-    setCpf(""); setObservacoes(""); setSelectedMemberId(null);
-    setMembroBusca(""); setTipoInscricao("visitante");
+    setNome(""); setDataNascimento(""); setGenero(""); setTelefone("");
+    setWhatsapp(""); setEmail(""); setCpf(""); setObservacoes("");
+    setContatoEmergenciaNome(""); setContatoEmergenciaTelefone("");
+    setResponsavelNome(""); setResponsavelTelefone("");
+    setPlanoSaude(false); setAlergias(""); setMedicamentoContinuo("");
+    setRestricaoFisica(""); setPossuiGraduacao("");
+    setSelectedMemberId(null); setMembroBusca(""); setTipoInscricao("visitante");
+    setTermoEmergencia(false); setTermoImagem(false);
   };
 
   const handleSelectMembro = (member: any) => {
@@ -65,18 +92,39 @@ export function InscricaoJiuJitsuFormDialog({ open, onOpenChange }: Props) {
       toast({ title: "Nome é obrigatório", variant: "destructive" });
       return;
     }
+    if (!termoEmergencia) {
+      toast({ title: "É necessário aceitar a declaração de emergência", variant: "destructive" });
+      return;
+    }
+    if (!termoImagem) {
+      toast({ title: "É necessário aceitar o termo de direito de imagem", variant: "destructive" });
+      return;
+    }
 
     const { error } = await supabase.from("jiujitsu_inscricoes").insert({
       nome: nome.trim(),
       data_nascimento: dataNascimento || null,
+      genero: genero || null,
+      telefone: telefone || null,
       whatsapp: whatsapp || null,
       email: email || null,
       cpf: cpf || null,
       tipo: tipoInscricao,
       member_id: selectedMemberId,
+      contato_emergencia_nome: contatoEmergenciaNome || null,
+      contato_emergencia_telefone: contatoEmergenciaTelefone || null,
+      responsavel_nome: responsavelNome || null,
+      responsavel_telefone: responsavelTelefone || null,
+      plano_saude: planoSaude,
+      alergias: alergias || null,
+      medicamento_continuo: medicamentoContinuo || null,
+      restricao_fisica: restricaoFisica || null,
+      possui_graduacao: possuiGraduacao || null,
       observacoes: observacoes || null,
+      termo_emergencia_aceito: termoEmergencia,
+      termo_imagem_aceito: termoImagem,
       status: "pendente",
-    });
+    } as any);
 
     if (error) {
       toast({ title: "Erro ao registrar inscrição", description: error.message, variant: "destructive" });
@@ -90,9 +138,9 @@ export function InscricaoJiuJitsuFormDialog({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nova Inscrição</DialogTitle>
+          <DialogTitle>Nova Inscrição - Jiu-Jitsu</DialogTitle>
         </DialogHeader>
 
         <Tabs value={tipoInscricao} onValueChange={(v) => { resetForm(); setTipoInscricao(v); }}>
@@ -134,39 +182,125 @@ export function InscricaoJiuJitsuFormDialog({ open, onOpenChange }: Props) {
           <TabsContent value="visitante" />
         </Tabs>
 
-        <div className="space-y-3 mt-2">
+        <div className="space-y-4 mt-2">
+          {/* Dados Pessoais */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Dados Pessoais</h3>
           {tipoInscricao === "visitante" && (
-            <>
+            <div>
+              <Label>Nome Completo *</Label>
+              <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label>Data de Nascimento</Label>
+              <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+            </div>
+            <div>
+              <Label>Gênero</Label>
+              <Select value={genero} onValueChange={setGenero}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {GENEROS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>CPF</Label>
+              <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
+            </div>
+          </div>
+          {tipoInscricao === "visitante" && (
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Nome Completo *</Label>
-                <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+                <Label>Telefone / WhatsApp</Label>
+                <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} />
               </div>
+              <div>
+                <Label>E-mail</Label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+            </div>
+          )}
+
+          {/* Contato Emergência */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Contato de Emergência</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Nome</Label>
+              <Input value={contatoEmergenciaNome} onChange={(e) => setContatoEmergenciaNome(e.target.value)} />
+            </div>
+            <div>
+              <Label>Telefone</Label>
+              <Input value={contatoEmergenciaTelefone} onChange={(e) => setContatoEmergenciaTelefone(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Responsável (menor) */}
+          {isMenor && (
+            <>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Responsável (Menor de Idade)</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Data de Nascimento</Label>
-                  <Input type="date" value={dataNascimento} onChange={(e) => setDataNascimento(e.target.value)} />
+                  <Label>Nome do Responsável *</Label>
+                  <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
                 </div>
                 <div>
-                  <Label>CPF</Label>
-                  <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>WhatsApp</Label>
-                  <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} />
-                </div>
-                <div>
-                  <Label>E-mail</Label>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Label>Telefone do Responsável *</Label>
+                  <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
                 </div>
               </div>
             </>
           )}
 
+          {/* Saúde */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Informações de Saúde</h3>
+          <div className="flex items-center gap-2">
+            <Checkbox id="planoSaudeInsc" checked={planoSaude} onCheckedChange={(v) => setPlanoSaude(!!v)} />
+            <Label htmlFor="planoSaudeInsc" className="cursor-pointer">Possui plano de saúde</Label>
+          </div>
+          <div>
+            <Label>Possui alguma alergia?</Label>
+            <Input value={alergias} onChange={(e) => setAlergias(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+          <div>
+            <Label>Toma algum medicamento contínuo?</Label>
+            <Input value={medicamentoContinuo} onChange={(e) => setMedicamentoContinuo(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+          <div>
+            <Label>Alguma restrição física?</Label>
+            <Input value={restricaoFisica} onChange={(e) => setRestricaoFisica(e.target.value)} placeholder="Descreva aqui..." />
+          </div>
+
+          {/* Graduação */}
+          <div>
+            <Label>Possui alguma graduação em Jiu-Jitsu?</Label>
+            <Input value={possuiGraduacao} onChange={(e) => setPossuiGraduacao(e.target.value)} placeholder="Ex: Faixa Azul 2 graus" />
+          </div>
+
           <div>
             <Label>Observações</Label>
             <Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Informações adicionais..." />
+          </div>
+
+          {/* Termos */}
+          <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Declarações e Termos</h3>
+          <div className="space-y-3 rounded-md border p-4 bg-muted/30">
+            <div className="flex items-start gap-3">
+              <Checkbox id="termoEmergenciaInsc" checked={termoEmergencia} onCheckedChange={(v) => setTermoEmergencia(!!v)} className="mt-0.5" />
+              <Label htmlFor="termoEmergenciaInsc" className="text-sm leading-relaxed cursor-pointer">
+                Declaro que, em caso de emergência, autorizo a Igreja Gileade a encaminhar o(a) aluno(a) ao posto de atendimento médico mais próximo, 
+                isentando a igreja e seus representantes de qualquer responsabilidade.
+                {isMenor && " Comprometo-me, como responsável, a acompanhar o(a) menor durante as aulas e auxiliar sempre que necessário."}
+              </Label>
+            </div>
+            <div className="flex items-start gap-3">
+              <Checkbox id="termoImagemInsc" checked={termoImagem} onCheckedChange={(v) => setTermoImagem(!!v)} className="mt-0.5" />
+              <Label htmlFor="termoImagemInsc" className="text-sm leading-relaxed cursor-pointer">
+                Autorizo o uso da minha imagem (ou do menor sob minha responsabilidade) em fotos e vídeos para divulgação 
+                institucional da igreja e do ministério de Jiu-Jitsu, em mídias sociais e materiais de comunicação.
+              </Label>
+            </div>
           </div>
         </div>
 
