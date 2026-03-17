@@ -838,20 +838,47 @@ const InscricaoEvento = () => {
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="membro" className="text-base md:text-lg py-2 md:py-3">Membro</SelectItem>
-                          <SelectItem value="nao_membro" className="text-base md:text-lg py-2 md:py-3">Não Membro</SelectItem>
-                          <SelectItem value="familia" className="text-base md:text-lg py-2 md:py-3">Líderes e Anfitriões</SelectItem>
-                          <SelectItem value="equipe" className="text-base md:text-lg py-2 md:py-3">Equipe (Apoio/Serviço)</SelectItem>
+                          {[
+                            { value: "membro", label: "Membro" },
+                            { value: "nao_membro", label: "Não Membro" },
+                            { value: "familia", label: "Líderes e Anfitriões" },
+                            { value: "equipe", label: "Equipe (Apoio/Serviço)" },
+                          ].map((opt) => {
+                            const disponivel = getVagasDisponiveisTipo(opt.value);
+                            const esgotadoTipo = tipoEsgotado(opt.value);
+                            return (
+                              <SelectItem
+                                key={opt.value}
+                                value={opt.value}
+                                className="text-base md:text-lg py-2 md:py-3"
+                                disabled={esgotadoTipo}
+                              >
+                                {opt.label}
+                                {disponivel !== null && (
+                                  <span className={`ml-2 text-xs ${esgotadoTipo ? "text-destructive" : "text-muted-foreground"}`}>
+                                    ({esgotadoTipo ? "esgotado" : `${disponivel} vagas`})
+                                  </span>
+                                )}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
-                      {evento.tem_custo && (() => {
+                      {/* Show per-type info */}
+                      {(() => {
+                        const disponivel = getVagasDisponiveisTipo(tipoInscricao);
                         const valorTipo = evento.valores_por_tipo?.[tipoInscricao];
-                        const valorExibir = valorTipo ? parseFloat(valorTipo) : evento.valor_custo;
-                        return valorExibir ? (
-                          <p className="text-sm md:text-base text-muted-foreground">
-                            Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong>
-                          </p>
-                        ) : null;
+                        const valorExibir = evento.tem_custo ? (valorTipo ? parseFloat(valorTipo) : evento.valor_custo) : null;
+                        return (
+                          <div className="flex flex-wrap gap-3 text-sm md:text-base text-muted-foreground">
+                            {valorExibir ? (
+                              <span>Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong></span>
+                            ) : null}
+                            {disponivel !== null && (
+                              <span>Vagas restantes: <strong>{disponivel}</strong></span>
+                            )}
+                          </div>
+                        );
                       })()}
                     </div>
 
