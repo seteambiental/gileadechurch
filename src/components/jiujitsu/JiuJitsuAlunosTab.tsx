@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, UserCheck, CreditCard, IdCard } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, UserCheck, CreditCard, IdCard, FileText } from "lucide-react";
+import { gerarTermoAlunoPDF } from "./gerarTermoAlunoPDF";
 import { AlunoFormDialog } from "./AlunoFormDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
 import {
