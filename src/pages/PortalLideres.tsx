@@ -548,7 +548,7 @@ const PortalLideres = () => {
                 <Card
                   key={item.id}
                   className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={item.action ?? (() => setActiveSection(item.id))}
                 >
                   <CardContent className="p-0">
                     <div className="flex flex-col items-center text-center py-5 px-3 relative">
