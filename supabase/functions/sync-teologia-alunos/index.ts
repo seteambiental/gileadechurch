@@ -90,6 +90,17 @@ Deno.serve(async (req) => {
       memberByNome.set(normalizeNome(m.full_name), m.id);
     }
 
+    const manualOverrides = new Map<string, { turma: string; observacoes: string; valor_total: number }>([
+      [
+        "044fe7d2-5cb5-418a-be64-5afc10134153",
+        { turma: "TEOLOGIA BÁSICA 2026-1", observacoes: "Teologia Básica", valor_total: 200 },
+      ],
+      [
+        "3b30f367-9c66-48bb-86e5-34d661fca4e0",
+        { turma: "TEOLOGIA BÁSICA 2026-1", observacoes: "Teologia Básica", valor_total: 200 },
+      ],
+    ]);
+
     // Member IDs to exclude from sync (not actual students)
     const excludedMemberIds = new Set([
       "7eea844a-9ca7-4797-a86e-7c181ee0c34d", // Giovana de Deus Derzette
@@ -128,13 +139,14 @@ Deno.serve(async (req) => {
       const cursoNome = matricula?.curso_nome || aluno.curso || null;
       const statusMatricula = matricula?.status || aluno.status_matricula || null;
       const existingAluno = existingByMemberId.get(memberId);
+      const manualOverride = manualOverrides.get(memberId);
 
       const payload = {
         member_id: memberId,
-        valor_total: valorTotal || existingAluno?.valor_total || 0,
+        valor_total: manualOverride?.valor_total ?? valorTotal ?? existingAluno?.valor_total ?? 0,
         status: statusMatricula || existingAluno?.status || "ativo",
-        turma: turma || existingAluno?.turma || null,
-        observacoes: cursoNome || existingAluno?.observacoes || null,
+        turma: manualOverride?.turma ?? turma ?? existingAluno?.turma ?? null,
+        observacoes: manualOverride?.observacoes ?? cursoNome ?? existingAluno?.observacoes ?? null,
       };
 
       const { error: upsertError } = await supabase
