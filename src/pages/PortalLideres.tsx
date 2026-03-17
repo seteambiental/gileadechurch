@@ -278,6 +278,15 @@ const PortalLideres = () => {
     });
   });
 
+  menuItems.push({
+    id: "jiu-jitsu",
+    label: "Jiu-Jitsu",
+    subtitle: "Alunos e turmas",
+    icon: Swords,
+    color: "hsl(var(--primary))",
+    action: () => navigate("/ministerio/jiujitsu"),
+  });
+
   // Casas Refúgio
   if (
     memberCasasRefugio.length > 0 ||
