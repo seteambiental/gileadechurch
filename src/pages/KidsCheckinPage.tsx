@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const KidsCheckinPage = () => {
