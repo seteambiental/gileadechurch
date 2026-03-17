@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,13 +15,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Info } from "lucide-react";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 
 const STATUS_COLORS: Record<string, string> = {
   pago: "bg-green-100 text-green-800",
   pendente: "bg-yellow-100 text-yellow-800",
   atrasado: "bg-red-100 text-red-800",
 };
+
+/** Calcula o valor da mensalidade com base na idade do aluno */
+function calcularMensalidade(dataNascimento: string | null): { valor: number; faixa: string } {
+  if (!dataNascimento) return { valor: 50, faixa: "Sem data de nascimento" };
+  const idade = differenceInYears(new Date(), parseLocalDate(dataNascimento));
+  if (idade >= 6 && idade <= 9) return { valor: 0, faixa: `${idade} anos — Isento` };
+  if (idade >= 10 && idade <= 13) return { valor: 25, faixa: `${idade} anos — R$ 25,00` };
+  return { valor: 50, faixa: `${idade} anos — R$ 50,00` };
+}
 
 export function JiuJitsuFinanceiroTab() {
   const { toast } = useToast();
@@ -33,6 +44,7 @@ export function JiuJitsuFinanceiroTab() {
   const [valor, setValor] = useState("");
   const [status, setStatus] = useState("pendente");
   const [dataPagamento, setDataPagamento] = useState("");
+  const [infoMensalidade, setInfoMensalidade] = useState("");
 
   const { data: alunos = [] } = useQuery({
     queryKey: ["jiujitsu_alunos"],
@@ -49,6 +61,20 @@ export function JiuJitsuFinanceiroTab() {
       return (data || []) as any[];
     },
   });
+
+  // Auto-preencher valor quando selecionar aluno
+  useEffect(() => {
+    if (!alunoId) {
+      setInfoMensalidade("");
+      return;
+    }
+    const aluno = alunos.find((a: any) => a.id === alunoId);
+    if (aluno) {
+      const { valor: valorCalc, faixa } = calcularMensalidade(aluno.data_nascimento);
+      setValor(valorCalc.toString());
+      setInfoMensalidade(faixa);
+    }
+  }, [alunoId, alunos]);
 
   const filtered = pagamentos.filter((p: any) =>
     p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())
@@ -72,7 +98,7 @@ export function JiuJitsuFinanceiroTab() {
       toast({ title: "Pagamento registrado!" });
       queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
       setFormOpen(false);
-      setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento("");
+      setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
     }
   };
 
@@ -91,6 +117,30 @@ export function JiuJitsuFinanceiroTab() {
 
   return (
     <div className="space-y-4">
+      {/* Tabela de valores */}
+      <Card className="border-dashed">
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Info className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Tabela de Mensalidades</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">6–9 anos</Badge>
+              <span className="text-muted-foreground">Isento</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">10–13 anos</Badge>
+              <span className="text-muted-foreground">R$ 25,00</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">14+ anos</Badge>
+              <span className="text-muted-foreground">R$ 50,00</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -121,7 +171,12 @@ export function JiuJitsuFinanceiroTab() {
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.jiujitsu_alunos?.nome}</TableCell>
                   <TableCell>{p.mes_referencia}</TableCell>
-                  <TableCell>R$ {Number(p.valor).toFixed(2)}</TableCell>
+                  <TableCell>
+                    {Number(p.valor) === 0 
+                      ? <Badge variant="outline" className="text-xs">Isento</Badge>
+                      : `R$ ${Number(p.valor).toFixed(2)}`
+                    }
+                  </TableCell>
                   <TableCell>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
                       {p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"}
@@ -156,6 +211,12 @@ export function JiuJitsuFinanceiroTab() {
                   ))}
                 </SelectContent>
               </Select>
+              {infoMensalidade && (
+                <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  {infoMensalidade}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
