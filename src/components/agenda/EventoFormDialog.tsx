@@ -344,6 +344,10 @@ export const EventoFormDialog = ({
           valor_nao_membro: "",
           valor_familia: "",
           valor_equipe: "",
+          vagas_membro: "",
+          vagas_nao_membro: "",
+          vagas_familia: "",
+          vagas_equipe: "",
         });
         setAmbientesExtras([]);
         setHorariosPorDia([]);
