@@ -86,6 +86,7 @@ interface Evento {
   comentarios_custo?: string | null;
   horarios_por_dia?: HorarioDia[];
   limite_vagas?: number | null;
+  vagas_por_tipo?: Record<string, number> | null;
 }
 
 interface EventoFormDialogProps {
