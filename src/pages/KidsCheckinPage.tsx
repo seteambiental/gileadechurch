@@ -168,7 +168,8 @@ const KidsCheckinPage = () => {
   // Filtrar filhos que pertencem a esta turma
   const filhosDaTurma = filhos?.filter(child => {
     if (child.turmaOverride) return child.turmaOverride === turma;
-    const matchedTurma = allTurmas?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    const matchedTurma = allTurmas?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
     return matchedTurma?.turma === turma;
   }) || [];
 

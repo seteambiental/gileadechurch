@@ -145,7 +145,8 @@ const KidsCheckMePage = () => {
     if (child.turmaOverride) {
       return allTurmas?.find(t => t.turma === child.turmaOverride);
     }
-    return allTurmas?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    return allTurmas?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
   };
 
   // Check-me mutation
