@@ -214,12 +214,13 @@ const KidsPage = () => {
     novosConvertidos?.forEach((nc) => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
+      const idadeTurma = kidsAgeForTurma(nc.data_nascimento);
       
-      // Use override if set, otherwise age-based
+      // Use override if set, otherwise year-based age for turma
       const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
       
       if (turma) {
         // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos

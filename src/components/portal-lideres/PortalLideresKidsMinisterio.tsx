@@ -217,10 +217,11 @@ export const PortalLideresKidsMinisterio = ({
     novosConvertidos?.forEach((nc) => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
+      const idadeTurma = kidsAgeForTurma(nc.data_nascimento);
       const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
       if (turma) {
         const membroVinculado = nc.membro_vinculado as Responsavel | null;
         const respVinculo = responsaveis?.find(r => r.crianca_novo_convertido_id === nc.id);
