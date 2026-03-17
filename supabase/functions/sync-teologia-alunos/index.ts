@@ -90,6 +90,17 @@ Deno.serve(async (req) => {
       memberByNome.set(normalizeNome(m.full_name), m.id);
     }
 
+    const manualOverrides = new Map<string, { turma: string; observacoes: string; valor_total: number }>([
+      [
+        "044fe7d2-5cb5-418a-be64-5afc10134153",
+        { turma: "TEOLOGIA BÁSICA 2026-1", observacoes: "Teologia Básica", valor_total: 200 },
+      ],
+      [
+        "3b30f367-9c66-48bb-86e5-34d661fca4e0",
+        { turma: "TEOLOGIA BÁSICA 2026-1", observacoes: "Teologia Básica", valor_total: 200 },
+      ],
+    ]);
+
     // Member IDs to exclude from sync (not actual students)
     const excludedMemberIds = new Set([
       "7eea844a-9ca7-4797-a86e-7c181ee0c34d", // Giovana de Deus Derzette
