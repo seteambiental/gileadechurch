@@ -477,10 +477,19 @@ const TeologiaFinanceiroTab = () => {
       {turmaReport.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Relatório por Turma
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Relatório por Turma
+              </CardTitle>
+              <ExportButton
+                data={turmaReport}
+                columns={turmaExportColumns}
+                filename="teologia-relatorio-turmas"
+                title="Relatório por Turma - Curso de Teologia"
+                sheetName="Turmas"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border overflow-hidden">
