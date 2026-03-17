@@ -143,6 +143,9 @@ export function JiuJitsuAlunosTab() {
                         <DropdownMenuItem onClick={() => setCarteirinhaAluno(aluno)}>
                           <IdCard className="h-4 w-4 mr-2" /> Carteirinha
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => gerarTermoAlunoPDF(aluno)}>
+                          <FileText className="h-4 w-4 mr-2" /> Gerar Termo PDF
+                        </DropdownMenuItem>
                         {aluno.tipo === "visitante" && (
                           <DropdownMenuItem onClick={() => handleConverterMembro(aluno)}>
                             <UserCheck className="h-4 w-4 mr-2" /> Converter em Membro
