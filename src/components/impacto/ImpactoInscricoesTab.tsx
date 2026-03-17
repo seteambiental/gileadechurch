@@ -105,6 +105,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
   const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
+  const TIPO_OPTIONS = ["Membro", "Não membro", "Líderes e Anfitriões", "Equipe", "—"];
+  const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   useEffect(() => {
@@ -264,12 +266,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       all = all.filter((i: any) => filtroGenero.has(resolveGeneroLabel(i)));
     }
 
+    // Tipo filter
+    if (filtroTipo.size < TIPO_OPTIONS.length) {
+      all = all.filter((i: any) => {
+        const tipoLabel = TIPOS_INSCRICAO_LABELS[i.tipo_inscricao] || i.tipo_inscricao || "—";
+        return filtroTipo.has(tipoLabel);
+      });
+    }
+
     if (!searchNome.trim()) return all;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return all.filter((i: any) =>
       (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo]);
 
   // Keep selected IDs in sync with currently visible inscrições
   useEffect(() => {
@@ -755,7 +765,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                 {isCol("referencia") && <TableHead>Ref.</TableHead>}
                 <TableHead></TableHead>
                 {isCol("nome") && <TableHead>Nome</TableHead>}
-                {isCol("tipo") && <TableHead>Tipo</TableHead>}
+                {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
                 {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
                 {isCol("telefone") && <TableHead>Contato</TableHead>}
                 {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}

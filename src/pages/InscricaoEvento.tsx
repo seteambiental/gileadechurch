@@ -36,6 +36,7 @@ interface Evento {
   valor_custo: number | null;
   limite_vagas: number | null;
   valores_por_tipo: Record<string, string> | null;
+  vagas_por_tipo: Record<string, number> | null;
 }
 
 interface PessoaBusca {
@@ -116,36 +117,61 @@ const InscricaoEvento = () => {
     enabled: !!eventoId,
   });
 
-  // Fetch inscriptions count: impacto_inscricoes (source of truth) + pending inscricoes_eventos
-  const { data: inscricoesCount = 0 } = useQuery({
-    queryKey: ["inscricoes-count", eventoId],
+  // Fetch inscriptions count per tipo: impacto_inscricoes + pending inscricoes_eventos
+  const { data: inscricoesPorTipo = {} as Record<string, number> } = useQuery({
+    queryKey: ["inscricoes-count-por-tipo", eventoId],
     queryFn: async () => {
-      // Count from impacto_inscricoes (processed/approved inscriptions)
-      const { count: impactoCount, error: impactoError } = await supabase
+      const counts: Record<string, number> = {};
+
+      // From impacto_inscricoes
+      const { data: impactoData, error: impactoError } = await supabase
         .from("impacto_inscricoes")
-        .select("*", { count: "exact", head: true })
+        .select("tipo_inscricao")
         .eq("evento_id", eventoId);
       if (impactoError) throw impactoError;
+      (impactoData || []).forEach((i: any) => {
+        const tipo = i.tipo_inscricao || "membro";
+        counts[tipo] = (counts[tipo] || 0) + 1;
+      });
 
-      // Count pending inscricoes_eventos (not yet processed into impacto)
-      const { count: pendingCount, error: pendingError } = await supabase
+      // From pending inscricoes_eventos
+      const { data: pendingData, error: pendingError } = await supabase
         .from("inscricoes_eventos")
-        .select("*", { count: "exact", head: true })
+        .select("tipo_inscricao")
         .eq("evento_id", eventoId)
         .eq("aprovado", false)
         .eq("lista_espera", false)
         .neq("status_pagamento", "cancelado");
       if (pendingError) throw pendingError;
+      (pendingData || []).forEach((i: any) => {
+        const tipo = i.tipo_inscricao || "membro";
+        counts[tipo] = (counts[tipo] || 0) + 1;
+      });
 
-      return (impactoCount || 0) + (pendingCount || 0);
+      return counts;
     },
     enabled: !!eventoId,
   });
+
+  const inscricoesCount = Object.values(inscricoesPorTipo).reduce((a, b) => a + b, 0);
 
   const vagasDisponiveis = evento?.limite_vagas 
     ? Math.max(0, evento.limite_vagas - inscricoesCount) 
     : null;
   const esgotado = vagasDisponiveis !== null && vagasDisponiveis <= 0;
+
+  // Per-type availability
+  const vagasPorTipo = evento?.vagas_por_tipo as Record<string, number> | null;
+  const getVagasDisponiveisTipo = (tipo: string): number | null => {
+    if (!vagasPorTipo || !vagasPorTipo[tipo]) return null;
+    const limite = vagasPorTipo[tipo];
+    const usado = inscricoesPorTipo[tipo] || 0;
+    return Math.max(0, limite - usado);
+  };
+  const tipoEsgotado = (tipo: string): boolean => {
+    const disponivel = getVagasDisponiveisTipo(tipo);
+    return disponivel !== null && disponivel <= 0;
+  };
 
   // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
   const { data: pessoas = [] } = useQuery({
@@ -270,8 +296,8 @@ const InscricaoEvento = () => {
         }
       }
 
-      // Verificar novamente se há vagas (para evitar race condition)
-      const isListaEspera = esgotado;
+      // Verificar novamente se há vagas (global e por tipo)
+      const isListaEspera = esgotado || tipoEsgotado(tipoInscricao);
       
       // Montar observação com info do ministério
       let observacoesMinisterio = "";
@@ -812,20 +838,47 @@ const InscricaoEvento = () => {
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="membro" className="text-base md:text-lg py-2 md:py-3">Membro</SelectItem>
-                          <SelectItem value="nao_membro" className="text-base md:text-lg py-2 md:py-3">Não Membro</SelectItem>
-                          <SelectItem value="familia" className="text-base md:text-lg py-2 md:py-3">Líderes e Anfitriões</SelectItem>
-                          <SelectItem value="equipe" className="text-base md:text-lg py-2 md:py-3">Equipe (Apoio/Serviço)</SelectItem>
+                          {[
+                            { value: "membro", label: "Membro" },
+                            { value: "nao_membro", label: "Não Membro" },
+                            { value: "familia", label: "Líderes e Anfitriões" },
+                            { value: "equipe", label: "Equipe (Apoio/Serviço)" },
+                          ].map((opt) => {
+                            const disponivel = getVagasDisponiveisTipo(opt.value);
+                            const esgotadoTipo = tipoEsgotado(opt.value);
+                            return (
+                              <SelectItem
+                                key={opt.value}
+                                value={opt.value}
+                                className="text-base md:text-lg py-2 md:py-3"
+                                disabled={esgotadoTipo}
+                              >
+                                {opt.label}
+                                {disponivel !== null && (
+                                  <span className={`ml-2 text-xs ${esgotadoTipo ? "text-destructive" : "text-muted-foreground"}`}>
+                                    ({esgotadoTipo ? "esgotado" : `${disponivel} vagas`})
+                                  </span>
+                                )}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
-                      {evento.tem_custo && (() => {
+                      {/* Show per-type info */}
+                      {(() => {
+                        const disponivel = getVagasDisponiveisTipo(tipoInscricao);
                         const valorTipo = evento.valores_por_tipo?.[tipoInscricao];
-                        const valorExibir = valorTipo ? parseFloat(valorTipo) : evento.valor_custo;
-                        return valorExibir ? (
-                          <p className="text-sm md:text-base text-muted-foreground">
-                            Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong>
-                          </p>
-                        ) : null;
+                        const valorExibir = evento.tem_custo ? (valorTipo ? parseFloat(valorTipo) : evento.valor_custo) : null;
+                        return (
+                          <div className="flex flex-wrap gap-3 text-sm md:text-base text-muted-foreground">
+                            {valorExibir ? (
+                              <span>Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong></span>
+                            ) : null}
+                            {disponivel !== null && (
+                              <span>Vagas restantes: <strong>{disponivel}</strong></span>
+                            )}
+                          </div>
+                        );
                       })()}
                     </div>
 

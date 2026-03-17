@@ -86,6 +86,7 @@ interface Evento {
   comentarios_custo?: string | null;
   horarios_por_dia?: HorarioDia[];
   limite_vagas?: number | null;
+  vagas_por_tipo?: Record<string, number> | null;
 }
 
 interface EventoFormDialogProps {
@@ -207,6 +208,10 @@ export const EventoFormDialog = ({
     valor_nao_membro: "",
     valor_familia: "",
     valor_equipe: "",
+    vagas_membro: "",
+    vagas_nao_membro: "",
+    vagas_familia: "",
+    vagas_equipe: "",
   });
 
   const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
@@ -256,6 +261,7 @@ export const EventoFormDialog = ({
         const bloqueioInicio = (evento as any).bloqueio_inicio ? new Date((evento as any).bloqueio_inicio) : null;
         const bloqueioFim = (evento as any).bloqueio_fim ? new Date((evento as any).bloqueio_fim) : null;
         const valoresPorTipo = (evento as any).valores_por_tipo as Record<string, string> | null;
+        const vagasPorTipo = (evento as any).vagas_por_tipo as Record<string, number> | null;
         setFormData({
           titulo: evento.titulo || "",
           descricao: evento.descricao || "",
@@ -292,6 +298,10 @@ export const EventoFormDialog = ({
           valor_nao_membro: valoresPorTipo?.nao_membro || "",
           valor_familia: valoresPorTipo?.familia || "",
           valor_equipe: valoresPorTipo?.equipe || "",
+          vagas_membro: vagasPorTipo?.membro?.toString() || "",
+          vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
+          vagas_familia: vagasPorTipo?.familia?.toString() || "",
+          vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
         });
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
@@ -334,6 +344,10 @@ export const EventoFormDialog = ({
           valor_nao_membro: "",
           valor_familia: "",
           valor_equipe: "",
+          vagas_membro: "",
+          vagas_nao_membro: "",
+          vagas_familia: "",
+          vagas_equipe: "",
         });
         setAmbientesExtras([]);
         setHorariosPorDia([]);
@@ -623,6 +637,14 @@ export const EventoFormDialog = ({
           familia: formData.valor_familia || null,
           equipe: formData.valor_equipe || null,
         } : null,
+        vagas_por_tipo: formData.necessita_inscricao ? (() => {
+          const vpt: Record<string, number> = {};
+          if (formData.vagas_membro) vpt.membro = parseInt(formData.vagas_membro);
+          if (formData.vagas_nao_membro) vpt.nao_membro = parseInt(formData.vagas_nao_membro);
+          if (formData.vagas_familia) vpt.familia = parseInt(formData.vagas_familia);
+          if (formData.vagas_equipe) vpt.equipe = parseInt(formData.vagas_equipe);
+          return Object.keys(vpt).length > 0 ? vpt : null;
+        })() : null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
@@ -1478,7 +1500,7 @@ export const EventoFormDialog = ({
             </div>
 
             <div>
-              <Label htmlFor="limite_vagas">Limite de Vagas</Label>
+              <Label htmlFor="limite_vagas">Limite Total de Vagas</Label>
               <Input
                 id="limite_vagas"
                 type="number"
@@ -1491,6 +1513,31 @@ export const EventoFormDialog = ({
                 Deixe vazio para sem limite de vagas
               </p>
             </div>
+
+            {formData.necessita_inscricao && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <Label className="font-medium">Vagas por Tipo de Inscrição</Label>
+                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Membro</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_membro} onChange={(e) => setFormData({ ...formData, vagas_membro: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Não Membro</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_nao_membro} onChange={(e) => setFormData({ ...formData, vagas_nao_membro: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Líderes / Anfitriões</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_familia} onChange={(e) => setFormData({ ...formData, vagas_familia: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Equipe</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_equipe} onChange={(e) => setFormData({ ...formData, vagas_equipe: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Visibilidade - exibir sempre */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
