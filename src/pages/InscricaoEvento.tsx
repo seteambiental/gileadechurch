@@ -196,6 +196,44 @@ const InscricaoEvento = () => {
     setSearchTerm("");
   };
 
+  // Auto-fill responsible person for minors who are registered members
+  const fetchResponsavel = useCallback(async (memberId: string) => {
+    try {
+      const { data: resp } = await supabase
+        .from("kids_responsaveis")
+        .select("responsavel_member_id, parentesco")
+        .eq("crianca_member_id", memberId)
+        .eq("principal", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (!resp?.responsavel_member_id) return;
+
+      const { data: responsavel } = await supabase
+        .from("members_safe" as any)
+        .select("full_name, whatsapp")
+        .eq("id", resp.responsavel_member_id)
+        .maybeSingle();
+
+      if (responsavel) {
+        setNomeResponsavel((responsavel as any).full_name || "");
+        setTelefoneResponsavel((responsavel as any).whatsapp ? formatPhone((responsavel as any).whatsapp) : "");
+      }
+    } catch {
+      // silently fail — user can still fill manually
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMenor && selectedPerson?.type === "member" && selectedPerson?.id) {
+      fetchResponsavel(selectedPerson.id);
+    }
+    if (!isMenor) {
+      setNomeResponsavel("");
+      setTelefoneResponsavel("");
+    }
+  }, [isMenor, selectedPerson, fetchResponsavel]);
+
   // Handle new person
   const handleNewPerson = () => {
     setSelectedPerson({ type: "novo" });
