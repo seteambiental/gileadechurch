@@ -68,6 +68,7 @@ interface MenuItemConfig {
   icon: React.ElementType;
   color: string;
   badge?: string | number;
+  action?: () => void;
 }
 
 const PortalLideres = () => {
