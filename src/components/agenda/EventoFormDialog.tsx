@@ -1500,7 +1500,7 @@ export const EventoFormDialog = ({
             </div>
 
             <div>
-              <Label htmlFor="limite_vagas">Limite de Vagas</Label>
+              <Label htmlFor="limite_vagas">Limite Total de Vagas</Label>
               <Input
                 id="limite_vagas"
                 type="number"
@@ -1513,6 +1513,31 @@ export const EventoFormDialog = ({
                 Deixe vazio para sem limite de vagas
               </p>
             </div>
+
+            {formData.necessita_inscricao && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <Label className="font-medium">Vagas por Tipo de Inscrição</Label>
+                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Membro</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_membro} onChange={(e) => setFormData({ ...formData, vagas_membro: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Não Membro</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_nao_membro} onChange={(e) => setFormData({ ...formData, vagas_nao_membro: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Líderes / Anfitriões</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_familia} onChange={(e) => setFormData({ ...formData, vagas_familia: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Equipe</Label>
+                    <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_equipe} onChange={(e) => setFormData({ ...formData, vagas_equipe: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Visibilidade - exibir sempre */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
