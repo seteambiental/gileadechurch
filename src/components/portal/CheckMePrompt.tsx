@@ -97,7 +97,8 @@ export const CheckMePrompt = ({ memberId, memberName, onDismiss }: CheckMePrompt
 
   const getTurma = (child: any) => {
     if (child.turmaOverride) return turmasConfig?.find(t => t.turma === child.turmaOverride);
-    return turmasConfig?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    return turmasConfig?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
   };
 
   const isAlreadyChecked = (childId: string) =>
