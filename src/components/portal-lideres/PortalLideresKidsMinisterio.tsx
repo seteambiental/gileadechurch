@@ -192,10 +192,11 @@ export const PortalLideresKidsMinisterio = ({
     members?.forEach((member) => {
       if (!member.birth_date) return;
       const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
+      const idadeTurma = kidsAgeForTurma(member.birth_date);
       const override = (member as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idade >= t.idade_minima && idade <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
       if (turma) {
         const respVinculo = responsaveis?.find(r => r.crianca_member_id === member.id);
         const resp = respVinculo?.responsavel as Responsavel | null;
