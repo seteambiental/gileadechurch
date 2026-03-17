@@ -112,6 +112,7 @@ const KidsCheckinPage = () => {
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: childTurma,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
