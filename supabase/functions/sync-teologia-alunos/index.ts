@@ -126,20 +126,20 @@ Deno.serve(async (req) => {
       const matricula = Array.isArray(aluno.matriculas) && aluno.matriculas.length > 0 ? aluno.matriculas[0] : null;
       const turma = matricula?.turma_nome || aluno.turma || null;
       const cursoNome = matricula?.curso_nome || aluno.curso || null;
-      const statusMatricula = matricula?.status || aluno.status_matricula || "ativo";
+      const statusMatricula = matricula?.status || aluno.status_matricula || null;
+      const existingAluno = existingByMemberId.get(memberId);
+
+      const payload = {
+        member_id: memberId,
+        valor_total: valorTotal || existingAluno?.valor_total || 0,
+        status: statusMatricula || existingAluno?.status || "ativo",
+        turma: turma || existingAluno?.turma || null,
+        observacoes: cursoNome || existingAluno?.observacoes || null,
+      };
 
       const { error: upsertError } = await supabase
         .from("teologia_alunos")
-        .upsert(
-          {
-            member_id: memberId,
-            valor_total: valorTotal,
-            status: statusMatricula,
-            turma,
-            observacoes: cursoNome || null,
-          },
-          { onConflict: "member_id" }
-        );
+        .upsert(payload, { onConflict: "member_id" });
 
       if (upsertError) {
         console.error("Upsert error for member", memberId, upsertError);
