@@ -322,9 +322,18 @@ const TeologiaFinanceiroTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setAddAlunoOpen(true)} size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={alunoExportData}
+            columns={alunoExportColumns}
+            filename="teologia-alunos"
+            title="Financeiro - Curso de Teologia"
+            sheetName="Alunos"
+          />
+          <Button onClick={() => setAddAlunoOpen(true)} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
