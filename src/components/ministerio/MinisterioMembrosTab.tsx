@@ -87,15 +87,21 @@ export const MinisterioMembrosTab = ({
           const idade = m.birth_date 
             ? differenceInYears(hoje, parseLocalDate(m.birth_date))
             : null;
+          // Use year-based age for turma boundary filtering (kids/teens)
+          const idadeTurma = m.birth_date
+            ? (hoje.getFullYear() - parseInt(m.birth_date.split("-")[0]))
+            : null;
           return {
             ...m,
             tipo: "membro" as const,
             idade,
+            idadeTurma,
           };
         })
         .filter((m) => {
-          if (m.idade === null) return false;
-          return m.idade >= idadeMinima && m.idade <= idadeMaxima;
+          const ageForFilter = m.idadeTurma ?? m.idade;
+          if (ageForFilter === null) return false;
+          return ageForFilter >= idadeMinima && ageForFilter <= idadeMaxima;
         });
     },
   });
