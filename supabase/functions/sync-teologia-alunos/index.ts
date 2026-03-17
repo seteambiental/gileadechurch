@@ -139,13 +139,14 @@ Deno.serve(async (req) => {
       const cursoNome = matricula?.curso_nome || aluno.curso || null;
       const statusMatricula = matricula?.status || aluno.status_matricula || null;
       const existingAluno = existingByMemberId.get(memberId);
+      const manualOverride = manualOverrides.get(memberId);
 
       const payload = {
         member_id: memberId,
-        valor_total: valorTotal || existingAluno?.valor_total || 0,
+        valor_total: manualOverride?.valor_total ?? valorTotal || existingAluno?.valor_total || 0,
         status: statusMatricula || existingAluno?.status || "ativo",
-        turma: turma || existingAluno?.turma || null,
-        observacoes: cursoNome || existingAluno?.observacoes || null,
+        turma: manualOverride?.turma ?? turma || existingAluno?.turma || null,
+        observacoes: manualOverride?.observacoes ?? cursoNome || existingAluno?.observacoes || null,
       };
 
       const { error: upsertError } = await supabase
