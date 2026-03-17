@@ -55,13 +55,15 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
         const birthDate = (child as any).birth_date || (child as any).data_nascimento;
         if (!birthDate) return;
         const idade = differenceInYears(new Date(), parseLocalDate(birthDate));
-        if (idade > 12) return;
+        const idadeTurma = kidsAgeForTurma(birthDate);
+        if (idadeTurma > 12) return;
         allChildren.push({
           id,
           nome: (child as any).full_name,
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: (child as any).kids_turma_override,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
