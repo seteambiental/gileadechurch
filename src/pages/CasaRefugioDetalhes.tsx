@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { format, isWithinInterval, addWeeks, startOfDay, isBefore, isAfter, getDay } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
@@ -65,8 +65,8 @@ const CasaRefugioDetalhes = () => {
 
   const canConferir = isAdmin || isFinanceLeader;
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr());
+  const [endDate, setEndDate] = useState(todayDateStr());
   const [encontrosPage, setEncontrosPage] = useState(1);
   const ENCONTROS_PER_PAGE = 5;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);

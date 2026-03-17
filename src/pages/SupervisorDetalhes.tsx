@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { isWithinInterval } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr, todayDateStr } from "@/lib/date-utils";
 import { DateRangeFilter } from "@/components/casas-refugio/DateRangeFilter";
 import { EncontrosCharts } from "@/components/casas-refugio/EncontrosCharts";
 
@@ -20,8 +20,8 @@ const SupervisorDetalhes = () => {
   const navigate = useNavigate();
   const bypass = isAuthBypassed();
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr());
+  const [endDate, setEndDate] = useState(todayDateStr());
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {

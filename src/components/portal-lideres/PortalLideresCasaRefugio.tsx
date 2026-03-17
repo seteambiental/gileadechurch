@@ -41,7 +41,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { includesNormalized } from "@/lib/text-utils";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { format, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -74,8 +74,8 @@ export const PortalLideresCasaRefugio = ({
 }: PortalLideresCasaRefugioProps) => {
   const queryClient = useQueryClient();
   const [selectedCasa, setSelectedCasa] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr());
+  const [endDate, setEndDate] = useState(todayDateStr());
   const [showEncontroDialog, setShowEncontroDialog] = useState(false);
   const [editingEncontro, setEditingEncontro] = useState<any>(null);
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);

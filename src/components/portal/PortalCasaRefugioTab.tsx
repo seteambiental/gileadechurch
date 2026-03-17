@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { format, isWithinInterval } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -45,8 +45,8 @@ export const PortalCasaRefugioTab = ({
 }: PortalCasaRefugioTabProps) => {
   const queryClient = useQueryClient();
   const [selectedCasa, setSelectedCasa] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr());
+  const [endDate, setEndDate] = useState(todayDateStr());
   const [showEncontroDialog, setShowEncontroDialog] = useState(false);
   const [editingEncontro, setEditingEncontro] = useState<any>(null);
   const [deletingEncontroId, setDeletingEncontroId] = useState<string | null>(null);

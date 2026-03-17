@@ -28,3 +28,13 @@ export function todayDateStr(): string {
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+/**
+ * Get the first day of the current month as a YYYY-MM-DD string in local timezone.
+ */
+export function firstDayOfMonthStr(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}-01`;
+}
