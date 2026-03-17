@@ -3079,6 +3079,7 @@ export type Database = {
       }
       jiujitsu_alunos: {
         Row: {
+          alergias: string | null
           ativo: boolean
           bairro: string | null
           cep: string | null
@@ -3093,11 +3094,19 @@ export type Database = {
           estado: string | null
           faixa: string
           foto_url: string | null
+          genero: string | null
           graus: number
           id: string
+          medicamento_continuo: string | null
           member_id: string | null
           nome: string
+          plano_saude: boolean | null
+          responsavel_nome: string | null
+          responsavel_telefone: string | null
+          restricao_fisica: string | null
           telefone: string | null
+          termo_emergencia_aceito: boolean | null
+          termo_imagem_aceito: boolean | null
           tipo: string
           tipo_sanguineo: string | null
           turma_id: string | null
@@ -3105,6 +3114,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          alergias?: string | null
           ativo?: boolean
           bairro?: string | null
           cep?: string | null
@@ -3119,11 +3129,19 @@ export type Database = {
           estado?: string | null
           faixa?: string
           foto_url?: string | null
+          genero?: string | null
           graus?: number
           id?: string
+          medicamento_continuo?: string | null
           member_id?: string | null
           nome: string
+          plano_saude?: boolean | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          restricao_fisica?: string | null
           telefone?: string | null
+          termo_emergencia_aceito?: boolean | null
+          termo_imagem_aceito?: boolean | null
           tipo?: string
           tipo_sanguineo?: string | null
           turma_id?: string | null
@@ -3131,6 +3149,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          alergias?: string | null
           ativo?: boolean
           bairro?: string | null
           cep?: string | null
@@ -3145,11 +3164,19 @@ export type Database = {
           estado?: string | null
           faixa?: string
           foto_url?: string | null
+          genero?: string | null
           graus?: number
           id?: string
+          medicamento_continuo?: string | null
           member_id?: string | null
           nome?: string
+          plano_saude?: boolean | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          restricao_fisica?: string | null
           telefone?: string | null
+          termo_emergencia_aceito?: boolean | null
+          termo_imagem_aceito?: boolean | null
           tipo?: string
           tipo_sanguineo?: string | null
           turma_id?: string | null
@@ -3226,45 +3253,84 @@ export type Database = {
       }
       jiujitsu_inscricoes: {
         Row: {
+          alergias: string | null
+          contato_emergencia_nome: string | null
+          contato_emergencia_telefone: string | null
           cpf: string | null
           created_at: string
           data_nascimento: string | null
           email: string | null
+          genero: string | null
           id: string
+          medicamento_continuo: string | null
           member_id: string | null
           nome: string
           observacoes: string | null
+          plano_saude: boolean | null
+          possui_graduacao: string | null
+          responsavel_nome: string | null
+          responsavel_telefone: string | null
+          restricao_fisica: string | null
           status: string
+          telefone: string | null
+          termo_emergencia_aceito: boolean | null
+          termo_imagem_aceito: boolean | null
           tipo: string
           turma_id: string | null
           updated_at: string
           whatsapp: string | null
         }
         Insert: {
+          alergias?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
+          genero?: string | null
           id?: string
+          medicamento_continuo?: string | null
           member_id?: string | null
           nome: string
           observacoes?: string | null
+          plano_saude?: boolean | null
+          possui_graduacao?: string | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          restricao_fisica?: string | null
           status?: string
+          telefone?: string | null
+          termo_emergencia_aceito?: boolean | null
+          termo_imagem_aceito?: boolean | null
           tipo?: string
           turma_id?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Update: {
+          alergias?: string | null
+          contato_emergencia_nome?: string | null
+          contato_emergencia_telefone?: string | null
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
           email?: string | null
+          genero?: string | null
           id?: string
+          medicamento_continuo?: string | null
           member_id?: string | null
           nome?: string
           observacoes?: string | null
+          plano_saude?: boolean | null
+          possui_graduacao?: string | null
+          responsavel_nome?: string | null
+          responsavel_telefone?: string | null
+          restricao_fisica?: string | null
           status?: string
+          telefone?: string | null
+          termo_emergencia_aceito?: boolean | null
+          termo_imagem_aceito?: boolean | null
           tipo?: string
           turma_id?: string | null
           updated_at?: string
