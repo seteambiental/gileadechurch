@@ -6178,6 +6178,7 @@ export type Database = {
         | "lider_condominio"
         | "supervisor_casa_refugio"
         | "lider_casa_refugio"
+        | "secretario_casa_refugio"
         | "lider_ministerio"
         | "integrante_ministerio"
         | "membro"
@@ -6341,6 +6342,7 @@ export const Constants = {
         "lider_condominio",
         "supervisor_casa_refugio",
         "lider_casa_refugio",
+        "secretario_casa_refugio",
         "lider_ministerio",
         "integrante_ministerio",
         "membro",
