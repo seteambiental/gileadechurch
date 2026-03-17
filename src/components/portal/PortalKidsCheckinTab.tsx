@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Baby, CheckCircle2, LogIn, LogOut, Clock, QrCode, ExternalLink, Loader2 } from "lucide-react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
