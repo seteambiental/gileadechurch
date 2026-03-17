@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, ArrowLeft, Printer, Baby } from "lucide-react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import logoPG from "@/assets/logo-pg.png";
 import logoChurchKids from "@/assets/pg-church-kids.png";
 
