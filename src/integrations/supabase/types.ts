@@ -405,6 +405,7 @@ export type Database = {
           tipo_recorrencia: string | null
           titulo: string
           updated_at: string
+          vagas_por_tipo: Json | null
           valor_custo: number | null
           valores_por_tipo: Json | null
           visibilidade: string
@@ -446,6 +447,7 @@ export type Database = {
           tipo_recorrencia?: string | null
           titulo: string
           updated_at?: string
+          vagas_por_tipo?: Json | null
           valor_custo?: number | null
           valores_por_tipo?: Json | null
           visibilidade?: string
@@ -487,6 +489,7 @@ export type Database = {
           tipo_recorrencia?: string | null
           titulo?: string
           updated_at?: string
+          vagas_por_tipo?: Json | null
           valor_custo?: number | null
           valores_por_tipo?: Json | null
           visibilidade?: string
