@@ -65,8 +65,8 @@ const CasaRefugioDetalhes = () => {
 
   const canConferir = isAdmin || isFinanceLeader;
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(firstDayOfMonthStr());
+  const [endDate, setEndDate] = useState(todayDateStr());
   const [encontrosPage, setEncontrosPage] = useState(1);
   const ENCONTROS_PER_PAGE = 5;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
