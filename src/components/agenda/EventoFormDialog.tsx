@@ -637,6 +637,14 @@ export const EventoFormDialog = ({
           familia: formData.valor_familia || null,
           equipe: formData.valor_equipe || null,
         } : null,
+        vagas_por_tipo: formData.necessita_inscricao ? (() => {
+          const vpt: Record<string, number> = {};
+          if (formData.vagas_membro) vpt.membro = parseInt(formData.vagas_membro);
+          if (formData.vagas_nao_membro) vpt.nao_membro = parseInt(formData.vagas_nao_membro);
+          if (formData.vagas_familia) vpt.familia = parseInt(formData.vagas_familia);
+          if (formData.vagas_equipe) vpt.equipe = parseInt(formData.vagas_equipe);
+          return Object.keys(vpt).length > 0 ? vpt : null;
+        })() : null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
