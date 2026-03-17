@@ -117,36 +117,61 @@ const InscricaoEvento = () => {
     enabled: !!eventoId,
   });
 
-  // Fetch inscriptions count: impacto_inscricoes (source of truth) + pending inscricoes_eventos
-  const { data: inscricoesCount = 0 } = useQuery({
-    queryKey: ["inscricoes-count", eventoId],
+  // Fetch inscriptions count per tipo: impacto_inscricoes + pending inscricoes_eventos
+  const { data: inscricoesPorTipo = {} as Record<string, number> } = useQuery({
+    queryKey: ["inscricoes-count-por-tipo", eventoId],
     queryFn: async () => {
-      // Count from impacto_inscricoes (processed/approved inscriptions)
-      const { count: impactoCount, error: impactoError } = await supabase
+      const counts: Record<string, number> = {};
+
+      // From impacto_inscricoes
+      const { data: impactoData, error: impactoError } = await supabase
         .from("impacto_inscricoes")
-        .select("*", { count: "exact", head: true })
+        .select("tipo_inscricao")
         .eq("evento_id", eventoId);
       if (impactoError) throw impactoError;
+      (impactoData || []).forEach((i: any) => {
+        const tipo = i.tipo_inscricao || "membro";
+        counts[tipo] = (counts[tipo] || 0) + 1;
+      });
 
-      // Count pending inscricoes_eventos (not yet processed into impacto)
-      const { count: pendingCount, error: pendingError } = await supabase
+      // From pending inscricoes_eventos
+      const { data: pendingData, error: pendingError } = await supabase
         .from("inscricoes_eventos")
-        .select("*", { count: "exact", head: true })
+        .select("tipo_inscricao")
         .eq("evento_id", eventoId)
         .eq("aprovado", false)
         .eq("lista_espera", false)
         .neq("status_pagamento", "cancelado");
       if (pendingError) throw pendingError;
+      (pendingData || []).forEach((i: any) => {
+        const tipo = i.tipo_inscricao || "membro";
+        counts[tipo] = (counts[tipo] || 0) + 1;
+      });
 
-      return (impactoCount || 0) + (pendingCount || 0);
+      return counts;
     },
     enabled: !!eventoId,
   });
+
+  const inscricoesCount = Object.values(inscricoesPorTipo).reduce((a, b) => a + b, 0);
 
   const vagasDisponiveis = evento?.limite_vagas 
     ? Math.max(0, evento.limite_vagas - inscricoesCount) 
     : null;
   const esgotado = vagasDisponiveis !== null && vagasDisponiveis <= 0;
+
+  // Per-type availability
+  const vagasPorTipo = evento?.vagas_por_tipo as Record<string, number> | null;
+  const getVagasDisponiveisTipo = (tipo: string): number | null => {
+    if (!vagasPorTipo || !vagasPorTipo[tipo]) return null;
+    const limite = vagasPorTipo[tipo];
+    const usado = inscricoesPorTipo[tipo] || 0;
+    return Math.max(0, limite - usado);
+  };
+  const tipoEsgotado = (tipo: string): boolean => {
+    const disponivel = getVagasDisponiveisTipo(tipo);
+    return disponivel !== null && disponivel <= 0;
+  };
 
   // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
   const { data: pessoas = [] } = useQuery({
