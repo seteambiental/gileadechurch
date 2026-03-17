@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, UserCheck, CreditCard, IdCard } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, UserCheck, CreditCard, IdCard, FileText } from "lucide-react";
+import { gerarTermoAlunoPDF } from "./gerarTermoAlunoPDF";
 import { AlunoFormDialog } from "./AlunoFormDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
 import {
@@ -141,6 +142,9 @@ export function JiuJitsuAlunosTab() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setCarteirinhaAluno(aluno)}>
                           <IdCard className="h-4 w-4 mr-2" /> Carteirinha
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => gerarTermoAlunoPDF(aluno)}>
+                          <FileText className="h-4 w-4 mr-2" /> Gerar Termo PDF
                         </DropdownMenuItem>
                         {aluno.tipo === "visitante" && (
                           <DropdownMenuItem onClick={() => handleConverterMembro(aluno)}>
