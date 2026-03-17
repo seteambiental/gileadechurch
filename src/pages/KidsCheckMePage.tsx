@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, CheckCircle2, ArrowLeft, Printer, Baby } from "lucide-react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import logoPG from "@/assets/logo-pg.png";
 import logoChurchKids from "@/assets/pg-church-kids.png";
 
@@ -97,6 +98,7 @@ const KidsCheckMePage = () => {
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: (child as any).kids_turma_override,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
@@ -107,12 +109,14 @@ const KidsCheckMePage = () => {
         addedIds.add(child.id);
         if (!child.birth_date) return;
         const idade = differenceInYears(new Date(), parseLocalDate(child.birth_date));
+        const idadeTurma = kidsAgeForTurma(child.birth_date);
         allChildren.push({
           id: child.id,
           nome: child.full_name,
           foto: child.photo_url,
           genero: child.genero,
           idade,
+          birthDate: child.birth_date,
           turmaOverride: child.kids_turma_override,
           tipo: "membro",
         });
@@ -143,7 +147,8 @@ const KidsCheckMePage = () => {
     if (child.turmaOverride) {
       return allTurmas?.find(t => t.turma === child.turmaOverride);
     }
-    return allTurmas?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    return allTurmas?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
   };
 
   // Check-me mutation

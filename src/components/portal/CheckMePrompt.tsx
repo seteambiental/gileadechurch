@@ -10,6 +10,7 @@ import { Loader2, CheckCircle2, MapPin, X, Baby } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import { toast } from "sonner";
 import logoChurchKids from "@/assets/pg-church-kids.png";
 import kidsLogoPG from "@/assets/kids-logo-pg.png";
@@ -53,13 +54,15 @@ export const CheckMePrompt = ({ memberId, memberName, onDismiss }: CheckMePrompt
         const birthDate = (child as any).birth_date || (child as any).data_nascimento;
         if (!birthDate) return;
         const idade = differenceInYears(new Date(), parseLocalDate(birthDate));
-        if (idade > 12) return;
+        const idadeTurma = kidsAgeForTurma(birthDate);
+        if (idadeTurma > 12) return;
         allChildren.push({
           id,
           nome: (child as any).full_name,
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: (child as any).kids_turma_override,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
@@ -94,7 +97,8 @@ export const CheckMePrompt = ({ memberId, memberName, onDismiss }: CheckMePrompt
 
   const getTurma = (child: any) => {
     if (child.turmaOverride) return turmasConfig?.find(t => t.turma === child.turmaOverride);
-    return turmasConfig?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    return turmasConfig?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
   };
 
   const isAlreadyChecked = (childId: string) =>

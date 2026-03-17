@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Baby, CheckCircle2, LogIn, LogOut, Clock, QrCode, ExternalLink, Loader2 } from "lucide-react";
 import { format, differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -54,13 +55,15 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
         const birthDate = (child as any).birth_date || (child as any).data_nascimento;
         if (!birthDate) return;
         const idade = differenceInYears(new Date(), parseLocalDate(birthDate));
-        if (idade > 12) return;
+        const idadeTurma = kidsAgeForTurma(birthDate);
+        if (idadeTurma > 12) return;
         allChildren.push({
           id,
           nome: (child as any).full_name,
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: (child as any).kids_turma_override,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
@@ -71,13 +74,15 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
         addedIds.add(child.id);
         if (!child.birth_date) return;
         const idade = differenceInYears(new Date(), parseLocalDate(child.birth_date));
-        if (idade > 12) return;
+        const idadeTurma = kidsAgeForTurma(child.birth_date);
+        if (idadeTurma > 12) return;
         allChildren.push({
           id: child.id,
           nome: child.full_name,
           foto: child.photo_url,
           genero: child.genero,
           idade,
+          birthDate: child.birth_date,
           turmaOverride: child.kids_turma_override,
           tipo: "membro",
         });
@@ -113,7 +118,8 @@ export const PortalKidsCheckinTab = ({ memberId, memberName }: PortalKidsCheckin
 
   const getTurmaForChild = (child: any) => {
     if (child.turmaOverride) return turmasConfig?.find(t => t.turma === child.turmaOverride);
-    return turmasConfig?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    return turmasConfig?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
   };
 
   const getCheckinForChild = (childId: string) => {

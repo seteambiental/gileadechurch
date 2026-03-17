@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { kidsAgeForTurma } from "@/lib/age-utils";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 const KidsCheckinPage = () => {
@@ -101,6 +102,7 @@ const KidsCheckinPage = () => {
         const birthDate = (child as any).birth_date || (child as any).data_nascimento;
         if (!birthDate) return;
         const idade = differenceInYears(new Date(), parseLocalDate(birthDate));
+        const idadeTurma = kidsAgeForTurma(birthDate);
         const override = (child as any).kids_turma_override;
         const childTurma = override || null;
 
@@ -110,6 +112,7 @@ const KidsCheckinPage = () => {
           foto: (child as any).photo_url,
           genero: (child as any).genero,
           idade,
+          birthDate,
           turmaOverride: childTurma,
           tipo: v.crianca_member_id ? "membro" : "novo_convertido",
         });
@@ -121,12 +124,14 @@ const KidsCheckinPage = () => {
         addedIds.add(child.id);
         if (!child.birth_date) return;
         const idade = differenceInYears(new Date(), parseLocalDate(child.birth_date));
+        const idadeTurma = kidsAgeForTurma(child.birth_date);
         allChildren.push({
           id: child.id,
           nome: child.full_name,
           foto: child.photo_url,
           genero: child.genero,
           idade,
+          birthDate: child.birth_date,
           turmaOverride: child.kids_turma_override,
           tipo: "membro",
         });
@@ -165,7 +170,8 @@ const KidsCheckinPage = () => {
   // Filtrar filhos que pertencem a esta turma
   const filhosDaTurma = filhos?.filter(child => {
     if (child.turmaOverride) return child.turmaOverride === turma;
-    const matchedTurma = allTurmas?.find(t => child.idade >= t.idade_minima && child.idade <= t.idade_maxima);
+    const idadeTurmaChild = kidsAgeForTurma(child.birthDate);
+    const matchedTurma = allTurmas?.find(t => idadeTurmaChild >= t.idade_minima && idadeTurmaChild <= t.idade_maxima);
     return matchedTurma?.turma === turma;
   }) || [];
 
