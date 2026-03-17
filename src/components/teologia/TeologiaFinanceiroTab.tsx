@@ -247,7 +247,7 @@ const TeologiaFinanceiroTab = () => {
     { header: "% Arrecadado", accessor: (r: any) => r.devido > 0 ? `${Math.round((r.pago / r.devido) * 100)}%` : "0%" },
   ];
 
-    return (
+  if (isLoading) {
       <div className="flex justify-center py-12">
         <Loader2 className="w-8 h-8 text-secondary animate-spin" />
       </div>
