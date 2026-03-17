@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatCurrency, formatDateBR } from "@/lib/masks";
+import { ExportButton } from "@/components/ui/export-button";
+import { ExportColumn } from "@/lib/export";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -210,6 +212,41 @@ const TeologiaFinanceiroTab = () => {
     return { turma, total: turmaAlunos.length, devido, pago, saldo: devido - pago, quitados };
   });
 
+  // Export columns for alunos
+  const alunoExportColumns: ExportColumn[] = [
+    { header: "Aluno", accessor: (r: any) => r.nome },
+    { header: "Turma", accessor: (r: any) => r.turma },
+    { header: "Valor Total", accessor: (r: any) => r.valorTotal, type: "currency" },
+    { header: "Pago", accessor: (r: any) => r.pago, type: "currency" },
+    { header: "Saldo", accessor: (r: any) => r.saldo, type: "currency" },
+    { header: "Status", accessor: (r: any) => r.status },
+  ];
+
+  const alunoExportData = filtered.map((a: any) => {
+    const pgtos = pagamentosByAluno[a.id] || [];
+    const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const saldo = Number(a.valor_total || 0) - pago;
+    return {
+      nome: a.members?.full_name || "",
+      turma: a.turma || "—",
+      valorTotal: Number(a.valor_total || 0),
+      pago,
+      saldo,
+      status: saldo <= 0 ? "Quitado" : pago > 0 ? "Parcial" : "Pendente",
+    };
+  });
+
+  // Export columns for turma report
+  const turmaExportColumns: ExportColumn[] = [
+    { header: "Turma", accessor: "turma" },
+    { header: "Alunos", accessor: "total", type: "number" },
+    { header: "Quitados", accessor: "quitados", type: "number" },
+    { header: "Total Devido", accessor: "devido", type: "currency" },
+    { header: "Total Pago", accessor: "pago", type: "currency" },
+    { header: "Saldo Devedor", accessor: "saldo", type: "currency" },
+    { header: "% Arrecadado", accessor: (r: any) => r.devido > 0 ? `${Math.round((r.pago / r.devido) * 100)}%` : "0%" },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -285,9 +322,18 @@ const TeologiaFinanceiroTab = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setAddAlunoOpen(true)} size="sm">
-          <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={alunoExportData}
+            columns={alunoExportColumns}
+            filename="teologia-alunos"
+            title="Financeiro - Curso de Teologia"
+            sheetName="Alunos"
+          />
+          <Button onClick={() => setAddAlunoOpen(true)} size="sm">
+            <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -431,10 +477,19 @@ const TeologiaFinanceiroTab = () => {
       {turmaReport.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Relatório por Turma
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Relatório por Turma
+              </CardTitle>
+              <ExportButton
+                data={turmaReport}
+                columns={turmaExportColumns}
+                filename="teologia-relatorio-turmas"
+                title="Relatório por Turma - Curso de Teologia"
+                sheetName="Turmas"
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border overflow-hidden">
