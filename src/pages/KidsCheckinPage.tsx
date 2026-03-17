@@ -131,6 +131,7 @@ const KidsCheckinPage = () => {
           foto: child.photo_url,
           genero: child.genero,
           idade,
+          birthDate: child.birth_date,
           turmaOverride: child.kids_turma_override,
           tipo: "membro",
         });
