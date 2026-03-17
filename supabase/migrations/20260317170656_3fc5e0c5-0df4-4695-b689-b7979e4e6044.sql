@@ -1,0 +1,1 @@
+ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'secretario_casa_refugio' AFTER 'lider_casa_refugio';
