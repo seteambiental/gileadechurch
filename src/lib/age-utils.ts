@@ -55,3 +55,17 @@ export function getAgeString(birthDate: string | null | undefined): string {
   const { years } = calculateAge(birthDate);
   return `${years} ${years === 1 ? "ano" : "anos"}`;
 }
+
+/**
+ * Calculate the age a child will complete in the current year.
+ * Used for Kids ministry turma assignment — children change turma
+ * at the turn of the year (Jan 1st), NOT on their birthday.
+ * @param birthDate - Date string in YYYY-MM-DD format
+ * @returns Age the child will be (or already is) by Dec 31 of the current year
+ */
+export function kidsAgeForTurma(birthDate: string | null | undefined): number {
+  if (!birthDate) return 0;
+  const [year] = birthDate.split("-").map(Number);
+  if (!year) return 0;
+  return new Date().getFullYear() - year;
+}
