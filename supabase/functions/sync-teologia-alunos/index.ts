@@ -143,10 +143,10 @@ Deno.serve(async (req) => {
 
       const payload = {
         member_id: memberId,
-        valor_total: manualOverride?.valor_total ?? valorTotal || existingAluno?.valor_total || 0,
+        valor_total: manualOverride?.valor_total ?? valorTotal ?? existingAluno?.valor_total ?? 0,
         status: statusMatricula || existingAluno?.status || "ativo",
-        turma: manualOverride?.turma ?? turma || existingAluno?.turma || null,
-        observacoes: manualOverride?.observacoes ?? cursoNome || existingAluno?.observacoes || null,
+        turma: manualOverride?.turma ?? turma ?? existingAluno?.turma ?? null,
+        observacoes: manualOverride?.observacoes ?? cursoNome ?? existingAluno?.observacoes ?? null,
       };
 
       const { error: upsertError } = await supabase
