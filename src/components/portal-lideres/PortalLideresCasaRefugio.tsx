@@ -41,7 +41,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { includesNormalized } from "@/lib/text-utils";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { format, isWithinInterval, getDay, addWeeks, isAfter, isBefore, startOfDay } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
