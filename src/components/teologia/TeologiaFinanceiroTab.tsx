@@ -93,7 +93,7 @@ const TeologiaFinanceiroTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teologia_alunos")
-        .select("*, members!inner(full_name)")
+        .select("*, members(full_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -185,7 +185,8 @@ const TeologiaFinanceiroTab = () => {
   const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
 
   const filtered = alunos.filter((a: any) => {
-    const matchSearch = !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase());
+    const nome = a.nome_aluno || a.members?.full_name || "";
+    const matchSearch = !search || nome.toLowerCase().includes(search.toLowerCase());
     const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
     return matchSearch && matchTurma;
   });
@@ -227,7 +228,7 @@ const TeologiaFinanceiroTab = () => {
     const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
     const saldo = Number(a.valor_total || 0) - pago;
     return {
-      nome: a.members?.full_name || "",
+      nome: a.nome_aluno || a.members?.full_name || "",
       turma: a.turma || "—",
       valorTotal: Number(a.valor_total || 0),
       pago,
@@ -375,7 +376,7 @@ const TeologiaFinanceiroTab = () => {
                       <TableCell>
                         {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                       </TableCell>
-                      <TableCell className="font-medium">{aluno.members?.full_name}</TableCell>
+                      <TableCell className="font-medium">{aluno.nome_aluno || aluno.members?.full_name}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{(aluno as any).turma || "—"}</TableCell>
                       <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
