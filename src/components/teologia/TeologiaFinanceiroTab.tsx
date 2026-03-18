@@ -228,7 +228,7 @@ const TeologiaFinanceiroTab = () => {
     const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
     const saldo = Number(a.valor_total || 0) - pago;
     return {
-      nome: a.members?.full_name || "",
+      nome: a.nome_aluno || a.members?.full_name || "",
       turma: a.turma || "—",
       valorTotal: Number(a.valor_total || 0),
       pago,
