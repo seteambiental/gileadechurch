@@ -93,7 +93,7 @@ const TeologiaFinanceiroTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teologia_alunos")
-        .select("*, members!inner(full_name)")
+        .select("*, members(full_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
