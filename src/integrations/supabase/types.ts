@@ -5874,34 +5874,46 @@ export type Database = {
       }
       teologia_alunos: {
         Row: {
+          cpf_aluno: string | null
           created_at: string
+          email_aluno: string | null
           id: string
-          member_id: string
+          member_id: string | null
+          nome_aluno: string | null
           observacoes: string | null
           status: string
           turma: string | null
           updated_at: string
           valor_total: number
+          whatsapp_aluno: string | null
         }
         Insert: {
+          cpf_aluno?: string | null
           created_at?: string
+          email_aluno?: string | null
           id?: string
-          member_id: string
+          member_id?: string | null
+          nome_aluno?: string | null
           observacoes?: string | null
           status?: string
           turma?: string | null
           updated_at?: string
           valor_total?: number
+          whatsapp_aluno?: string | null
         }
         Update: {
+          cpf_aluno?: string | null
           created_at?: string
+          email_aluno?: string | null
           id?: string
-          member_id?: string
+          member_id?: string | null
+          nome_aluno?: string | null
           observacoes?: string | null
           status?: string
           turma?: string | null
           updated_at?: string
           valor_total?: number
+          whatsapp_aluno?: string | null
         }
         Relationships: [
           {
