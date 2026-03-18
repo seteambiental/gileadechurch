@@ -23,8 +23,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Auth is handled by verify_jwt in config.toml
-
     // Fetch from external API
     const externalUrl = "https://likaqumfvhtxpmbyydmz.supabase.co/functions/v1/api-alunos";
     const externalRes = await fetch(externalUrl, {
@@ -43,51 +41,39 @@ Deno.serve(async (req) => {
     const externalData = await externalRes.json();
     const alunos = Array.isArray(externalData) ? externalData : externalData.alunos || [];
 
-    // Use service role for DB operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch all members for matching
-    const { data: members, error: membersError } = await supabase
+    // Fetch all members for optional matching
+    const { data: members } = await supabase
       .from("members")
       .select("id, full_name, cpf, email, whatsapp")
       .or("excluido.is.null,excluido.eq.false");
 
-    if (membersError || !members) {
-      console.error("Failed to fetch members:", membersError);
-      return new Response(JSON.stringify({ error: "Failed to fetch members", details: membersError?.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { data: existingAlunos, error: existingAlunosError } = await supabase
+    const { data: existingAlunos } = await supabase
       .from("teologia_alunos")
-      .select("member_id, valor_total, turma, observacoes, status");
+      .select("id, member_id, valor_total, turma, observacoes, status, nome_aluno");
 
-    if (existingAlunosError) {
-      console.error("Failed to fetch existing teologia_alunos:", existingAlunosError);
-      return new Response(JSON.stringify({ error: "Failed to fetch teologia_alunos", details: existingAlunosError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Normalize CPF for matching
+    // Normalize helpers
     const normalizeCpf = (cpf: string | null) => cpf?.replace(/\D/g, "") || "";
     const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const normalizeNome = (nome: string | null) => removeAccents(nome?.toLowerCase().trim().replace(/\s+/g, " ") || "");
 
     // Build lookup maps
-    const memberByCpf = new Map<string, string>();
-    const memberByNome = new Map<string, string>();
+    const memberByCpf = new Map<string, typeof members extends (infer T)[] ? T : never>();
+    const memberByNome = new Map<string, typeof members extends (infer T)[] ? T : never>();
     const existingByMemberId = new Map(
-      (existingAlunos || []).map((item) => [item.member_id, item])
+      (existingAlunos || []).filter(a => a.member_id).map((item) => [item.member_id, item])
+    );
+    const existingByNomeTurma = new Map(
+      (existingAlunos || []).filter(a => a.nome_aluno && !a.member_id).map((item) => [
+        normalizeNome(item.nome_aluno) + "|" + (item.turma || ""), item
+      ])
     );
 
-    for (const m of members) {
+    for (const m of (members || [])) {
       const cpf = normalizeCpf(m.cpf);
-      if (cpf.length >= 11) memberByCpf.set(cpf, m.id);
-      memberByNome.set(normalizeNome(m.full_name), m.id);
+      if (cpf.length >= 11) memberByCpf.set(cpf, m);
+      memberByNome.set(normalizeNome(m.full_name), m);
     }
 
     const manualOverrides = new Map<string, { turma: string; observacoes: string; valor_total: number }>([
@@ -101,32 +87,33 @@ Deno.serve(async (req) => {
       ],
     ]);
 
-    // Member IDs to exclude from sync (not actual students)
+    // Member IDs to exclude from sync
     const excludedMemberIds = new Set([
-      "7eea844a-9ca7-4797-a86e-7c181ee0c34d", // Giovana de Deus Derzette
-      "e50a614b-ad60-4a63-a7ab-7690ed6e3bf7", // Carol. Silvia Carolina da Silva Mielevski
+      "7eea844a-9ca7-4797-a86e-7c181ee0c34d",
+      "e50a614b-ad60-4a63-a7ab-7690ed6e3bf7",
     ]);
 
     let synced = 0;
     let skipped = 0;
-    const notFound: string[] = [];
+    let unlinked = 0;
 
     for (const aluno of alunos) {
+      const nomeAluno = aluno.nome_completo || aluno.nome || "";
+      const cpfAluno = aluno.cpf || null;
+      const emailAluno = aluno.email || null;
+      const whatsappAluno = aluno.whatsapp || aluno.telefone || null;
+
       // Try match by CPF first, then by name
-      const cpf = normalizeCpf(aluno.cpf);
-      let memberId = cpf ? memberByCpf.get(cpf) : undefined;
-      if (!memberId && (aluno.nome_completo || aluno.nome)) {
-        memberId = memberByNome.get(normalizeNome(aluno.nome_completo || aluno.nome));
+      const cpf = normalizeCpf(cpfAluno);
+      let member = cpf ? memberByCpf.get(cpf) : undefined;
+      if (!member && nomeAluno) {
+        member = memberByNome.get(normalizeNome(nomeAluno));
       }
 
-      if (!memberId) {
-        notFound.push(aluno.nome_completo || aluno.nome || "sem nome");
-        skipped++;
-        continue;
-      }
+      const memberId = member?.id || null;
 
       // Skip excluded members
-      if (excludedMemberIds.has(memberId)) {
+      if (memberId && excludedMemberIds.has(memberId)) {
         skipped++;
         continue;
       }
@@ -138,10 +125,16 @@ Deno.serve(async (req) => {
       const turma = matricula?.turma_nome || aluno.turma || null;
       const cursoNome = matricula?.curso_nome || aluno.curso || null;
       const statusMatricula = matricula?.status || aluno.status_matricula || null;
-      const existingAluno = existingByMemberId.get(memberId);
-      const manualOverride = manualOverrides.get(memberId);
+      
+      const existingAluno = memberId ? existingByMemberId.get(memberId) : 
+        existingByNomeTurma.get(normalizeNome(nomeAluno) + "|" + (turma || ""));
+      const manualOverride = memberId ? manualOverrides.get(memberId) : undefined;
 
-      const payload = {
+      const payload: Record<string, any> = {
+        nome_aluno: nomeAluno || null,
+        email_aluno: emailAluno || member?.email || null,
+        cpf_aluno: cpfAluno || member?.cpf || null,
+        whatsapp_aluno: whatsappAluno || member?.whatsapp || null,
         member_id: memberId,
         valor_total: manualOverride?.valor_total ?? valorTotal ?? existingAluno?.valor_total ?? 0,
         status: statusMatricula || existingAluno?.status || "ativo",
@@ -149,23 +142,39 @@ Deno.serve(async (req) => {
         observacoes: manualOverride?.observacoes ?? cursoNome ?? existingAluno?.observacoes ?? null,
       };
 
-      const { error: upsertError } = await supabase
-        .from("teologia_alunos")
-        .upsert(payload, { onConflict: "member_id" });
+      let upsertError;
+
+      if (memberId) {
+        // Upsert by member_id
+        const { error } = await supabase
+          .from("teologia_alunos")
+          .upsert(payload, { onConflict: "member_id" });
+        upsertError = error;
+      } else if (existingAluno) {
+        // Update existing unlinked record
+        const { error } = await supabase
+          .from("teologia_alunos")
+          .update(payload)
+          .eq("id", existingAluno.id);
+        upsertError = error;
+      } else {
+        // Insert new unlinked record
+        const { error } = await supabase
+          .from("teologia_alunos")
+          .insert(payload);
+        upsertError = error;
+        if (!error) unlinked++;
+      }
 
       if (upsertError) {
-        console.error("Upsert error for member", memberId, upsertError);
+        console.error("Upsert error for", nomeAluno, upsertError);
       } else {
         synced++;
       }
     }
 
-    if (notFound.length > 0) {
-      console.log("Alunos não encontrados no cadastro:", notFound);
-    }
-
     return new Response(
-      JSON.stringify({ success: true, synced, skipped, total: alunos.length, not_found: notFound }),
+      JSON.stringify({ success: true, synced, skipped, unlinked, total: alunos.length }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {

@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate API key
     const apiKey = req.headers.get("x-api-key");
     const expectedKey = Deno.env.get("EXTERNAL_API_KEY");
 
@@ -27,10 +26,10 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch all teologia_alunos with member info and payments
+    // Fetch all teologia_alunos with optional member info
     const { data: alunos, error: alunosError } = await supabase
       .from("teologia_alunos")
-      .select("*, members!inner(full_name, cpf, email, whatsapp)")
+      .select("*, members(full_name, cpf, email, whatsapp)")
       .order("created_at", { ascending: false });
 
     if (alunosError) {
@@ -54,7 +53,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Group payments by aluno
     const pagamentosByAluno: Record<string, any[]> = {};
     for (const p of pagamentos || []) {
       if (!pagamentosByAluno[p.aluno_id]) pagamentosByAluno[p.aluno_id] = [];
@@ -67,17 +65,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build response
     const result = (alunos || []).map((aluno: any) => {
       const pgtos = pagamentosByAluno[aluno.id] || [];
       const totalPago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
       const saldo = Number(aluno.valor_total || 0) - totalPago;
 
       return {
-        member_name: aluno.members?.full_name,
-        cpf: aluno.members?.cpf,
-        email: aluno.members?.email,
-        whatsapp: aluno.members?.whatsapp,
+        member_name: aluno.nome_aluno || aluno.members?.full_name || null,
+        cpf: aluno.cpf_aluno || aluno.members?.cpf || null,
+        email: aluno.email_aluno || aluno.members?.email || null,
+        whatsapp: aluno.whatsapp_aluno || aluno.members?.whatsapp || null,
         turma: aluno.turma,
         valor_total: aluno.valor_total,
         total_pago: totalPago,
