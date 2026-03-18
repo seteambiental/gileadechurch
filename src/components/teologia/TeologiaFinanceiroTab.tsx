@@ -185,7 +185,8 @@ const TeologiaFinanceiroTab = () => {
   const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
 
   const filtered = alunos.filter((a: any) => {
-    const matchSearch = !search || a.members?.full_name?.toLowerCase().includes(search.toLowerCase());
+    const nome = a.nome_aluno || a.members?.full_name || "";
+    const matchSearch = !search || nome.toLowerCase().includes(search.toLowerCase());
     const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
     return matchSearch && matchTurma;
   });
