@@ -93,7 +93,7 @@ export default function InscricaoJiuJitsu() {
       return;
     }
 
-    setSaving(true);
+
 
     // Check duplicate
     const normalizedName = nome.trim().toLowerCase();
