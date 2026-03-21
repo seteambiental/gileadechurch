@@ -167,6 +167,10 @@ export default function InscricaoCasais() {
       toast({ title: "Preencha os nomes do esposo e esposa", variant: "destructive" });
       return;
     }
+    if (!aceiteImagem || !aceiteConfidencialidade) {
+      toast({ title: "É necessário aceitar os termos para prosseguir", variant: "destructive" });
+      return;
+    }
 
     setSaving(true);
     try {
@@ -198,6 +202,8 @@ export default function InscricaoCasais() {
         estado: estado || null,
         casa_refugio_id: frequentaCR === "sim" ? casaRefugioId : null,
         observacoes: observacoes || null,
+        aceite_imagem: aceiteImagem,
+        aceite_confidencialidade: aceiteConfidencialidade,
       };
 
       const { data, error } = await supabase.from("casais_inscritos").insert(payload).select("id").single();
