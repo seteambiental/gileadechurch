@@ -6015,6 +6015,36 @@ export type Database = {
           },
         ]
       }
+      teologia_despesas: {
+        Row: {
+          categoria: string
+          created_at: string
+          data_despesa: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       teologia_pagamentos: {
         Row: {
           aluno_id: string
