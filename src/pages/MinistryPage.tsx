@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive, DollarSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,7 @@ import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
+import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import { CompartilharInscricaoCasaisDialog } from "@/components/casais/CompartilharInscricaoCasaisDialog";
 import IntercessaoPedidosTab from "@/components/intercessao/IntercessaoPedidosTab";
@@ -493,6 +494,10 @@ const MinistryPage = () => {
                     <BookOpenIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Materiais</span>
                   </TabsTrigger>
+                  <TabsTrigger value="financeiro-casais" className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="hidden sm:inline">Financeiro</span>
+                  </TabsTrigger>
                 </>
               ) : isMinisterioEspecifico ? (
                 <>
@@ -649,6 +654,9 @@ const MinistryPage = () => {
                 </TabsContent>
                 <TabsContent value="materiais">
                   <CasaisMateriaisTab />
+                </TabsContent>
+                <TabsContent value="financeiro-casais">
+                  <CasaisFinanceiroTab />
                 </TabsContent>
               </>
             ) : isMinisterioEspecifico ? (
