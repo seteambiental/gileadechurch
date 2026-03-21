@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency, formatDateBR } from "@/lib/masks";
 import { ExportButton } from "@/components/ui/export-button";
 import { ExportColumn } from "@/lib/export";
@@ -35,7 +36,8 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter } from "lucide-react";
+import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter, ArrowDownCircle } from "lucide-react";
+import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { useToast } from "@/hooks/use-toast";
 import { todayDateStr } from "@/lib/date-utils";
@@ -293,7 +295,19 @@ const TeologiaFinanceiroTab = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <Tabs defaultValue="receitas" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="receitas" className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4" />
+          Receitas
+        </TabsTrigger>
+        <TabsTrigger value="despesas" className="flex items-center gap-2">
+          <ArrowDownCircle className="w-4 h-4" />
+          Despesas
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="receitas" className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <Card>
@@ -688,7 +702,12 @@ const TeologiaFinanceiroTab = () => {
           ? "Isso removerá o aluno e todos os pagamentos associados. Deseja continuar?"
           : "Deseja excluir este pagamento?"}
       />
-    </div>
+      </TabsContent>
+
+      <TabsContent value="despesas">
+        <TeologiaDespesasTab />
+      </TabsContent>
+    </Tabs>
   );
 };
 
