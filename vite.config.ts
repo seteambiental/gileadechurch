@@ -19,26 +19,18 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
+        cleanupOutdatedCaches: true,
         // Force new SW to activate immediately, skipping waiting
         skipWaiting: true,
         clientsClaim: true,
-        // Don't precache anything except the app shell — always fetch fresh
+        // Keep runtime cache only for static images to avoid serving old app screens
         runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.(js|css|html)(\?.*)?$/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "app-assets",
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 }, // 1h max
-              networkTimeoutSeconds: 5,
-            },
-          },
           {
             urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
             handler: "CacheFirst",
             options: {
               cacheName: "image-assets",
-              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 7 }, // 7 days
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 7 },
             },
           },
         ],
