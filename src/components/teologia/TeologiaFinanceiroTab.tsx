@@ -36,6 +36,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
 import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter } from "lucide-react";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { useToast } from "@/hooks/use-toast";
 import { todayDateStr } from "@/lib/date-utils";
 
@@ -56,6 +57,8 @@ const TeologiaFinanceiroTab = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [turmaFilter, setTurmaFilter] = useState("todas");
+  const [colFilterTurma, setColFilterTurma] = useState<Set<string>>(new Set());
+  const [colFilterStatus, setColFilterStatus] = useState<Set<string>>(new Set());
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addAlunoOpen, setAddAlunoOpen] = useState(false);
   const [addPagamentoAlunoId, setAddPagamentoAlunoId] = useState<string | null>(null);
@@ -94,7 +97,7 @@ const TeologiaFinanceiroTab = () => {
       const { data, error } = await supabase
         .from("teologia_alunos")
         .select("*, members(full_name)")
-        .order("created_at", { ascending: false });
+        .order("nome_aluno", { ascending: true });
       if (error) throw error;
       return data;
     },
