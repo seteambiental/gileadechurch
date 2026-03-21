@@ -995,6 +995,7 @@ export type Database = {
           created_at: string
           data_pagamento: string | null
           data_previsao: string | null
+          forma_pagamento: string | null
           id: string
           mes_referencia: string | null
           observacoes: string | null
@@ -1009,6 +1010,7 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           data_previsao?: string | null
+          forma_pagamento?: string | null
           id?: string
           mes_referencia?: string | null
           observacoes?: string | null
@@ -1023,6 +1025,7 @@ export type Database = {
           created_at?: string
           data_pagamento?: string | null
           data_previsao?: string | null
+          forma_pagamento?: string | null
           id?: string
           mes_referencia?: string | null
           observacoes?: string | null

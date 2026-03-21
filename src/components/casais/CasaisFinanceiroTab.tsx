@@ -447,7 +447,7 @@ export function CasaisFinanceiroTab() {
         title="Excluir Pagamento"
         description="Tem certeza que deseja excluir este pagamento?"
         onConfirm={() => deleteMutation.mutate()}
-        loading={deleteMutation.isPending}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   );

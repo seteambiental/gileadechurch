@@ -1,0 +1,1 @@
+ALTER TABLE public.casais_pagamentos ADD COLUMN IF NOT EXISTS forma_pagamento text;
