@@ -12,6 +12,7 @@ import {
   BookOpen,
   Share2,
   ArrowLeft,
+  DollarSign,
 } from "lucide-react";
 import { PortalAccess } from "@/hooks/useMemberPortal";
 import { useQuery } from "@tanstack/react-query";
@@ -21,6 +22,7 @@ import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
+import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { CompartilharInscricaoCasaisDialog } from "@/components/casais/CompartilharInscricaoCasaisDialog";
 
 interface PortalLideresCasaisMinisterioProps {
@@ -82,6 +84,13 @@ const menuCards: MenuCard[] = [
     subtitle: "Compartilhar ficha",
     icon: Share2,
     color: "hsl(220, 60%, 50%)",
+  },
+  {
+    id: "financeiro",
+    label: "Financeiro",
+    subtitle: "Controle de pagamentos",
+    icon: DollarSign,
+    color: "hsl(140, 60%, 40%)",
   },
 ];
 
@@ -154,6 +163,7 @@ export const PortalLideresCasaisMinisterio = ({
         {activeTab === "inscricoes" && <CasaisInscricoesTab />}
         {activeTab === "professores" && <CasaisProfessoresTab />}
         {activeTab === "materiais" && <CasaisMateriaisTab />}
+        {activeTab === "financeiro" && <CasaisFinanceiroTab />}
 
         <CompartilharInscricaoCasaisDialog open={shareCasaisOpen} onOpenChange={setShareCasaisOpen} />
       </div>
