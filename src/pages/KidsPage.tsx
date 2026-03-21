@@ -85,7 +85,8 @@ const KidsPage = () => {
       const { data, error } = await supabase
         .from("members")
         .select("id, full_name, birth_date, genero, whatsapp, photo_url, kids_numero, responsavel_id, kids_turma_override")
-        .not("birth_date", "is", null);
+        .not("birth_date", "is", null)
+        .or("excluido.is.null,excluido.eq.false");
       
       if (error) throw error;
       return data;
