@@ -287,12 +287,12 @@ export function CasaisFinanceiroTab() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={selectedMesFilter} onValueChange={setSelectedMesFilter}>
+          <Select value={selectedMesFilter || "__all__"} onValueChange={(v) => setSelectedMesFilter(v === "__all__" ? "" : v)}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Mês referência" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os meses</SelectItem>
+              <SelectItem value="__all__">Todos os meses</SelectItem>
               {allMeses.map((m: string) => (
                 <SelectItem key={m} value={m}>{m}</SelectItem>
               ))}
