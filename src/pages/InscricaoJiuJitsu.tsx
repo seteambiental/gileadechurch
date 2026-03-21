@@ -93,7 +93,7 @@ export default function InscricaoJiuJitsu() {
       return;
     }
 
-
+    setSaving(true);
 
     // Check duplicate
     const normalizedName = nome.trim().toLowerCase();
@@ -110,7 +110,6 @@ export default function InscricaoJiuJitsu() {
       return;
     }
 
-    setSaving(true);
     const { error } = await supabase.from("jiujitsu_inscricoes").insert({
       nome: nome.trim(),
       data_nascimento: dataNascimento || null,
