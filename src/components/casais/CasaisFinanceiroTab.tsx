@@ -244,7 +244,7 @@ export function CasaisFinanceiroTab() {
           </Select>
         </div>
         <div className="flex items-center gap-2">
-          <ExportButton data={exportData} filename="casais-financeiro" />
+          <ExportButton data={filtered} columns={exportColumns} filename="casais-financeiro" title="Financeiro Casais" />
           <Button onClick={() => { resetForm(); setFormOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
           </Button>
@@ -273,7 +273,6 @@ export function CasaisFinanceiroTab() {
                   options={allStatuses}
                   selected={filterStatus}
                   onChange={setFilterStatus}
-                  labelMap={STATUS_LABELS}
                 />
               </TableHead>
               <TableHead>Data Pgto.</TableHead>
