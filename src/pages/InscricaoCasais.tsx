@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +57,8 @@ export default function InscricaoCasais() {
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [frequentaCR, setFrequentaCR] = useState("nao");
   const [observacoes, setObservacoes] = useState("");
+  const [aceiteImagem, setAceiteImagem] = useState(false);
+  const [aceiteConfidencialidade, setAceiteConfidencialidade] = useState(false);
 
   const handleCepResolved = useCallback((data: { address: string; neighborhood: string; city: string; state: string }) => {
     setEndereco(data.address);
