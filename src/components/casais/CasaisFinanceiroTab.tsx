@@ -165,14 +165,14 @@ export function CasaisFinanceiroTab() {
   const allStatuses = [...new Set(pagamentos.map((p: any) => p.status))];
   const allTurmaNames = [...new Set(pagamentos.map((p: any) => p.casais_inscritos?.turma?.nome || "Sem turma"))];
 
-  const exportData = filtered.map((p: any) => ({
-    Casal: `${p.casais_inscritos?.nome_masculino || ""} e ${p.casais_inscritos?.nome_feminino || ""}`,
-    Turma: p.casais_inscritos?.turma?.nome || "—",
-    "Mês Ref.": p.mes_referencia || "—",
-    Valor: `R$ ${Number(p.valor).toFixed(2)}`,
-    Status: STATUS_LABELS[p.status] || p.status,
-    "Data Pgto.": p.data_pagamento || "—",
-  }));
+  const exportColumns = [
+    { header: "Casal", accessor: (p: any) => `${p.casais_inscritos?.nome_masculino || ""} e ${p.casais_inscritos?.nome_feminino || ""}` },
+    { header: "Turma", accessor: (p: any) => p.casais_inscritos?.turma?.nome || "—" },
+    { header: "Mês Ref.", accessor: (p: any) => p.mes_referencia || "—" },
+    { header: "Valor", accessor: (p: any) => `R$ ${Number(p.valor).toFixed(2)}` },
+    { header: "Status", accessor: (p: any) => STATUS_LABELS[p.status] || p.status },
+    { header: "Data Pgto.", accessor: (p: any) => p.data_pagamento || "—" },
+  ];
 
   return (
     <div className="space-y-4">
