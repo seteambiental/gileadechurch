@@ -199,13 +199,18 @@ const TeologiaFinanceiroTab = () => {
   const turmaOptions = [...new Set(alunos.map((a: any) => a.turma || "—"))].sort();
   const statusOptions = ["Quitado", "Parcial", "Pendente"];
 
-  // Initialize filters on first render
-  if (colFilterTurma.size === 0 && turmaOptions.length > 0) {
-    setColFilterTurma(new Set(turmaOptions));
-  }
-  if (colFilterStatus.size === 0) {
-    setColFilterStatus(new Set(statusOptions));
-  }
+  // Initialize column filters when data loads
+  useEffect(() => {
+    if (turmaOptions.length > 0 && colFilterTurma.size === 0) {
+      setColFilterTurma(new Set(turmaOptions));
+    }
+  }, [turmaOptions.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (colFilterStatus.size === 0) {
+      setColFilterStatus(new Set(statusOptions));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = alunos
     .filter((a: any) => {
