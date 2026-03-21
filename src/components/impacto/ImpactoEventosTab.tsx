@@ -24,7 +24,11 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
         .eq("recorrente", false)
         .order("data_evento", { ascending: true });
       if (error) throw error;
-      return data;
+      // Filter out teologia events
+      return (data || []).filter((e) => {
+        const norm = (e.titulo || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return !norm.includes("teologia");
+      });
     },
   });
 
