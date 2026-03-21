@@ -323,7 +323,7 @@ interface AgendaCalendarProps {
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[80px] p-1 rounded-lg border ${
+                  className={`min-h-[100px] p-1 rounded-lg border ${
                     isCurrentDay ? "ring-2 ring-primary bg-primary/5" : ""
                   } ${!isCurrentMonth ? "opacity-40 bg-muted/30" : "bg-card"}`}
                 >
@@ -339,7 +339,7 @@ interface AgendaCalendarProps {
                         🎉 {feriado.nome}
                       </div>
                     )}
-                    {eventosDay.slice(0, feriado ? 1 : 2).map((evento) => (
+                     {eventosDay.slice(0, feriado ? 2 : 3).map((evento) => (
                       <div
                         key={evento.id}
                         className="text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 truncate"
@@ -352,9 +352,9 @@ interface AgendaCalendarProps {
                         {evento.titulo}
                       </div>
                     ))}
-                    {eventosDay.length > (feriado ? 1 : 2) && (
-                      <p className="text-[10px] text-muted-foreground text-center">+{eventosDay.length - (feriado ? 1 : 2)}</p>
-                    )}
+                     {eventosDay.length > (feriado ? 2 : 3) && (
+                       <p className="text-[10px] text-muted-foreground text-center">+{eventosDay.length - (feriado ? 2 : 3)}</p>
+                     )}
                   </div>
                 </div>
               );
