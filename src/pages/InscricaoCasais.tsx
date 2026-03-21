@@ -518,8 +518,57 @@ export default function InscricaoCasais() {
                 <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} />
               </div>
 
+              <Separator />
+
+              {/* Valor do Curso */}
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  💰 Investimento
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  O valor do curso é de <span className="font-bold text-foreground">R$ 100,00</span> por casal, 
+                  a ser pago no ato da matrícula ou conforme orientação da coordenação.
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Termos */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-base">Termos e Autorizações</h3>
+                
+                <div className="flex items-start space-x-3 p-3 rounded-lg border bg-muted/30">
+                  <Checkbox
+                    id="aceite-imagem"
+                    checked={aceiteImagem}
+                    onCheckedChange={(checked) => setAceiteImagem(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="aceite-imagem" className="text-sm leading-relaxed cursor-pointer">
+                    <span className="font-medium">Termo de Direito de Imagem:</span> Autorizo o uso da minha imagem e do meu cônjuge, 
+                    captada durante as atividades do Ministério de Casais (fotos e vídeos), para fins de divulgação 
+                    institucional em redes sociais, site e materiais da igreja, sem qualquer ônus.
+                  </label>
+                </div>
+
+                <div className="flex items-start space-x-3 p-3 rounded-lg border bg-muted/30">
+                  <Checkbox
+                    id="aceite-confidencialidade"
+                    checked={aceiteConfidencialidade}
+                    onCheckedChange={(checked) => setAceiteConfidencialidade(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="aceite-confidencialidade" className="text-sm leading-relaxed cursor-pointer">
+                    <span className="font-medium">Termo de Confidencialidade:</span> Comprometo-me a manter sigilo sobre todos os 
+                    assuntos pessoais e familiares compartilhados durante os encontros do Ministério de Casais, 
+                    respeitando a privacidade de todos os participantes. Declaro estar ciente de que o conteúdo 
+                    das sessões é confidencial e não deverá ser reproduzido ou divulgado fora do ambiente do curso.
+                  </label>
+                </div>
+              </div>
+
               <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={saving} size="lg">
+                <Button type="submit" disabled={saving || !aceiteImagem || !aceiteConfidencialidade} size="lg">
                   {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Enviar Inscrição
                 </Button>
