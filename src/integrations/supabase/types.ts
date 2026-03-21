@@ -660,6 +660,8 @@ export type Database = {
       }
       casais_inscritos: {
         Row: {
+          aceite_confidencialidade: boolean | null
+          aceite_imagem: boolean | null
           bairro: string | null
           casa_refugio_id: string | null
           cep: string | null
@@ -697,6 +699,8 @@ export type Database = {
           whatsapp_masculino: string | null
         }
         Insert: {
+          aceite_confidencialidade?: boolean | null
+          aceite_imagem?: boolean | null
           bairro?: string | null
           casa_refugio_id?: string | null
           cep?: string | null
@@ -734,6 +738,8 @@ export type Database = {
           whatsapp_masculino?: string | null
         }
         Update: {
+          aceite_confidencialidade?: boolean | null
+          aceite_imagem?: boolean | null
           bairro?: string | null
           casa_refugio_id?: string | null
           cep?: string | null
@@ -976,6 +982,80 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "casais_materiais_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      casais_pagamentos: {
+        Row: {
+          casal_id: string
+          created_at: string
+          data_pagamento: string | null
+          data_previsao: string | null
+          id: string
+          mes_referencia: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          status: string
+          turma_id: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          casal_id: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_previsao?: string | null
+          id?: string
+          mes_referencia?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          status?: string
+          turma_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          casal_id?: string
+          created_at?: string
+          data_pagamento?: string | null
+          data_previsao?: string | null
+          id?: string
+          mes_referencia?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          status?: string
+          turma_id?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "casais_pagamentos_casal_id_fkey"
+            columns: ["casal_id"]
+            isOneToOne: false
+            referencedRelation: "casais_inscritos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_pagamentos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_pagamentos_registrado_por_fkey"
+            columns: ["registrado_por"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "casais_pagamentos_turma_id_fkey"
             columns: ["turma_id"]
             isOneToOne: false
             referencedRelation: "casais_turmas"
