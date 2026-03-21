@@ -135,10 +135,17 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     },
   });
 
+  const isTeologiaEvent = (titulo: string | null) => {
+    if (!titulo) return false;
+    const norm = titulo.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return norm.includes("teologia") || norm.includes("curso de teologia");
+  };
+
   const eventos = useMemo(() => {
     // Deduplicar impacto_eventos por título normalizado
     const seenTitles = new Set<string>();
     const impactoDeduped = (impactoEventos || []).filter((e) => {
+      if (isTeologiaEvent(e.titulo)) return false;
       const key = e.titulo?.trim().toLowerCase();
       if (seenTitles.has(key)) return false;
       seenTitles.add(key);
@@ -150,11 +157,13 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       titulo: e.titulo,
       data_inicio: e.data_inicio,
     }));
-    const agenda = (agendaEventos || []).map((e) => ({
-      id: e.id,
-      titulo: e.titulo,
-      data_inicio: e.data_evento,
-    }));
+    const agenda = (agendaEventos || [])
+      .filter((e) => !isTeologiaEvent(e.titulo))
+      .map((e) => ({
+        id: e.id,
+        titulo: e.titulo,
+        data_inicio: e.data_evento,
+      }));
     // Deduplicate by ID first, then by normalized title (impacto takes priority)
     const impactoIds = new Set(impacto.map((e) => e.id));
     const impactoTitlesNorm = new Set(impacto.map((e) => e.titulo?.trim().toLowerCase()));
