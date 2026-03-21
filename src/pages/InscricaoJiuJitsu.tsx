@@ -93,21 +93,23 @@ export default function InscricaoJiuJitsu() {
       return;
     }
 
+    setSaving(true);
+
     // Check duplicate
     const normalizedName = nome.trim().toLowerCase();
     const { data: existing } = await supabase
       .from("jiujitsu_inscricoes")
       .select("id")
       .ilike("nome", normalizedName)
-      .neq("status", "rejeitado")
+      .not("status", "in", '("rejeitado","rejeitada")')
       .limit(1);
 
     if (existing && existing.length > 0) {
       toast({ title: "INSCRIÇÃO JÁ ENVIADA", description: "Já existe uma inscrição com este nome.", variant: "destructive" });
+      setSaving(false);
       return;
     }
 
-    setSaving(true);
     const { error } = await supabase.from("jiujitsu_inscricoes").insert({
       nome: nome.trim(),
       data_nascimento: dataNascimento || null,

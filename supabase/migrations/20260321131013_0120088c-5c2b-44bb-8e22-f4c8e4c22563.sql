@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS jiujitsu_inscricoes_nome_unique ON public.jiujitsu_inscricoes (lower(trim(nome))) WHERE status NOT IN ('rejeitado', 'rejeitada');
