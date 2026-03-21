@@ -5,7 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -17,19 +16,21 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
-import { DollarSign, Check, Clock, Plus, Search, TrendingUp } from "lucide-react";
+import { DollarSign, Check, Clock, Plus, Search, TrendingUp, Users } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 
 const STATUS_COLORS: Record<string, string> = {
   pago: "bg-green-100 text-green-800",
   pendente: "bg-yellow-100 text-yellow-800",
   atrasado: "bg-red-100 text-red-800",
+  sem_registro: "bg-muted text-muted-foreground",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   pago: "Pago",
   pendente: "Pendente",
   atrasado: "Atrasado",
+  sem_registro: "Sem registro",
 };
 
 const VALOR_CASAL = 100;
@@ -46,11 +47,11 @@ export function CasaisFinanceiroTab() {
   const [status, setStatus] = useState("pendente");
   const [dataPagamento, setDataPagamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
-
   const [filterStatus, setFilterStatus] = useState<Set<string>>(new Set());
   const [filterTurma, setFilterTurma] = useState<Set<string>>(new Set());
+  const [selectedMesFilter, setSelectedMesFilter] = useState("");
 
-  // Fetch casais aprovados
+  // Fetch all approved casais
   const { data: casais = [] } = useQuery({
     queryKey: ["casais_financeiro_casais"],
     queryFn: async () => {
@@ -76,42 +77,63 @@ export function CasaisFinanceiroTab() {
     },
   });
 
-  // Fetch pagamentos
+  // Fetch all payments
   const { data: pagamentos = [] } = useQuery({
     queryKey: ["casais_pagamentos"],
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_pagamentos")
-        .select("*, casais_inscritos(nome_masculino, nome_feminino, turma_id, turma:casais_turmas(nome))")
+        .select("*")
         .order("created_at", { ascending: false });
       return (data || []) as any[];
     },
   });
 
-  const filtered = useMemo(() => {
-    return pagamentos.filter((p: any) => {
-      const casal = p.casais_inscritos;
-      const nomeCompleto = `${casal?.nome_masculino || ""} ${casal?.nome_feminino || ""}`.toLowerCase();
-      if (search && !nomeCompleto.includes(search.toLowerCase())) return false;
-      if (filterStatus.size > 0 && !filterStatus.has(p.status)) return false;
-      if (filterTurma.size > 0) {
-        const turmaNome = casal?.turma?.nome || "Sem turma";
-        if (!filterTurma.has(turmaNome)) return false;
+  // Build merged list: each casal with their latest payment info for the selected month
+  const mergedList = useMemo(() => {
+    return casais.map((casal: any) => {
+      const casalPagamentos = pagamentos.filter((p: any) => p.casal_id === casal.id);
+      
+      // If month filter is active, find payment for that month
+      let pagamento = null;
+      if (selectedMesFilter) {
+        pagamento = casalPagamentos.find((p: any) => p.mes_referencia === selectedMesFilter) || null;
+      } else {
+        // Show latest payment
+        pagamento = casalPagamentos[0] || null;
       }
-      if (selectedTurmaFilter !== "todas" && casal?.turma_id !== selectedTurmaFilter) return false;
+
+      return {
+        ...casal,
+        pagamento,
+        statusFinanceiro: pagamento?.status || "sem_registro",
+        turma_nome: (casal.turma as any)?.nome || "Sem turma",
+      };
+    });
+  }, [casais, pagamentos, selectedMesFilter]);
+
+  // Apply filters
+  const filtered = useMemo(() => {
+    return mergedList.filter((item: any) => {
+      const nome = `${item.nome_masculino || ""} ${item.nome_feminino || ""}`.toLowerCase();
+      if (search && !nome.includes(search.toLowerCase())) return false;
+      if (filterStatus.size > 0 && !filterStatus.has(item.statusFinanceiro)) return false;
+      if (filterTurma.size > 0 && !filterTurma.has(item.turma_nome)) return false;
+      if (selectedTurmaFilter !== "todas" && item.turma_id !== selectedTurmaFilter) return false;
       return true;
     });
-  }, [pagamentos, search, filterStatus, filterTurma, selectedTurmaFilter]);
+  }, [mergedList, search, filterStatus, filterTurma, selectedTurmaFilter]);
 
   // Stats
   const stats = useMemo(() => {
-    const total = filtered.reduce((acc: number, p: any) => acc + Number(p.valor || 0), 0);
-    const pagos = filtered.filter((p: any) => p.status === "pago");
-    const totalPago = pagos.reduce((acc: number, p: any) => acc + Number(p.valor || 0), 0);
-    const totalPendente = filtered
-      .filter((p: any) => p.status === "pendente" || p.status === "atrasado")
-      .reduce((acc: number, p: any) => acc + Number(p.valor || 0), 0);
-    return { total, totalPago, totalPendente, qtdPagos: pagos.length, qtdTotal: filtered.length };
+    const totalCasais = filtered.length;
+    const totalEsperado = totalCasais * VALOR_CASAL;
+    const pagos = filtered.filter((i: any) => i.statusFinanceiro === "pago");
+    const totalPago = pagos.reduce((acc: number, i: any) => acc + Number(i.pagamento?.valor || 0), 0);
+    const pendentes = filtered.filter((i: any) => i.statusFinanceiro === "pendente" || i.statusFinanceiro === "atrasado");
+    const totalPendente = pendentes.reduce((acc: number, i: any) => acc + Number(i.pagamento?.valor || 0), 0);
+    const semRegistro = filtered.filter((i: any) => i.statusFinanceiro === "sem_registro").length;
+    return { totalCasais, totalEsperado, totalPago, totalPendente, qtdPagos: pagos.length, semRegistro };
   }, [filtered]);
 
   const handleSave = async () => {
@@ -148,30 +170,51 @@ export function CasaisFinanceiroTab() {
     setObservacoes("");
   };
 
-  const handleUpdateStatus = async (id: string, newStatus: string) => {
+  const handleUpdateStatus = async (pagamentoId: string, newStatus: string) => {
     const update: any = { status: newStatus };
     if (newStatus === "pago") {
       const now = new Date();
       update.data_pagamento = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     }
-    const { error } = await supabase.from("casais_pagamentos").update(update).eq("id", id);
+    const { error } = await supabase.from("casais_pagamentos").update(update).eq("id", pagamentoId);
     if (!error) {
       toast({ title: "Status atualizado!" });
       queryClient.invalidateQueries({ queryKey: ["casais_pagamentos"] });
     }
   };
 
+  const handleQuickRegister = async (casalId: string) => {
+    if (!selectedMesFilter) {
+      toast({ title: "Selecione um mês de referência para registrar pagamentos rápidos", variant: "destructive" });
+      return;
+    }
+    const casal = casais.find((c: any) => c.id === casalId);
+    const { error } = await supabase.from("casais_pagamentos").insert({
+      casal_id: casalId,
+      turma_id: casal?.turma_id || null,
+      mes_referencia: selectedMesFilter,
+      valor: VALOR_CASAL,
+      status: "pendente",
+    });
+    if (!error) {
+      toast({ title: "Pagamento registrado como pendente" });
+      queryClient.invalidateQueries({ queryKey: ["casais_pagamentos"] });
+    }
+  };
+
   // Unique values for filters
-  const allStatuses = [...new Set(pagamentos.map((p: any) => p.status))];
-  const allTurmaNames = [...new Set(pagamentos.map((p: any) => p.casais_inscritos?.turma?.nome || "Sem turma"))];
+  const allStatuses = [...new Set(mergedList.map((i: any) => i.statusFinanceiro))];
+  const allTurmaNames = [...new Set(mergedList.map((i: any) => i.turma_nome))];
+  const allMeses = [...new Set(pagamentos.map((p: any) => p.mes_referencia).filter(Boolean))].sort().reverse();
 
   const exportColumns = [
-    { header: "Casal", accessor: (p: any) => `${p.casais_inscritos?.nome_masculino || ""} e ${p.casais_inscritos?.nome_feminino || ""}` },
-    { header: "Turma", accessor: (p: any) => p.casais_inscritos?.turma?.nome || "—" },
-    { header: "Mês Ref.", accessor: (p: any) => p.mes_referencia || "—" },
-    { header: "Valor", accessor: (p: any) => `R$ ${Number(p.valor).toFixed(2)}` },
-    { header: "Status", accessor: (p: any) => STATUS_LABELS[p.status] || p.status },
-    { header: "Data Pgto.", accessor: (p: any) => p.data_pagamento || "—" },
+    { header: "Esposo", accessor: (i: any) => i.nome_masculino || "" },
+    { header: "Esposa", accessor: (i: any) => i.nome_feminino || "" },
+    { header: "Turma", accessor: (i: any) => i.turma_nome },
+    { header: "Valor", accessor: (i: any) => i.pagamento ? `R$ ${Number(i.pagamento.valor).toFixed(2)}` : `R$ ${VALOR_CASAL.toFixed(2)}` },
+    { header: "Status", accessor: (i: any) => STATUS_LABELS[i.statusFinanceiro] || i.statusFinanceiro },
+    { header: "Data Pgto.", accessor: (i: any) => i.pagamento?.data_pagamento || "—" },
+    { header: "Mês Ref.", accessor: (i: any) => i.pagamento?.mes_referencia || "—" },
   ];
 
   return (
@@ -181,44 +224,46 @@ export function CasaisFinanceiroTab() {
         <Card>
           <CardContent className="pt-4 pb-3 flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Casais</p>
+              <p className="font-bold text-lg">{stats.totalCasais}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Total</p>
-              <p className="font-bold text-lg">R$ {stats.total.toFixed(2)}</p>
+              <p className="text-xs text-muted-foreground">Esperado</p>
+              <p className="font-bold text-lg">R$ {stats.totalEsperado.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <Check className="w-5 h-5 text-green-700" />
+            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <Check className="w-5 h-5 text-green-600" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Recebido</p>
-              <p className="font-bold text-lg text-green-700">R$ {stats.totalPago.toFixed(2)}</p>
+              <p className="font-bold text-lg text-green-600">R$ {stats.totalPago.toFixed(2)}</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-yellow-700" />
+            <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-600" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Pendente</p>
-              <p className="font-bold text-lg text-yellow-700">R$ {stats.totalPendente.toFixed(2)}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-blue-700" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Valor/Casal</p>
-              <p className="font-bold text-lg">R$ {VALOR_CASAL.toFixed(2)}</p>
+              <p className="font-bold text-lg text-yellow-600">
+                {stats.totalPendente > 0 ? `R$ ${stats.totalPendente.toFixed(2)}` : `${stats.semRegistro} sem registro`}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -226,8 +271,8 @@ export function CasaisFinanceiroTab() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="relative w-full sm:w-72">
+        <div className="flex items-center gap-2 flex-1 flex-wrap">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar casal..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
@@ -239,6 +284,17 @@ export function CasaisFinanceiroTab() {
               <SelectItem value="todas">Todas turmas</SelectItem>
               {turmas.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedMesFilter} onValueChange={setSelectedMesFilter}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Mês referência" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos os meses</SelectItem>
+              {allMeses.map((m: string) => (
+                <SelectItem key={m} value={m}>{m}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -256,7 +312,8 @@ export function CasaisFinanceiroTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Casal</TableHead>
+              <TableHead>Esposo</TableHead>
+              <TableHead>Esposa</TableHead>
               <TableHead>
                 <ColumnFilterPopover
                   title="Turma"
@@ -265,7 +322,6 @@ export function CasaisFinanceiroTab() {
                   onChange={setFilterTurma}
                 />
               </TableHead>
-              <TableHead>Mês Ref.</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>
                 <ColumnFilterPopover
@@ -275,36 +331,50 @@ export function CasaisFinanceiroTab() {
                   onChange={setFilterStatus}
                 />
               </TableHead>
+              <TableHead>Mês Ref.</TableHead>
               <TableHead>Data Pgto.</TableHead>
-              <TableHead className="w-32">Ações</TableHead>
+              <TableHead className="w-36">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                  Nenhum pagamento registrado
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  Nenhum casal encontrado
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((p: any) => (
-                <TableRow key={p.id} className={p.status === "pendente" ? "bg-yellow-50/50" : p.status === "atrasado" ? "bg-red-50/50" : ""}>
-                  <TableCell className="font-medium">
-                    {p.casais_inscritos?.nome_masculino} e {p.casais_inscritos?.nome_feminino}
-                  </TableCell>
-                  <TableCell>{p.casais_inscritos?.turma?.nome || "—"}</TableCell>
-                  <TableCell>{p.mes_referencia || "—"}</TableCell>
-                  <TableCell>R$ {Number(p.valor).toFixed(2)}</TableCell>
+              filtered.map((item: any) => (
+                <TableRow
+                  key={item.id}
+                  className={
+                    item.statusFinanceiro === "pendente" ? "bg-yellow-50/50" :
+                    item.statusFinanceiro === "atrasado" ? "bg-red-50/50" :
+                    item.statusFinanceiro === "sem_registro" ? "bg-muted/30" : ""
+                  }
+                >
+                  <TableCell className="font-medium">{item.nome_masculino}</TableCell>
+                  <TableCell>{item.nome_feminino}</TableCell>
+                  <TableCell>{item.turma_nome}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
-                      {STATUS_LABELS[p.status] || p.status}
+                    {item.pagamento ? `R$ ${Number(item.pagamento.valor).toFixed(2)}` : `R$ ${VALOR_CASAL.toFixed(2)}`}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[item.statusFinanceiro]}`}>
+                      {STATUS_LABELS[item.statusFinanceiro]}
                     </span>
                   </TableCell>
-                  <TableCell>{p.data_pagamento || "—"}</TableCell>
+                  <TableCell>{item.pagamento?.mes_referencia || "—"}</TableCell>
+                  <TableCell>{item.pagamento?.data_pagamento || "—"}</TableCell>
                   <TableCell>
-                    {p.status !== "pago" && (
-                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
+                    {item.pagamento && item.pagamento.status !== "pago" && (
+                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(item.pagamento.id, "pago")}>
                         Marcar Pago
+                      </Button>
+                    )}
+                    {!item.pagamento && (
+                      <Button size="sm" variant="outline" onClick={() => handleQuickRegister(item.id)}>
+                        Registrar
                       </Button>
                     )}
                   </TableCell>
