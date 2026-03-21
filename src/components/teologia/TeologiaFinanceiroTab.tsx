@@ -187,12 +187,40 @@ const TeologiaFinanceiroTab = () => {
   // Get unique turmas
   const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
 
-  const filtered = alunos.filter((a: any) => {
-    const nome = a.nome_aluno || a.members?.full_name || "";
-    const matchSearch = !search || nome.toLowerCase().includes(search.toLowerCase());
-    const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
-    return matchSearch && matchTurma;
-  });
+  // Helper: compute status for an aluno
+  const getAlunoStatus = (aluno: any) => {
+    const pgtos = pagamentosByAluno[aluno.id] || [];
+    const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const saldo = Number(aluno.valor_total || 0) - pago;
+    return saldo <= 0 ? "Quitado" : pago > 0 ? "Parcial" : "Pendente";
+  };
+
+  // Column filter options
+  const turmaOptions = [...new Set(alunos.map((a: any) => a.turma || "—"))].sort();
+  const statusOptions = ["Quitado", "Parcial", "Pendente"];
+
+  // Initialize filters on first render
+  if (colFilterTurma.size === 0 && turmaOptions.length > 0) {
+    setColFilterTurma(new Set(turmaOptions));
+  }
+  if (colFilterStatus.size === 0) {
+    setColFilterStatus(new Set(statusOptions));
+  }
+
+  const filtered = alunos
+    .filter((a: any) => {
+      const nome = a.nome_aluno || a.members?.full_name || "";
+      const matchSearch = !search || nome.toLowerCase().includes(search.toLowerCase());
+      const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
+      const matchColTurma = colFilterTurma.size === 0 || colFilterTurma.has(a.turma || "—");
+      const matchColStatus = colFilterStatus.size === 0 || colFilterStatus.has(getAlunoStatus(a));
+      return matchSearch && matchTurma && matchColTurma && matchColStatus;
+    })
+    .sort((a: any, b: any) => {
+      const nomeA = (a.nome_aluno || a.members?.full_name || "").toLowerCase();
+      const nomeB = (b.nome_aluno || b.members?.full_name || "").toLowerCase();
+      return nomeA.localeCompare(nomeB, "pt-BR");
+    });
 
   // Totals (based on filtered)
   const totalDevido = filtered.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
@@ -347,11 +375,25 @@ const TeologiaFinanceiroTab = () => {
             <TableRow>
               <TableHead className="w-8"></TableHead>
               <TableHead>Aluno</TableHead>
-              <TableHead>Turma</TableHead>
+              <TableHead>
+                <ColumnFilterPopover
+                  title="Turma"
+                  options={turmaOptions}
+                  selected={colFilterTurma}
+                  onChange={setColFilterTurma}
+                />
+              </TableHead>
               <TableHead>Valor Total</TableHead>
               <TableHead>Pago</TableHead>
               <TableHead>Saldo</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <ColumnFilterPopover
+                  title="Status"
+                  options={statusOptions}
+                  selected={colFilterStatus}
+                  onChange={setColFilterStatus}
+                />
+              </TableHead>
               <TableHead className="w-10"></TableHead>
             </TableRow>
           </TableHeader>
