@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
+import { maskCPF } from "@/lib/masks";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +28,7 @@ interface InscricaoRapidaDialogProps {
 
 const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: InscricaoRapidaDialogProps) => {
   const queryClient = useQueryClient();
+  const isStrictAdmin = useIsStrictAdmin();
   const [isManual, setIsManual] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<any>(null);

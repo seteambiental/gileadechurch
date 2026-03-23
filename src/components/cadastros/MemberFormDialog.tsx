@@ -4,8 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { Plus, X, Loader2, UserCog, Baby } from "lucide-react";
+import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { needsResponsible, getAgeString } from "@/lib/age-utils";
 import { ResponsavelSelect } from "@/components/ui/responsavel-select";
@@ -237,21 +238,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  // Check if current user is strictly admin (admin or pastor_geral)
-  const { data: isStrictAdmin } = useQuery({
-    queryKey: ["is-strict-admin", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user!.id)
-        .in("role", ["admin", "pastor_geral"]);
-      return (data && data.length > 0) || false;
-    },
-    enabled: !!user?.id,
-  });
+  const isStrictAdmin = useIsStrictAdmin();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
