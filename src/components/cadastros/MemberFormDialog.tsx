@@ -317,7 +317,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             state: memberData.state || "",
             whatsapp: memberData.whatsapp ? formatPhone(memberData.whatsapp) : "",
             email: memberData.email || "",
-            cpf: (memberData as any).cpf ? formatCPF((memberData as any).cpf) : "",
+            cpf: (memberData as any).cpf 
+              ? (isStrictAdmin ? formatCPF((memberData as any).cpf) : maskCPF((memberData as any).cpf))
+              : "",
             criar_usuario: false,
             perfil_usuario: undefined,
             nao_pretende_servir: (memberData as any).nao_pretende_servir || false,
