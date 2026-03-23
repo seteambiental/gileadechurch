@@ -808,14 +808,21 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   name="cpf"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF</FormLabel>
+                      <FormLabel>CPF {!isStrictAdmin && member && "(restrito)"}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field}
-                          placeholder="000.000.000-00"
-                          onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                          placeholder={isStrictAdmin ? "000.000.000-00" : ""}
+                          onChange={(e) => {
+                            if (isStrictAdmin) {
+                              field.onChange(formatCPF(e.target.value));
+                            }
+                          }}
                           maxLength={14}
                           inputMode="numeric"
+                          readOnly={!isStrictAdmin && !!member}
+                          disabled={!isStrictAdmin && !!member}
+                          className={!isStrictAdmin && !!member ? "bg-muted cursor-not-allowed" : ""}
                         />
                       </FormControl>
                       <FormMessage />
