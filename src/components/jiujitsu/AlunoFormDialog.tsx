@@ -145,7 +145,8 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
 
     const payload: any = {
       nome: nome.trim(),
-      cpf, data_nascimento: dataNascimento, genero, endereco,
+      ...(isStrictAdmin || !isEditing ? { cpf } : {}),
+      data_nascimento: dataNascimento, genero, endereco,
       telefone, whatsapp, email,
       contato_emergencia_nome: contatoEmergenciaNome,
       contato_emergencia_telefone: contatoEmergenciaTelefone,

@@ -28,6 +28,7 @@ interface InscricaoRapidaDialogProps {
 
 const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: InscricaoRapidaDialogProps) => {
   const queryClient = useQueryClient();
+  const isStrictAdmin = useIsStrictAdmin();
   const [isManual, setIsManual] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<any>(null);
