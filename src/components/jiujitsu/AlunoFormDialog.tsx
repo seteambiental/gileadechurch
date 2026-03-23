@@ -34,6 +34,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!aluno;
+  const isStrictAdmin = useIsStrictAdmin();
 
   const [tipoInscricao, setTipoInscricao] = useState<string>("visitante");
   const [membroBusca, setMembroBusca] = useState("");
@@ -81,7 +82,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
   useEffect(() => {
     if (aluno) {
       setNome(aluno.nome || "");
-      setCpf(aluno.cpf || "");
+      setCpf(isStrictAdmin ? (aluno.cpf || "") : maskCPF(aluno.cpf));
       setDataNascimento(aluno.data_nascimento || "");
       setGenero(aluno.genero || "");
       setEndereco(aluno.endereco || "");
@@ -250,8 +251,14 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
               </Select>
             </div>
             <div>
-              <Label>CPF</Label>
-              <Input value={cpf} onChange={(e) => setCpf(e.target.value)} />
+              <Label>CPF {!isStrictAdmin && isEditing && "(restrito)"}</Label>
+              <Input 
+                value={cpf} 
+                onChange={(e) => { if (isStrictAdmin || !isEditing) setCpf(e.target.value); }}
+                readOnly={!isStrictAdmin && isEditing}
+                disabled={!isStrictAdmin && isEditing}
+                className={!isStrictAdmin && isEditing ? "bg-muted cursor-not-allowed" : ""}
+              />
             </div>
           </div>
 
