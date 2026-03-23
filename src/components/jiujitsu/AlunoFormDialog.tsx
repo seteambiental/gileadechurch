@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
+import { maskCPF } from "@/lib/masks";
 import {
   Dialog,
   DialogContent,
