@@ -173,13 +173,13 @@ const KidsPage = () => {
     members?.forEach((member) => {
       if (!member.birth_date) return;
       const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
-      const idadeTurma = kidsAgeForTurma(member.birth_date);
+      const { years: idadeCompleta } = calculateAge(member.birth_date);
       
-      // Use override if set, otherwise year-based age for turma
+      // Use override if set, otherwise completed age for turma
       const override = (member as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeCompleta >= t.idade_minima && idadeCompleta <= t.idade_maxima);
       
       if (turma) {
         // Buscar responsável via kids_responsaveis
@@ -216,13 +216,13 @@ const KidsPage = () => {
     novosConvertidos?.forEach((nc) => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
-      const idadeTurma = kidsAgeForTurma(nc.data_nascimento);
+      const { years: idadeCompleta } = calculateAge(nc.data_nascimento);
       
-      // Use override if set, otherwise year-based age for turma
+      // Use override if set, otherwise completed age for turma
       const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeCompleta >= t.idade_minima && idadeCompleta <= t.idade_maxima);
       
       if (turma) {
         // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos
