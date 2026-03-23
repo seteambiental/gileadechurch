@@ -373,7 +373,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     if (open) {
       fetchMemberDetails();
     }
-  }, [member, open, form]);
+  }, [member, open, form, isStrictAdmin]);
 
   // Fetch options for functions
   const { data: ministries = [] } = useQuery({
