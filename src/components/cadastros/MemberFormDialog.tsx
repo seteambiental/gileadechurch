@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, X, Loader2, UserCog, Baby } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { needsResponsible, getAgeString } from "@/lib/age-utils";
@@ -35,7 +36,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
-import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
+import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF, maskCPF } from "@/lib/masks";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCepLookup } from "@/hooks/useCepLookup";
