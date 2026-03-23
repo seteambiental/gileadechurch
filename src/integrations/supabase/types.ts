@@ -4160,6 +4160,67 @@ export type Database = {
           },
         ]
       }
+      kids_transicoes: {
+        Row: {
+          aprovado_por: string | null
+          created_at: string
+          crianca_member_id: string | null
+          crianca_novo_convertido_id: string | null
+          id: string
+          status: string
+          tipo: string
+          turma_atual: string
+          turma_nova: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_por?: string | null
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          id?: string
+          status?: string
+          tipo?: string
+          turma_atual: string
+          turma_nova: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_por?: string | null
+          created_at?: string
+          crianca_member_id?: string | null
+          crianca_novo_convertido_id?: string | null
+          id?: string
+          status?: string
+          tipo?: string
+          turma_atual?: string
+          turma_nova?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kids_transicoes_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transicoes_crianca_member_id_fkey"
+            columns: ["crianca_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kids_transicoes_crianca_novo_convertido_id_fkey"
+            columns: ["crianca_novo_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "novos_convertidos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kids_turmas_config: {
         Row: {
           cor_hex: string
