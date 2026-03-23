@@ -448,6 +448,10 @@ const KidsPage = () => {
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
+            <TabsTrigger value="alteracoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
+              <AlertTriangle className="h-4 w-4" />
+              Alterações
+            </TabsTrigger>
             <Button
               variant="outline"
               size="sm"
@@ -511,6 +515,10 @@ const KidsPage = () => {
           {/* Configurações */}
           <TabsContent value="config">
             <KidsConfigTab />
+          </TabsContent>
+          {/* Alterações */}
+          <TabsContent value="alteracoes">
+            <KidsAlteracoesTab turmasConfig={turmasConfig || []} />
           </TabsContent>
           </div>
         </Tabs>
