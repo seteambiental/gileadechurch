@@ -437,7 +437,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,
-        cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
+        ...(isStrictAdmin ? { cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null } : {}),
         nao_pretende_servir: data.nao_pretende_servir || false,
         ministerios_interesse: data.ministerios_interesse || [],
         responsavel_id: data.responsavel_id || null,
