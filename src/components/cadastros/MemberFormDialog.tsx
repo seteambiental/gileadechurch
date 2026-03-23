@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { Plus, X, Loader2, UserCog, Baby } from "lucide-react";
 import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
