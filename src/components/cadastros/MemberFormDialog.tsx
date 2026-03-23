@@ -237,6 +237,21 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Check if current user is strictly admin (admin or pastor_geral)
+  const { data: isStrictAdmin } = useQuery({
+    queryKey: ["is-strict-admin", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .in("role", ["admin", "pastor_geral"]);
+      return (data && data.length > 0) || false;
+    },
+    enabled: !!user?.id,
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
