@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
-import { kidsAgeForTurma } from "@/lib/age-utils";
+import { calculateAge } from "@/lib/age-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ import {
   CalendarDays,
   FileText,
   QrCode,
+  AlertTriangle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
@@ -32,6 +33,7 @@ import { KidsEscalasTab } from "@/components/kids/KidsEscalasTab";
 import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { KidsCheckinTab } from "@/components/kids/KidsCheckinTab";
+import { KidsAlteracoesTab } from "@/components/kids/KidsAlteracoesTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -172,13 +174,13 @@ const KidsPage = () => {
     members?.forEach((member) => {
       if (!member.birth_date) return;
       const idade = differenceInYears(hoje, parseLocalDate(member.birth_date));
-      const idadeTurma = kidsAgeForTurma(member.birth_date);
+      const { years: idadeCompleta } = calculateAge(member.birth_date);
       
-      // Use override if set, otherwise year-based age for turma
+      // Use override if set, otherwise completed age for turma
       const override = (member as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeCompleta >= t.idade_minima && idadeCompleta <= t.idade_maxima);
       
       if (turma) {
         // Buscar responsável via kids_responsaveis
@@ -215,13 +217,13 @@ const KidsPage = () => {
     novosConvertidos?.forEach((nc) => {
       if (!nc.data_nascimento) return;
       const idade = differenceInYears(hoje, parseLocalDate(nc.data_nascimento));
-      const idadeTurma = kidsAgeForTurma(nc.data_nascimento);
+      const { years: idadeCompleta } = calculateAge(nc.data_nascimento);
       
-      // Use override if set, otherwise year-based age for turma
+      // Use override if set, otherwise completed age for turma
       const override = (nc as Record<string, unknown>).kids_turma_override as string | null;
       const turma = override
         ? turmasConfig.find((t) => t.turma === override)
-        : turmasConfig.find((t) => idadeTurma >= t.idade_minima && idadeTurma <= t.idade_maxima);
+        : turmasConfig.find((t) => idadeCompleta >= t.idade_minima && idadeCompleta <= t.idade_maxima);
       
       if (turma) {
         // Prioridade: 1) membro_vinculado, 2) kids_responsaveis, 3) campos diretos
@@ -447,6 +449,10 @@ const KidsPage = () => {
               <Settings className="h-4 w-4" />
               Configurações
             </TabsTrigger>
+            <TabsTrigger value="alteracoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500 data-[state=active]:to-orange-500 data-[state=active]:text-white">
+              <AlertTriangle className="h-4 w-4" />
+              Alterações
+            </TabsTrigger>
             <Button
               variant="outline"
               size="sm"
@@ -510,6 +516,10 @@ const KidsPage = () => {
           {/* Configurações */}
           <TabsContent value="config">
             <KidsConfigTab />
+          </TabsContent>
+          {/* Alterações */}
+          <TabsContent value="alteracoes">
+            <KidsAlteracoesTab turmasConfig={turmasConfig || []} />
           </TabsContent>
           </div>
         </Tabs>
