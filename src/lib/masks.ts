@@ -47,6 +47,14 @@ export const formatCPF = (value: string): string => {
   return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
 };
 
+// Mask CPF showing only first 3 digits: 763.XXX.XXX-XX
+export const maskCPF = (value: string | null): string => {
+  if (!value) return "";
+  const numbers = value.replace(/\D/g, "");
+  if (numbers.length < 3) return numbers;
+  return `${numbers.slice(0, 3)}.XXX.XXX-XX`;
+};
+
 export const formatRG = (value: string): string => {
   // RG format can vary by state, keeping it simple with dots
   const cleaned = value.replace(/[^0-9Xx]/g, "");

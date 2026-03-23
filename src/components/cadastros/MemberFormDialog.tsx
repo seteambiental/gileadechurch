@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, X, Loader2, UserCog, Baby } from "lucide-react";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { needsResponsible, getAgeString } from "@/lib/age-utils";
@@ -35,7 +36,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 
-import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF } from "@/lib/masks";
+import { formatPhone, formatCep, unformatPhone, unformatCep, formatCPF, maskCPF } from "@/lib/masks";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useCepLookup } from "@/hooks/useCepLookup";
@@ -236,6 +237,21 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Check if current user is strictly admin (admin or pastor_geral)
+  const { data: isStrictAdmin } = useQuery({
+    queryKey: ["is-strict-admin", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .in("role", ["admin", "pastor_geral"]);
+      return (data && data.length > 0) || false;
+    },
+    enabled: !!user?.id,
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -301,7 +317,9 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             state: memberData.state || "",
             whatsapp: memberData.whatsapp ? formatPhone(memberData.whatsapp) : "",
             email: memberData.email || "",
-            cpf: (memberData as any).cpf ? formatCPF((memberData as any).cpf) : "",
+            cpf: (memberData as any).cpf 
+              ? (isStrictAdmin ? formatCPF((memberData as any).cpf) : maskCPF((memberData as any).cpf))
+              : "",
             criar_usuario: false,
             perfil_usuario: undefined,
             nao_pretende_servir: (memberData as any).nao_pretende_servir || false,
@@ -355,7 +373,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
     if (open) {
       fetchMemberDetails();
     }
-  }, [member, open, form]);
+  }, [member, open, form, isStrictAdmin]);
 
   // Fetch options for functions
   const { data: ministries = [] } = useQuery({
@@ -419,7 +437,7 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
         whatsapp: data.whatsapp ? unformatPhone(data.whatsapp) : null,
         email: data.email || null,
         photo_url: photoUrl,
-        cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null,
+        ...(isStrictAdmin ? { cpf: data.cpf ? data.cpf.replace(/\D/g, "") : null } : {}),
         nao_pretende_servir: data.nao_pretende_servir || false,
         ministerios_interesse: data.ministerios_interesse || [],
         responsavel_id: data.responsavel_id || null,
@@ -790,14 +808,21 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
                   name="cpf"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF</FormLabel>
+                      <FormLabel>CPF {!isStrictAdmin && member && "(restrito)"}</FormLabel>
                       <FormControl>
                         <Input 
                           {...field}
-                          placeholder="000.000.000-00"
-                          onChange={(e) => field.onChange(formatCPF(e.target.value))}
+                          placeholder={isStrictAdmin ? "000.000.000-00" : ""}
+                          onChange={(e) => {
+                            if (isStrictAdmin) {
+                              field.onChange(formatCPF(e.target.value));
+                            }
+                          }}
                           maxLength={14}
                           inputMode="numeric"
+                          readOnly={!isStrictAdmin && !!member}
+                          disabled={!isStrictAdmin && !!member}
+                          className={!isStrictAdmin && !!member ? "bg-muted cursor-not-allowed" : ""}
                         />
                       </FormControl>
                       <FormMessage />
