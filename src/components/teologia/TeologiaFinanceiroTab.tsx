@@ -319,19 +319,7 @@ const TeologiaFinanceiroTab = () => {
   }
 
   return (
-    <Tabs defaultValue="receitas" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="receitas" className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4" />
-          Receitas
-        </TabsTrigger>
-        <TabsTrigger value="despesas" className="flex items-center gap-2">
-          <ArrowDownCircle className="w-4 h-4" />
-          Despesas
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="receitas" className="space-y-6">
+    <div className="space-y-6">
       {/* Dashboard cards - matching Impacto style */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -434,366 +422,380 @@ const TeologiaFinanceiroTab = () => {
         </Card>
       </div>
 
-      {/* Search + Add */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar aluno..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={turmaFilter} onValueChange={setTurmaFilter}>
-            <SelectTrigger className="w-full sm:w-64">
-              <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por turma" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as turmas</SelectItem>
-              {turmas.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex gap-2">
-          <ExportButton
-            data={alunoExportData}
-            columns={alunoExportColumns}
-            filename="teologia-alunos"
-            title="Financeiro - Curso de Teologia"
-            sheetName="Alunos"
-          />
-          <Button onClick={() => setAddAlunoOpen(true)} size="sm">
-            <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
-          </Button>
-        </div>
-      </div>
+      <Tabs defaultValue="receitas" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="receitas" className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Receitas
+          </TabsTrigger>
+          <TabsTrigger value="despesas" className="flex items-center gap-2">
+            <ArrowDownCircle className="w-4 h-4" />
+            Despesas
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Table */}
-      <div className="rounded-lg border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-8"></TableHead>
-              <TableHead>Aluno</TableHead>
-              <TableHead>
-                <ColumnFilterPopover
-                  title="Turma"
-                  options={turmaOptions}
-                  selected={colFilterTurma}
-                  onChange={setColFilterTurma}
+        <TabsContent value="receitas" className="space-y-6">
+          {/* Search + Add */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar aluno..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
                 />
-              </TableHead>
-              <TableHead>Valor Total</TableHead>
-              <TableHead>Pago</TableHead>
-              <TableHead>Saldo</TableHead>
-              <TableHead>
-                <ColumnFilterPopover
-                  title="Status"
-                  options={statusOptions}
-                  selected={colFilterStatus}
-                  onChange={setColFilterStatus}
-                />
-              </TableHead>
-              <TableHead className="w-10"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  Nenhum aluno cadastrado
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((aluno: any) => {
-                const pgtos = pagamentosByAluno[aluno.id] || [];
-                const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
-                const saldo = Number(aluno.valor_total || 0) - pago;
-                const isExpanded = expandedId === aluno.id;
-
-                return (
-                  <>
-                    <TableRow
-                      key={aluno.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setExpandedId(isExpanded ? null : aluno.id)}
-                    >
-                      <TableCell>
-                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </TableCell>
-                      <TableCell className="font-medium">{aluno.nome_aluno || aluno.members?.full_name}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{(aluno as any).turma || "—"}</TableCell>
-                      <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
-                      <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
-                      <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
-                        {formatCurrency(saldo)}
-                      </TableCell>
-                      <TableCell>
-                        {saldo <= 0 ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200">Quitado</Badge>
-                        ) : pago > 0 ? (
-                          <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50">Parcial</Badge>
-                        ) : (
-                          <Badge variant="destructive">Pendente</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteTarget({ type: "aluno", id: aluno.id });
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-
-                    {isExpanded && (
-                      <TableRow key={`${aluno.id}-detail`}>
-                        <TableCell colSpan={8} className="bg-muted/30 p-4">
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-semibold text-sm">Pagamentos</h4>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAddPagamentoAlunoId(aluno.id);
-                                  setPgtoData(todayDateStr());
-                                  setPgtoForma("");
-                                  setPgtoValor("");
-                                }}
-                              >
-                                <Plus className="w-3 h-3 mr-1" /> Registrar Pagamento
-                              </Button>
-                            </div>
-
-                            {pgtos.length === 0 ? (
-                              <p className="text-sm text-muted-foreground">Nenhum pagamento registrado</p>
-                            ) : (
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Data</TableHead>
-                                    <TableHead>Forma</TableHead>
-                                    <TableHead>Valor</TableHead>
-                                    <TableHead className="w-10"></TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {pgtos.map((p: any) => (
-                                    <TableRow key={p.id}>
-                                      <TableCell>{formatDateBR(p.data_pagamento)}</TableCell>
-                                      <TableCell>{FORMAS_LABELS[p.forma_pagamento] || p.forma_pagamento}</TableCell>
-                                      <TableCell className="text-green-600 font-medium">{formatCurrency(Number(p.valor))}</TableCell>
-                                      <TableCell>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteTarget({ type: "pagamento", id: p.id });
-                                          }}
-                                        >
-                                          <Trash2 className="w-3 h-3 text-destructive" />
-                                        </Button>
-                                      </TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Relatório por Turma */}
-      {turmaReport.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Relatório por Turma
-              </CardTitle>
-              <ExportButton
-                data={turmaReport}
-                columns={turmaExportColumns}
-                filename="teologia-relatorio-turmas"
-                title="Relatório por Turma - Curso de Teologia"
-                sheetName="Turmas"
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-lg border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Turma</TableHead>
-                    <TableHead className="text-center">Alunos</TableHead>
-                    <TableHead className="text-center">Quitados</TableHead>
-                    <TableHead>Total Devido</TableHead>
-                    <TableHead>Total Pago</TableHead>
-                    <TableHead>Saldo Devedor</TableHead>
-                    <TableHead className="text-center">% Arrecadado</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {turmaReport.map((r) => {
-                    const pct = r.devido > 0 ? Math.round((r.pago / r.devido) * 100) : 0;
-                    return (
-                      <TableRow key={r.turma}>
-                        <TableCell className="font-medium">{r.turma}</TableCell>
-                        <TableCell className="text-center">{r.total}</TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
-                            {r.quitados}/{r.total}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{formatCurrency(r.devido)}</TableCell>
-                        <TableCell className="text-green-600">{formatCurrency(r.pago)}</TableCell>
-                        <TableCell className={r.saldo > 0 ? "text-destructive" : "text-green-600"}>
-                          {formatCurrency(r.saldo)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center gap-2 justify-center">
-                            <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-green-500 rounded-full transition-all"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="text-xs text-muted-foreground">{pct}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <Dialog open={addAlunoOpen} onOpenChange={setAddAlunoOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Aluno</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Membro</Label>
-              <MemberSelect value={novoMemberId} onChange={setNovoMemberId} />
-            </div>
-            <div>
-              <Label>Valor Total do Curso (R$)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={novoValor}
-                onChange={(e) => setNovoValor(e.target.value)}
-                placeholder="0,00"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddAlunoOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={() => addAlunoMutation.mutate()}
-              disabled={!novoMemberId || !novoValor || addAlunoMutation.isPending}
-            >
-              {addAlunoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              Adicionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog: Registrar Pagamento */}
-      <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => !o && setAddPagamentoAlunoId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Registrar Pagamento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Data</Label>
-              <DateInput value={pgtoData} onChange={setPgtoData} />
-            </div>
-            <div>
-              <Label>Forma de Pagamento</Label>
-              <Select value={pgtoForma} onValueChange={setPgtoForma}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione..." />
+              </div>
+              <Select value={turmaFilter} onValueChange={setTurmaFilter}>
+                <SelectTrigger className="w-full sm:w-64">
+                  <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Filtrar por turma" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FORMAS_PAGAMENTO.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                  <SelectItem value="todas">Todas as turmas</SelectItem>
+                  {turmas.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Valor (R$)</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={pgtoValor}
-                onChange={(e) => setPgtoValor(e.target.value)}
-                placeholder="0,00"
+            <div className="flex gap-2">
+              <ExportButton
+                data={alunoExportData}
+                columns={alunoExportColumns}
+                filename="teologia-alunos"
+                title="Financeiro - Curso de Teologia"
+                sheetName="Alunos"
               />
+              <Button onClick={() => setAddAlunoOpen(true)} size="sm">
+                <Plus className="w-4 h-4 mr-1" /> Adicionar Aluno
+              </Button>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAddPagamentoAlunoId(null)}>Cancelar</Button>
-            <Button
-              onClick={() => addPagamentoMutation.mutate()}
-              disabled={!pgtoForma || !pgtoValor || addPagamentoMutation.isPending}
-            >
-              {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              Registrar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Confirm delete */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
-        onConfirm={() => deleteMutation.mutate()}
-        title={deleteTarget?.type === "aluno" ? "Excluir aluno" : "Excluir pagamento"}
-        description={deleteTarget?.type === "aluno"
-          ? "Isso removerá o aluno e todos os pagamentos associados. Deseja continuar?"
-          : "Deseja excluir este pagamento?"}
-      />
-      </TabsContent>
+          {/* Table */}
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>Aluno</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover
+                      title="Turma"
+                      options={turmaOptions}
+                      selected={colFilterTurma}
+                      onChange={setColFilterTurma}
+                    />
+                  </TableHead>
+                  <TableHead>Valor Total</TableHead>
+                  <TableHead>Pago</TableHead>
+                  <TableHead>Saldo</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover
+                      title="Status"
+                      options={statusOptions}
+                      selected={colFilterStatus}
+                      onChange={setColFilterStatus}
+                    />
+                  </TableHead>
+                  <TableHead className="w-10"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      Nenhum aluno cadastrado
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((aluno: any) => {
+                    const pgtos = pagamentosByAluno[aluno.id] || [];
+                    const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+                    const saldo = Number(aluno.valor_total || 0) - pago;
+                    const isExpanded = expandedId === aluno.id;
 
-      <TabsContent value="despesas">
-        <TeologiaDespesasTab />
-      </TabsContent>
-    </Tabs>
+                    return (
+                      <>
+                        <TableRow
+                          key={aluno.id}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedId(isExpanded ? null : aluno.id)}
+                        >
+                          <TableCell>
+                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          </TableCell>
+                          <TableCell className="font-medium">{aluno.nome_aluno || aluno.members?.full_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-sm">{(aluno as any).turma || "—"}</TableCell>
+                          <TableCell>{formatCurrency(Number(aluno.valor_total))}</TableCell>
+                          <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
+                          <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
+                            {formatCurrency(saldo)}
+                          </TableCell>
+                          <TableCell>
+                            {saldo <= 0 ? (
+                              <Badge className="bg-green-100 text-green-800 border-green-200">Quitado</Badge>
+                            ) : pago > 0 ? (
+                              <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50">Parcial</Badge>
+                            ) : (
+                              <Badge variant="destructive">Pendente</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget({ type: "aluno", id: aluno.id });
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+
+                        {isExpanded && (
+                          <TableRow key={`${aluno.id}-detail`}>
+                            <TableCell colSpan={8} className="bg-muted/30 p-4">
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-semibold text-sm">Pagamentos</h4>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAddPagamentoAlunoId(aluno.id);
+                                      setPgtoData(todayDateStr());
+                                      setPgtoForma("");
+                                      setPgtoValor("");
+                                    }}
+                                  >
+                                    <Plus className="w-3 h-3 mr-1" /> Registrar Pagamento
+                                  </Button>
+                                </div>
+
+                                {pgtos.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">Nenhum pagamento registrado</p>
+                                ) : (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Data</TableHead>
+                                        <TableHead>Forma</TableHead>
+                                        <TableHead>Valor</TableHead>
+                                        <TableHead className="w-10"></TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {pgtos.map((p: any) => (
+                                        <TableRow key={p.id}>
+                                          <TableCell>{formatDateBR(p.data_pagamento)}</TableCell>
+                                          <TableCell>{FORMAS_LABELS[p.forma_pagamento] || p.forma_pagamento}</TableCell>
+                                          <TableCell className="text-green-600 font-medium">{formatCurrency(Number(p.valor))}</TableCell>
+                                          <TableCell>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteTarget({ type: "pagamento", id: p.id });
+                                              }}
+                                            >
+                                              <Trash2 className="w-3 h-3 text-destructive" />
+                                            </Button>
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Relatório por Turma */}
+          {turmaReport.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Relatório por Turma
+                  </CardTitle>
+                  <ExportButton
+                    data={turmaReport}
+                    columns={turmaExportColumns}
+                    filename="teologia-relatorio-turmas"
+                    title="Relatório por Turma - Curso de Teologia"
+                    sheetName="Turmas"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Turma</TableHead>
+                        <TableHead className="text-center">Alunos</TableHead>
+                        <TableHead className="text-center">Quitados</TableHead>
+                        <TableHead>Total Devido</TableHead>
+                        <TableHead>Total Pago</TableHead>
+                        <TableHead>Saldo Devedor</TableHead>
+                        <TableHead className="text-center">% Arrecadado</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {turmaReport.map((r) => {
+                        const pct = r.devido > 0 ? Math.round((r.pago / r.devido) * 100) : 0;
+                        return (
+                          <TableRow key={r.turma}>
+                            <TableCell className="font-medium">{r.turma}</TableCell>
+                            <TableCell className="text-center">{r.total}</TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline" className="border-green-300 text-green-700 bg-green-50">
+                                {r.quitados}/{r.total}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{formatCurrency(r.devido)}</TableCell>
+                            <TableCell className="text-green-600">{formatCurrency(r.pago)}</TableCell>
+                            <TableCell className={r.saldo > 0 ? "text-destructive" : "text-green-600"}>
+                              {formatCurrency(r.saldo)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="flex items-center gap-2 justify-center">
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-green-500 rounded-full transition-all"
+                                    style={{ width: `${pct}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted-foreground">{pct}%</span>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Dialog open={addAlunoOpen} onOpenChange={setAddAlunoOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Aluno</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Membro</Label>
+                  <MemberSelect value={novoMemberId} onChange={setNovoMemberId} />
+                </div>
+                <div>
+                  <Label>Valor Total do Curso (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={novoValor}
+                    onChange={(e) => setNovoValor(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAddAlunoOpen(false)}>Cancelar</Button>
+                <Button
+                  onClick={() => addAlunoMutation.mutate()}
+                  disabled={!novoMemberId || !novoValor || addAlunoMutation.isPending}
+                >
+                  {addAlunoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Adicionar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog: Registrar Pagamento */}
+          <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => !o && setAddPagamentoAlunoId(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Registrar Pagamento</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>Data</Label>
+                  <DateInput value={pgtoData} onChange={setPgtoData} />
+                </div>
+                <div>
+                  <Label>Forma de Pagamento</Label>
+                  <Select value={pgtoForma} onValueChange={setPgtoForma}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FORMAS_PAGAMENTO.map((f) => (
+                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Valor (R$)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={pgtoValor}
+                    onChange={(e) => setPgtoValor(e.target.value)}
+                    placeholder="0,00"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setAddPagamentoAlunoId(null)}>Cancelar</Button>
+                <Button
+                  onClick={() => addPagamentoMutation.mutate()}
+                  disabled={!pgtoForma || !pgtoValor || addPagamentoMutation.isPending}
+                >
+                  {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                  Registrar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Confirm delete */}
+          <ConfirmDialog
+            open={!!deleteTarget}
+            onOpenChange={(o) => !o && setDeleteTarget(null)}
+            onConfirm={() => deleteMutation.mutate()}
+            title={deleteTarget?.type === "aluno" ? "Excluir aluno" : "Excluir pagamento"}
+            description={deleteTarget?.type === "aluno"
+              ? "Isso removerá o aluno e todos os pagamentos associados. Deseja continuar?"
+              : "Deseja excluir este pagamento?"}
+          />
+        </TabsContent>
+
+        <TabsContent value="despesas">
+          <TeologiaDespesasTab />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
