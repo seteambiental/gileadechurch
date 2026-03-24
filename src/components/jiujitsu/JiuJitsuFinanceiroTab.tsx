@@ -98,6 +98,18 @@ export function JiuJitsuFinanceiroTab() {
     return { totalAlunos, totalPrevisto, totalPago, totalPendente, pagos, pendentes, atrasados };
   }, [alunos, pagamentos]);
 
+  // Fetch despesas
+  const { data: jiuDespesas = [] } = useQuery({
+    queryKey: ["jiujitsu-despesas-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("jiujitsu_despesas").select("valor");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const totalDespesas = jiuDespesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const saldoGeral = stats.totalPago - totalDespesas;
+
   const handleSave = async () => {
     if (!alunoId || !mesRef) {
       toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
