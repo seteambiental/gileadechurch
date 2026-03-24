@@ -5,9 +5,11 @@ import { useUserAccess } from "@/hooks/useUserAccess";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import ImpactoFinanceiroTab from "@/components/impacto/ImpactoFinanceiroTab";
 import TeologiaFinanceiroTab from "@/components/teologia/TeologiaFinanceiroTab";
+import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
+import { JiuJitsuFinanceiroTab } from "@/components/jiujitsu/JiuJitsuFinanceiroTab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, DollarSign, GraduationCap } from "lucide-react";
+import { ArrowLeft, Loader2, DollarSign, GraduationCap, Heart, Swords } from "lucide-react";
 
 const FinanceiroPage = () => {
   const { user, loading } = useAuth();
@@ -60,6 +62,14 @@ const FinanceiroPage = () => {
               <GraduationCap className="w-4 h-4" />
               <span>Curso de Teologia</span>
             </TabsTrigger>
+            <TabsTrigger value="casais" className="flex items-center gap-2">
+              <Heart className="w-4 h-4" />
+              <span>Curso de Casais</span>
+            </TabsTrigger>
+            <TabsTrigger value="jiujitsu" className="flex items-center gap-2">
+              <Swords className="w-4 h-4" />
+              <span>Jiu-Jitsu</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="eventos">
@@ -68,6 +78,14 @@ const FinanceiroPage = () => {
 
           <TabsContent value="teologia">
             <TeologiaFinanceiroTab />
+          </TabsContent>
+
+          <TabsContent value="casais">
+            <CasaisFinanceiroTab />
+          </TabsContent>
+
+          <TabsContent value="jiujitsu">
+            <JiuJitsuFinanceiroTab />
           </TabsContent>
         </Tabs>
       </main>
