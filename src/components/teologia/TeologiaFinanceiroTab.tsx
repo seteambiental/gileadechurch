@@ -319,19 +319,7 @@ const TeologiaFinanceiroTab = () => {
   }
 
   return (
-    <Tabs defaultValue="receitas" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="receitas" className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4" />
-          Receitas
-        </TabsTrigger>
-        <TabsTrigger value="despesas" className="flex items-center gap-2">
-          <ArrowDownCircle className="w-4 h-4" />
-          Despesas
-        </TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="receitas" className="space-y-6">
+    <div className="space-y-6">
       {/* Dashboard cards - matching Impacto style */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
