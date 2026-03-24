@@ -198,7 +198,45 @@ export function JiuJitsuFinanceiroTab() {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total de Despesas</CardTitle>
+            <ArrowDownCircle className="w-4 h-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesas)}</div>
+            <p className="text-xs text-muted-foreground">Soma dos custos</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Geral</CardTitle>
+            <Scale className={`w-4 h-4 ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`}>
+              {formatCurrency(saldoGeral)}
+            </div>
+            <p className="text-xs text-muted-foreground">Receitas pagas − Despesas</p>
+          </CardContent>
+        </Card>
       </div>
+
+      <Tabs defaultValue="receitas" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="receitas" className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Receitas
+          </TabsTrigger>
+          <TabsTrigger value="despesas" className="flex items-center gap-2">
+            <ArrowDownCircle className="w-4 h-4" />
+            Despesas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="receitas" className="space-y-6">
 
       {/* Tabela de valores */}
       <Card className="border-dashed">
