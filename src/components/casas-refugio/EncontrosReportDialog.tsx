@@ -40,7 +40,7 @@ import {
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
 interface CasaRefugioData {
   id: string;
@@ -189,8 +189,8 @@ export const EncontrosReportDialog = ({
   open,
   onOpenChange,
 }: EncontrosReportDialogProps) => {
-  // Default: February 2026
-  const defaultStartDate = "2026-02-01";
+  // Default: first day of current month
+  const defaultStartDate = firstDayOfMonthStr();
   const defaultEndDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const [startDate, setStartDate] = useState(defaultStartDate);
