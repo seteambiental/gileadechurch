@@ -22,8 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DollarSign, Check, Clock, Plus, Search, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale,
+  DollarSign, Check, Clock, Plus, Search, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
 
 const VALOR_CURSO = 100;
@@ -139,6 +141,18 @@ export function CasaisFinanceiroTab() {
       return acc;
     }, {});
   }, [filtered, pagamentos]);
+
+  // Fetch despesas
+  const { data: casaisDespesas = [] } = useQuery({
+    queryKey: ["casais-despesas-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("casais_despesas").select("valor");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const totalDespesas = casaisDespesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const saldoGeral = stats.totalPago - totalDespesas;
 
   // Add payment mutation
   const addPagamentoMutation = useMutation({
@@ -289,7 +303,45 @@ export function CasaisFinanceiroTab() {
             </p>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total de Despesas</CardTitle>
+            <ArrowDownCircle className="w-4 h-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesas)}</div>
+            <p className="text-xs text-muted-foreground">Soma dos custos do curso</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Geral</CardTitle>
+            <Scale className={`w-4 h-4 ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`}>
+              {formatCurrency(saldoGeral)}
+            </div>
+            <p className="text-xs text-muted-foreground">Receitas pagas − Despesas</p>
+          </CardContent>
+        </Card>
       </div>
+
+      <Tabs defaultValue="receitas" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="receitas" className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Receitas
+          </TabsTrigger>
+          <TabsTrigger value="despesas" className="flex items-center gap-2">
+            <ArrowDownCircle className="w-4 h-4" />
+            Despesas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="receitas" className="space-y-6">
 
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
@@ -493,6 +545,12 @@ export function CasaisFinanceiroTab() {
         description="Tem certeza que deseja excluir este pagamento?"
         onConfirm={() => deleteMutation.mutate()}
       />
+        </TabsContent>
+
+        <TabsContent value="despesas">
+          <CasaisDespesasTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
