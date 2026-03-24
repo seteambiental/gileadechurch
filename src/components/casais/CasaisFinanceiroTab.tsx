@@ -142,6 +142,18 @@ export function CasaisFinanceiroTab() {
     }, {});
   }, [filtered, pagamentos]);
 
+  // Fetch despesas
+  const { data: casaisDespesas = [] } = useQuery({
+    queryKey: ["casais-despesas-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("casais_despesas").select("valor");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const totalDespesas = casaisDespesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const saldoGeral = stats.totalPago - totalDespesas;
+
   // Add payment mutation
   const addPagamentoMutation = useMutation({
     mutationFn: async () => {
