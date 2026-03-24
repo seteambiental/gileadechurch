@@ -116,14 +116,29 @@ export function CasaisFinanceiroTab() {
     const totalDevido = totalCasais * VALOR_CURSO;
     let totalPago = 0;
     let quitados = 0;
+    let parciais = 0;
+    let pendentes = 0;
     filtered.forEach((c: any) => {
       const pgtos = pagamentosByCasal[c.id] || [];
       const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
       totalPago += pago;
       if (pago >= VALOR_CURSO) quitados++;
+      else if (pago > 0) parciais++;
+      else pendentes++;
     });
-    return { totalCasais, totalDevido, totalPago, totalSaldo: totalDevido - totalPago, quitados };
+    return { totalCasais, totalDevido, totalPago, totalSaldo: totalDevido - totalPago, quitados, parciais, pendentes };
   }, [filtered, pagamentosByCasal]);
+
+  // Payment method breakdown
+  const totalByPaymentMethod = useMemo(() => {
+    const filteredIds = new Set(filtered.map((c: any) => c.id));
+    const filteredPgtos = pagamentos.filter((p: any) => filteredIds.has(p.casal_id));
+    return filteredPgtos.reduce((acc: Record<string, number>, p: any) => {
+      const forma = p.forma_pagamento || "outros";
+      acc[forma] = (acc[forma] || 0) + Number(p.valor || 0);
+      return acc;
+    }, {});
+  }, [filtered, pagamentos]);
 
   // Add payment mutation
   const addPagamentoMutation = useMutation({
