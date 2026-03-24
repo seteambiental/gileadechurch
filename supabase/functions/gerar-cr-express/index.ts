@@ -65,8 +65,14 @@ serve(async (req) => {
       .order("data_evento", { ascending: true })
       .limit(10);
 
-    // Filter out any "reserva" events by title
-    const eventos = (eventosRaw || []).filter(e => !e.titulo.toLowerCase().includes("reserva")).slice(0, 2);
+    // Filter out any "reserva" events by title or local containing "salão de festas"
+    const eventos = (eventosRaw || []).filter(e => {
+      const tituloLower = e.titulo.toLowerCase();
+      const localLower = (e.local || "").toLowerCase();
+      if (tituloLower.includes("reserva")) return false;
+      if (localLower.includes("salão de festas") || localLower.includes("salao de festas")) return false;
+      return true;
+    }).slice(0, 2);
 
     // Fetch next week's schedule - deduplicated by title
     const { data: programacaoRaw } = await supabaseAdmin
@@ -83,8 +89,11 @@ serve(async (req) => {
     // Deduplicate by title and filter out "reserva" events
     const seenTitles = new Set<string>();
     const programacao = (programacaoRaw || []).filter(e => {
-      if (e.titulo.toLowerCase().includes("reserva")) return false;
-      const key = e.titulo.trim().toLowerCase();
+      const tituloLower = e.titulo.toLowerCase();
+      const localLower = (e.local || "").toLowerCase();
+      if (tituloLower.includes("reserva")) return false;
+      if (localLower.includes("salão de festas") || localLower.includes("salao de festas")) return false;
+      const key = tituloLower.trim();
       if (seenTitles.has(key)) return false;
       seenTitles.add(key);
       return true;
