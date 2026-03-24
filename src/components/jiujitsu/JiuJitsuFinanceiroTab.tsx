@@ -16,7 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search, Info, Users, DollarSign, Check, Clock, TrendingUp } from "lucide-react";
+import { Plus, Search, Info, Users, DollarSign, Check, Clock, TrendingUp, ArrowDownCircle, Scale } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import JiuJitsuDespesasTab from "./JiuJitsuDespesasTab";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 
