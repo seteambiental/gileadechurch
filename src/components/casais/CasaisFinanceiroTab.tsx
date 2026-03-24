@@ -221,42 +221,72 @@ export function CasaisFinanceiroTab() {
 
   return (
     <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* Dashboard cards - matching Impacto style */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <Users className="w-5 h-5 text-secondary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Casais</p>
-              <p className="font-bold text-lg">{stats.totalCasais}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Inscrições</CardTitle>
+            <Users className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalCasais}</div>
+            <p className="text-xs text-muted-foreground mt-1">Casais aprovados</p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Devido</p>
-              <p className="font-bold text-lg">{formatCurrency(stats.totalDevido)}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Previsão de Valores</CardTitle>
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalDevido)}</div>
+            <p className="text-xs text-muted-foreground">
+              Soma dos valores de inscrição
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <Check className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Pago</p>
-              <p className="font-bold text-lg text-green-600">{formatCurrency(stats.totalPago)}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor Já Pago</CardTitle>
+            <DollarSign className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            {Object.keys(totalByPaymentMethod).length > 0 ? (
+              <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
+                {Object.entries(totalByPaymentMethod)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([method, value]) => (
+                    <div key={method} className="flex justify-between">
+                      <span>{FORMAS_LABELS[method] || method}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                    </div>
+                  ))}
+                <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-foreground">
+                  <span>Total</span>
+                  <span className="text-green-600">{formatCurrency(stats.totalPago)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalPago)}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {stats.quitados} pagos, {stats.parciais} parciais, {stats.pendentes} pendentes
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-destructive" />
-            <div>
-              <p className="text-xs text-muted-foreground">Saldo Devedor</p>
-              <p className="font-bold text-lg text-destructive">{formatCurrency(stats.totalSaldo)}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor a Receber</CardTitle>
+            <Clock className="w-4 h-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.totalSaldo)}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendentes} pendentes
+            </p>
           </CardContent>
         </Card>
       </div>
