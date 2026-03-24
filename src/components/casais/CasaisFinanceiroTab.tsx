@@ -22,8 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DollarSign, Check, Clock, Plus, Search, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale,
+  DollarSign, Check, Clock, Plus, Search, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
 
 const VALOR_CURSO = 100;
