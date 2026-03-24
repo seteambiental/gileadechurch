@@ -554,7 +554,7 @@ export function CasaisFinanceiroTab() {
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Excluir Pagamento"
         description="Tem certeza que deseja excluir este pagamento?"
-        onConfirm={() => deleteMutation.mutate()}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
         </TabsContent>
 
