@@ -790,12 +790,13 @@ const TeologiaFinanceiroTab = () => {
           ? "Isso removerá o aluno e todos os pagamentos associados. Deseja continuar?"
           : "Deseja excluir este pagamento?"}
       />
-      </TabsContent>
+        </TabsContent>
 
-      <TabsContent value="despesas">
-        <TeologiaDespesasTab />
-      </TabsContent>
-    </Tabs>
+        <TabsContent value="despesas">
+          <TeologiaDespesasTab />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
