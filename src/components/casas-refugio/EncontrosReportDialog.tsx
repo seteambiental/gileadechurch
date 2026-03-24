@@ -189,8 +189,8 @@ export const EncontrosReportDialog = ({
   open,
   onOpenChange,
 }: EncontrosReportDialogProps) => {
-  // Default: February 2026
-  const defaultStartDate = "2026-02-01";
+  // Default: first day of current month
+  const defaultStartDate = firstDayOfMonthStr();
   const defaultEndDate = format(endOfMonth(new Date()), "yyyy-MM-dd");
 
   const [startDate, setStartDate] = useState(defaultStartDate);
