@@ -159,6 +159,18 @@ export function CasaisFinanceiroTab() {
     mutationFn: async () => {
       if (!addPagamentoCasalId) return;
       const casal = casais.find((c: any) => c.id === addPagamentoCasalId);
+
+      // Buscar member.id a partir do auth user id
+      let memberId: string | null = null;
+      if (user?.id) {
+        const { data: memberData } = await supabase
+          .from("members")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        memberId = memberData?.id || null;
+      }
+
       const { error } = await supabase.from("casais_pagamentos").insert({
         casal_id: addPagamentoCasalId,
         turma_id: casal?.turma_id || null,
@@ -166,7 +178,7 @@ export function CasaisFinanceiroTab() {
         forma_pagamento: pgtoForma,
         valor: parseFloat(pgtoValor) || 0,
         status: "pago",
-        registrado_por: user?.id,
+        registrado_por: memberId,
       } as any);
       if (error) throw error;
     },
