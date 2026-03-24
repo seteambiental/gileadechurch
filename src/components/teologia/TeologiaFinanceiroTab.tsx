@@ -332,42 +332,104 @@ const TeologiaFinanceiroTab = () => {
       </TabsList>
 
       <TabsContent value="receitas" className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      {/* Dashboard cards - matching Impacto style */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <GraduationCap className="w-5 h-5 text-secondary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Alunos</p>
-              <p className="font-bold text-lg">{alunos.length}</p>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Alunos</CardTitle>
+            <GraduationCap className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{filtered.length}</div>
+            <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+              {turmaReport.map((t) => (
+                <div key={t.turma}>{t.turma}: {t.total}</div>
+              ))}
             </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <DollarSign className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Devido</p>
-              <p className="font-bold text-lg">{formatCurrency(totalDevido)}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Previsão de Valores</CardTitle>
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalDevido)}</div>
+            <p className="text-xs text-muted-foreground">
+              Soma dos valores dos cursos
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <Check className="w-5 h-5 text-green-600" />
-            <div>
-              <p className="text-xs text-muted-foreground">Total Pago</p>
-              <p className="font-bold text-lg text-green-600">{formatCurrency(totalPago)}</p>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor Já Pago</CardTitle>
+            <DollarSign className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            {Object.keys(totalByPaymentMethod).length > 0 ? (
+              <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
+                {Object.entries(totalByPaymentMethod)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([method, value]) => (
+                    <div key={method} className="flex justify-between">
+                      <span>{FORMAS_LABELS[method] || method}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                    </div>
+                  ))}
+                <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-foreground">
+                  <span>Total</span>
+                  <span className="text-green-600">{formatCurrency(totalPago)}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-green-600">{formatCurrency(totalPago)}</div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {quitados} pagos, {parciais} parciais, {pendentesCount} pendentes
+            </p>
           </CardContent>
         </Card>
+
         <Card>
-          <CardContent className="pt-4 pb-3 flex items-center gap-3">
-            <Clock className="w-5 h-5 text-destructive" />
-            <div>
-              <p className="text-xs text-muted-foreground">Saldo Devedor</p>
-              <p className="font-bold text-lg text-destructive">{formatCurrency(totalSaldo)}</p>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor a Receber</CardTitle>
+            <Clock className="w-4 h-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(totalSaldo)}</div>
+            <p className="text-xs text-muted-foreground">
+              {pendentesCount} pendentes
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Total de Despesas</CardTitle>
+            <ArrowDownCircle className="w-4 h-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-destructive">{formatCurrency(totalDespesas)}</div>
+            <p className="text-xs text-muted-foreground">
+              Soma dos custos do curso
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Saldo Geral</CardTitle>
+            <Scale className={`w-4 h-4 ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`} />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${saldoGeral >= 0 ? "text-green-600" : "text-destructive"}`}>
+              {formatCurrency(saldoGeral)}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Receitas pagas − Despesas
+            </p>
           </CardContent>
         </Card>
       </div>
