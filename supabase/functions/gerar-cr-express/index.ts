@@ -89,8 +89,11 @@ serve(async (req) => {
     // Deduplicate by title and filter out "reserva" events
     const seenTitles = new Set<string>();
     const programacao = (programacaoRaw || []).filter(e => {
-      if (e.titulo.toLowerCase().includes("reserva")) return false;
-      const key = e.titulo.trim().toLowerCase();
+      const tituloLower = e.titulo.toLowerCase();
+      const localLower = (e.local || "").toLowerCase();
+      if (tituloLower.includes("reserva")) return false;
+      if (localLower.includes("salão de festas") || localLower.includes("salao de festas")) return false;
+      const key = tituloLower.trim();
       if (seenTitles.has(key)) return false;
       seenTitles.add(key);
       return true;
