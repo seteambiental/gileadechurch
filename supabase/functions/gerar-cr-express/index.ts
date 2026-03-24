@@ -65,8 +65,14 @@ serve(async (req) => {
       .order("data_evento", { ascending: true })
       .limit(10);
 
-    // Filter out any "reserva" events by title
-    const eventos = (eventosRaw || []).filter(e => !e.titulo.toLowerCase().includes("reserva")).slice(0, 2);
+    // Filter out any "reserva" events by title or local containing "salão de festas"
+    const eventos = (eventosRaw || []).filter(e => {
+      const tituloLower = e.titulo.toLowerCase();
+      const localLower = (e.local || "").toLowerCase();
+      if (tituloLower.includes("reserva")) return false;
+      if (localLower.includes("salão de festas") || localLower.includes("salao de festas")) return false;
+      return true;
+    }).slice(0, 2);
 
     // Fetch next week's schedule - deduplicated by title
     const { data: programacaoRaw } = await supabaseAdmin
