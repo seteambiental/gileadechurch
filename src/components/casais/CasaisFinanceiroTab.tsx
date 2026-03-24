@@ -196,9 +196,8 @@ export function CasaisFinanceiroTab() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!deleteTarget) return;
-      const { error } = await supabase.from("casais_pagamentos").delete().eq("id", deleteTarget.id);
+    mutationFn: async (targetId: string) => {
+      const { error } = await supabase.from("casais_pagamentos").delete().eq("id", targetId);
       if (error) throw error;
     },
     onSuccess: () => {
