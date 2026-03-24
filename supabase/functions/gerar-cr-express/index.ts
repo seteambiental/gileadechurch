@@ -55,7 +55,7 @@ serve(async (req) => {
     const nextMondayStr = nextMonday.toISOString().split("T")[0];
     const nextSundayStr = nextSunday.toISOString().split("T")[0];
 
-    const { data: eventos } = await supabaseAdmin
+    const { data: eventosRaw } = await supabaseAdmin
       .from("agenda_igreja")
       .select("titulo, data_evento, hora_inicio, local, tipo_evento")
       .gte("data_evento", todayStr)
@@ -63,7 +63,10 @@ serve(async (req) => {
       .eq("recorrente", false)
       .in("tipo_evento", ["culto", "impacto", "manaim"])
       .order("data_evento", { ascending: true })
-      .limit(2);
+      .limit(10);
+
+    // Filter out any "reserva" events by title
+    const eventos = (eventosRaw || []).filter(e => !e.titulo.toLowerCase().includes("reserva")).slice(0, 2);
 
     // Fetch next week's schedule - deduplicated by title
     const { data: programacaoRaw } = await supabaseAdmin
@@ -77,9 +80,10 @@ serve(async (req) => {
       .order("data_evento", { ascending: true })
       .limit(20);
 
-    // Deduplicate by title - keep only first occurrence of each event
+    // Deduplicate by title and filter out "reserva" events
     const seenTitles = new Set<string>();
     const programacao = (programacaoRaw || []).filter(e => {
+      if (e.titulo.toLowerCase().includes("reserva")) return false;
       const key = e.titulo.trim().toLowerCase();
       if (seenTitles.has(key)) return false;
       seenTitles.add(key);
@@ -164,25 +168,35 @@ serve(async (req) => {
 
     const systemPrompt = `Você é um assistente da igreja que cria RESUMOS de pregações/mensagens para as Casas Refúgio (células/pequenos grupos).
 
-REGRA FUNDAMENTAL: Você deve RESUMIR o conteúdo do material fornecido (arquivo, imagem ou texto). NÃO crie conteúdo novo nem acrescente informações externas. Tudo deve ser baseado exclusivamente no material enviado.
+REGRA FUNDAMENTAL: Você deve RESUMIR EXCLUSIVAMENTE o conteúdo do material fornecido (arquivo, imagem ou texto). É PROIBIDO criar conteúdo novo, acrescentar informações externas ou inventar qualquer informação. Tudo deve ser baseado 100% no material enviado.
 
 TEMA DA MINISTRAÇÃO: ${tema}
 PASTOR/MINISTRADOR: ${pastor}
 TEXTO BASE: ${textoBase}
 
-O documento "Casa Refúgio Express" deve conter:
-1. **Introdução** - Um parágrafo introdutório objetivo mas completo, contextualizando o tema conforme apresentado no material original
-2. **Desenvolvimento** - De 3 a 5 tópicos principais extraídos da mensagem original, cada um com um subtítulo e um parágrafo explicativo. Apenas resuma o que foi dito, sem acrescentar interpretações ou conteúdos externos.
-3. **Conclusão (prática)** - Uma conclusão com aplicação prática para o dia a dia, baseada no que foi ministrado
-4. **Avisos Importantes** - Incluir:
-   - Programação da igreja (apenas Cultos, Impactos e Manains):
-${programacaoText}
-   - Próximos 2 eventos da agenda:
+O documento "Casa Refúgio Express" deve conter EXATAMENTE estas seções:
+
+1. **Introdução** - Um parágrafo introdutório objetivo e completo, contextualizando o tema CONFORME apresentado no material original. Não fuja do tema. A introdução deve refletir fielmente o conteúdo do documento.
+
+2. **Desenvolvimento** - De 3 a 5 tópicos EXTRAÍDOS do documento, cada um com:
+   - Um subtítulo claro
+   - Um parágrafo explicativo reorganizado de forma visualmente fácil para compartilhamento
+   - TODOS os versículos bíblicos mencionados no documento devem ser incluídos como referências bíblicas nos tópicos correspondentes (ex: João 3:16, Salmos 23:1)
+   - NÃO invente tópicos. NÃO busque informações de fora. Use APENAS o que está no material.
+
+3. **Conclusão (prática)** - Uma conclusão com aplicação prática para o dia a dia. Se o documento contiver uma conclusão, extraia-a. Se não houver, crie uma conclusão coerente com os tópicos desenvolvidos.
+
+4. **Avisos Importantes** - Incluir EXATAMENTE:
+   - Próximos Eventos (apenas cultos, impactos e manains - NUNCA incluir reservas de espaço):
 ${eventosText}
-   - Lembretes fixos: Oferta para missões (meta da CR – R$ 100,00), pix@gileade.com.br, Quilo do Amor (meta da CR – 36 kgs), reforçar importância da participação nos cultos e programações da Igreja.
+   - Lembretes fixos:
+     • Oferta para missões (meta da CR – R$ 100,00)
+     • pix@gileade.com.br
+     • Quilo do Amor (meta da CR – 36 kgs)
+     • Reforçar importância da participação nos cultos e programações da Igreja.
 
 Responda APENAS em formato JSON com as chaves: introducao, desenvolvimento, conclusao, avisos_importantes
-O desenvolvimento deve ser um texto corrido com os tópicos numerados.
+O desenvolvimento deve ser um texto corrido com os tópicos numerados e os versículos bíblicos como referências.
 Todos os campos devem ser strings com o texto formatado.`;
 
     // Build messages
