@@ -545,6 +545,12 @@ export function CasaisFinanceiroTab() {
         description="Tem certeza que deseja excluir este pagamento?"
         onConfirm={() => deleteMutation.mutate()}
       />
+        </TabsContent>
+
+        <TabsContent value="despesas">
+          <CasaisDespesasTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
