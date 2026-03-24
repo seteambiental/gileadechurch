@@ -256,11 +256,11 @@ export function CasaisFinanceiroTab() {
             {Object.keys(totalByPaymentMethod).length > 0 ? (
               <div className="text-xs text-muted-foreground space-y-0.5 mb-2">
                 {Object.entries(totalByPaymentMethod)
-                  .sort(([, a], [, b]) => b - a)
+                  .sort(([, a], [, b]) => (b as number) - (a as number))
                   .map(([method, value]) => (
                     <div key={method} className="flex justify-between">
                       <span>{FORMAS_LABELS[method] || method}</span>
-                      <span className="font-medium text-foreground">{formatCurrency(value)}</span>
+                      <span className="font-medium text-foreground">{formatCurrency(value as number)}</span>
                     </div>
                   ))}
                 <div className="border-t pt-1 mt-1 flex justify-between font-semibold text-foreground">
