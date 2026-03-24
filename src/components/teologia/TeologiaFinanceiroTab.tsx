@@ -260,9 +260,15 @@ const TeologiaFinanceiroTab = () => {
   const totalDespesas = despesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
   const saldoGeral = totalPago - totalDespesas;
 
-  // Per-turma report
-  const turmaReport = turmas.map((turma) => {
-    const turmaAlunos = alunos.filter((a: any) => a.turma === turma);
+  // Per-turma report (based on filtered, includes "Sem turma")
+  const turmaReportKeys = [...turmas];
+  const alunosSemTurma = filtered.filter((a: any) => !a.turma);
+  if (alunosSemTurma.length > 0) turmaReportKeys.push("Sem turma");
+
+  const turmaReport = turmaReportKeys.map((turma) => {
+    const turmaAlunos = turma === "Sem turma"
+      ? filtered.filter((a: any) => !a.turma)
+      : filtered.filter((a: any) => a.turma === turma);
     const turmaIds = new Set(turmaAlunos.map((a: any) => a.id));
     const turmaPagamentos = pagamentos.filter(p => turmaIds.has(p.aluno_id));
     const devido = turmaAlunos.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
