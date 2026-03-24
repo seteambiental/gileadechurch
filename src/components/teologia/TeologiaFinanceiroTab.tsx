@@ -433,7 +433,21 @@ const TeologiaFinanceiroTab = () => {
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
             />
-          </div>
+      </div>
+
+      <Tabs defaultValue="receitas" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="receitas" className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4" />
+            Receitas
+          </TabsTrigger>
+          <TabsTrigger value="despesas" className="flex items-center gap-2">
+            <ArrowDownCircle className="w-4 h-4" />
+            Despesas
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="receitas" className="space-y-6">
           <Select value={turmaFilter} onValueChange={setTurmaFilter}>
             <SelectTrigger className="w-full sm:w-64">
               <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
