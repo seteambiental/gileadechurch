@@ -187,7 +187,39 @@ const TeologiaFinanceiroTab = () => {
   });
 
   // Get unique turmas
-  const turmas = [...new Set(alunos.map((a: any) => a.turma).filter(Boolean))].sort() as string[];
+  const normalizeTurma = (turma?: string | null) =>
+    (turma || "").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+
+  const getTurmaDisplayName = (turma?: string | null) => {
+    const cleaned = (turma || "").trim().replace(/\s+/g, " ");
+    return cleaned || "—";
+  };
+
+  const turmaDisplayByKey = alunos.reduce((acc: Record<string, string>, a: any) => {
+    const cleaned = getTurmaDisplayName(a.turma);
+    const key = normalizeTurma(a.turma);
+
+    if (!key) return acc;
+
+    if (!acc[key]) {
+      acc[key] = cleaned;
+      return acc;
+    }
+
+    const current = acc[key];
+    const currentIsUpper = current === current.toUpperCase();
+    const nextIsUpper = cleaned === cleaned.toUpperCase();
+
+    if (currentIsUpper && !nextIsUpper) {
+      acc[key] = cleaned;
+    }
+
+    return acc;
+  }, {});
+
+  const turmas = Object.entries(turmaDisplayByKey)
+    .sort(([, a], [, b]) => a.localeCompare(b, "pt-BR"))
+    .map(([, label]) => label);
 
   // Helper: compute status for an aluno
   const getAlunoStatus = (aluno: any) => {
@@ -198,7 +230,7 @@ const TeologiaFinanceiroTab = () => {
   };
 
   // Column filter options
-  const turmaOptions = [...new Set(alunos.map((a: any) => a.turma || "—"))].sort();
+  const turmaOptions = [...new Set(alunos.map((a: any) => getTurmaDisplayName(a.turma)))].sort((a, b) => a.localeCompare(b, "pt-BR"));
   const statusOptions = ["Quitado", "Parcial", "Pendente"];
 
   // Initialize column filters when data loads
@@ -217,9 +249,12 @@ const TeologiaFinanceiroTab = () => {
   const filtered = alunos
     .filter((a: any) => {
       const nome = a.nome_aluno || a.members?.full_name || "";
+      const turmaDisplay = getTurmaDisplayName(a.turma);
+      const turmaKey = normalizeTurma(a.turma);
+      const selectedTurmaKey = turmaFilter === "todas" ? "" : normalizeTurma(turmaFilter);
       const matchSearch = !search || nome.toLowerCase().includes(search.toLowerCase());
-      const matchTurma = turmaFilter === "todas" || a.turma === turmaFilter;
-      const matchColTurma = colFilterTurma.size === 0 || colFilterTurma.has(a.turma || "—");
+      const matchTurma = turmaFilter === "todas" || turmaKey === selectedTurmaKey;
+      const matchColTurma = colFilterTurma.size === 0 || colFilterTurma.has(turmaDisplay);
       const matchColStatus = colFilterStatus.size === 0 || colFilterStatus.has(getAlunoStatus(a));
       return matchSearch && matchTurma && matchColTurma && matchColStatus;
     })
@@ -260,15 +295,15 @@ const TeologiaFinanceiroTab = () => {
   const totalDespesas = despesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
   const saldoGeral = totalPago - totalDespesas;
 
-  // Per-turma report (based on filtered, includes "Sem turma")
+  // Per-turma report (based on filtered, merging labels with different casing)
   const turmaReportKeys = [...turmas];
-  const alunosSemTurma = filtered.filter((a: any) => !a.turma);
+  const alunosSemTurma = filtered.filter((a: any) => !normalizeTurma(a.turma));
   if (alunosSemTurma.length > 0) turmaReportKeys.push("Sem turma");
 
   const turmaReport = turmaReportKeys.map((turma) => {
     const turmaAlunos = turma === "Sem turma"
-      ? filtered.filter((a: any) => !a.turma)
-      : filtered.filter((a: any) => a.turma === turma);
+      ? filtered.filter((a: any) => !normalizeTurma(a.turma))
+      : filtered.filter((a: any) => normalizeTurma(a.turma) === normalizeTurma(turma));
     const turmaIds = new Set(turmaAlunos.map((a: any) => a.id));
     const turmaPagamentos = pagamentos.filter(p => turmaIds.has(p.aluno_id));
     const devido = turmaAlunos.reduce((s: number, a: any) => s + Number(a.valor_total || 0), 0);
@@ -297,7 +332,7 @@ const TeologiaFinanceiroTab = () => {
     const saldo = Number(a.valor_total || 0) - pago;
     return {
       nome: a.nome_aluno || a.members?.full_name || "",
-      turma: a.turma || "—",
+      turma: getTurmaDisplayName(a.turma),
       valorTotal: Number(a.valor_total || 0),
       pago,
       saldo,
