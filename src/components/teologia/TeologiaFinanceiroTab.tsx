@@ -236,6 +236,30 @@ const TeologiaFinanceiroTab = () => {
   const totalPago = filteredPagamentos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
   const totalSaldo = totalDevido - totalPago;
 
+  // Status counts
+  const quitados = filtered.filter((a: any) => getAlunoStatus(a) === "Quitado").length;
+  const parciais = filtered.filter((a: any) => getAlunoStatus(a) === "Parcial").length;
+  const pendentesCount = filtered.filter((a: any) => getAlunoStatus(a) === "Pendente").length;
+
+  // Payment method breakdown
+  const totalByPaymentMethod = filteredPagamentos.reduce((acc: Record<string, number>, p: any) => {
+    const forma = p.forma_pagamento || "outros";
+    acc[forma] = (acc[forma] || 0) + Number(p.valor || 0);
+    return acc;
+  }, {});
+
+  // Fetch despesas
+  const { data: despesas = [] } = useQuery({
+    queryKey: ["teologia-despesas-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("teologia_despesas").select("valor");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+  const totalDespesas = despesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const saldoGeral = totalPago - totalDespesas;
+
   // Per-turma report
   const turmaReport = turmas.map((turma) => {
     const turmaAlunos = alunos.filter((a: any) => a.turma === turma);
