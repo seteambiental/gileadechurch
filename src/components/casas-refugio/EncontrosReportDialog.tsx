@@ -40,7 +40,7 @@ import {
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
 interface CasaRefugioData {
   id: string;
