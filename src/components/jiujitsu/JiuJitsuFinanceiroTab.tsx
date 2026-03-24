@@ -373,6 +373,12 @@ export function JiuJitsuFinanceiroTab() {
           </div>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        <TabsContent value="despesas">
+          <JiuJitsuDespesasTab />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
