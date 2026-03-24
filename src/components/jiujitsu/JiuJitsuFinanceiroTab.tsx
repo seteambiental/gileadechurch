@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/masks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Search, Info } from "lucide-react";
+import { Plus, Search, Info, Users, DollarSign, Check, Clock, TrendingUp } from "lucide-react";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 
@@ -80,6 +81,21 @@ export function JiuJitsuFinanceiroTab() {
     p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Dashboard stats
+  const stats = useMemo(() => {
+    const totalAlunos = alunos.length;
+    const totalPrevisto = alunos.reduce((s: number, a: any) => {
+      const { valor: v } = calcularMensalidade(a.data_nascimento);
+      return s + v;
+    }, 0);
+    const totalPago = pagamentos.filter((p: any) => p.status === "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const totalPendente = pagamentos.filter((p: any) => p.status !== "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    const pagos = pagamentos.filter((p: any) => p.status === "pago").length;
+    const pendentes = pagamentos.filter((p: any) => p.status === "pendente").length;
+    const atrasados = pagamentos.filter((p: any) => p.status === "atrasado").length;
+    return { totalAlunos, totalPrevisto, totalPago, totalPendente, pagos, pendentes, atrasados };
+  }, [alunos, pagamentos]);
+
   const handleSave = async () => {
     if (!alunoId || !mesRef) {
       toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
@@ -116,7 +132,60 @@ export function JiuJitsuFinanceiroTab() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Dashboard cards - matching Impacto style */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Alunos Ativos</CardTitle>
+            <Users className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.totalAlunos}</div>
+            <p className="text-xs text-muted-foreground mt-1">Alunos matriculados</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Mensalidade Prevista</CardTitle>
+            <TrendingUp className="w-4 h-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(stats.totalPrevisto)}</div>
+            <p className="text-xs text-muted-foreground">
+              Valor mensal esperado
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor Já Pago</CardTitle>
+            <DollarSign className="w-4 h-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalPago)}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pagos} pagos, {stats.pendentes} pendentes, {stats.atrasados} atrasados
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">Valor Pendente</CardTitle>
+            <Clock className="w-4 h-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.totalPendente)}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.pendentes + stats.atrasados} registros em aberto
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Tabela de valores */}
       <Card className="border-dashed">
         <CardContent className="py-3 px-4">
