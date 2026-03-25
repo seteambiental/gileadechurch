@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, Search, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Users } from "lucide-react";
+import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Users } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { useToast } from "@/hooks/use-toast";
@@ -479,15 +480,12 @@ const TeologiaFinanceiroTab = () => {
           {/* Search + Add */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar aluno..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
+              <SearchInput
+                placeholder="Buscar aluno..."
+                value={search}
+                onChange={setSearch}
+                className="w-full sm:w-64"
+              />
               <Select value={turmaFilter} onValueChange={setTurmaFilter}>
                 <SelectTrigger className="w-full sm:w-64">
                   <Filter className="w-4 h-4 mr-2 text-muted-foreground" />

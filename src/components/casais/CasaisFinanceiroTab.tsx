@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DollarSign, Check, Clock, Plus, Search, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
+  DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
 } from "lucide-react";
+import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
@@ -357,10 +358,12 @@ export function CasaisFinanceiroTab() {
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input placeholder="Buscar casal..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
-          </div>
+          <SearchInput
+            placeholder="Buscar casal..."
+            value={search}
+            onChange={setSearch}
+            className="w-full sm:w-64"
+          />
           <Select value={turmaFilter} onValueChange={setTurmaFilter}>
             <SelectTrigger className="w-full sm:w-64">
               <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
