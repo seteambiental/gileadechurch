@@ -122,9 +122,6 @@ export const MinisterioMembrosTab = ({
           const idade = v.data_nascimento 
             ? differenceInYears(hoje, parseLocalDate(v.data_nascimento))
             : null;
-          const idadeTurma = v.data_nascimento
-            ? (hoje.getFullYear() - parseInt(v.data_nascimento.split("-")[0]))
-            : null;
           return {
             id: v.id,
             full_name: v.full_name,
@@ -134,13 +131,11 @@ export const MinisterioMembrosTab = ({
             genero: v.genero,
             tipo: "visitante" as const,
             idade,
-            idadeTurma,
           };
         })
         .filter((v: any) => {
-          const ageForFilter = v.idadeTurma ?? v.idade;
-          if (ageForFilter === null) return true;
-          return ageForFilter >= idadeMinima && ageForFilter <= idadeMaxima;
+          if (v.idade === null) return true;
+          return v.idade >= idadeMinima && v.idade <= idadeMaxima;
         });
     },
   });
