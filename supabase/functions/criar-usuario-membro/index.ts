@@ -218,6 +218,86 @@ Deno.serve(async (req) => {
 
     if (createError) {
       if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
+        // Email already taken — check if this member has a CPF to use as alternative login
+        if (cpfDigits.length >= 11 && !isCpfLogin) {
+          // Retry with CPF-based login email
+          const cpfLoginEmail = `${cpfDigits}@gileade.app`;
+          const retryPassword = iniciais.length === 2
+            ? iniciais + cpfDigits.slice(0, 6)
+            : generateSecurePassword(14);
+
+          const { data: retryUser, error: retryError } = await supabaseAdmin.auth.admin.createUser({
+            email: cpfLoginEmail,
+            password: retryPassword,
+            email_confirm: true,
+            user_metadata: {
+              member_id: member_id,
+              perfil: perfil || "membro",
+              real_email: email,
+              is_cpf_login: true,
+            },
+          });
+
+          if (!retryError && retryUser?.user) {
+            await supabaseAdmin.from("members").update({ user_id: retryUser.user.id }).eq("id", member_id);
+
+            // Enviar WhatsApp de boas-vindas
+            const { data: mData } = await supabaseAdmin
+              .from("members")
+              .select("full_name, whatsapp")
+              .eq("id", member_id)
+              .single();
+
+            if (mData?.whatsapp) {
+              try {
+                const msg = gerarMensagemBoasVindasMembro(
+                  mData.full_name || "Novo Membro",
+                  cpfLoginEmail,
+                  email,
+                  cpfDigits.length >= 6,
+                  true
+                );
+                await enviarMensagemZAPI(mData.whatsapp, msg);
+              } catch (e) {
+                console.error("Erro ao enviar WhatsApp (retry CPF):", e);
+              }
+            }
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                message: "Usuário criado com login por CPF (email já em uso por outro membro)",
+                user_id: retryUser.user.id,
+                was_existing: false,
+                login_email: cpfLoginEmail,
+                is_cpf_login: true,
+              }),
+              { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+
+          // If retry also failed (CPF email already exists), try to find and link
+          if (retryError?.message?.includes("already been registered") || retryError?.message?.includes("already exists")) {
+            let page = 1;
+            let found = null;
+            while (!found) {
+              const { data: usersPage } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 50 });
+              if (!usersPage?.users?.length) break;
+              found = usersPage.users.find((u: any) => u.email === cpfLoginEmail);
+              if (usersPage.users.length < 50) break;
+              page++;
+            }
+            if (found) {
+              await supabaseAdmin.from("members").update({ user_id: found.id }).eq("id", member_id);
+              return new Response(
+                JSON.stringify({ success: true, message: "Usuário CPF já existia e foi vinculado", user_id: found.id, was_existing: true, login_email: cpfLoginEmail, is_cpf_login: true }),
+                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          }
+        }
+
+        // Fallback: find and link existing user (same person, same email)
         let page = 1;
         let found = null;
         while (!found) {
@@ -228,6 +308,7 @@ Deno.serve(async (req) => {
           page++;
         }
         if (found) {
+          // Only link if this member doesn't already have a different user_id
           await supabaseAdmin.from("members").update({ user_id: found.id }).eq("id", member_id);
           return new Response(
             JSON.stringify({ success: true, message: "Usuário já existia e foi vinculado", user_id: found.id, was_existing: true }),
