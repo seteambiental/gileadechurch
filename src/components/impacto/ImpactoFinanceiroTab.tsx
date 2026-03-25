@@ -38,8 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, Search, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
@@ -868,15 +869,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
             <TabsContent value="receitas" className="space-y-3">
               <div className="flex flex-wrap gap-3 items-end">
-                <div className="relative max-w-sm w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome..."
-                    value={searchNome}
-                    onChange={(e) => setSearchNome(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+                <SearchInput
+                  placeholder="Buscar por nome..."
+                  value={searchNome}
+                  onChange={setSearchNome}
+                  className="max-w-sm w-full"
+                />
                 <Select value={filtroGenero} onValueChange={setFiltroGenero}>
                   <SelectTrigger className="w-[150px]">
                     <SelectValue placeholder="Gênero" />
