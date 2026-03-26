@@ -41,13 +41,11 @@ if ("serviceWorker" in navigator) {
       window.location.reload();
     });
 
-    import("virtual:pwa-register")
-      .then(({ registerSW }) => {
-        registerSW({ immediate: true });
-      })
-      .catch((error) => {
+    if (import.meta.env.PROD) {
+      navigator.serviceWorker.register("/sw.js").catch((error) => {
         console.error("Erro ao registrar service worker:", error);
       });
+    }
 
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       for (const registration of registrations) {
