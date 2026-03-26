@@ -423,16 +423,30 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
     try {
       toast.info("Gerando PDF...");
 
-      // Temporarily reduce font size for PDF fitting
-      const originalFontSize = el.style.fontSize;
-      el.style.fontSize = "11px";
+      // Clone the element and force desktop width so the PDF looks the same on mobile and desktop
+      const FIXED_WIDTH = 800; // px — consistent desktop-like width
+      const clone = el.cloneNode(true) as HTMLElement;
+      clone.style.width = `${FIXED_WIDTH}px`;
+      clone.style.minWidth = `${FIXED_WIDTH}px`;
+      clone.style.maxWidth = `${FIXED_WIDTH}px`;
+      clone.style.fontSize = "11px";
+      clone.style.position = "absolute";
+      clone.style.left = "-9999px";
+      clone.style.top = "0";
+      clone.style.overflow = "visible";
+      document.body.appendChild(clone);
 
-      const canvas = await html2canvas(el, { scale: 1.5, useCORS: true, backgroundColor: "#ffffff" });
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: FIXED_WIDTH,
+        windowWidth: FIXED_WIDTH,
+      });
 
-      // Restore original font size
-      el.style.fontSize = originalFontSize;
+      document.body.removeChild(clone);
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.75);
+      const imgData = canvas.toDataURL("image/jpeg", 0.8);
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const A4_WIDTH = 210;
       const A4_HEIGHT = 297;
@@ -441,7 +455,6 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
       const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
       if (imgHeight <= A4_HEIGHT - MARGIN * 2) {
-        // Fits in one page
         pdf.addImage(imgData, "JPEG", MARGIN, MARGIN, contentWidth, imgHeight);
       } else {
         // Multi-page: slice the canvas
@@ -462,7 +475,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
           if (ctx) {
             ctx.drawImage(canvas, 0, yOffset, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
           }
-          const sliceImg = sliceCanvas.toDataURL("image/jpeg", 0.75);
+          const sliceImg = sliceCanvas.toDataURL("image/jpeg", 0.8);
           const sliceImgHeight = sliceHeight * scaleFactor;
           pdf.addImage(sliceImg, "JPEG", MARGIN, MARGIN, contentWidth, sliceImgHeight);
 
