@@ -133,7 +133,7 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
   const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
-  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules } = useUserAccess(user?.id);
+  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules, loading: accessLoading } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
