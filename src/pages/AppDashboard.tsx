@@ -301,7 +301,7 @@ const AppDashboard = () => {
                   Fazer Login
                 </Button>
               )}
-              {user && isAdmin && !isPastorAuxiliar && (
+              {user && isStrictAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
