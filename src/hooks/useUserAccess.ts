@@ -182,6 +182,7 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
 
   return {
     isAdmin: isAdmin || isPastorAuxiliar,
+    isStrictAdmin: isAdmin,
     isLeader: hasLeaderAccess,
     isPastorAuxiliar,
     hasMemberProfile,
