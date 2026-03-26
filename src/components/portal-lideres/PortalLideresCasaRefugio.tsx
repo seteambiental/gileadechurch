@@ -317,11 +317,10 @@ export const PortalLideresCasaRefugio = ({
       expectedDates.push(dateStr);
       current = addWeeks(current, isQuinzenal ? 2 : 1);
     }
-    // Add the next future expected date (pending line after today)
+    // Always add the next future expected date (pending line after today)
+    // even if it's beyond the endDate filter — this ensures the next slot is always visible
     const nextFutureDateStr = format(current, "yyyy-MM-dd");
-    if (!endDate || !isAfter(parseLocalDate(nextFutureDateStr), parseLocalDate(endDate))) {
-      expectedDates.push(nextFutureDateStr);
-    }
+    expectedDates.push(nextFutureDateStr);
 
     const encontrosByExpectedDate = new Map<string, any>();
     const matchedExpectedDates = new Set<string>();
