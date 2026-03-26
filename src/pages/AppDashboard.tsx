@@ -133,7 +133,7 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
   const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
-  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules } = useUserAccess(user?.id);
+  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules, loading: accessLoading } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -262,7 +262,7 @@ const AppDashboard = () => {
     await signOut();
   };
 
-  if (loading) {
+  if (loading || (user && accessLoading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-secondary animate-spin" />
