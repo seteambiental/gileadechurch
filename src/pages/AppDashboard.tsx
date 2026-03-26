@@ -413,7 +413,7 @@ const AppDashboard = () => {
             .filter((module) => {
               if (!module.adminOnly) return true;
               if (isBypassed) return true;
-              if (isAdmin && !isPastorAuxiliar) return true; // admin/pastor_geral vê tudo
+              if (isStrictAdmin) return true; // admin/pastor_geral always sees everything
               if (isPastorAuxiliar) return pastorAuxiliarModules.includes(module.moduleKey);
               return false;
             })
