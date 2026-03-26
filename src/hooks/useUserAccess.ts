@@ -31,6 +31,7 @@ const LEADER_ROLES = [
 
 export interface UserAccess {
   isAdmin: boolean;
+  isStrictAdmin: boolean;
   isLeader: boolean;
   isPastorAuxiliar: boolean;
   hasMemberProfile: boolean;
@@ -48,6 +49,7 @@ export const useUserAccess = (userId: string | undefined) => {
       if (!userId)
         return {
           isAdmin: false,
+          isStrictAdmin: false,
           isLeader: false,
           isPastorAuxiliar: false,
           hasMemberProfile: false,
@@ -104,6 +106,7 @@ export const useUserAccess = (userId: string | undefined) => {
 
       return {
         isAdmin: isAdmin || isPastorAuxiliar,
+        isStrictAdmin: isAdmin,
         isLeader: hasLeaderAccess,
         isPastorAuxiliar,
         hasMemberProfile,
@@ -119,6 +122,7 @@ export const useUserAccess = (userId: string | undefined) => {
 
   return {
     isAdmin: data?.isAdmin ?? false,
+    isStrictAdmin: data?.isStrictAdmin ?? false,
     isLeader: data?.isLeader ?? false,
     isPastorAuxiliar: data?.isPastorAuxiliar ?? false,
     hasMemberProfile: data?.hasMemberProfile ?? false,
@@ -178,6 +182,7 @@ export const checkUserAccess = async (userId: string): Promise<Omit<UserAccess, 
 
   return {
     isAdmin: isAdmin || isPastorAuxiliar,
+    isStrictAdmin: isAdmin,
     isLeader: hasLeaderAccess,
     isPastorAuxiliar,
     hasMemberProfile,

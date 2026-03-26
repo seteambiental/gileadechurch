@@ -133,7 +133,7 @@ const AppDashboard = () => {
   const navigate = useNavigate();
   const [isBypassed, setIsBypassed] = useState(false);
   const [aniversariantesOpen, setAniversariantesOpen] = useState(false);
-  const { isAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules, loading: accessLoading } = useUserAccess(user?.id);
+  const { isAdmin, isStrictAdmin, hasLeaderAccess, isPastorAuxiliar, pastorAuxiliarModules, loading: accessLoading } = useUserAccess(user?.id);
 
   // Buscar logo da igreja
   const { data: igrejaConfig } = useQuery({
@@ -301,7 +301,7 @@ const AppDashboard = () => {
                   Fazer Login
                 </Button>
               )}
-              {user && isAdmin && !isPastorAuxiliar && (
+              {user && isStrictAdmin && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -413,7 +413,7 @@ const AppDashboard = () => {
             .filter((module) => {
               if (!module.adminOnly) return true;
               if (isBypassed) return true;
-              if (isAdmin && !isPastorAuxiliar) return true; // admin/pastor_geral vê tudo
+              if (isStrictAdmin) return true; // admin/pastor_geral always sees everything
               if (isPastorAuxiliar) return pastorAuxiliarModules.includes(module.moduleKey);
               return false;
             })
