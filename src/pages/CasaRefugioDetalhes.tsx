@@ -445,38 +445,44 @@ const CasaRefugioDetalhes = () => {
     // Add photo if exists
     if (encontro.photo_url) {
       try {
-        // Load image using HTMLImageElement
-        const img = document.createElement("img") as HTMLImageElement;
-        img.crossOrigin = "anonymous";
+        // Fetch image as blob in browser to avoid CORS issues, then convert to base64
+        const response = await fetch(encontro.photo_url);
+        if (!response.ok) throw new Error("Fetch failed");
+        const blob = await response.blob();
+        if (blob.type.includes("text/html")) throw new Error("Got HTML instead of image");
         
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => {
-            const maxWidth = 180;
-            const maxHeight = 100;
-            let width = img.width;
-            let height = img.height;
-            
-            // Scale to fit
-            if (width > maxWidth) {
-              height = (maxWidth / width) * height;
-              width = maxWidth;
-            }
-            if (height > maxHeight) {
-              width = (maxHeight / height) * width;
-              height = maxHeight;
-            }
-            
-            const x = (210 - width) / 2; // Center horizontally
-            doc.addImage(img, "JPEG", x, startY, width, height);
-            startY += height + 10;
-            resolve();
-          };
-          img.onerror = () => {
-            // Continue without image if loading fails
-            resolve();
-          };
-          img.src = encontro.photo_url;
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
         });
+        
+        // Create an image to get dimensions
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new window.Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = base64;
+        });
+        
+        const maxWidth = 180;
+        const maxHeight = 100;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+        
+        if (width > maxWidth) {
+          height = (maxWidth / width) * height;
+          width = maxWidth;
+        }
+        if (height > maxHeight) {
+          width = (maxHeight / height) * width;
+          height = maxHeight;
+        }
+        
+        const x = (210 - width) / 2;
+        doc.addImage(base64, "JPEG", x, startY, width, height);
+        startY += height + 10;
       } catch (error) {
         console.error("Error loading image for PDF:", error);
       }
