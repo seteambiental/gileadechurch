@@ -333,7 +333,7 @@ export const EncontroFormDialog = ({
             member_id: isMember ? id : null,
             novo_convertido_id: !isMember ? id : null,
             presente,
-            confidence: recognitionResult?.presentMembers?.find(m => m.id === id)?.confidence || null,
+            confidence: null,
           };
         });
         
@@ -432,7 +432,6 @@ export const EncontroFormDialog = ({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Always convert to JPEG to ensure compatibility with recognition APIs
         const jpegFile = await convertToJpeg(file);
         setPhoto(jpegFile);
         const reader = new FileReader();
@@ -440,19 +439,14 @@ export const EncontroFormDialog = ({
           setPhotoPreview(reader.result as string);
         };
         reader.readAsDataURL(jpegFile);
-        
-        // Trigger recognition analysis
-        await analyzePhoto(jpegFile);
       } catch (err) {
         console.error("Error converting image:", err);
-        // Fallback: use original file
         setPhoto(file);
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoPreview(reader.result as string);
         };
         reader.readAsDataURL(file);
-        await analyzePhoto(file);
       }
     }
   };
@@ -460,7 +454,6 @@ export const EncontroFormDialog = ({
   const removePhoto = () => {
     setPhoto(null);
     setPhotoPreview(null);
-    setRecognitionResult(null);
   };
 
   const rotatePhoto = async () => {
