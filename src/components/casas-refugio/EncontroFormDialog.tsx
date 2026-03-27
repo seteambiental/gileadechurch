@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, Check, User, RotateCcw } from "lucide-react";
 import { DateInput } from "@/components/ui/date-input";
+import { fileToJpeg } from "@/lib/meeting-photo";
 
 const formSchema = z.object({
   data_encontro: z.string().min(1, "Data é obrigatória"),
@@ -400,39 +401,11 @@ export const EncontroFormDialog = ({
     onChange(`${formattedInt},${decPart}`);
   };
 
-  const convertToJpeg = async (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext("2d")!;
-          ctx.drawImage(img, 0, 0);
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) return reject(new Error("Falha ao converter imagem"));
-              resolve(new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" }));
-            },
-            "image/jpeg",
-            0.9
-          );
-        };
-        img.onerror = reject;
-        img.src = reader.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        const jpegFile = await convertToJpeg(file);
+        const jpegFile = await fileToJpeg(file);
         setPhoto(jpegFile);
         const reader = new FileReader();
         reader.onloadend = () => {
