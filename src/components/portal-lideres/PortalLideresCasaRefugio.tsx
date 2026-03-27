@@ -473,22 +473,32 @@ export const PortalLideresCasaRefugio = ({
     let startY = 55;
     if (encontro.photo_url) {
       try {
-        const img = document.createElement("img") as HTMLImageElement;
-        img.crossOrigin = "anonymous";
-        await new Promise<void>((resolve) => {
-          img.onload = () => {
-            const maxWidth = 180; const maxHeight = 100;
-            let width = img.width; let height = img.height;
-            if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
-            if (height > maxHeight) { width = (maxHeight / height) * width; height = maxHeight; }
-            const x = (210 - width) / 2;
-            doc.addImage(img, "JPEG", x, startY, width, height);
-            startY += height + 10;
-            resolve();
-          };
-          img.onerror = () => resolve();
-          img.src = encontro.photo_url;
+        const response = await fetch(encontro.photo_url);
+        if (!response.ok) throw new Error("Fetch failed");
+        const blob = await response.blob();
+        if (blob.type.includes("text/html")) throw new Error("Got HTML instead of image");
+        
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
         });
+        
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new window.Image();
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = base64;
+        });
+        
+        const maxWidth = 180; const maxHeight = 100;
+        let width = img.naturalWidth; let height = img.naturalHeight;
+        if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
+        if (height > maxHeight) { width = (maxHeight / height) * width; height = maxHeight; }
+        const x = (210 - width) / 2;
+        doc.addImage(base64, "JPEG", x, startY, width, height);
+        startY += height + 10;
       } catch { /* continue without image */ }
     }
 
