@@ -590,7 +590,7 @@ export const EncontroFormDialog = ({
                     size="sm"
                     className="absolute bottom-2 right-2 gap-1"
                     onClick={rotatePhoto}
-                    disabled={isAnalyzing || isRotating}
+                    disabled={isRotating}
                   >
                     {isRotating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     Girar foto
@@ -630,101 +630,6 @@ export const EncontroFormDialog = ({
               )}
             </div>
 
-            {/* Camera now uses native file input with capture attribute */}
-
-            {/* Recognition Results */}
-            {recognitionResult && recognitionResult.success && (
-              <div className="space-y-3 p-3 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Check className="w-4 h-4 text-green-500" />
-                    Reconhecimento Facial
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {recognitionResult.totalFaces} rosto(s)
-                  </Badge>
-                </div>
-                
-                {/* Identified Members */}
-                {recognitionResult.presentMembers?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Membros Identificados:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentMembers?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-green-500/10 rounded-full pl-1 pr-2 py-0.5 border border-green-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-green-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Identified NC */}
-                {recognitionResult.presentNC?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Novos Convertidos:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentNC?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-amber-500/10 rounded-full pl-1 pr-2 py-0.5 border border-amber-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-amber-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Identified Children */}
-                {recognitionResult.presentChildren?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Crianças Identificadas:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentChildren?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-blue-500/10 rounded-full pl-1 pr-2 py-0.5 border border-blue-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-blue-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Summary of unidentified */}
-                <div className="flex flex-wrap gap-2 text-xs pt-1 border-t border-border">
-                  {(recognitionResult.unidentifiedChildren || 0) > 0 && (
-                    <div className="flex items-center gap-1 text-blue-600">
-                      <AlertCircle className="w-3 h-3" />
-                      ~{recognitionResult.unidentifiedChildren} criança(s) não cadastrada(s)
-                    </div>
-                  )}
-                  {(recognitionResult.unidentifiedAdults || 0) > 0 && (
-                    <div className="flex items-center gap-1 text-amber-600">
-                      <AlertCircle className="w-3 h-3" />
-                      {recognitionResult.unidentifiedAdults} visitante(s)
-                    </div>
-                  )}
-                  {recognitionResult.totalMatched === 0 && recognitionResult.totalFaces === 0 && (
-                    <div className="text-muted-foreground">Nenhum rosto detectado na foto</div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Líderes da Casa Refúgio - do cadastro */}
             {(casa?.lider || casa?.lider_esposa) && (
@@ -747,9 +652,7 @@ export const EncontroFormDialog = ({
               <span className="text-sm font-medium flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Participantes
-                {recognitionResult && (
-                  <Badge variant="secondary" className="text-xs">
-                    Preenchido automaticamente
+              </span>
                   </Badge>
                 )}
               </span>
@@ -962,7 +865,7 @@ export const EncontroFormDialog = ({
                   {membrosVinculados.map((membro) => {
                     const isPresente = presencas[membro.id] || false;
                     const isLider = lideres.some((l: any) => l?.id === membro.id);
-                    const wasRecognized = recognitionResult?.presentMembers?.some((m) => m.id === membro.id);
+                    const isLider = lideres.some((l: any) => l?.id === membro.id);
                     
                     return (
                       <div
@@ -1003,12 +906,6 @@ export const EncontroFormDialog = ({
                             {isLider && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
                                 Líder
-                              </Badge>
-                            )}
-                            {wasRecognized && (
-                              <Badge className="text-[9px] px-1 py-0 h-4 bg-green-500/20 text-green-600 border-green-500/30">
-                                <ScanFace className="w-2 h-2 mr-0.5" />
-                                ID
                               </Badge>
                             )}
                           </div>
@@ -1053,7 +950,7 @@ export const EncontroFormDialog = ({
               <Button
                 type="submit"
                 className="flex-1 bg-destructive hover:bg-destructive/90"
-                disabled={mutation.isPending || isAnalyzing}
+                disabled={mutation.isPending}
               >
                 {mutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
