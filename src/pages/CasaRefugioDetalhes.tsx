@@ -958,6 +958,15 @@ const CasaRefugioDetalhes = () => {
                   alt="Foto do encontro"
                   className="max-w-full max-h-[70vh] rounded-lg transition-transform duration-300"
                   style={{ transform: `rotate(${photoRotation}deg)` }}
+                  onError={(e) => {
+                    // Retry with cache-busting query param
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "1";
+                      const separator = selectedPhoto.includes("?") ? "&" : "?";
+                      target.src = `${selectedPhoto}${separator}t=${Date.now()}`;
+                    }
+                  }}
                 />
               </div>
               <Button
