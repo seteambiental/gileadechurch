@@ -130,13 +130,7 @@ export const EncontroFormDialog = ({
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  // Camera state
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Camera state removed - now using native file input with capture attribute
 
   // Fetch leaders linked to this casa
   const { data: lideres = [] } = useQuery({
