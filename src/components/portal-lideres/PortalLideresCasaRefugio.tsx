@@ -58,6 +58,7 @@ import { toast } from "sonner";
 import { CrExpressTab } from "@/components/casas-refugio/CrExpressTab";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { fitImage, imageUrlToRenderableDataUrl } from "@/lib/meeting-photo";
 
 interface PortalLideresCasaRefugioProps {
   portalAccess: PortalAccess | null;
@@ -83,12 +84,36 @@ export const PortalLideresCasaRefugio = ({
   const [preScreenData, setPreScreenData] = useState<{ dataEncontro: string } | null>(null);
   const [encontrosPage, setEncontrosPage] = useState(1);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedPhotoDisplay, setSelectedPhotoDisplay] = useState<string | null>(null);
   const [analiseEncontro, setAnaliseEncontro] = useState<{
     id: string;
     photoUrl: string;
     dataEncontro: string;
   } | null>(null);
   const ENCONTROS_PER_PAGE = 5;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPhoto = async () => {
+      if (!selectedPhoto) {
+        setSelectedPhotoDisplay(null);
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToRenderableDataUrl(selectedPhoto);
+        if (!cancelled) setSelectedPhotoDisplay(dataUrl);
+      } catch {
+        if (!cancelled) setSelectedPhotoDisplay(selectedPhoto);
+      }
+    };
+
+    loadPhoto();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPhoto]);
 
   // Filtros para listagem de casas (pastores e síndicos)
   const [condominioFilter, setCondominioFilter] = useState("all");
@@ -473,29 +498,14 @@ export const PortalLideresCasaRefugio = ({
     let startY = 55;
     if (encontro.photo_url) {
       try {
-        const response = await fetch(encontro.photo_url);
-        if (!response.ok) throw new Error("Fetch failed");
-        const blob = await response.blob();
-        if (blob.type.includes("text/html")) throw new Error("Got HTML instead of image");
-        
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        
+        const base64 = await imageUrlToRenderableDataUrl(encontro.photo_url);
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const i = new window.Image();
           i.onload = () => resolve(i);
           i.onerror = reject;
           i.src = base64;
         });
-        
-        const maxWidth = 180; const maxHeight = 100;
-        let width = img.naturalWidth; let height = img.naturalHeight;
-        if (width > maxWidth) { height = (maxWidth / width) * height; width = maxWidth; }
-        if (height > maxHeight) { width = (maxHeight / height) * width; height = maxHeight; }
+        const { width, height } = fitImage(img.naturalWidth, img.naturalHeight, 180, 100);
         const x = (210 - width) / 2;
         doc.addImage(base64, "JPEG", x, startY, width, height);
         startY += height + 10;
@@ -1089,10 +1099,10 @@ export const PortalLideresCasaRefugio = ({
               )}
 
               {/* Photo Modal */}
-              <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
+              <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); setSelectedPhotoDisplay(null); }}>
                 <DialogContent className="max-w-3xl p-2">
-                  {selectedPhoto && (
-                    <img src={selectedPhoto} alt="Foto do encontro" className="w-full h-auto rounded-lg" />
+                  {selectedPhotoDisplay && (
+                    <img src={selectedPhotoDisplay} alt="Foto do encontro" className="w-full h-auto rounded-lg" />
                   )}
                 </DialogContent>
               </Dialog>
