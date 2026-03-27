@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ["favicon.jpeg", "logo-192.jpeg", "logo-512.jpeg"],
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/~oauth/],
         cleanupOutdatedCaches: true,
         // Force new SW to activate immediately, skipping waiting
