@@ -557,10 +557,6 @@ export const EncontroFormDialog = ({
               <span className="text-xs font-medium flex items-center gap-1">
                 <Camera className="w-3 h-3" />
                 Foto do Encontro
-                <Badge variant="outline" className="ml-2 text-xs">
-                  <ScanFace className="w-3 h-3 mr-1" />
-                  Reconhecimento Facial
-                </Badge>
               </span>
               
               <input
