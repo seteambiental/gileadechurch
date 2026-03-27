@@ -653,9 +653,6 @@ export const EncontroFormDialog = ({
                 <Users className="w-4 h-4" />
                 Participantes
               </span>
-                  </Badge>
-                )}
-              </span>
 
               <div className="grid grid-cols-2 gap-3">
                 <FormField
