@@ -828,17 +828,23 @@ export const EncontroFormDialog = ({
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 h-24 border-dashed"
-                    onClick={handleOpenCamera}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="camera-input-encontro"
+                  />
+                  <label
+                    htmlFor="camera-input-encontro"
+                    className="flex-1 h-24 border-2 border-dashed border-border rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex flex-col items-center gap-2">
                       <Camera className="w-6 h-6 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">Tirar Foto</span>
                     </div>
-                  </Button>
+                  </label>
                   <Button
                     type="button"
                     variant="outline"
