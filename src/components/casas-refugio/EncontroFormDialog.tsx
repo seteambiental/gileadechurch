@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, ScanFace, Check, AlertCircle, User, RotateCcw } from "lucide-react";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, Check, User, RotateCcw } from "lucide-react";
 import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
@@ -71,25 +71,6 @@ const getFirstLastName = (fullName: string): string => {
   return `${parts[0]} ${parts[parts.length - 1]}`;
 };
 
-interface RecognizedPerson {
-  id: string;
-  full_name: string;
-  photo_url: string | null;
-  confidence?: number;
-}
-
-interface RecognitionResult {
-  success: boolean;
-  totalFaces: number;
-  totalMatched: number;
-  presentMembers: RecognizedPerson[];
-  presentNC: RecognizedPerson[];
-  presentChildren: RecognizedPerson[];
-  estimatedChildren: number;
-  unidentifiedChildren: number;
-  unidentifiedAdults: number;
-  error?: string;
-}
 
 interface Encontro {
   id: string;
@@ -125,8 +106,6 @@ export const EncontroFormDialog = ({
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isRotating, setIsRotating] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -237,8 +216,7 @@ export const EncontroFormDialog = ({
         setPhoto(null);
         setPhotoPreview(null);
       }
-      setRecognitionResult(null);
-      if (!isEditing) {
+      setPresencas({});
         setPresencas({});
       }
     }
