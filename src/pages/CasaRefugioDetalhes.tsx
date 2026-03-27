@@ -29,6 +29,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { fitImage, imageUrlToRenderableDataUrl } from "@/lib/meeting-photo";
 
 const CasaRefugioDetalhes = () => {
   const { id } = useParams<{ id: string }>();
@@ -70,6 +71,7 @@ const CasaRefugioDetalhes = () => {
   const [encontrosPage, setEncontrosPage] = useState(1);
   const ENCONTROS_PER_PAGE = 5;
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [selectedPhotoDisplay, setSelectedPhotoDisplay] = useState<string | null>(null);
   const [photoRotation, setPhotoRotation] = useState(0);
   const [showVincularDialog, setShowVincularDialog] = useState(false);
   const [analiseEncontro, setAnaliseEncontro] = useState<{
@@ -87,6 +89,29 @@ const CasaRefugioDetalhes = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate, bypass]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPhoto = async () => {
+      if (!selectedPhoto) {
+        setSelectedPhotoDisplay(null);
+        return;
+      }
+
+      try {
+        const dataUrl = await imageUrlToRenderableDataUrl(selectedPhoto);
+        if (!cancelled) setSelectedPhotoDisplay(dataUrl);
+      } catch {
+        if (!cancelled) setSelectedPhotoDisplay(selectedPhoto);
+      }
+    };
+
+    loadPhoto();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPhoto]);
 
   const { data: casa, isLoading: loadingCasa } = useQuery({
     queryKey: ["casa-refugio", id],
@@ -445,40 +470,14 @@ const CasaRefugioDetalhes = () => {
     // Add photo if exists
     if (encontro.photo_url) {
       try {
-        // Fetch image as blob in browser to avoid CORS issues, then convert to base64
-        const response = await fetch(encontro.photo_url);
-        if (!response.ok) throw new Error("Fetch failed");
-        const blob = await response.blob();
-        if (blob.type.includes("text/html")) throw new Error("Got HTML instead of image");
-        
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        
-        // Create an image to get dimensions
+        const base64 = await imageUrlToRenderableDataUrl(encontro.photo_url);
         const img = await new Promise<HTMLImageElement>((resolve, reject) => {
           const i = new window.Image();
           i.onload = () => resolve(i);
           i.onerror = reject;
           i.src = base64;
         });
-        
-        const maxWidth = 180;
-        const maxHeight = 100;
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-        
-        if (width > maxWidth) {
-          height = (maxWidth / width) * height;
-          width = maxWidth;
-        }
-        if (height > maxHeight) {
-          width = (maxHeight / height) * width;
-          height = maxHeight;
-        }
+        const { width, height } = fitImage(img.naturalWidth, img.naturalHeight, 180, 100);
         
         const x = (210 - width) / 2;
         doc.addImage(base64, "JPEG", x, startY, width, height);
@@ -948,25 +947,16 @@ const CasaRefugioDetalhes = () => {
       </main>
 
       {/* Photo Modal */}
-      <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); setPhotoRotation(0); }}>
+      <Dialog open={!!selectedPhoto} onOpenChange={() => { setSelectedPhoto(null); setSelectedPhotoDisplay(null); setPhotoRotation(0); }}>
         <DialogContent className="max-w-3xl p-2">
-          {selectedPhoto && (
+          {selectedPhotoDisplay && (
             <div className="flex flex-col items-center gap-3">
               <div className="overflow-hidden flex items-center justify-center" style={{ minHeight: 200 }}>
                 <img
-                  src={selectedPhoto}
+                  src={selectedPhotoDisplay}
                   alt="Foto do encontro"
                   className="max-w-full max-h-[70vh] rounded-lg transition-transform duration-300"
                   style={{ transform: `rotate(${photoRotation}deg)` }}
-                  onError={(e) => {
-                    // Retry with cache-busting query param
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = "1";
-                      const separator = selectedPhoto.includes("?") ? "&" : "?";
-                      target.src = `${selectedPhoto}${separator}t=${Date.now()}`;
-                    }
-                  }}
                 />
               </div>
               <Button
