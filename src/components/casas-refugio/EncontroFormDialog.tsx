@@ -25,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, ScanFace, Check, AlertCircle, User, RotateCcw } from "lucide-react";
+import { Loader2, Users, Package, DollarSign, Calendar, Camera, Upload, X, Check, User, RotateCcw } from "lucide-react";
 import { DateInput } from "@/components/ui/date-input";
 
 const formSchema = z.object({
@@ -71,25 +71,6 @@ const getFirstLastName = (fullName: string): string => {
   return `${parts[0]} ${parts[parts.length - 1]}`;
 };
 
-interface RecognizedPerson {
-  id: string;
-  full_name: string;
-  photo_url: string | null;
-  confidence?: number;
-}
-
-interface RecognitionResult {
-  success: boolean;
-  totalFaces: number;
-  totalMatched: number;
-  presentMembers: RecognizedPerson[];
-  presentNC: RecognizedPerson[];
-  presentChildren: RecognizedPerson[];
-  estimatedChildren: number;
-  unidentifiedChildren: number;
-  unidentifiedAdults: number;
-  error?: string;
-}
 
 interface Encontro {
   id: string;
@@ -125,8 +106,6 @@ export const EncontroFormDialog = ({
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isRotating, setIsRotating] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -237,7 +216,6 @@ export const EncontroFormDialog = ({
         setPhoto(null);
         setPhotoPreview(null);
       }
-      setRecognitionResult(null);
       if (!isEditing) {
         setPresencas({});
       }
@@ -258,129 +236,11 @@ export const EncontroFormDialog = ({
     }
   }, [existingPresencas, isEditing]);
 
-  // Update presencas when recognition result changes
-  useEffect(() => {
-    if (recognitionResult?.success && recognitionResult.presentMembers) {
-      const recognizedIds: Record<string, boolean> = {};
-      recognitionResult.presentMembers.forEach((m) => {
-        recognizedIds[m.id] = true;
-      });
-      setPresencas((prev) => ({ ...prev, ...recognizedIds }));
-    }
-  }, [recognitionResult]);
-
-  // Recalculate counts when presencas change (only if not editing or if recognition was run)
-  useEffect(() => {
-    if (membrosVinculados.length > 0 && recognitionResult) {
-      const liderIds = lideres.map((l: any) => l?.id);
-      const presenteIds = Object.entries(presencas)
-        .filter(([_, presente]) => presente)
-        .map(([id]) => id);
-      
-      const lideresPresentes = presenteIds.filter((id) => liderIds.includes(id)).length;
-      const membrosPresentes = presenteIds.filter((id) => !liderIds.includes(id)).length;
-      
-      form.setValue("qtd_lideres", lideresPresentes);
-      form.setValue("qtd_membros", membrosPresentes);
-    }
-  }, [presencas, membrosVinculados, lideres, form, recognitionResult]);
-
   const togglePresenca = (memberId: string) => {
     setPresencas((prev) => ({
       ...prev,
       [memberId]: !prev[memberId],
     }));
-  };
-
-  const analyzePhoto = async (photoFile: File) => {
-    if (!casa?.id) return;
-    
-    setIsAnalyzing(true);
-    try {
-      // First upload to temp storage to get URL
-      const fileExt = photoFile.name.split(".").pop();
-      const tempFileName = `temp/${casa.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from("encontros-fotos")
-        .upload(tempFileName, photoFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("encontros-fotos")
-        .getPublicUrl(tempFileName);
-
-      // Call recognition API
-      const { data, error } = await supabase.functions.invoke("rekognition-faces", {
-        body: {
-          action: "analyze_photo",
-          imageUrl: urlData.publicUrl,
-          casaRefugioId: casa.id,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data.success) {
-        setRecognitionResult(data);
-        
-        // Calculate counts with new children data
-        const recognizedMembers = data.presentMembers?.length || 0;
-        const recognizedNC = data.presentNC?.length || 0;
-        const recognizedChildren = data.presentChildren?.length || 0;
-        const totalRecognized = recognizedMembers + recognizedNC + recognizedChildren;
-        
-        // Find leaders among recognized
-        const liderIds = lideres.map((l: any) => l?.id);
-        const recognizedLeaders = data.presentMembers?.filter((m: RecognizedPerson) => 
-          liderIds.includes(m.id)
-        )?.length || 0;
-        
-        // Members = recognized members that are NOT leaders + NC (excluding children)
-        const membersCount = recognizedMembers - recognizedLeaders + recognizedNC;
-        
-        // Children = identified children + estimated unidentified children
-        const childrenCount = recognizedChildren + (data.unidentifiedChildren || 0);
-        
-        // Visitors = unidentified adults
-        const visitorsCount = data.unidentifiedAdults || 0;
-        
-        // Update form values
-        form.setValue("qtd_lideres", recognizedLeaders);
-        form.setValue("qtd_membros", membersCount);
-        form.setValue("qtd_criancas", childrenCount);
-        form.setValue("qtd_visitantes", visitorsCount);
-        
-        const parts = [];
-        if (totalRecognized > 0) parts.push(`${totalRecognized} identificado(s)`);
-        if (childrenCount > 0) parts.push(`${childrenCount} criança(s)`);
-        if (visitorsCount > 0) parts.push(`${visitorsCount} visitante(s)`);
-        
-        toast({
-          title: "Análise concluída!",
-          description: parts.join(", ") || "Nenhuma pessoa identificada",
-        });
-      } else {
-        toast({
-          title: "Análise inconclusiva",
-          description: data.error || "Não foi possível analisar a foto",
-          variant: "destructive",
-        });
-      }
-
-      // Clean up temp file
-      await supabase.storage.from("encontros-fotos").remove([tempFileName]);
-    } catch (error: any) {
-      console.error("Recognition error:", error);
-      toast({
-        title: "Erro na análise",
-        description: error.message || "Erro ao processar reconhecimento facial",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
   };
 
   const mutation = useMutation({
@@ -473,7 +333,7 @@ export const EncontroFormDialog = ({
             member_id: isMember ? id : null,
             novo_convertido_id: !isMember ? id : null,
             presente,
-            confidence: recognitionResult?.presentMembers?.find(m => m.id === id)?.confidence || null,
+            confidence: null,
           };
         });
         
@@ -572,7 +432,6 @@ export const EncontroFormDialog = ({
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Always convert to JPEG to ensure compatibility with recognition APIs
         const jpegFile = await convertToJpeg(file);
         setPhoto(jpegFile);
         const reader = new FileReader();
@@ -580,19 +439,14 @@ export const EncontroFormDialog = ({
           setPhotoPreview(reader.result as string);
         };
         reader.readAsDataURL(jpegFile);
-        
-        // Trigger recognition analysis
-        await analyzePhoto(jpegFile);
       } catch (err) {
         console.error("Error converting image:", err);
-        // Fallback: use original file
         setPhoto(file);
         const reader = new FileReader();
         reader.onloadend = () => {
           setPhotoPreview(reader.result as string);
         };
         reader.readAsDataURL(file);
-        await analyzePhoto(file);
       }
     }
   };
@@ -600,7 +454,6 @@ export const EncontroFormDialog = ({
   const removePhoto = () => {
     setPhoto(null);
     setPhotoPreview(null);
-    setRecognitionResult(null);
   };
 
   const rotatePhoto = async () => {
@@ -704,10 +557,6 @@ export const EncontroFormDialog = ({
               <span className="text-xs font-medium flex items-center gap-1">
                 <Camera className="w-3 h-3" />
                 Foto do Encontro
-                <Badge variant="outline" className="ml-2 text-xs">
-                  <ScanFace className="w-3 h-3 mr-1" />
-                  Reconhecimento Facial
-                </Badge>
               </span>
               
               <input
@@ -725,21 +574,13 @@ export const EncontroFormDialog = ({
                     alt="Foto do encontro"
                     className="w-full max-h-64 object-contain rounded-lg border border-border bg-muted/30"
                   />
-                  {isAnalyzing && (
-                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-destructive" />
-                        <span className="text-sm text-muted-foreground">Analisando rostos...</span>
-                      </div>
-                    </div>
-                  )}
                   <Button
                     type="button"
                     variant="destructive"
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
                     onClick={removePhoto}
-                    disabled={isAnalyzing || isRotating}
+                    disabled={isRotating}
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -749,7 +590,7 @@ export const EncontroFormDialog = ({
                     size="sm"
                     className="absolute bottom-2 right-2 gap-1"
                     onClick={rotatePhoto}
-                    disabled={isAnalyzing || isRotating}
+                    disabled={isRotating}
                   >
                     {isRotating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
                     Girar foto
@@ -789,101 +630,6 @@ export const EncontroFormDialog = ({
               )}
             </div>
 
-            {/* Camera now uses native file input with capture attribute */}
-
-            {/* Recognition Results */}
-            {recognitionResult && recognitionResult.success && (
-              <div className="space-y-3 p-3 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Check className="w-4 h-4 text-green-500" />
-                    Reconhecimento Facial
-                  </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {recognitionResult.totalFaces} rosto(s)
-                  </Badge>
-                </div>
-                
-                {/* Identified Members */}
-                {recognitionResult.presentMembers?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Membros Identificados:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentMembers?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-green-500/10 rounded-full pl-1 pr-2 py-0.5 border border-green-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-green-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Identified NC */}
-                {recognitionResult.presentNC?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Novos Convertidos:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentNC?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-amber-500/10 rounded-full pl-1 pr-2 py-0.5 border border-amber-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-amber-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Identified Children */}
-                {recognitionResult.presentChildren?.length > 0 && (
-                  <div className="space-y-1">
-                    <span className="text-xs font-medium text-muted-foreground">Crianças Identificadas:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {recognitionResult.presentChildren?.map((person) => (
-                        <div key={person.id} className="flex items-center gap-1 bg-blue-500/10 rounded-full pl-1 pr-2 py-0.5 border border-blue-500/30">
-                          <Avatar className="w-5 h-5">
-                            <AvatarImage src={person.photo_url || undefined} />
-                            <AvatarFallback className="text-[8px]">
-                              {getInitials(person.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-xs truncate max-w-[80px] text-blue-700">{person.full_name.split(" ")[0]}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Summary of unidentified */}
-                <div className="flex flex-wrap gap-2 text-xs pt-1 border-t border-border">
-                  {(recognitionResult.unidentifiedChildren || 0) > 0 && (
-                    <div className="flex items-center gap-1 text-blue-600">
-                      <AlertCircle className="w-3 h-3" />
-                      ~{recognitionResult.unidentifiedChildren} criança(s) não cadastrada(s)
-                    </div>
-                  )}
-                  {(recognitionResult.unidentifiedAdults || 0) > 0 && (
-                    <div className="flex items-center gap-1 text-amber-600">
-                      <AlertCircle className="w-3 h-3" />
-                      {recognitionResult.unidentifiedAdults} visitante(s)
-                    </div>
-                  )}
-                  {recognitionResult.totalMatched === 0 && recognitionResult.totalFaces === 0 && (
-                    <div className="text-muted-foreground">Nenhum rosto detectado na foto</div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Líderes da Casa Refúgio - do cadastro */}
             {(casa?.lider || casa?.lider_esposa) && (
@@ -906,11 +652,6 @@ export const EncontroFormDialog = ({
               <span className="text-sm font-medium flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Participantes
-                {recognitionResult && (
-                  <Badge variant="secondary" className="text-xs">
-                    Preenchido automaticamente
-                  </Badge>
-                )}
               </span>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1121,7 +862,6 @@ export const EncontroFormDialog = ({
                   {membrosVinculados.map((membro) => {
                     const isPresente = presencas[membro.id] || false;
                     const isLider = lideres.some((l: any) => l?.id === membro.id);
-                    const wasRecognized = recognitionResult?.presentMembers?.some((m) => m.id === membro.id);
                     
                     return (
                       <div
@@ -1162,12 +902,6 @@ export const EncontroFormDialog = ({
                             {isLider && (
                               <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
                                 Líder
-                              </Badge>
-                            )}
-                            {wasRecognized && (
-                              <Badge className="text-[9px] px-1 py-0 h-4 bg-green-500/20 text-green-600 border-green-500/30">
-                                <ScanFace className="w-2 h-2 mr-0.5" />
-                                ID
                               </Badge>
                             )}
                           </div>
@@ -1212,7 +946,7 @@ export const EncontroFormDialog = ({
               <Button
                 type="submit"
                 className="flex-1 bg-destructive hover:bg-destructive/90"
-                disabled={mutation.isPending || isAnalyzing}
+                disabled={mutation.isPending}
               >
                 {mutation.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
