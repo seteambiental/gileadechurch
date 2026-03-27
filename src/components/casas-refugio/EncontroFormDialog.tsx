@@ -862,7 +862,6 @@ export const EncontroFormDialog = ({
                   {membrosVinculados.map((membro) => {
                     const isPresente = presencas[membro.id] || false;
                     const isLider = lideres.some((l: any) => l?.id === membro.id);
-                    const isLider = lideres.some((l: any) => l?.id === membro.id);
                     
                     return (
                       <div
