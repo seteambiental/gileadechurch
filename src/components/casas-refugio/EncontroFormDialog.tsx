@@ -216,7 +216,7 @@ export const EncontroFormDialog = ({
         setPhoto(null);
         setPhotoPreview(null);
       }
-      setPresencas({});
+      if (!isEditing) {
         setPresencas({});
       }
     }
@@ -236,129 +236,11 @@ export const EncontroFormDialog = ({
     }
   }, [existingPresencas, isEditing]);
 
-  // Update presencas when recognition result changes
-  useEffect(() => {
-    if (recognitionResult?.success && recognitionResult.presentMembers) {
-      const recognizedIds: Record<string, boolean> = {};
-      recognitionResult.presentMembers.forEach((m) => {
-        recognizedIds[m.id] = true;
-      });
-      setPresencas((prev) => ({ ...prev, ...recognizedIds }));
-    }
-  }, [recognitionResult]);
-
-  // Recalculate counts when presencas change (only if not editing or if recognition was run)
-  useEffect(() => {
-    if (membrosVinculados.length > 0 && recognitionResult) {
-      const liderIds = lideres.map((l: any) => l?.id);
-      const presenteIds = Object.entries(presencas)
-        .filter(([_, presente]) => presente)
-        .map(([id]) => id);
-      
-      const lideresPresentes = presenteIds.filter((id) => liderIds.includes(id)).length;
-      const membrosPresentes = presenteIds.filter((id) => !liderIds.includes(id)).length;
-      
-      form.setValue("qtd_lideres", lideresPresentes);
-      form.setValue("qtd_membros", membrosPresentes);
-    }
-  }, [presencas, membrosVinculados, lideres, form, recognitionResult]);
-
   const togglePresenca = (memberId: string) => {
     setPresencas((prev) => ({
       ...prev,
       [memberId]: !prev[memberId],
     }));
-  };
-
-  const analyzePhoto = async (photoFile: File) => {
-    if (!casa?.id) return;
-    
-    setIsAnalyzing(true);
-    try {
-      // First upload to temp storage to get URL
-      const fileExt = photoFile.name.split(".").pop();
-      const tempFileName = `temp/${casa.id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from("encontros-fotos")
-        .upload(tempFileName, photoFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("encontros-fotos")
-        .getPublicUrl(tempFileName);
-
-      // Call recognition API
-      const { data, error } = await supabase.functions.invoke("rekognition-faces", {
-        body: {
-          action: "analyze_photo",
-          imageUrl: urlData.publicUrl,
-          casaRefugioId: casa.id,
-        },
-      });
-
-      if (error) throw error;
-      
-      if (data.success) {
-        setRecognitionResult(data);
-        
-        // Calculate counts with new children data
-        const recognizedMembers = data.presentMembers?.length || 0;
-        const recognizedNC = data.presentNC?.length || 0;
-        const recognizedChildren = data.presentChildren?.length || 0;
-        const totalRecognized = recognizedMembers + recognizedNC + recognizedChildren;
-        
-        // Find leaders among recognized
-        const liderIds = lideres.map((l: any) => l?.id);
-        const recognizedLeaders = data.presentMembers?.filter((m: RecognizedPerson) => 
-          liderIds.includes(m.id)
-        )?.length || 0;
-        
-        // Members = recognized members that are NOT leaders + NC (excluding children)
-        const membersCount = recognizedMembers - recognizedLeaders + recognizedNC;
-        
-        // Children = identified children + estimated unidentified children
-        const childrenCount = recognizedChildren + (data.unidentifiedChildren || 0);
-        
-        // Visitors = unidentified adults
-        const visitorsCount = data.unidentifiedAdults || 0;
-        
-        // Update form values
-        form.setValue("qtd_lideres", recognizedLeaders);
-        form.setValue("qtd_membros", membersCount);
-        form.setValue("qtd_criancas", childrenCount);
-        form.setValue("qtd_visitantes", visitorsCount);
-        
-        const parts = [];
-        if (totalRecognized > 0) parts.push(`${totalRecognized} identificado(s)`);
-        if (childrenCount > 0) parts.push(`${childrenCount} criança(s)`);
-        if (visitorsCount > 0) parts.push(`${visitorsCount} visitante(s)`);
-        
-        toast({
-          title: "Análise concluída!",
-          description: parts.join(", ") || "Nenhuma pessoa identificada",
-        });
-      } else {
-        toast({
-          title: "Análise inconclusiva",
-          description: data.error || "Não foi possível analisar a foto",
-          variant: "destructive",
-        });
-      }
-
-      // Clean up temp file
-      await supabase.storage.from("encontros-fotos").remove([tempFileName]);
-    } catch (error: any) {
-      console.error("Recognition error:", error);
-      toast({
-        title: "Erro na análise",
-        description: error.message || "Erro ao processar reconhecimento facial",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
   };
 
   const mutation = useMutation({
