@@ -860,66 +860,7 @@ export const EncontroFormDialog = ({
               )}
             </div>
 
-            {/* Camera Dialog */}
-            <Dialog open={isCameraOpen} onOpenChange={handleCloseCamera}>
-              <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-                <DialogHeader className="p-4 pb-0">
-                  <DialogTitle className="flex items-center gap-2">
-                    <Camera className="w-5 h-5" />
-                    Tirar Foto
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <div className="relative bg-black">
-                  {cameraError ? (
-                    <div className="flex items-center justify-center h-64 text-white text-center p-4">
-                      <p>{cameraError}</p>
-                    </div>
-                  ) : (
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-auto max-h-[60vh]"
-                      style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
-                    />
-                  )}
-                  <canvas ref={canvasRef} className="hidden" />
-                </div>
-
-                <div className="flex justify-center gap-4 p-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleSwitchCamera}
-                    disabled={!!cameraError}
-                    title="Alternar câmera"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={handleCapturePhoto}
-                    disabled={!!cameraError}
-                    className="w-16 h-16 rounded-full"
-                  >
-                    <Camera className="w-8 h-8" />
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseCamera}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {/* Camera now uses native file input with capture attribute */}
 
             {/* Recognition Results */}
             {recognitionResult && recognitionResult.success && (
