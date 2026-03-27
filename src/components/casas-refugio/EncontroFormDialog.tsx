@@ -580,7 +580,7 @@ export const EncontroFormDialog = ({
                     size="icon"
                     className="absolute top-2 right-2 h-8 w-8"
                     onClick={removePhoto}
-                    disabled={isAnalyzing || isRotating}
+                    disabled={isRotating}
                   >
                     <X className="w-4 h-4" />
                   </Button>
