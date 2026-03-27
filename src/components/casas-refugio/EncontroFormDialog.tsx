@@ -130,13 +130,7 @@ export const EncontroFormDialog = ({
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  // Camera state
-  const [isCameraOpen, setIsCameraOpen] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Camera state removed - now using native file input with capture attribute
 
   // Fetch leaders linked to this casa
   const { data: lideres = [] } = useQuery({
@@ -297,113 +291,6 @@ export const EncontroFormDialog = ({
       [memberId]: !prev[memberId],
     }));
   };
-
-  // Camera functions
-  const handleOpenCamera = async () => {
-    try {
-      setCameraError(null);
-      
-      if (cameraStream) {
-        cameraStream.getTracks().forEach((track) => track.stop());
-      }
-
-      // CRITICAL: getUserMedia must be called directly in click handler
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-      });
-      
-      setCameraStream(mediaStream);
-      setIsCameraOpen(true);
-      
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      });
-    } catch (err) {
-      console.error("Erro ao acessar câmera:", err);
-      setIsCameraOpen(true);
-      setCameraError("Não foi possível acessar a câmera. Verifique as permissões.");
-    }
-  };
-
-  const handleCloseCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-      setCameraStream(null);
-    }
-    setIsCameraOpen(false);
-    setCameraError(null);
-  };
-
-  const handleSwitchCamera = async () => {
-    const newMode = facingMode === "user" ? "environment" : "user";
-    setFacingMode(newMode);
-    
-    if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
-    }
-
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: newMode, width: { ideal: 1280 }, height: { ideal: 720 } },
-      });
-      setCameraStream(mediaStream);
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      });
-    } catch (err) {
-      console.error("Erro ao trocar câmera:", err);
-    }
-  };
-
-  const handleCapturePhoto = async () => {
-    if (!videoRef.current || !canvasRef.current) return;
-
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob(
-      async (blob) => {
-        if (blob) {
-          const file = new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" });
-          setPhoto(file);
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setPhotoPreview(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-          handleCloseCamera();
-          
-          // Trigger recognition
-          await analyzePhoto(file);
-        }
-      },
-      "image/jpeg",
-      0.9
-    );
-  };
-
-  // Cleanup camera on unmount
-  useEffect(() => {
-    return () => {
-      if (cameraStream) {
-        cameraStream.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, [cameraStream]);
 
   const analyzePhoto = async (photoFile: File) => {
     if (!casa?.id) return;
@@ -828,17 +715,23 @@ export const EncontroFormDialog = ({
                 </div>
               ) : (
                 <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1 h-24 border-dashed"
-                    onClick={handleOpenCamera}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    id="camera-input-encontro"
+                  />
+                  <label
+                    htmlFor="camera-input-encontro"
+                    className="flex-1 h-24 border-2 border-dashed border-border rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex flex-col items-center gap-2">
                       <Camera className="w-6 h-6 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">Tirar Foto</span>
                     </div>
-                  </Button>
+                  </label>
                   <Button
                     type="button"
                     variant="outline"
@@ -854,66 +747,7 @@ export const EncontroFormDialog = ({
               )}
             </div>
 
-            {/* Camera Dialog */}
-            <Dialog open={isCameraOpen} onOpenChange={handleCloseCamera}>
-              <DialogContent className="sm:max-w-lg p-0 overflow-hidden">
-                <DialogHeader className="p-4 pb-0">
-                  <DialogTitle className="flex items-center gap-2">
-                    <Camera className="w-5 h-5" />
-                    Tirar Foto
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <div className="relative bg-black">
-                  {cameraError ? (
-                    <div className="flex items-center justify-center h-64 text-white text-center p-4">
-                      <p>{cameraError}</p>
-                    </div>
-                  ) : (
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-auto max-h-[60vh]"
-                      style={{ transform: facingMode === "user" ? "scaleX(-1)" : "none" }}
-                    />
-                  )}
-                  <canvas ref={canvasRef} className="hidden" />
-                </div>
-
-                <div className="flex justify-center gap-4 p-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleSwitchCamera}
-                    disabled={!!cameraError}
-                    title="Alternar câmera"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </Button>
-                  
-                  <Button
-                    type="button"
-                    size="lg"
-                    onClick={handleCapturePhoto}
-                    disabled={!!cameraError}
-                    className="w-16 h-16 rounded-full"
-                  >
-                    <Camera className="w-8 h-8" />
-                  </Button>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseCamera}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {/* Camera now uses native file input with capture attribute */}
 
             {/* Recognition Results */}
             {recognitionResult && recognitionResult.success && (
