@@ -574,14 +574,6 @@ export const EncontroFormDialog = ({
                     alt="Foto do encontro"
                     className="w-full max-h-64 object-contain rounded-lg border border-border bg-muted/30"
                   />
-                  {isAnalyzing && (
-                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                      <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="w-6 h-6 animate-spin text-destructive" />
-                        <span className="text-sm text-muted-foreground">Analisando rostos...</span>
-                      </div>
-                    </div>
-                  )}
                   <Button
                     type="button"
                     variant="destructive"
