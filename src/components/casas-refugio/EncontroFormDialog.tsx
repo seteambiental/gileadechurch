@@ -540,18 +540,60 @@ export const EncontroFormDialog = ({
     onChange(`${formattedInt},${decPart}`);
   };
 
+  const convertToJpeg = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error("Falha ao converter imagem"));
+              resolve(new File([blob], `photo_${Date.now()}.jpg`, { type: "image/jpeg" }));
+            },
+            "image/jpeg",
+            0.9
+          );
+        };
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setPhoto(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      
-      // Trigger recognition analysis
-      await analyzePhoto(file);
+      try {
+        // Always convert to JPEG to ensure compatibility with recognition APIs
+        const jpegFile = await convertToJpeg(file);
+        setPhoto(jpegFile);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(jpegFile);
+        
+        // Trigger recognition analysis
+        await analyzePhoto(jpegFile);
+      } catch (err) {
+        console.error("Error converting image:", err);
+        // Fallback: use original file
+        setPhoto(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setPhotoPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+        await analyzePhoto(file);
+      }
     }
   };
 
