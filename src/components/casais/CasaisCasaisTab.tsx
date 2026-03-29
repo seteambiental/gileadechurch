@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ import { CasalFormDialog } from "./CasalFormDialog";
 import { CertificadoDialog } from "./CertificadoDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 export function CasaisCasaisTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -139,11 +140,33 @@ export function CasaisCasaisTab() {
     setNewTurmaId("");
   };
 
-  const filteredCasais = casais?.filter((c) => {
-    const nomeM = c.membro_masculino?.full_name || c.nome_masculino || "";
-    const nomeF = c.membro_feminino?.full_name || c.nome_feminino || "";
-    return includesNormalized(nomeM, searchTerm) || includesNormalized(nomeF, searchTerm);
-  });
+  // Column filters
+  const [filterStatus, setFilterStatus] = useState<Set<string>>(new Set());
+  const [filterTurma, setFilterTurma] = useState<Set<string>>(new Set());
+
+  const getNomeEsposo = (c: any) => c.membro_masculino?.full_name || c.nome_masculino || "-";
+  const getNomeEsposa = (c: any) => c.membro_feminino?.full_name || c.nome_feminino || "-";
+  const getStatusLabel = (c: any) => c.certificado_emitido ? "Concluído" : (c.status || "Ativo");
+  const getTurmaLabel = (c: any) => c.turma?.nome || "-";
+
+  const columnOptions = useMemo(() => {
+    if (!casais) return { status: [], turmas: [] };
+    const status = [...new Set(casais.map(getStatusLabel))].sort();
+    const turmasOpts = [...new Set(casais.map(getTurmaLabel))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return { status, turmas: turmasOpts };
+  }, [casais]);
+
+  const filteredCasais = useMemo(() => {
+    if (!casais) return [];
+    return casais.filter((c) => {
+      const nomeM = getNomeEsposo(c);
+      const nomeF = getNomeEsposa(c);
+      if (searchTerm && !includesNormalized(nomeM, searchTerm) && !includesNormalized(nomeF, searchTerm)) return false;
+      if (filterStatus.size > 0 && filterStatus.size < columnOptions.status.length && !filterStatus.has(getStatusLabel(c))) return false;
+      if (filterTurma.size > 0 && filterTurma.size < columnOptions.turmas.length && !filterTurma.has(getTurmaLabel(c))) return false;
+      return true;
+    });
+  }, [casais, searchTerm, filterStatus, filterTurma, columnOptions]);
 
   const turmasAtivas = turmas?.filter((t) => !!t?.id && !!t?.ativo) || [];
 
@@ -228,9 +251,13 @@ export function CasaisCasaisTab() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Esposo</TableHead>
                   <TableHead>Esposa</TableHead>
-                  <TableHead className="hidden md:table-cell">Turma</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <ColumnFilterPopover title="Turma" options={columnOptions.turmas} selected={filterTurma} onChange={setFilterTurma} />
+                  </TableHead>
                   <TableHead className="hidden md:table-cell">Casamento</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Status" options={columnOptions.status} selected={filterStatus} onChange={setFilterStatus} />
+                  </TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>

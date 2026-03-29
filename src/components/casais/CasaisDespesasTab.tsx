@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { exportGenericToExcel, savePDF, ExportColumn } from "@/lib/export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 const CATEGORIAS_DESPESA = [
   "Material Didático",
@@ -59,6 +60,7 @@ const CasaisDespesasTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DespesaForm>(emptyForm);
+  const [filterCategoria, setFilterCategoria] = useState<Set<string>>(new Set());
 
   const { data: despesas = [], isLoading } = useQuery({
     queryKey: ["casais-despesas"],
@@ -125,9 +127,20 @@ const CasaisDespesasTab = () => {
     setDialogOpen(true);
   };
 
-  const totalDespesas = despesas.reduce((sum, d) => sum + (Number(d.valor) || 0), 0);
+  const columnOptions = useMemo(() => {
+    return { categorias: [...new Set(despesas.map((d) => d.categoria))].sort() };
+  }, [despesas]);
 
-  const totalByCategoria = despesas.reduce((acc, d) => {
+  const filteredDespesas = useMemo(() => {
+    return despesas.filter((d) => {
+      if (filterCategoria.size > 0 && filterCategoria.size < columnOptions.categorias.length && !filterCategoria.has(d.categoria)) return false;
+      return true;
+    });
+  }, [despesas, filterCategoria, columnOptions]);
+
+  const totalDespesas = filteredDespesas.reduce((sum, d) => sum + (Number(d.valor) || 0), 0);
+
+  const totalByCategoria = filteredDespesas.reduce((acc, d) => {
     acc[d.categoria] = (acc[d.categoria] || 0) + (Number(d.valor) || 0);
     return acc;
   }, {} as Record<string, number>);
@@ -239,9 +252,11 @@ const CasaisDespesasTab = () => {
       ) : (
         <Card>
           <Table>
-            <TableHeader>
+              <TableHeader>
               <TableRow>
-                <TableHead>Categoria</TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Categoria" options={columnOptions.categorias} selected={filterCategoria} onChange={setFilterCategoria} />
+                </TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
@@ -249,7 +264,7 @@ const CasaisDespesasTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {despesas.map((d) => (
+              {filteredDespesas.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell><Badge variant="outline">{d.categoria}</Badge></TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>

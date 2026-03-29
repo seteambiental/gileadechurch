@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -31,6 +31,8 @@ import { Plus, MoreHorizontal, Pencil, Trash2, FileText, Video, Link as LinkIcon
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import { MaterialFormDialog } from "./MaterialFormDialog";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 const tipoIcons: Record<string, any> = {
   documento: FileText,
@@ -93,19 +95,50 @@ export function CasaisMateriaisTab() {
     setDeleteId(null);
   };
 
-  const filteredMateriais = materiais?.filter((m) =>
-    includesNormalized(m.titulo, searchTerm)
-  );
+  const [filterTipo, setFilterTipo] = useState<Set<string>>(new Set());
+
+  const getTipoLabel = (m: any) => m.tipo || "documento";
+  const getTurmaLabel = (m: any) => m.turma?.nome || "Geral";
+
+  const columnOptions = useMemo(() => {
+    if (!materiais) return { tipos: [], turmas: [] };
+    const tipos = [...new Set(materiais.map(getTipoLabel))].sort();
+    const turmasOpts = [...new Set(materiais.map(getTurmaLabel))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    return { tipos, turmas: turmasOpts };
+  }, [materiais]);
+
+  const filteredMateriais = useMemo(() => {
+    if (!materiais) return [];
+    return materiais.filter((m) => {
+      if (!includesNormalized(m.titulo, searchTerm)) return false;
+      if (filterTipo.size > 0 && filterTipo.size < columnOptions.tipos.length && !filterTipo.has(getTipoLabel(m))) return false;
+      return true;
+    });
+  }, [materiais, searchTerm, filterTipo, columnOptions]);
 
   return (
     <Card className="bg-card border-border">
       <CardHeader>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-heading">Materiais do Curso</CardTitle>
-          <Button onClick={() => { setSelectedMaterial(null); setIsFormOpen(true); }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Material
-          </Button>
+          <div className="flex gap-2">
+            <ExportButton
+              data={filteredMateriais || []}
+              columns={[
+                { header: "Título", accessor: "titulo" },
+                { header: "Turma", accessor: (r: any) => getTurmaLabel(r) },
+                { header: "Tipo", accessor: (r: any) => getTipoLabel(r) },
+                { header: "Descrição", accessor: (r: any) => r.descricao || "-" },
+              ]}
+              filename="materiais-casais"
+              title="Materiais - Curso de Casais"
+              sheetName="Materiais"
+            />
+            <Button onClick={() => { setSelectedMaterial(null); setIsFormOpen(true); }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Material
+            </Button>
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <SearchInput
@@ -141,7 +174,9 @@ export function CasaisMateriaisTab() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Título</TableHead>
                   <TableHead className="hidden md:table-cell">Turma</TableHead>
-                  <TableHead className="hidden md:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden md:table-cell">
+                    <ColumnFilterPopover title="Tipo" options={columnOptions.tipos} selected={filterTipo} onChange={setFilterTipo} />
+                  </TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
