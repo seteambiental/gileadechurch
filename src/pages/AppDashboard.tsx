@@ -63,8 +63,8 @@ const MINISTRY_COLORS: Record<string, string> = {
   "Ensino": "#2563eb",            // Azul (BookOpen)
   "Estacionamento": "#475569",    // Cinza azulado (Car)
   "Evangelização": "#ea580c",     // Laranja (Megaphone)
-  "Flow": "#ef4444",              // Vermelho fogo (Flame)
-  "GT": "#eab308",                // Amarelo dourado (Sparkles)
+  "Jovens Gileade": "#ef4444",    // Vermelho fogo (Flame)
+  "G Teens": "#eab308",           // Amarelo dourado (Sparkles)
   "Eventos e Impacto": "#7c3aed", // Violeta (Zap)
   "Intercessão": "#f97316",       // Laranja quente (HandHeart)
   "Jiu-Jitsu": "#1e3a8a",          // Azul escuro (Swords)
@@ -90,8 +90,8 @@ const ministries = [
   { icon: BookOpen, title: "Ensino", description: "Discipulado", path: "/ministerio/ensino" },
   { icon: Car, title: "Estacionamento", description: "Organização de vagas", path: "/ministerio/estacionamento" },
   { icon: Megaphone, title: "Evangelização", description: "Alcançar vidas", path: "/ministerio/evangelizacao" },
-  { icon: Flame, title: "Flow", description: "Jovens", path: "/ministerio/flow" },
-  { icon: Sparkles, title: "GT", description: "Adolescentes", path: "/ministerio/gt" },
+  { icon: Flame, title: "Jovens Gileade", description: "Jovens", path: "/ministerio/flow" },
+  { icon: Sparkles, title: "G Teens", description: "Adolescentes", path: "/ministerio/gt" },
   { icon: HandHeart, title: "Intercessão", description: "Oração", path: "/ministerio/intercessao" },
   { icon: Swords, title: "Jiu-Jitsu", description: "Artes marciais", path: "/ministerio/jiujitsu" },
   { icon: Baby, title: "Kids", description: "Ministério infantil", path: "/ministerio/kids" },
@@ -207,7 +207,7 @@ const AppDashboard = () => {
   // Mapeamento de nomes do banco → nomes dos cards no dashboard
   const DB_TO_CARD_NAME: Record<string, string> = {
     "Ministerio Ação Social": "Ação Social",
-    "Ministério Adolescentes": "GT",
+    "Ministério Adolescentes": "G Teens",
     "Ministério Casais": "Casais",
     "Ministério Casas Refúgio": "Casas Refúgio",
     "Ministério Consolidação": "Consolidação",
@@ -218,7 +218,7 @@ const AppDashboard = () => {
     "Ministério Homens": "True Man",
     "Ministério Infantil P G": "Kids",
     "Ministério Intercessão": "Intercessão",
-    "Ministério Jovens": "Flow",
+    "Ministério Jovens": "Jovens Gileade",
     "Ministério Louvor": "Louvor",
     "Ministério Midia (foto, Projeção, Som, Iluminação)": "Mídia",
     "Ministerio Missoes": "Missões Moçambique",
