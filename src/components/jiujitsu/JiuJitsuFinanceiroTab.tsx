@@ -303,6 +303,7 @@ export function JiuJitsuFinanceiroTab() {
             <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
           </Button>
         </div>
+      </div>
 
       <div className="rounded-md border overflow-x-auto">
         <Table>
