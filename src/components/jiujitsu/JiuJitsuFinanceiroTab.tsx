@@ -285,10 +285,24 @@ export function JiuJitsuFinanceiroTab() {
           onChange={setSearch}
           className="w-full sm:w-80"
         />
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
-        </Button>
-      </div>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filtered}
+            columns={[
+              { header: "Aluno", accessor: (r: any) => r.jiujitsu_alunos?.nome || "—" },
+              { header: "Mês Ref.", accessor: "mes_referencia" },
+              { header: "Valor", accessor: (r: any) => Number(r.valor) === 0 ? "Isento" : `R$ ${Number(r.valor).toFixed(2)}` },
+              { header: "Status", accessor: (r: any) => r.status === "pago" ? "Pago" : r.status === "pendente" ? "Pendente" : "Atrasado" },
+              { header: "Data Pgto.", accessor: (r: any) => r.data_pagamento || "—" },
+            ]}
+            filename="jiujitsu-pagamentos"
+            title="Pagamentos - Jiu-Jitsu"
+            sheetName="Pagamentos"
+          />
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
+          </Button>
+        </div>
 
       <div className="rounded-md border overflow-x-auto">
         <Table>
@@ -297,7 +311,9 @@ export function JiuJitsuFinanceiroTab() {
               <TableHead>Aluno</TableHead>
               <TableHead>Mês Ref.</TableHead>
               <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Status" options={statusOptions} selected={statusColFilter} onChange={setStatusColFilter} />
+              </TableHead>
               <TableHead>Data Pgto.</TableHead>
               <TableHead className="w-32">Ações</TableHead>
             </TableRow>
