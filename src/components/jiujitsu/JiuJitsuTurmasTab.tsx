@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-input";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, MoreHorizontal, Pencil, Trash2, Users } from "lucide-react";
@@ -34,11 +37,14 @@ export function JiuJitsuTurmasTab() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTurma, setEditingTurma] = useState<any>(null);
   const [deletingTurma, setDeletingTurma] = useState<any>(null);
+  const [search, setSearch] = useState("");
+
+  // Column filters
+  const [categoriaFilter, setCategoriaFilter] = useState<Set<string>>(new Set());
 
   const { data: turmas = [] } = useQuery({
     queryKey: ["jiujitsu_turmas_com_alunos"],
     queryFn: async () => {
-      // Fetch turmas
       const { data: turmasData } = await supabase
         .from("jiujitsu_turmas")
         .select("*")
@@ -47,7 +53,6 @@ export function JiuJitsuTurmasTab() {
 
       if (!turmasData) return [];
 
-      // Fetch leader names
       const liderIds = turmasData.filter((t: any) => t.lider_id).map((t: any) => t.lider_id);
       let liderMap: Record<string, string> = {};
       if (liderIds.length > 0) {
@@ -60,7 +65,6 @@ export function JiuJitsuTurmasTab() {
         }
       }
 
-      // Fetch alunos per turma
       const { data: alunos } = await supabase
         .from("jiujitsu_alunos")
         .select("id, nome, faixa, graus, tipo, turma_id")
@@ -81,6 +85,34 @@ export function JiuJitsuTurmasTab() {
     },
   });
 
+  const categoriaOptions = useMemo(() => [...new Set(turmas.map((t: any) => t.categoria_idade))], [turmas]);
+
+  useMemo(() => {
+    if (categoriaFilter.size === 0 && categoriaOptions.length > 0) setCategoriaFilter(new Set(categoriaOptions));
+  }, [categoriaOptions]);
+
+  const filtered = useMemo(() => {
+    return turmas.filter((t: any) => {
+      if (search && !t.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (categoriaFilter.size > 0 && categoriaFilter.size < categoriaOptions.length && !categoriaFilter.has(t.categoria_idade)) return false;
+      return true;
+    });
+  }, [turmas, search, categoriaFilter, categoriaOptions.length]);
+
+  // Flatten for export
+  const exportData = useMemo(() => {
+    return filtered.map((t: any) => ({
+      nome: t.nome,
+      categoria_idade: t.categoria_idade,
+      faixa_minima: t.faixa_minima,
+      faixa_maxima: t.faixa_maxima,
+      dia_semana: t.dia_semana || "—",
+      horario: t.horario || "—",
+      lider_nome: t.lider_nome || "—",
+      total_alunos: t.alunos.length,
+    }));
+  }, [filtered]);
+
   const handleDelete = async () => {
     if (!deletingTurma) return;
     const { error } = await supabase
@@ -97,18 +129,46 @@ export function JiuJitsuTurmasTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Turmas</h3>
-        <Button onClick={() => { setEditingTurma(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Nova Turma
-        </Button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <SearchInput
+          placeholder="Buscar turma..."
+          value={search}
+          onChange={setSearch}
+          className="w-full sm:w-64"
+        />
+        <div className="flex gap-2">
+          <ExportButton
+            data={exportData}
+            columns={[
+              { header: "Nome", accessor: "nome" },
+              { header: "Categoria", accessor: "categoria_idade" },
+              { header: "Faixa Mín.", accessor: "faixa_minima" },
+              { header: "Faixa Máx.", accessor: "faixa_maxima" },
+              { header: "Dia", accessor: "dia_semana" },
+              { header: "Horário", accessor: "horario" },
+              { header: "Líder", accessor: "lider_nome" },
+              { header: "Alunos", accessor: (r: any) => String(r.total_alunos) },
+            ]}
+            filename="jiujitsu-turmas"
+            title="Turmas - Jiu-Jitsu"
+            sheetName="Turmas"
+          />
+          <Button onClick={() => { setEditingTurma(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Nova Turma
+          </Button>
+        </div>
       </div>
 
-      {turmas.length === 0 && (
-        <p className="text-center py-8 text-muted-foreground">Nenhuma turma cadastrada. Crie a primeira turma!</p>
+      {/* Category filter indicator */}
+      <div className="flex items-center gap-2">
+        <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={categoriaFilter} onChange={setCategoriaFilter} />
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="text-center py-8 text-muted-foreground">Nenhuma turma encontrada.</p>
       )}
 
-      {turmas.map((turma: any) => (
+      {filtered.map((turma: any) => (
         <Card key={turma.id}>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
