@@ -3544,6 +3544,67 @@ export type Database = {
           },
         ]
       }
+      jiujitsu_professores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          faixa_etaria: string
+          funcao: string
+          id: string
+          member_id: string | null
+          nome: string
+          observacoes: string | null
+          turma_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          faixa_etaria: string
+          funcao?: string
+          id?: string
+          member_id?: string | null
+          nome: string
+          observacoes?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          faixa_etaria?: string
+          funcao?: string
+          id?: string
+          member_id?: string | null
+          nome?: string
+          observacoes?: string | null
+          turma_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jiujitsu_professores_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_professores_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jiujitsu_professores_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "jiujitsu_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jiujitsu_turmas: {
         Row: {
           ativo: boolean
