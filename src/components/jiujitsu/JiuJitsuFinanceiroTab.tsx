@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +52,8 @@ export function JiuJitsuFinanceiroTab() {
   const [dataPagamento, setDataPagamento] = useState("");
   const [infoMensalidade, setInfoMensalidade] = useState("");
 
+  // Column filters
+  const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
   const { data: alunos = [] } = useQuery({
     queryKey: ["jiujitsu_alunos"],
     queryFn: async () => {
@@ -80,9 +84,20 @@ export function JiuJitsuFinanceiroTab() {
     }
   }, [alunoId, alunos]);
 
-  const filtered = pagamentos.filter((p: any) =>
-    p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())
-  );
+  const statusOptions = useMemo(() => [...new Set(pagamentos.map((p: any) => p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"))], [pagamentos]);
+
+  useMemo(() => {
+    if (statusColFilter.size === 0 && statusOptions.length > 0) setStatusColFilter(new Set(statusOptions));
+  }, [statusOptions]);
+
+  const filtered = useMemo(() => {
+    return pagamentos.filter((p: any) => {
+      if (search && !p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      const statusLabel = p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado";
+      if (statusColFilter.size > 0 && statusColFilter.size < statusOptions.length && !statusColFilter.has(statusLabel)) return false;
+      return true;
+    });
+  }, [pagamentos, search, statusColFilter, statusOptions.length]);
 
   // Dashboard stats
   const stats = useMemo(() => {
@@ -270,9 +285,24 @@ export function JiuJitsuFinanceiroTab() {
           onChange={setSearch}
           className="w-full sm:w-80"
         />
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filtered}
+            columns={[
+              { header: "Aluno", accessor: (r: any) => r.jiujitsu_alunos?.nome || "—" },
+              { header: "Mês Ref.", accessor: "mes_referencia" },
+              { header: "Valor", accessor: (r: any) => Number(r.valor) === 0 ? "Isento" : `R$ ${Number(r.valor).toFixed(2)}` },
+              { header: "Status", accessor: (r: any) => r.status === "pago" ? "Pago" : r.status === "pendente" ? "Pendente" : "Atrasado" },
+              { header: "Data Pgto.", accessor: (r: any) => r.data_pagamento || "—" },
+            ]}
+            filename="jiujitsu-pagamentos"
+            title="Pagamentos - Jiu-Jitsu"
+            sheetName="Pagamentos"
+          />
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border overflow-x-auto">
@@ -282,7 +312,9 @@ export function JiuJitsuFinanceiroTab() {
               <TableHead>Aluno</TableHead>
               <TableHead>Mês Ref.</TableHead>
               <TableHead>Valor</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Status" options={statusOptions} selected={statusColFilter} onChange={setStatusColFilter} />
+              </TableHead>
               <TableHead>Data Pgto.</TableHead>
               <TableHead className="w-32">Ações</TableHead>
             </TableRow>

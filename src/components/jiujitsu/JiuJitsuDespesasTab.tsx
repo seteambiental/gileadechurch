@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -59,6 +60,7 @@ const JiuJitsuDespesasTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DespesaForm>(emptyForm);
+  const [categoriaFilter, setCategoriaFilter] = useState<Set<string>>(new Set());
 
   const { data: despesas = [], isLoading } = useQuery({
     queryKey: ["jiujitsu-despesas"],
@@ -71,6 +73,19 @@ const JiuJitsuDespesasTab = () => {
       return data;
     },
   });
+
+  const categoriaOptions = useMemo(() => [...new Set(despesas.map((d) => d.categoria))], [despesas]);
+
+  useMemo(() => {
+    if (categoriaFilter.size === 0 && categoriaOptions.length > 0) setCategoriaFilter(new Set(categoriaOptions));
+  }, [categoriaOptions]);
+
+  const filteredDespesas = useMemo(() => {
+    if (categoriaFilter.size > 0 && categoriaFilter.size < categoriaOptions.length) {
+      return despesas.filter((d) => categoriaFilter.has(d.categoria));
+    }
+    return despesas;
+  }, [despesas, categoriaFilter, categoriaOptions.length]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -241,7 +256,9 @@ const JiuJitsuDespesasTab = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Categoria</TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={categoriaFilter} onChange={setCategoriaFilter} />
+                </TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
@@ -249,7 +266,7 @@ const JiuJitsuDespesasTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {despesas.map((d) => (
+              {filteredDespesas.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell><Badge variant="outline">{d.categoria}</Badge></TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>

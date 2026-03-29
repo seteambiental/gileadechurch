@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { SearchInput } from "@/components/ui/search-input";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, UserCheck, CreditCard, IdCard, FileText } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, UserCheck, IdCard, FileText } from "lucide-react";
 import { gerarTermoAlunoPDF } from "./gerarTermoAlunoPDF";
 import { AlunoFormDialog } from "./AlunoFormDialog";
 import { CarteirinhaDialog } from "./CarteirinhaDialog";
@@ -39,6 +41,10 @@ export function JiuJitsuAlunosTab() {
   const [deletingAluno, setDeletingAluno] = useState<any>(null);
   const [carteirinhaAluno, setCarteirinhaAluno] = useState<any>(null);
 
+  // Column filters
+  const [tipoFilter, setTipoFilter] = useState<Set<string>>(new Set());
+  const [faixaFilter, setFaixaFilter] = useState<Set<string>>(new Set());
+
   const { data: alunos = [], isLoading } = useQuery({
     queryKey: ["jiujitsu_alunos"],
     queryFn: async () => {
@@ -51,9 +57,26 @@ export function JiuJitsuAlunosTab() {
     },
   });
 
-  const filtered = alunos.filter((a: any) =>
-    a.nome?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Extract unique filter options
+  const tipoOptions = useMemo(() => [...new Set(alunos.map((a: any) => a.tipo === "membro" ? "Membro" : "Visitante"))], [alunos]);
+  const faixaOptions = useMemo(() => [...new Set(alunos.map((a: any) => a.faixa || "—"))], [alunos]);
+
+  // Initialize filters
+  useMemo(() => {
+    if (tipoFilter.size === 0 && tipoOptions.length > 0) setTipoFilter(new Set(tipoOptions));
+    if (faixaFilter.size === 0 && faixaOptions.length > 0) setFaixaFilter(new Set(faixaOptions));
+  }, [tipoOptions, faixaOptions]);
+
+  const filtered = useMemo(() => {
+    return alunos.filter((a: any) => {
+      if (search && !a.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      const tipoLabel = a.tipo === "membro" ? "Membro" : "Visitante";
+      if (tipoFilter.size > 0 && tipoFilter.size < tipoOptions.length && !tipoFilter.has(tipoLabel)) return false;
+      const faixaLabel = a.faixa || "—";
+      if (faixaFilter.size > 0 && faixaFilter.size < faixaOptions.length && !faixaFilter.has(faixaLabel)) return false;
+      return true;
+    });
+  }, [alunos, search, tipoFilter, faixaFilter, tipoOptions.length, faixaOptions.length]);
 
   const handleDelete = async () => {
     if (!deletingAluno) return;
@@ -84,18 +107,30 @@ export function JiuJitsuAlunosTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar aluno..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+        <SearchInput
+          placeholder="Buscar aluno..."
+          value={search}
+          onChange={setSearch}
+          className="w-full sm:w-80"
+        />
+        <div className="flex gap-2">
+          <ExportButton
+            data={filtered}
+            columns={[
+              { header: "Nome", accessor: "nome" },
+              { header: "Tipo", accessor: (r: any) => r.tipo === "membro" ? "Membro" : "Visitante" },
+              { header: "Faixa", accessor: "faixa" },
+              { header: "Graus", accessor: (r: any) => String(r.graus || 0) },
+              { header: "Tipo Sanguíneo", accessor: (r: any) => r.tipo_sanguineo || "—" },
+            ]}
+            filename="jiujitsu-alunos"
+            title="Alunos - Jiu-Jitsu"
+            sheetName="Alunos"
           />
+          <Button onClick={() => { setEditingAluno(null); setFormOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Novo Aluno
+          </Button>
         </div>
-        <Button onClick={() => { setEditingAluno(null); setFormOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Novo Aluno
-        </Button>
       </div>
 
       <div className="rounded-md border overflow-x-auto">
@@ -103,8 +138,12 @@ export function JiuJitsuAlunosTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Faixa</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Tipo" options={tipoOptions} selected={tipoFilter} onChange={setTipoFilter} />
+              </TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Faixa" options={faixaOptions} selected={faixaFilter} onChange={setFaixaFilter} />
+              </TableHead>
               <TableHead>Graus</TableHead>
               <TableHead>Tipo Sanguíneo</TableHead>
               <TableHead className="w-12" />
@@ -164,17 +203,8 @@ export function JiuJitsuAlunosTab() {
         </Table>
       </div>
 
-      <AlunoFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        aluno={editingAluno}
-      />
-
-      <CarteirinhaDialog
-        open={!!carteirinhaAluno}
-        onOpenChange={(o) => !o && setCarteirinhaAluno(null)}
-        aluno={carteirinhaAluno}
-      />
+      <AlunoFormDialog open={formOpen} onOpenChange={setFormOpen} aluno={editingAluno} />
+      <CarteirinhaDialog open={!!carteirinhaAluno} onOpenChange={(o) => !o && setCarteirinhaAluno(null)} aluno={carteirinhaAluno} />
 
       <AlertDialog open={!!deletingAluno} onOpenChange={(o) => !o && setDeletingAluno(null)}>
         <AlertDialogContent>

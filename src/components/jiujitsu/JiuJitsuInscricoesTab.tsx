@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/search-input";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreHorizontal, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Plus, MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
 import { InscricaoJiuJitsuFormDialog } from "./InscricaoJiuJitsuFormDialog";
 import { AprovarInscricaoDialog } from "./AprovarInscricaoDialog";
 import {
@@ -37,6 +39,9 @@ export function JiuJitsuInscricoesTab() {
   const [aprovandoInscricao, setAprovandoInscricao] = useState<any>(null);
   const [rejeitandoInscricao, setRejeitandoInscricao] = useState<any>(null);
 
+  // Column filters
+  const [tipoFilter, setTipoFilter] = useState<Set<string>>(new Set());
+
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["jiujitsu_inscricoes", statusFilter],
     queryFn: async () => {
@@ -54,9 +59,20 @@ export function JiuJitsuInscricoesTab() {
     },
   });
 
-  const filtered = inscricoes.filter((i: any) =>
-    i.nome?.toLowerCase().includes(search.toLowerCase())
-  );
+  const tipoOptions = useMemo(() => [...new Set(inscricoes.map((i: any) => i.tipo === "membro" ? "Membro" : "Visitante"))], [inscricoes]);
+
+  useMemo(() => {
+    if (tipoFilter.size === 0 && tipoOptions.length > 0) setTipoFilter(new Set(tipoOptions));
+  }, [tipoOptions]);
+
+  const filtered = useMemo(() => {
+    return inscricoes.filter((i: any) => {
+      if (search && !i.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      const tipoLabel = i.tipo === "membro" ? "Membro" : "Visitante";
+      if (tipoFilter.size > 0 && tipoFilter.size < tipoOptions.length && !tipoFilter.has(tipoLabel)) return false;
+      return true;
+    });
+  }, [inscricoes, search, tipoFilter, tipoOptions.length]);
 
   const handleRejeitar = async () => {
     if (!rejeitandoInscricao) return;
@@ -78,15 +94,12 @@ export function JiuJitsuInscricoesTab() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar inscrição..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+          <SearchInput
+            placeholder="Buscar inscrição..."
+            value={search}
+            onChange={setSearch}
+            className="w-full sm:w-64"
+          />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-40">
               <SelectValue />
@@ -99,9 +112,24 @@ export function JiuJitsuInscricoesTab() {
             </SelectContent>
           </Select>
         </div>
-        <Button onClick={() => setFormOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" /> Nova Inscrição
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filtered}
+            columns={[
+              { header: "Nome", accessor: "nome" },
+              { header: "Tipo", accessor: (r: any) => r.tipo === "membro" ? "Membro" : "Visitante" },
+              { header: "WhatsApp", accessor: (r: any) => r.whatsapp || "—" },
+              { header: "Data", accessor: (r: any) => new Date(r.created_at).toLocaleDateString("pt-BR") },
+              { header: "Status", accessor: (r: any) => STATUS_MAP[r.status]?.label || r.status },
+            ]}
+            filename="jiujitsu-inscricoes"
+            title="Inscrições - Jiu-Jitsu"
+            sheetName="Inscrições"
+          />
+          <Button onClick={() => setFormOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" /> Nova Inscrição
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-md border overflow-x-auto">
@@ -109,7 +137,9 @@ export function JiuJitsuInscricoesTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Tipo" options={tipoOptions} selected={tipoFilter} onChange={setTipoFilter} />
+              </TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Data</TableHead>
               <TableHead>Status</TableHead>
@@ -167,12 +197,7 @@ export function JiuJitsuInscricoesTab() {
       </div>
 
       <InscricaoJiuJitsuFormDialog open={formOpen} onOpenChange={setFormOpen} />
-
-      <AprovarInscricaoDialog
-        open={!!aprovandoInscricao}
-        onOpenChange={(o) => !o && setAprovandoInscricao(null)}
-        inscricao={aprovandoInscricao}
-      />
+      <AprovarInscricaoDialog open={!!aprovandoInscricao} onOpenChange={(o) => !o && setAprovandoInscricao(null)} inscricao={aprovandoInscricao} />
 
       <AlertDialog open={!!rejeitandoInscricao} onOpenChange={(o) => !o && setRejeitandoInscricao(null)}>
         <AlertDialogContent>
