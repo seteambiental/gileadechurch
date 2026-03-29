@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { TurmaFormDialog } from "./TurmaFormDialog";
 import { TurmaDetalhesDialog } from "./TurmaDetalhesDialog";
 import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 export function CasaisTurmasTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -67,6 +68,14 @@ export function CasaisTurmasTab() {
   });
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<Set<string>>(new Set());
+
+  const getStatusLabel = (t: any) => t.ativo ? "Ativa" : "Encerrada";
+
+  const columnOptions = useMemo(() => {
+    if (!turmas) return { status: [] };
+    return { status: [...new Set(turmas.map(getStatusLabel))].sort() };
+  }, [turmas]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -80,9 +89,14 @@ export function CasaisTurmasTab() {
     setDeleteId(null);
   };
 
-  const filteredTurmas = turmas?.filter((t) =>
-    includesNormalized(t.nome, searchTerm)
-  );
+  const filteredTurmas = useMemo(() => {
+    if (!turmas) return [];
+    return turmas.filter((t) => {
+      if (!includesNormalized(t.nome, searchTerm)) return false;
+      if (filterStatus.size > 0 && filterStatus.size < columnOptions.status.length && !filterStatus.has(getStatusLabel(t))) return false;
+      return true;
+    });
+  }, [turmas, searchTerm, filterStatus, columnOptions]);
 
   return (
     <Card className="bg-card border-border">
@@ -133,7 +147,9 @@ export function CasaisTurmasTab() {
                   <TableHead>Nome</TableHead>
                   <TableHead className="hidden md:table-cell">Período</TableHead>
                   <TableHead className="hidden md:table-cell">Casais</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Status" options={columnOptions.status} selected={filterStatus} onChange={setFilterStatus} />
+                  </TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>

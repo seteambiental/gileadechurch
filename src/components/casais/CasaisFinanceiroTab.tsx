@@ -25,6 +25,7 @@ import {
   DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
@@ -103,15 +104,28 @@ export function CasaisFinanceiroTab() {
     }, {});
   }, [pagamentos]);
 
+  const [filterStatusFin, setFilterStatusFin] = useState<Set<string>>(new Set());
+
+  const getFinStatus = (casalId: string) => {
+    const pgtos = pagamentosByCasal[casalId] || [];
+    const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+    if (pago >= VALOR_CURSO) return "Quitado";
+    if (pago > 0) return "Parcial";
+    return "Pendente";
+  };
+
+  const finStatusOptions = useMemo(() => ["Pendente", "Parcial", "Quitado"], []);
+
   // Filter
   const filtered = useMemo(() => {
     return casais.filter((c: any) => {
       const nome = `${c.nome_masculino || ""} ${c.nome_feminino || ""}`.toLowerCase();
       if (search && !nome.includes(search.toLowerCase())) return false;
       if (turmaFilter !== "todas" && c.turma_id !== turmaFilter) return false;
+      if (filterStatusFin.size > 0 && filterStatusFin.size < finStatusOptions.length && !filterStatusFin.has(getFinStatus(c.id))) return false;
       return true;
     });
-  }, [casais, search, turmaFilter]);
+  }, [casais, search, turmaFilter, filterStatusFin, pagamentosByCasal, finStatusOptions]);
 
   // Stats
   const stats = useMemo(() => {
@@ -392,7 +406,9 @@ export function CasaisFinanceiroTab() {
               <TableHead>Valor Total</TableHead>
               <TableHead>Pago</TableHead>
               <TableHead>Saldo</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Status" options={finStatusOptions} selected={filterStatusFin} onChange={setFilterStatusFin} />
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

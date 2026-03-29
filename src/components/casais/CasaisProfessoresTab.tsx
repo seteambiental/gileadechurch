@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +34,8 @@ import { Plus, Pencil, Trash2, Loader2, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { includesNormalized } from "@/lib/text-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ExportButton } from "@/components/ui/export-button";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 
 const DIAS_SEMANA = [
   "Segunda-feira",
@@ -171,16 +173,33 @@ export function CasaisProfessoresTab() {
     saveMutation.mutate({ ...form, id: editingId || undefined });
   };
 
-  const filtered = professores.filter((p: any) => {
-    const nomeMarido = p.marido?.full_name || "";
-    const nomeEsposa = p.esposa?.full_name || "";
-    const nomeTurma = p.turma?.nome || "";
-    return (
-      includesNormalized(nomeMarido, searchTerm) ||
-      includesNormalized(nomeEsposa, searchTerm) ||
-      includesNormalized(nomeTurma, searchTerm)
-    );
-  });
+  const getDiaLabel = (p: any) => p.dia_semana || "-";
+  const getTurmaLabel = (p: any) => p.turma?.nome || "—";
+  const getStatusLabel = (p: any) => p.ativo ? "Ativo" : "Inativo";
+
+  const [filterDia, setFilterDia] = useState<Set<string>>(new Set());
+  const [filterTurmaP, setFilterTurmaP] = useState<Set<string>>(new Set());
+  const [filterStatusP, setFilterStatusP] = useState<Set<string>>(new Set());
+
+  const columnOptions = useMemo(() => {
+    const dias = [...new Set(professores.map(getDiaLabel))].sort();
+    const turmasOpts = [...new Set(professores.map(getTurmaLabel))].sort((a, b) => a.localeCompare(b, "pt-BR"));
+    const status = [...new Set(professores.map(getStatusLabel))].sort();
+    return { dias, turmas: turmasOpts, status };
+  }, [professores]);
+
+  const filtered = useMemo(() => {
+    return professores.filter((p: any) => {
+      const nomeMarido = p.marido?.full_name || "";
+      const nomeEsposa = p.esposa?.full_name || "";
+      const nomeTurma = p.turma?.nome || "";
+      if (searchTerm && !includesNormalized(nomeMarido, searchTerm) && !includesNormalized(nomeEsposa, searchTerm) && !includesNormalized(nomeTurma, searchTerm)) return false;
+      if (filterDia.size > 0 && filterDia.size < columnOptions.dias.length && !filterDia.has(getDiaLabel(p))) return false;
+      if (filterTurmaP.size > 0 && filterTurmaP.size < columnOptions.turmas.length && !filterTurmaP.has(getTurmaLabel(p))) return false;
+      if (filterStatusP.size > 0 && filterStatusP.size < columnOptions.status.length && !filterStatusP.has(getStatusLabel(p))) return false;
+      return true;
+    });
+  }, [professores, searchTerm, filterDia, filterTurmaP, filterStatusP, columnOptions]);
 
   return (
     <div className="space-y-4">
@@ -191,10 +210,26 @@ export function CasaisProfessoresTab() {
           placeholder="Buscar professor..."
           className="w-full sm:max-w-xs"
         />
-        <Button onClick={() => setIsFormOpen(true)} className="shrink-0">
-          <Plus className="w-4 h-4 mr-1" />
-          Novo Professor
-        </Button>
+        <div className="flex gap-2">
+          <ExportButton
+            data={filtered}
+            columns={[
+              { header: "Marido", accessor: (r: any) => r.marido?.full_name || "—" },
+              { header: "Esposa", accessor: (r: any) => r.esposa?.full_name || "—" },
+              { header: "Turma", accessor: (r: any) => getTurmaLabel(r) },
+              { header: "Dia", accessor: (r: any) => r.dia_semana || "—" },
+              { header: "Horário", accessor: (r: any) => r.horario || "—" },
+              { header: "Status", accessor: (r: any) => getStatusLabel(r) },
+            ]}
+            filename="professores-casais"
+            title="Professores - Curso de Casais"
+            sheetName="Professores"
+          />
+          <Button onClick={() => setIsFormOpen(true)} className="shrink-0">
+            <Plus className="w-4 h-4 mr-1" />
+            Novo Professor
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -211,13 +246,19 @@ export function CasaisProfessoresTab() {
       ) : (
         <div className="rounded-md border overflow-x-auto">
           <Table>
-            <TableHeader>
+             <TableHeader>
               <TableRow>
                 <TableHead>Marido</TableHead>
                 <TableHead>Esposa</TableHead>
-                <TableHead className="hidden md:table-cell">Turma</TableHead>
-                <TableHead>Dia / Horário</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
+                <TableHead className="hidden md:table-cell">
+                  <ColumnFilterPopover title="Turma" options={columnOptions.turmas} selected={filterTurmaP} onChange={setFilterTurmaP} />
+                </TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Dia / Horário" options={columnOptions.dias} selected={filterDia} onChange={setFilterDia} />
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  <ColumnFilterPopover title="Status" options={columnOptions.status} selected={filterStatusP} onChange={setFilterStatusP} />
+                </TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
