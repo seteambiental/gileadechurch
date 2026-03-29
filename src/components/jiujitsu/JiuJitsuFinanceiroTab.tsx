@@ -84,9 +84,20 @@ export function JiuJitsuFinanceiroTab() {
     }
   }, [alunoId, alunos]);
 
-  const filtered = pagamentos.filter((p: any) =>
-    p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())
-  );
+  const statusOptions = useMemo(() => [...new Set(pagamentos.map((p: any) => p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"))], [pagamentos]);
+
+  useMemo(() => {
+    if (statusColFilter.size === 0 && statusOptions.length > 0) setStatusColFilter(new Set(statusOptions));
+  }, [statusOptions]);
+
+  const filtered = useMemo(() => {
+    return pagamentos.filter((p: any) => {
+      if (search && !p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      const statusLabel = p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado";
+      if (statusColFilter.size > 0 && statusColFilter.size < statusOptions.length && !statusColFilter.has(statusLabel)) return false;
+      return true;
+    });
+  }, [pagamentos, search, statusColFilter, statusOptions.length]);
 
   // Dashboard stats
   const stats = useMemo(() => {
