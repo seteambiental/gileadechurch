@@ -54,6 +54,13 @@ export function JiuJitsuFinanceiroTab() {
 
   // Column filters
   const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
+  const { data: alunos = [] } = useQuery({
+    queryKey: ["jiujitsu_alunos"],
+    queryFn: async () => {
+      const { data } = await supabase.from("jiujitsu_alunos").select("*").eq("ativo", true).order("nome");
+      return (data || []) as any[];
+    },
+  });
 
   const { data: pagamentos = [] } = useQuery({
     queryKey: ["jiujitsu_pagamentos"],
