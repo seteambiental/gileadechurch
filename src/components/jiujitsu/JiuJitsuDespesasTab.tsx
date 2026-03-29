@@ -74,6 +74,19 @@ const JiuJitsuDespesasTab = () => {
     },
   });
 
+  const categoriaOptions = useMemo(() => [...new Set(despesas.map((d) => d.categoria))], [despesas]);
+
+  useMemo(() => {
+    if (categoriaFilter.size === 0 && categoriaOptions.length > 0) setCategoriaFilter(new Set(categoriaOptions));
+  }, [categoriaOptions]);
+
+  const filteredDespesas = useMemo(() => {
+    if (categoriaFilter.size > 0 && categoriaFilter.size < categoriaOptions.length) {
+      return despesas.filter((d) => categoriaFilter.has(d.categoria));
+    }
+    return despesas;
+  }, [despesas, categoriaFilter, categoriaOptions.length]);
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -243,7 +256,9 @@ const JiuJitsuDespesasTab = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Categoria</TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={categoriaFilter} onChange={setCategoriaFilter} />
+                </TableHead>
                 <TableHead>Descrição</TableHead>
                 <TableHead>Data</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
