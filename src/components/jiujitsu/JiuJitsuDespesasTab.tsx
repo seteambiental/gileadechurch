@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { formatCurrency } from "@/lib/masks";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +63,7 @@ const JiuJitsuDespesasTab = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<DespesaForm>(emptyForm);
+  const [categoriaFilter, setCategoriaFilter] = useState<Set<string>>(new Set());
 
   const { data: despesas = [], isLoading } = useQuery({
     queryKey: ["jiujitsu-despesas"],
