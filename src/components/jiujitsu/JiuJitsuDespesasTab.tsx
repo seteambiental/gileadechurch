@@ -266,7 +266,7 @@ const JiuJitsuDespesasTab = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {despesas.map((d) => (
+              {filteredDespesas.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell><Badge variant="outline">{d.categoria}</Badge></TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>
