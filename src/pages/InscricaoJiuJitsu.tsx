@@ -23,6 +23,10 @@ export default function InscricaoJiuJitsu() {
   const [membroBusca, setMembroBusca] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
+  const [responsavelTipo, setResponsavelTipo] = useState<string>("externo");
+  const [responsavelBusca, setResponsavelBusca] = useState("");
+  const [responsavelMemberId, setResponsavelMemberId] = useState<string | null>(null);
+
   const [nome, setNome] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [genero, setGenero] = useState("");
@@ -54,6 +58,19 @@ export default function InscricaoJiuJitsu() {
         .from("members_safe")
         .select("id, full_name, whatsapp, birth_date")
         .ilike("full_name", `%${membroBusca}%`)
+        .limit(10);
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: responsavelMembers = [] } = useQuery({
+    queryKey: ["members_busca_responsavel_jj_pub", responsavelBusca],
+    enabled: responsavelTipo === "membro" && responsavelBusca.length >= 3 && isMenor,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members_safe")
+        .select("id, full_name, whatsapp")
+        .ilike("full_name", `%${responsavelBusca}%`)
         .limit(10);
       return (data || []) as any[];
     },
@@ -292,16 +309,67 @@ export default function InscricaoJiuJitsu() {
             {isMenor && (
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Responsável (Menor de Idade) *</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <Label>Nome do Responsável</Label>
-                    <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label>Telefone do Responsável</Label>
-                    <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">O responsável é membro da Igreja Gileade?</Label>
+                  <div className="flex gap-3">
+                    <Button type="button" size="sm" variant={responsavelTipo === "membro" ? "default" : "outline"} onClick={() => { setResponsavelTipo("membro"); setResponsavelNome(""); setResponsavelTelefone(""); setResponsavelMemberId(null); setResponsavelBusca(""); }}>
+                      Sim, é membro
+                    </Button>
+                    <Button type="button" size="sm" variant={responsavelTipo === "externo" ? "default" : "outline"} onClick={() => { setResponsavelTipo("externo"); setResponsavelNome(""); setResponsavelTelefone(""); setResponsavelMemberId(null); setResponsavelBusca(""); }}>
+                      Não
+                    </Button>
                   </div>
                 </div>
+
+                {responsavelTipo === "membro" && (
+                  <div>
+                    <Label>Buscar Responsável</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Digite o nome do responsável..."
+                        value={responsavelBusca}
+                        onChange={(e) => { setResponsavelBusca(e.target.value); setResponsavelMemberId(null); }}
+                        className="pl-9"
+                      />
+                    </div>
+                    {responsavelMembers.length > 0 && responsavelBusca.length >= 3 && !responsavelMemberId && (
+                      <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
+                        {responsavelMembers.map((m: any) => (
+                          <button
+                            key={m.id}
+                            className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                            onClick={() => {
+                              setResponsavelMemberId(m.id);
+                              setResponsavelNome(m.full_name);
+                              setResponsavelTelefone(m.whatsapp || "");
+                              setResponsavelBusca(m.full_name);
+                            }}
+                          >
+                            <span>{m.full_name}</span>
+                            {m.whatsapp && <span className="text-xs text-muted-foreground ml-2">({m.whatsapp})</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {responsavelMemberId && (
+                      <p className="text-sm text-green-600 mt-1">✓ {responsavelNome} {responsavelTelefone && `- ${responsavelTelefone}`}</p>
+                    )}
+                  </div>
+                )}
+
+                {responsavelTipo === "externo" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Nome do Responsável *</Label>
+                      <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Telefone do Responsável *</Label>
+                      <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

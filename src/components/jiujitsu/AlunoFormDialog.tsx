@@ -40,6 +40,10 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
   const [membroBusca, setMembroBusca] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
+  const [responsavelTipo, setResponsavelTipo] = useState<string>("externo");
+  const [responsavelBusca, setResponsavelBusca] = useState("");
+  const [responsavelMemberId, setResponsavelMemberId] = useState<string | null>(null);
+
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
@@ -74,6 +78,19 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
         .from("members_safe")
         .select("id, full_name, photo_url, whatsapp, birth_date")
         .ilike("full_name", `%${membroBusca}%`)
+        .limit(10);
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: responsavelMembers = [] } = useQuery({
+    queryKey: ["members_busca_responsavel_jj", responsavelBusca],
+    enabled: responsavelTipo === "membro" && responsavelBusca.length >= 3 && isMenor,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members_safe")
+        .select("id, full_name, whatsapp")
+        .ilike("full_name", `%${responsavelBusca}%`)
         .limit(10);
       return (data || []) as any[];
     },
@@ -114,6 +131,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
     setTelefone(""); setWhatsapp(""); setEmail("");
     setContatoEmergenciaNome(""); setContatoEmergenciaTelefone("");
     setResponsavelNome(""); setResponsavelTelefone("");
+    setResponsavelTipo("externo"); setResponsavelBusca(""); setResponsavelMemberId(null);
     setTipoSanguineo(""); setPlanoSaude(false);
     setAlergias(""); setMedicamentoContinuo(""); setRestricaoFisica("");
     setFaixa("Branca"); setGraus(0);
@@ -298,16 +316,69 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
           {/* Responsável (menor) */}
           {isMenor && (
             <>
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Responsável (Menor de Idade)</h3>
-              <div className="grid grid-cols-2 gap-3">
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide pt-2">Responsável (Menor de Idade) *</h3>
+              <div className="space-y-3">
                 <div>
-                  <Label>Nome do Responsável *</Label>
-                  <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
+                  <Label className="text-xs text-muted-foreground mb-1 block">O responsável é membro da igreja?</Label>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" variant={responsavelTipo === "membro" ? "default" : "outline"} onClick={() => { setResponsavelTipo("membro"); setResponsavelNome(""); setResponsavelTelefone(""); setResponsavelMemberId(null); setResponsavelBusca(""); }}>
+                      Sim, é membro
+                    </Button>
+                    <Button type="button" size="sm" variant={responsavelTipo === "externo" ? "default" : "outline"} onClick={() => { setResponsavelTipo("externo"); setResponsavelNome(""); setResponsavelTelefone(""); setResponsavelMemberId(null); setResponsavelBusca(""); }}>
+                      Não
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <Label>Telefone do Responsável *</Label>
-                  <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
-                </div>
+
+                {responsavelTipo === "membro" && (
+                  <div>
+                    <Label>Buscar Membro Responsável</Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Digite o nome do responsável..."
+                        value={responsavelBusca}
+                        onChange={(e) => { setResponsavelBusca(e.target.value); setResponsavelMemberId(null); }}
+                        className="pl-9"
+                      />
+                    </div>
+                    {responsavelMembers.length > 0 && responsavelBusca.length >= 3 && !responsavelMemberId && (
+                      <div className="border rounded-md mt-1 max-h-40 overflow-y-auto">
+                        {responsavelMembers.map((m: any) => (
+                          <button
+                            key={m.id}
+                            className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
+                            onClick={() => {
+                              setResponsavelMemberId(m.id);
+                              setResponsavelNome(m.full_name);
+                              setResponsavelTelefone(m.whatsapp || "");
+                              setResponsavelBusca(m.full_name);
+                            }}
+                          >
+                            <span>{m.full_name}</span>
+                            {m.whatsapp && <span className="text-xs text-muted-foreground ml-2">({m.whatsapp})</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {responsavelMemberId && (
+                      <p className="text-sm text-green-600 mt-1">✓ {responsavelNome} {responsavelTelefone && `- ${responsavelTelefone}`}</p>
+                    )}
+                  </div>
+                )}
+
+                {responsavelTipo === "externo" && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Nome do Responsável *</Label>
+                      <Input value={responsavelNome} onChange={(e) => setResponsavelNome(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Telefone do Responsável *</Label>
+                      <Input value={responsavelTelefone} onChange={(e) => setResponsavelTelefone(e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}
