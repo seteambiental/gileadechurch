@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Home } from "lucide-react";
 import ContingenciaDashboard from "@/components/contingencia/ContingenciaDashboard";
 import ContingenciaBackupsTab from "@/components/contingencia/ContingenciaBackupsTab";
 import ContingenciaVersoesTab from "@/components/contingencia/ContingenciaVersoesTab";
