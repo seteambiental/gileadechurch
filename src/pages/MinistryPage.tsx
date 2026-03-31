@@ -412,7 +412,7 @@ const MinistryPage = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
