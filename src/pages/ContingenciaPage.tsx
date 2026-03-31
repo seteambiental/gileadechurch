@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft, Shield, Home } from "lucide-react";
 import ContingenciaDashboard from "@/components/contingencia/ContingenciaDashboard";
 import ContingenciaBackupsTab from "@/components/contingencia/ContingenciaBackupsTab";
 import ContingenciaVersoesTab from "@/components/contingencia/ContingenciaVersoesTab";
@@ -29,8 +29,11 @@ export default function ContingenciaPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/app")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/app")}>
+            <Home className="h-5 w-5" />
           </Button>
           <Shield className="h-6 w-6 text-primary" />
           <div>

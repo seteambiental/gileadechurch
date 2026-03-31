@@ -9,7 +9,7 @@ import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { JiuJitsuFinanceiroTab } from "@/components/jiujitsu/JiuJitsuFinanceiroTab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, DollarSign, GraduationCap, Heart, Swords } from "lucide-react";
+import { ArrowLeft, Loader2, DollarSign, GraduationCap, Heart, Swords, Home } from "lucide-react";
 
 const FinanceiroPage = () => {
   const { user, loading } = useAuth();
@@ -41,10 +41,18 @@ const FinanceiroPage = () => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/app")}
+              onClick={() => navigate(-1)}
               className="text-primary-foreground hover:bg-primary-foreground/10"
             >
               <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/app")}
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+            >
+              <Home className="w-5 h-5" />
             </Button>
             <h1 className="font-heading font-bold text-lg">Financeiro</h1>
           </div>

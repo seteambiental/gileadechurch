@@ -39,6 +39,7 @@ import {
   Edit,
   Share2,
   DoorOpen,
+  Home,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";
@@ -230,10 +231,15 @@ const AgendaPage = () => {
               <p className="text-xs text-muted-foreground">Programação e Eventos</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => navigate("/app")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/app")} className="text-muted-foreground hover:text-foreground">
+              <Home className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
