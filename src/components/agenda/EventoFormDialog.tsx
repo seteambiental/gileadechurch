@@ -213,6 +213,22 @@ export const EventoFormDialog = ({
     vagas_familia: "",
     vagas_equipe: "",
   });
+  const CAMPOS_FORMULARIO_OPTIONS = [
+    { key: "genero", label: "Gênero" },
+    { key: "telefone_emergencia", label: "Telefone de Emergência" },
+    { key: "cpf", label: "CPF" },
+    { key: "rg", label: "RG" },
+    { key: "menor_idade", label: "Menor de idade" },
+    { key: "alergia", label: "Alergia" },
+    { key: "medicamento", label: "Medicamento" },
+    { key: "preferencia_beliche", label: "Preferência de Beliche" },
+    { key: "forma_pagamento", label: "Forma de Pagamento" },
+    { key: "igreja", label: "Igreja" },
+    { key: "ministerio", label: "Ministério" },
+    { key: "observacoes", label: "Observações" },
+  ];
+  const ALL_CAMPOS_KEYS = CAMPOS_FORMULARIO_OPTIONS.map(c => c.key);
+  const [camposFormulario, setCamposFormulario] = useState<string[]>([...ALL_CAMPOS_KEYS]);
 
   const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
 
@@ -303,6 +319,8 @@ export const EventoFormDialog = ({
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
         });
+        const existingCampos = (evento as any).campos_formulario;
+        setCamposFormulario(Array.isArray(existingCampos) ? existingCampos : [...ALL_CAMPOS_KEYS]);
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
         setFlyerPendente(null);
@@ -349,6 +367,7 @@ export const EventoFormDialog = ({
           vagas_familia: "",
           vagas_equipe: "",
         });
+        setCamposFormulario([...ALL_CAMPOS_KEYS]);
         setAmbientesExtras([]);
         setHorariosPorDia([]);
         setFlyerUrl(null);
@@ -650,6 +669,7 @@ export const EventoFormDialog = ({
         visibilidade: formData.visibilidade || "publico",
         necessita_inscricao: formData.necessita_inscricao,
         ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
+        campos_formulario: formData.necessita_inscricao ? camposFormulario : null,
       };
 
       const label = approvalMode ? "Agenda" : (mode === "compromisso" ? "Compromisso" : "Evento");
@@ -1516,7 +1536,34 @@ export const EventoFormDialog = ({
 
             {formData.necessita_inscricao && (
               <div className="p-3 bg-muted/50 rounded-lg space-y-3">
-                <Label className="font-medium">Vagas por Tipo de Inscrição</Label>
+                <Label className="font-medium">Construtor de Formulário de Inscrição</Label>
+                <p className="text-xs text-muted-foreground">Selecione os campos que deseja exibir no formulário de inscrição</p>
+                <div className="flex gap-2 mb-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCamposFormulario([...ALL_CAMPOS_KEYS])}>
+                    <Check className="w-3 h-3 mr-1" /> Marcar Todos
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setCamposFormulario([])}>
+                    <X className="w-3 h-3 mr-1" /> Desmarcar Todos
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {CAMPOS_FORMULARIO_OPTIONS.map((campo) => (
+                    <div key={campo.key} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`campo-${campo.key}`}
+                        checked={camposFormulario.includes(campo.key)}
+                        onCheckedChange={(checked) => {
+                          setCamposFormulario(prev =>
+                            checked ? [...prev, campo.key] : prev.filter(k => k !== campo.key)
+                          );
+                        }}
+                      />
+                      <Label htmlFor={`campo-${campo.key}`} className="text-sm cursor-pointer">{campo.label}</Label>
+                    </div>
+                  ))}
+                </div>
+
+                <Label className="font-medium mt-4">Vagas por Tipo de Inscrição</Label>
                 <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
