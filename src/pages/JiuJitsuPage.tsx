@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, LayoutDashboard, Users, Layers, DollarSign, Award, ClipboardList, GraduationCap } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Users, Layers, DollarSign, Award, ClipboardList, GraduationCap, Home } from "lucide-react";
 import { JiuJitsuDashboard } from "@/components/jiujitsu/JiuJitsuDashboard";
 import { JiuJitsuAlunosTab } from "@/components/jiujitsu/JiuJitsuAlunosTab";
 import { JiuJitsuTurmasTab } from "@/components/jiujitsu/JiuJitsuTurmasTab";
