@@ -350,11 +350,19 @@ const KidsPage = () => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => navigate("/app")}
+              onClick={() => navigate(-1)}
               className="text-gray-600 hover:text-gray-800 bg-white/50 hover:bg-white/80"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/app")}
+              className="text-gray-600 hover:text-gray-800 bg-white/50 hover:bg-white/80"
+            >
+              <Home className="w-4 h-4" />
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">

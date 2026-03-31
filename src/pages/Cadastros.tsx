@@ -85,11 +85,14 @@ const Cadastros = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/app")}
+              onClick={() => navigate(-1)}
               className="text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/app")} className="text-muted-foreground hover:text-foreground">
+              <Home className="w-4 h-4" />
             </Button>
             
             {user ? (
