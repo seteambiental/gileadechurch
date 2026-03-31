@@ -37,6 +37,7 @@ interface Evento {
   limite_vagas: number | null;
   valores_por_tipo: Record<string, string> | null;
   vagas_por_tipo: Record<string, number> | null;
+  campos_formulario: string[] | null;
 }
 
 interface PessoaBusca {
