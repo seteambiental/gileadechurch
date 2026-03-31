@@ -426,10 +426,19 @@ const InscricaoEvento = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nomeParticipante || !telefoneContato || !formaPagamento) {
+    if (!nomeParticipante || !telefoneContato) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha nome, telefone e forma de pagamento.",
+        description: "Preencha nome e telefone.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (showField("forma_pagamento") && !formaPagamento) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Selecione a forma de pagamento.",
         variant: "destructive",
       });
       return;
