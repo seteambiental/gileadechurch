@@ -40,6 +40,23 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [manualCpf, setManualCpf] = useState("");
   const [manualRg, setManualRg] = useState("");
 
+  const { data: eventoConfig } = useQuery({
+    queryKey: ["impacto-evento-config", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_eventos")
+        .select("campos_formulario")
+        .eq("id", eventoId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!eventoId,
+  });
+
+  const camposFormulario = (eventoConfig?.campos_formulario as string[] | null) || null;
+  const showField = (key: string) => !camposFormulario || camposFormulario.includes(key);
+
   const { data: members } = useQuery({
     queryKey: ["members-list"],
     queryFn: async () => {
@@ -194,6 +211,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                     onChange={(v) => setManualPhone(v)}
                   />
                 </div>
+                {showField("telefone_emergencia") && (
                 <div className="space-y-2">
                   <Label>Tel. Emergência</Label>
                   <MaskedInput
@@ -202,7 +220,9 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                     onChange={(v) => setManualPhoneEmergencia(v)}
                   />
                 </div>
+                )}
               </div>
+              {showField("igreja_congrega") && (
               <div className="space-y-2">
                 <Label>Igreja onde congrega</Label>
                 <Input
@@ -211,6 +231,8 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                   onChange={(e) => setManualIgreja(e.target.value)}
                 />
               </div>
+              )}
+              {showField("ministerio_igreja") && (
               <div className="space-y-2">
                 <Label>É parte de um ministério na igreja que congrega?</Label>
                 <Input
@@ -219,7 +241,9 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                   onChange={(e) => setManualMinisterio(e.target.value)}
                 />
               </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
+                {showField("cpf") && (
                 <div className="space-y-2">
                   <Label>CPF</Label>
                   <MaskedInput
@@ -228,6 +252,8 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                     onChange={(v) => setManualCpf(v)}
                   />
                 </div>
+                )}
+                {showField("rg") && (
                 <div className="space-y-2">
                   <Label>RG</Label>
                   <MaskedInput
@@ -236,6 +262,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                     onChange={(v) => setManualRg(v)}
                   />
                 </div>
+                )}
               </div>
             </div>
           ) : (

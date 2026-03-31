@@ -37,6 +37,7 @@ interface Evento {
   limite_vagas: number | null;
   valores_por_tipo: Record<string, string> | null;
   vagas_por_tipo: Record<string, number> | null;
+  campos_formulario: string[] | null;
 }
 
 interface PessoaBusca {
@@ -197,6 +198,13 @@ const InscricaoEvento = () => {
       return data;
     },
   });
+
+  // Helper to check if a form field should be shown
+  const showField = (fieldKey: string): boolean => {
+    // If campos_formulario is null/undefined, show all fields (backward compatible)
+    if (!evento?.campos_formulario) return true;
+    return evento.campos_formulario.includes(fieldKey);
+  };
 
   // Filter search results
   const searchResults = searchTerm.length >= 2 
@@ -418,10 +426,19 @@ const InscricaoEvento = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nomeParticipante || !telefoneContato || !formaPagamento) {
+    if (!nomeParticipante || !telefoneContato) {
       toast({
         title: "Campos obrigatórios",
-        description: "Preencha nome, telefone e forma de pagamento.",
+        description: "Preencha nome e telefone.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (showField("forma_pagamento") && !formaPagamento) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Selecione a forma de pagamento.",
         variant: "destructive",
       });
       return;
@@ -684,6 +701,7 @@ const InscricaoEvento = () => {
                       />
                     </div>
 
+                    {showField("genero") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Gênero</Label>
                       <Select value={genero} onValueChange={setGenero}>
@@ -696,6 +714,7 @@ const InscricaoEvento = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
@@ -709,6 +728,7 @@ const InscricaoEvento = () => {
                       />
                     </div>
 
+                    {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
                       <Input
@@ -719,7 +739,9 @@ const InscricaoEvento = () => {
                         className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
+                    )}
 
+                    {showField("cpf") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
                       <Input
@@ -731,9 +753,10 @@ const InscricaoEvento = () => {
                         maxLength={14}
                       />
                     </div>
+                    )}
 
                     {/* Membro de ministério - apenas para pessoas não cadastradas */}
-                    {selectedPerson?.type === "novo" && (
+                    {selectedPerson?.type === "novo" && showField("ministerio_igreja") && (
                       <>
                         <div className="space-y-2 md:space-y-3">
                           <Label className="text-base md:text-lg">É membro de Gileade ou de outro ministério?</Label>
@@ -768,6 +791,8 @@ const InscricaoEvento = () => {
                       </>
                     )}
 
+                    {showField("is_menor") && (
+                    <>
                     {/* Menor de idade */}
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="menor" className="text-base md:text-lg">É menor de idade?</Label>
@@ -803,6 +828,8 @@ const InscricaoEvento = () => {
                         </div>
                       </div>
                     )}
+                    </>
+                    )}
 
                     {/* Casa Refúgio (se tiver vinculação) */}
                     {casaRefugioNome && (
@@ -813,6 +840,8 @@ const InscricaoEvento = () => {
                     )}
 
                     {/* Alergia alimentar */}
+                    {showField("alergia") && (
+                    <>
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="alergia" className="text-base md:text-lg">Possui alergia alimentar?</Label>
                       <Switch
@@ -835,8 +864,12 @@ const InscricaoEvento = () => {
                         />
                       </div>
                     )}
+                    </>
+                    )}
 
                     {/* Medicamento */}
+                    {showField("medicamento") && (
+                    <>
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="medicamento" className="text-base md:text-lg">Toma algum medicamento?</Label>
                       <Switch
@@ -858,6 +891,8 @@ const InscricaoEvento = () => {
                           className="min-h-[80px] md:min-h-[100px] text-base md:text-lg"
                         />
                       </div>
+                    )}
+                    </>
                     )}
 
                     {/* Tipo de Inscrição */}
@@ -913,6 +948,7 @@ const InscricaoEvento = () => {
                     </div>
 
                     {/* Forma de pagamento */}
+                    {showField("forma_pagamento") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Forma de Pagamento *</Label>
                       <RadioGroup value={formaPagamento} onValueChange={setFormaPagamento} className="space-y-2 md:space-y-3">
@@ -934,6 +970,7 @@ const InscricaoEvento = () => {
                         </div>
                       </RadioGroup>
                     </div>
+                    )}
                   </div>
 
                   <Button

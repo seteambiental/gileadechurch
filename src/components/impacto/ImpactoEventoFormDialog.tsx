@@ -39,6 +39,23 @@ const TIPOS_INSCRICAO = [
   { value: "equipe", label: "Equipe (apoio/serviço)" },
 ];
 
+const CAMPOS_FORMULARIO_OPTIONS = [
+  { key: "genero", label: "Gênero" },
+  { key: "telefone_emergencia", label: "Telefone de Emergência" },
+  { key: "cpf", label: "CPF" },
+  { key: "rg", label: "RG" },
+  { key: "is_menor", label: "Menor de idade / Responsável" },
+  { key: "alergia", label: "Alergia alimentar" },
+  { key: "medicamento", label: "Medicamento" },
+  { key: "preferencia_beliche", label: "Preferência de beliche" },
+  { key: "forma_pagamento", label: "Forma de Pagamento" },
+  { key: "igreja_congrega", label: "Igreja onde congrega" },
+  { key: "ministerio_igreja", label: "Ministério na igreja" },
+  { key: "observacoes", label: "Observações" },
+];
+
+const ALL_CAMPOS_KEYS = CAMPOS_FORMULARIO_OPTIONS.map(c => c.key);
+
 const PREFIXOS_REFERENCIA: Record<string, string> = {
   "MAN": "Manaim",
   "IMF": "Impacto Feminino",
@@ -63,6 +80,7 @@ const formSchema = z.object({
   tem_custo: z.boolean().optional(),
   valores_por_tipo: z.record(z.string(), z.string()).optional(),
   prefixo_referencia: z.string().optional(),
+  campos_formulario: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -101,6 +119,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       tem_custo: false,
       valores_por_tipo: {},
       prefixo_referencia: "",
+      campos_formulario: [...ALL_CAMPOS_KEYS],
     },
   });
 
@@ -119,6 +138,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: evento.tem_custo || false,
         valores_por_tipo: evento.valores_por_tipo || {},
         prefixo_referencia: evento.prefixo_referencia || "",
+        campos_formulario: evento.campos_formulario || [...ALL_CAMPOS_KEYS],
       });
     } else if (open && !evento) {
       form.reset({
@@ -134,6 +154,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: false,
         valores_por_tipo: {},
         prefixo_referencia: "",
+        campos_formulario: [...ALL_CAMPOS_KEYS],
       });
     }
   }, [open, evento, form]);
@@ -153,6 +174,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: values.tem_custo || false,
         valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
         prefixo_referencia: values.prefixo_referencia || null,
+        campos_formulario: values.campos_formulario || ALL_CAMPOS_KEYS,
       };
 
       if (isEditing) {
@@ -409,6 +431,60 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
                     ))}
                   </div>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="campos_formulario"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Campos do Formulário de Inscrição</FormLabel>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Marque os campos que deseja exibir no formulário público de inscrição
+                  </p>
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/30 max-h-[200px] overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 px-2"
+                        onClick={() => field.onChange([...ALL_CAMPOS_KEYS])}
+                      >
+                        Marcar todos
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 px-2"
+                        onClick={() => field.onChange([])}
+                      >
+                        Desmarcar todos
+                      </Button>
+                    </div>
+                    {CAMPOS_FORMULARIO_OPTIONS.map((campo) => (
+                      <div key={campo.key} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`campo_${campo.key}`}
+                          checked={field.value?.includes(campo.key)}
+                          onCheckedChange={(checked) => {
+                            const current = field.value || [];
+                            if (checked) {
+                              field.onChange([...current, campo.key]);
+                            } else {
+                              field.onChange(current.filter((v: string) => v !== campo.key));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`campo_${campo.key}`} className="cursor-pointer text-sm">
+                          {campo.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </FormItem>
               )}
             />
