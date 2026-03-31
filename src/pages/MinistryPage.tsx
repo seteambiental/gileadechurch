@@ -269,8 +269,26 @@ const MinistryPage = () => {
   const initialTab = searchParams.get("tab") || "info";
   const initialEvento = searchParams.get("evento") || "";
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [tabHistory, setTabHistory] = useState<string[]>([]);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
   const [impactoEventoId, setImpactoEventoId] = useState(initialEvento);
+
+  const handleTabChange = (newTab: string) => {
+    setTabHistory(prev => [...prev, activeTab]);
+    setActiveTab(newTab);
+  };
+
+  const handleBack = () => {
+    if (tabHistory.length > 0) {
+      const prevTab = tabHistory[tabHistory.length - 1];
+      setTabHistory(prev => prev.slice(0, -1));
+      setActiveTab(prevTab);
+    } else if (activeTab !== "info") {
+      setActiveTab("info");
+    } else {
+      navigate("/app");
+    }
+  };
 
   const bypass = isAuthBypassed();
 
