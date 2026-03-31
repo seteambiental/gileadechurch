@@ -80,6 +80,7 @@ const formSchema = z.object({
   tem_custo: z.boolean().optional(),
   valores_por_tipo: z.record(z.string(), z.string()).optional(),
   prefixo_referencia: z.string().optional(),
+  campos_formulario: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
