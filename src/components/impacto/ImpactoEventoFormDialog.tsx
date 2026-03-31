@@ -154,6 +154,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: false,
         valores_por_tipo: {},
         prefixo_referencia: "",
+        campos_formulario: [...ALL_CAMPOS_KEYS],
       });
     }
   }, [open, evento, form]);
