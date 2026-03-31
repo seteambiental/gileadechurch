@@ -609,7 +609,7 @@ const MinistryPage = () => {
                   <ImpactoEventosTab
                     onGoToInscricoes={(id) => {
                       setImpactoEventoId(id);
-                      setActiveTab("inscricoes-impacto");
+                      handleTabChange("inscricoes-impacto");
                     }}
                     onGoToFinanceiro={(id) => {
                       navigate(`/financeiro?evento=${id}`);
