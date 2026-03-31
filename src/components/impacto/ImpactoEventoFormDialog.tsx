@@ -138,6 +138,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: evento.tem_custo || false,
         valores_por_tipo: evento.valores_por_tipo || {},
         prefixo_referencia: evento.prefixo_referencia || "",
+        campos_formulario: evento.campos_formulario || [...ALL_CAMPOS_KEYS],
       });
     } else if (open && !evento) {
       form.reset({
