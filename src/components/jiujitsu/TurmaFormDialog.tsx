@@ -69,7 +69,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   }, [turma, open]);
 
   const resetForm = () => {
-    setNome(""); setCategoriaIdade("Kids (4-15)"); setFaixaMinima("Branca");
+    setNome(""); setCategoriaIdade("Kids (6-9)"); setFaixaMinima("Branca");
     setFaixaMaxima("Preta"); setDiaSemana(""); setHorario("");
     setLiderId(null); setLiderNome(""); setLiderBusca("");
   };
