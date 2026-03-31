@@ -373,6 +373,7 @@ export type Database = {
           ativo: boolean | null
           bloqueio_fim: string | null
           bloqueio_inicio: string | null
+          campos_formulario: Json | null
           comentarios_custo: string | null
           comentarios_refeicao: string | null
           cor: string | null
@@ -415,6 +416,7 @@ export type Database = {
           ativo?: boolean | null
           bloqueio_fim?: string | null
           bloqueio_inicio?: string | null
+          campos_formulario?: Json | null
           comentarios_custo?: string | null
           comentarios_refeicao?: string | null
           cor?: string | null
@@ -457,6 +459,7 @@ export type Database = {
           ativo?: boolean | null
           bloqueio_fim?: string | null
           bloqueio_inicio?: string | null
+          campos_formulario?: Json | null
           comentarios_custo?: string | null
           comentarios_refeicao?: string | null
           cor?: string | null
@@ -2892,6 +2895,7 @@ export type Database = {
       impacto_eventos: {
         Row: {
           ativo: boolean
+          campos_formulario: Json | null
           created_at: string
           data_fim: string | null
           data_inicio: string
@@ -2913,6 +2917,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          campos_formulario?: Json | null
           created_at?: string
           data_fim?: string | null
           data_inicio: string
@@ -2934,6 +2939,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          campos_formulario?: Json | null
           created_at?: string
           data_fim?: string | null
           data_inicio?: string
