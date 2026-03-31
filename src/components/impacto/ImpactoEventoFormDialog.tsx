@@ -435,6 +435,60 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="campos_formulario"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Campos do Formulário de Inscrição</FormLabel>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Marque os campos que deseja exibir no formulário público de inscrição
+                  </p>
+                  <div className="space-y-2 border rounded-md p-3 bg-muted/30 max-h-[200px] overflow-y-auto">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 px-2"
+                        onClick={() => field.onChange([...ALL_CAMPOS_KEYS])}
+                      >
+                        Marcar todos
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs h-7 px-2"
+                        onClick={() => field.onChange([])}
+                      >
+                        Desmarcar todos
+                      </Button>
+                    </div>
+                    {CAMPOS_FORMULARIO_OPTIONS.map((campo) => (
+                      <div key={campo.key} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`campo_${campo.key}`}
+                          checked={field.value?.includes(campo.key)}
+                          onCheckedChange={(checked) => {
+                            const current = field.value || [];
+                            if (checked) {
+                              field.onChange([...current, campo.key]);
+                            } else {
+                              field.onChange(current.filter((v: string) => v !== campo.key));
+                            }
+                          }}
+                        />
+                        <Label htmlFor={`campo_${campo.key}`} className="cursor-pointer text-sm">
+                          {campo.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </FormItem>
+              )}
+            />
+
             <Button type="submit" className="w-full" disabled={mutation.isPending}>
               {mutation.isPending ? "Salvando..." : isEditing ? "Atualizar" : "Criar Evento"}
             </Button>
