@@ -40,6 +40,23 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [manualCpf, setManualCpf] = useState("");
   const [manualRg, setManualRg] = useState("");
 
+  const { data: eventoConfig } = useQuery({
+    queryKey: ["impacto-evento-config", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_eventos")
+        .select("campos_formulario")
+        .eq("id", eventoId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && !!eventoId,
+  });
+
+  const camposFormulario = (eventoConfig?.campos_formulario as string[] | null) || null;
+  const showField = (key: string) => !camposFormulario || camposFormulario.includes(key);
+
   const { data: members } = useQuery({
     queryKey: ["members-list"],
     queryFn: async () => {
