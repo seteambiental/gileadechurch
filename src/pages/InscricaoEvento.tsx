@@ -782,6 +782,8 @@ const InscricaoEvento = () => {
                       </>
                     )}
 
+                    {showField("is_menor") && (
+                    <>
                     {/* Menor de idade */}
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="menor" className="text-base md:text-lg">É menor de idade?</Label>
@@ -816,6 +818,8 @@ const InscricaoEvento = () => {
                           />
                         </div>
                       </div>
+                    )}
+                    </>
                     )}
 
                     {/* Casa Refúgio (se tiver vinculação) */}
