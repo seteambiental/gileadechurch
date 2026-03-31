@@ -55,7 +55,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   useEffect(() => {
     if (turma) {
       setNome(turma.nome || "");
-      setCategoriaIdade(turma.categoria_idade || "Kids (4-15)");
+      setCategoriaIdade(turma.categoria_idade || "Kids (6-9)");
       setFaixaMinima(turma.faixa_minima || "Branca");
       setFaixaMaxima(turma.faixa_maxima || "Preta");
       setDiaSemana(turma.dia_semana || "");
