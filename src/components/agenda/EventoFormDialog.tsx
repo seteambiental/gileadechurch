@@ -214,6 +214,8 @@ export const EventoFormDialog = ({
     vagas_equipe: "",
   });
   const CAMPOS_FORMULARIO_OPTIONS = [
+    { key: "nome", label: "Nome completo" },
+    { key: "telefone", label: "Telefone / WhatsApp" },
     { key: "genero", label: "Gênero" },
     { key: "telefone_emergencia", label: "Telefone de Emergência" },
     { key: "cpf", label: "CPF" },
