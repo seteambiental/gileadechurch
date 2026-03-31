@@ -199,6 +199,13 @@ const InscricaoEvento = () => {
     },
   });
 
+  // Helper to check if a form field should be shown
+  const showField = (fieldKey: string): boolean => {
+    // If campos_formulario is null/undefined, show all fields (backward compatible)
+    if (!evento?.campos_formulario) return true;
+    return evento.campos_formulario.includes(fieldKey);
+  };
+
   // Filter search results
   const searchResults = searchTerm.length >= 2 
     ? pessoas.filter(p => includesNormalized(p.full_name, searchTerm))
