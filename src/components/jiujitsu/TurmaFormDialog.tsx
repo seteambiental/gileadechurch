@@ -30,7 +30,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   const isEditing = !!turma;
 
   const [nome, setNome] = useState("");
-  const [categoriaIdade, setCategoriaIdade] = useState("Kids (4-15)");
+  const [categoriaIdade, setCategoriaIdade] = useState("Kids (6-9)");
   const [faixaMinima, setFaixaMinima] = useState("Branca");
   const [faixaMaxima, setFaixaMaxima] = useState("Preta");
   const [diaSemana, setDiaSemana] = useState("");
