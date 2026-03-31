@@ -719,6 +719,7 @@ const InscricaoEvento = () => {
                       />
                     </div>
 
+                    {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
                       <Input
@@ -729,6 +730,7 @@ const InscricaoEvento = () => {
                         className="h-10 md:h-14 text-base md:text-lg"
                       />
                     </div>
+                    )}
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
