@@ -692,6 +692,7 @@ const InscricaoEvento = () => {
                       />
                     </div>
 
+                    {showField("genero") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Gênero</Label>
                       <Select value={genero} onValueChange={setGenero}>
@@ -704,6 +705,7 @@ const InscricaoEvento = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    )}
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
