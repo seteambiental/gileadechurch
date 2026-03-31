@@ -747,7 +747,7 @@ const InscricaoEvento = () => {
                     )}
 
                     {/* Membro de ministério - apenas para pessoas não cadastradas */}
-                    {selectedPerson?.type === "novo" && (
+                    {selectedPerson?.type === "novo" && showField("ministerio_igreja") && (
                       <>
                         <div className="space-y-2 md:space-y-3">
                           <Label className="text-base md:text-lg">É membro de Gileade ou de outro ministério?</Label>
