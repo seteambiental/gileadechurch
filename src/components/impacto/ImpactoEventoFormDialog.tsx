@@ -174,6 +174,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: values.tem_custo || false,
         valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
         prefixo_referencia: values.prefixo_referencia || null,
+        campos_formulario: values.campos_formulario || ALL_CAMPOS_KEYS,
       };
 
       if (isEditing) {
