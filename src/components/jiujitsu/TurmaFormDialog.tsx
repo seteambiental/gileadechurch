@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 
-const CATEGORIAS = ["Kids (4-15)", "Adulto (16-30)", "Master (30+)"];
+const CATEGORIAS = ["Kids (6-9)", "Juvenil (10-13)", "Adulto (14+)"];
 const FAIXAS = ["Branca", "Azul", "Roxa", "Marrom", "Preta"];
 const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -30,7 +30,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   const isEditing = !!turma;
 
   const [nome, setNome] = useState("");
-  const [categoriaIdade, setCategoriaIdade] = useState("Kids (4-15)");
+  const [categoriaIdade, setCategoriaIdade] = useState("Kids (6-9)");
   const [faixaMinima, setFaixaMinima] = useState("Branca");
   const [faixaMaxima, setFaixaMaxima] = useState("Preta");
   const [diaSemana, setDiaSemana] = useState("");
@@ -55,7 +55,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   useEffect(() => {
     if (turma) {
       setNome(turma.nome || "");
-      setCategoriaIdade(turma.categoria_idade || "Kids (4-15)");
+      setCategoriaIdade(turma.categoria_idade || "Kids (6-9)");
       setFaixaMinima(turma.faixa_minima || "Branca");
       setFaixaMaxima(turma.faixa_maxima || "Preta");
       setDiaSemana(turma.dia_semana || "");
@@ -69,7 +69,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: Props) {
   }, [turma, open]);
 
   const resetForm = () => {
-    setNome(""); setCategoriaIdade("Kids (4-15)"); setFaixaMinima("Branca");
+    setNome(""); setCategoriaIdade("Kids (6-9)"); setFaixaMinima("Branca");
     setFaixaMaxima("Preta"); setDiaSemana(""); setHorario("");
     setLiderId(null); setLiderNome(""); setLiderBusca("");
   };
