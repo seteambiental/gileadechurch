@@ -39,6 +39,7 @@ import {
   Edit,
   Share2,
   DoorOpen,
+  Home,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { useToast } from "@/hooks/use-toast";

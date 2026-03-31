@@ -23,6 +23,7 @@ import {
   FileText,
   QrCode,
   AlertTriangle,
+  Home,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";

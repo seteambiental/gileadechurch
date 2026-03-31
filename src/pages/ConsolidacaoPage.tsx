@@ -18,6 +18,7 @@ import {
   Pencil,
   UserRoundCheck,
   Calendar,
+  Home,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
