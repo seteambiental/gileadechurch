@@ -939,6 +939,7 @@ const InscricaoEvento = () => {
                     </div>
 
                     {/* Forma de pagamento */}
+                    {showField("forma_pagamento") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Forma de Pagamento *</Label>
                       <RadioGroup value={formaPagamento} onValueChange={setFormaPagamento} className="space-y-2 md:space-y-3">
@@ -960,6 +961,7 @@ const InscricaoEvento = () => {
                         </div>
                       </RadioGroup>
                     </div>
+                    )}
                   </div>
 
                   <Button
