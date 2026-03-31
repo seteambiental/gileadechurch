@@ -19,8 +19,11 @@ export default function JiuJitsuPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/app")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/app")}>
+            <Home className="h-5 w-5" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground">🥋 Ministério de Jiu-Jitsu</h1>
