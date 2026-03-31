@@ -39,6 +39,23 @@ const TIPOS_INSCRICAO = [
   { value: "equipe", label: "Equipe (apoio/serviço)" },
 ];
 
+const CAMPOS_FORMULARIO_OPTIONS = [
+  { key: "genero", label: "Gênero" },
+  { key: "telefone_emergencia", label: "Telefone de Emergência" },
+  { key: "cpf", label: "CPF" },
+  { key: "rg", label: "RG" },
+  { key: "is_menor", label: "Menor de idade / Responsável" },
+  { key: "alergia", label: "Alergia alimentar" },
+  { key: "medicamento", label: "Medicamento" },
+  { key: "preferencia_beliche", label: "Preferência de beliche" },
+  { key: "forma_pagamento", label: "Forma de Pagamento" },
+  { key: "igreja_congrega", label: "Igreja onde congrega" },
+  { key: "ministerio_igreja", label: "Ministério na igreja" },
+  { key: "observacoes", label: "Observações" },
+];
+
+const ALL_CAMPOS_KEYS = CAMPOS_FORMULARIO_OPTIONS.map(c => c.key);
+
 const PREFIXOS_REFERENCIA: Record<string, string> = {
   "MAN": "Manaim",
   "IMF": "Impacto Feminino",
