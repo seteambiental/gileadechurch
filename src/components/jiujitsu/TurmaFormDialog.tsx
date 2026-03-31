@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
 
-const CATEGORIAS = ["Kids (4-15)", "Adulto (16-30)", "Master (30+)"];
+const CATEGORIAS = ["Kids (6-9)", "Juvenil (10-13)", "Adulto (14+)"];
 const FAIXAS = ["Branca", "Azul", "Roxa", "Marrom", "Preta"];
 const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
