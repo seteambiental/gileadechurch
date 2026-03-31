@@ -9,7 +9,7 @@ import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { JiuJitsuFinanceiroTab } from "@/components/jiujitsu/JiuJitsuFinanceiroTab";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, DollarSign, GraduationCap, Heart, Swords } from "lucide-react";
+import { ArrowLeft, Loader2, DollarSign, GraduationCap, Heart, Swords, Home } from "lucide-react";
 
 const FinanceiroPage = () => {
   const { user, loading } = useAuth();
