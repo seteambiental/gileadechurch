@@ -732,6 +732,7 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
+                    {showField("cpf") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
                       <Input
@@ -743,6 +744,7 @@ const InscricaoEvento = () => {
                         maxLength={14}
                       />
                     </div>
+                    )}
 
                     {/* Membro de ministério - apenas para pessoas não cadastradas */}
                     {selectedPerson?.type === "novo" && (
