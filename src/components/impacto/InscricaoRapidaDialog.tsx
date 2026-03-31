@@ -262,8 +262,8 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                     onChange={(v) => setManualRg(v)}
                   />
                 </div>
+                )}
               </div>
-            </div>
           ) : (
             <div className="space-y-2">
               <Label>Buscar membro *</Label>
