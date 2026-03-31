@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Heart, Users, Building2, HandHeart, BarChart3 } from "lucide-react";
+import { ArrowLeft, Loader2, Heart, Users, Building2, HandHeart, BarChart3, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
