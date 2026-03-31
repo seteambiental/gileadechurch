@@ -400,7 +400,7 @@ const MinistryPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/app")}
+            onClick={handleBack}
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
