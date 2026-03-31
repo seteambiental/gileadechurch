@@ -269,8 +269,26 @@ const MinistryPage = () => {
   const initialTab = searchParams.get("tab") || "info";
   const initialEvento = searchParams.get("evento") || "";
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [tabHistory, setTabHistory] = useState<string[]>([]);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
   const [impactoEventoId, setImpactoEventoId] = useState(initialEvento);
+
+  const handleTabChange = (newTab: string) => {
+    setTabHistory(prev => [...prev, activeTab]);
+    setActiveTab(newTab);
+  };
+
+  const handleBack = () => {
+    if (tabHistory.length > 0) {
+      const prevTab = tabHistory[tabHistory.length - 1];
+      setTabHistory(prev => prev.slice(0, -1));
+      setActiveTab(prevTab);
+    } else if (activeTab !== "info") {
+      setActiveTab("info");
+    } else {
+      navigate("/app");
+    }
+  };
 
   const bypass = isAuthBypassed();
 
@@ -382,7 +400,7 @@ const MinistryPage = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/app")}
+            onClick={handleBack}
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -394,7 +412,7 @@ const MinistryPage = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
@@ -591,7 +609,7 @@ const MinistryPage = () => {
                   <ImpactoEventosTab
                     onGoToInscricoes={(id) => {
                       setImpactoEventoId(id);
-                      setActiveTab("inscricoes-impacto");
+                      handleTabChange("inscricoes-impacto");
                     }}
                     onGoToFinanceiro={(id) => {
                       navigate(`/financeiro?evento=${id}`);
