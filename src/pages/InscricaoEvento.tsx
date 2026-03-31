@@ -831,6 +831,8 @@ const InscricaoEvento = () => {
                     )}
 
                     {/* Alergia alimentar */}
+                    {showField("alergia") && (
+                    <>
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="alergia" className="text-base md:text-lg">Possui alergia alimentar?</Label>
                       <Switch
@@ -853,8 +855,12 @@ const InscricaoEvento = () => {
                         />
                       </div>
                     )}
+                    </>
+                    )}
 
                     {/* Medicamento */}
+                    {showField("medicamento") && (
+                    <>
                     <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                       <Label htmlFor="medicamento" className="text-base md:text-lg">Toma algum medicamento?</Label>
                       <Switch
@@ -876,6 +882,8 @@ const InscricaoEvento = () => {
                           className="min-h-[80px] md:min-h-[100px] text-base md:text-lg"
                         />
                       </div>
+                    )}
+                    </>
                     )}
 
                     {/* Tipo de Inscrição */}
