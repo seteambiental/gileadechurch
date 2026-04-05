@@ -100,6 +100,7 @@ const TeologiaFinanceiroTab = () => {
       const { data, error } = await supabase
         .from("teologia_alunos")
         .select("*, members(full_name)")
+        .gt("valor_total", 0)
         .order("nome_aluno", { ascending: true });
       if (error) throw error;
       return data;
