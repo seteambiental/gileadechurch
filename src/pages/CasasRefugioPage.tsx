@@ -116,6 +116,11 @@ const CasasRefugioPage = () => {
     },
   });
 
+  // Helper para obter o nome do supervisor de uma casa
+  const getSupervisorName = (casa: CasaRefugioExtended) => {
+    return casa.supervisor?.full_name || casa.supervisores || null;
+  };
+
   const condominios = useMemo(() => {
     const unique = [...new Set(casas.map((c) => c.condominio).filter(Boolean))];
     return unique.sort();
@@ -159,10 +164,6 @@ const CasasRefugioPage = () => {
     setCasaFilter("all");
   }, [supervisorFilter]);
 
-  // Helper para obter o nome do supervisor de uma casa
-  const getSupervisorName = (casa: CasaRefugioExtended) => {
-    return casa.supervisor?.full_name || casa.supervisores || null;
-  };
 
   const filteredCasas = useMemo(() => {
     return casas.filter((casa) => {
