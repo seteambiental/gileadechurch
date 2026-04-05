@@ -52,6 +52,8 @@ export function JiuJitsuFinanceiroTab() {
   const [status, setStatus] = useState("pendente");
   const [dataPagamento, setDataPagamento] = useState("");
   const [infoMensalidade, setInfoMensalidade] = useState("");
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Column filters
   const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
