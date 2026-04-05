@@ -50,6 +50,18 @@ const Cadastros = () => {
     enabled: !!user?.id,
   });
 
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["member-requests-pending-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("member_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente");
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
   useEffect(() => {
     if (!loading && !user && !isAuthBypassed()) {
       navigate("/auth");
