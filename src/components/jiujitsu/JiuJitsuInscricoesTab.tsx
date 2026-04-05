@@ -60,6 +60,9 @@ export function JiuJitsuInscricoesTab() {
 
   // Column filters
   const [tipoFilter, setTipoFilter] = useState<Set<string>>(new Set());
+  const [idadeFilter, setIdadeFilter] = useState<Set<string>>(new Set());
+  const [turmaFilter, setTurmaFilter] = useState<Set<string>>(new Set());
+  const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
 
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["jiujitsu_inscricoes", statusFilter],
@@ -78,20 +81,49 @@ export function JiuJitsuInscricoesTab() {
     },
   });
 
-  const tipoOptions = useMemo(() => [...new Set(inscricoes.map((i: any) => i.tipo === "membro" ? "Membro" : "Visitante"))], [inscricoes]);
+  // Computed values for each row
+  const inscricoesComputadas = useMemo(() => {
+    return inscricoes.map((i: any) => {
+      const idade = calcularIdade(i.data_nascimento);
+      return {
+        ...i,
+        _idade: idade,
+        _idadeLabel: idade !== null ? `${idade} anos` : "—",
+        _turmaSugerida: sugerirTurma(idade),
+        _tipoLabel: i.tipo === "membro" ? "Membro" : "Visitante",
+        _statusLabel: STATUS_MAP[i.status]?.label || i.status,
+      };
+    });
+  }, [inscricoes]);
+
+  const tipoOptions = useMemo(() => [...new Set(inscricoesComputadas.map((i: any) => i._tipoLabel))], [inscricoesComputadas]);
+  const idadeOptions = useMemo(() => [...new Set(inscricoesComputadas.map((i: any) => i._idadeLabel))].sort(), [inscricoesComputadas]);
+  const turmaOptions = useMemo(() => [...new Set(inscricoesComputadas.map((i: any) => i._turmaSugerida))], [inscricoesComputadas]);
+  const statusColOptions = useMemo(() => [...new Set(inscricoesComputadas.map((i: any) => i._statusLabel))], [inscricoesComputadas]);
 
   useMemo(() => {
     if (tipoFilter.size === 0 && tipoOptions.length > 0) setTipoFilter(new Set(tipoOptions));
   }, [tipoOptions]);
+  useMemo(() => {
+    if (idadeFilter.size === 0 && idadeOptions.length > 0) setIdadeFilter(new Set(idadeOptions));
+  }, [idadeOptions]);
+  useMemo(() => {
+    if (turmaFilter.size === 0 && turmaOptions.length > 0) setTurmaFilter(new Set(turmaOptions));
+  }, [turmaOptions]);
+  useMemo(() => {
+    if (statusColFilter.size === 0 && statusColOptions.length > 0) setStatusColFilter(new Set(statusColOptions));
+  }, [statusColOptions]);
 
   const filtered = useMemo(() => {
-    return inscricoes.filter((i: any) => {
+    return inscricoesComputadas.filter((i: any) => {
       if (search && !i.nome?.toLowerCase().includes(search.toLowerCase())) return false;
-      const tipoLabel = i.tipo === "membro" ? "Membro" : "Visitante";
-      if (tipoFilter.size > 0 && tipoFilter.size < tipoOptions.length && !tipoFilter.has(tipoLabel)) return false;
+      if (tipoFilter.size > 0 && tipoFilter.size < tipoOptions.length && !tipoFilter.has(i._tipoLabel)) return false;
+      if (idadeFilter.size > 0 && idadeFilter.size < idadeOptions.length && !idadeFilter.has(i._idadeLabel)) return false;
+      if (turmaFilter.size > 0 && turmaFilter.size < turmaOptions.length && !turmaFilter.has(i._turmaSugerida)) return false;
+      if (statusColFilter.size > 0 && statusColFilter.size < statusColOptions.length && !statusColFilter.has(i._statusLabel)) return false;
       return true;
     });
-  }, [inscricoes, search, tipoFilter, tipoOptions.length]);
+  }, [inscricoesComputadas, search, tipoFilter, tipoOptions.length, idadeFilter, idadeOptions.length, turmaFilter, turmaOptions.length, statusColFilter, statusColOptions.length]);
 
   const handleRejeitar = async () => {
     if (!rejeitandoInscricao) return;
