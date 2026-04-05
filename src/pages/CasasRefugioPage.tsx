@@ -179,9 +179,12 @@ const CasasRefugioPage = () => {
       const matchesSupervisor =
         supervisorFilter === "all" || supervisorName === supervisorFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor;
+      const matchesCasa =
+        casaFilter === "all" || casa.id === casaFilter;
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa;
     });
-  }, [casas, searchTerm, condominioFilter, supervisorFilter]);
+  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter]);
 
   // Map for report dialog
   const casasNomesMap = useMemo(() => {
@@ -190,7 +193,7 @@ const CasasRefugioPage = () => {
     return map;
   }, [casas]);
   const hasActiveFilters =
-    condominioFilter !== "all" || supervisorFilter !== "all" || searchTerm !== "";
+    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || searchTerm !== "";
 
   const clearFilters = () => {
     setSearchParams({}, { replace: true });
