@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil } from "lucide-react";
+import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil, RefreshCw } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -78,21 +78,29 @@ const TeologiaFinanceiroTab = () => {
   const [pgtoValor, setPgtoValor] = useState("");
   const [syncing, setSyncing] = useState(false);
 
+  const handleSyncApi = async () => {
+    setSyncing(true);
+    try {
+      const { error } = await supabase.functions.invoke("sync-teologia-alunos");
+      if (error) {
+        console.error("Sync error:", error);
+        toast({ title: "Erro ao atualizar API", description: "Tente novamente.", variant: "destructive" });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["teologia-alunos"] });
+        await queryClient.invalidateQueries({ queryKey: ["teologia-pagamentos"] });
+        toast({ title: "API atualizada com sucesso!" });
+      }
+    } catch (e) {
+      console.error("Sync failed:", e);
+      toast({ title: "Erro ao atualizar API", variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // Auto-sync on mount
   useEffect(() => {
-    const doSync = async () => {
-      setSyncing(true);
-      try {
-        const { error } = await supabase.functions.invoke("sync-teologia-alunos");
-        if (error) console.error("Sync error:", error);
-        else queryClient.invalidateQueries({ queryKey: ["teologia-alunos"] });
-      } catch (e) {
-        console.error("Sync failed:", e);
-      } finally {
-        setSyncing(false);
-      }
-    };
-    doSync();
+    handleSyncApi();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: alunos = [], isLoading } = useQuery({
@@ -510,7 +518,11 @@ const TeologiaFinanceiroTab = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleSyncApi} size="sm" variant="outline" disabled={syncing}>
+                {syncing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                Atualizar API
+              </Button>
               <ExportButton
                 data={alunoExportData}
                 columns={alunoExportColumns}
