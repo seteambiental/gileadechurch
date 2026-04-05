@@ -18,8 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Plus, Info, Users, DollarSign, Check, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2 } from "lucide-react";
+import { Plus, Info, Users, DollarSign, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JiuJitsuDespesasTab from "./JiuJitsuDespesasTab";
@@ -53,7 +52,7 @@ export function JiuJitsuFinanceiroTab() {
   const [dataPagamento, setDataPagamento] = useState("");
   const [infoMensalidade, setInfoMensalidade] = useState("");
   const [editingPagamento, setEditingPagamento] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  
 
   // Column filters
   const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
