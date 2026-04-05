@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +15,33 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Plus, MoreHorizontal, CheckCircle, XCircle } from "lucide-react";
 import { InscricaoJiuJitsuFormDialog } from "./InscricaoJiuJitsuFormDialog";
 import { AprovarInscricaoDialog } from "./AprovarInscricaoDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const calcularIdade = (dataNascimento: string | null): number | null => {
+  if (!dataNascimento) return null;
+  try {
+    return differenceInYears(new Date(), parseLocalDate(dataNascimento));
+  } catch {
+    return null;
+  }
+};
+
+const sugerirTurma = (idade: number | null): string => {
+  if (idade === null) return "—";
+  if (idade >= 6 && idade <= 9) return "Kids (6-9)";
+  if (idade >= 10 && idade <= 13) return "Juvenil (10-13)";
+  if (idade >= 14) return "Adulto (14+)";
+  return "Abaixo da idade mínima";
+};
 import {
   AlertDialog,
   AlertDialogAction,
