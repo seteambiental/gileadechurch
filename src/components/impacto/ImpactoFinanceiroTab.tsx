@@ -156,6 +156,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       id: e.id,
       titulo: e.titulo,
       data_inicio: e.data_inicio,
+      finalizado: !!(e as any).finalizado,
     }));
     const agenda = (agendaEventos || [])
       .filter((e) => !isTeologiaEvent(e.titulo))
@@ -163,14 +164,17 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         id: e.id,
         titulo: e.titulo,
         data_inicio: e.data_evento,
+        finalizado: false,
       }));
     // Deduplicate by ID first, then by normalized title (impacto takes priority)
     const impactoIds = new Set(impacto.map((e) => e.id));
     const impactoTitlesNorm = new Set(impacto.map((e) => e.titulo?.trim().toLowerCase()));
     const uniqueAgenda = agenda.filter((e) => !impactoIds.has(e.id) && !impactoTitlesNorm.has(e.titulo?.trim().toLowerCase()));
-    return [...impacto, ...uniqueAgenda].sort((a, b) =>
-      new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
-    );
+    // Sort: active events first, then finalized; within each group sort by date
+    return [...impacto, ...uniqueAgenda].sort((a, b) => {
+      if (a.finalizado !== b.finalizado) return a.finalizado ? 1 : -1;
+      return new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime();
+    });
   }, [impactoEventos, agendaEventos]);
 
   const { data: rawImpactoInscricoes, isLoading } = useQuery({
