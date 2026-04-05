@@ -55,6 +55,7 @@ const CasasRefugioPage = () => {
   const searchTerm = searchParams.get("q") || "";
   const condominioFilter = searchParams.get("cond") || "all";
   const supervisorFilter = searchParams.get("sup") || "all";
+  const casaFilter = searchParams.get("casa") || "all";
 
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
@@ -75,6 +76,7 @@ const CasasRefugioPage = () => {
   const setSearchTerm = (value: string) => updateSearchParams("q", value);
   const setCondominioFilter = (value: string) => updateSearchParams("cond", value);
   const setSupervisorFilter = (value: string) => updateSearchParams("sup", value);
+  const setCasaFilter = (value: string) => updateSearchParams("casa", value);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -119,6 +121,18 @@ const CasasRefugioPage = () => {
     return unique.sort();
   }, [casas]);
 
+  // Lista de nomes de casas filtrada por condomínio e supervisor
+  const casasNomes = useMemo(() => {
+    let filtered = casas;
+    if (condominioFilter !== "all") {
+      filtered = filtered.filter(c => c.condominio === condominioFilter);
+    }
+    if (supervisorFilter !== "all") {
+      filtered = filtered.filter(c => getSupervisorName(c) === supervisorFilter);
+    }
+    return filtered.map(c => ({ id: c.id, name: c.name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [casas, condominioFilter, supervisorFilter]);
+
   // Criar lista de supervisores filtrada pelo condomínio selecionado
   const supervisoresMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -137,7 +151,13 @@ const CasasRefugioPage = () => {
   // Reset supervisor filter when condomínio changes
   useEffect(() => {
     setSupervisorFilter("all");
+    setCasaFilter("all");
   }, [condominioFilter]);
+
+  // Reset casa filter when supervisor changes
+  useEffect(() => {
+    setCasaFilter("all");
+  }, [supervisorFilter]);
 
   // Helper para obter o nome do supervisor de uma casa
   const getSupervisorName = (casa: CasaRefugioExtended) => {
@@ -159,9 +179,12 @@ const CasasRefugioPage = () => {
       const matchesSupervisor =
         supervisorFilter === "all" || supervisorName === supervisorFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor;
+      const matchesCasa =
+        casaFilter === "all" || casa.id === casaFilter;
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa;
     });
-  }, [casas, searchTerm, condominioFilter, supervisorFilter]);
+  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter]);
 
   // Map for report dialog
   const casasNomesMap = useMemo(() => {
@@ -170,7 +193,7 @@ const CasasRefugioPage = () => {
     return map;
   }, [casas]);
   const hasActiveFilters =
-    condominioFilter !== "all" || supervisorFilter !== "all" || searchTerm !== "";
+    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || searchTerm !== "";
 
   const clearFilters = () => {
     setSearchParams({}, { replace: true });
@@ -314,6 +337,20 @@ const CasasRefugioPage = () => {
                 {supervisoresMap.map((sup) => (
                   <SelectItem key={sup} value={sup}>
                     {sup}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={casaFilter} onValueChange={setCasaFilter}>
+              <SelectTrigger className="w-[220px] bg-card border-border">
+                <SelectValue placeholder="Casa Refúgio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Casas</SelectItem>
+                {casasNomes.map((casa) => (
+                  <SelectItem key={casa.id} value={casa.id}>
+                    {casa.name}
                   </SelectItem>
                 ))}
               </SelectContent>
