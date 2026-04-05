@@ -503,18 +503,34 @@ export function CasaisFinanceiroTab() {
                                       <TableCell>{FORMAS_LABELS[p.forma_pagamento] || p.forma_pagamento || "—"}</TableCell>
                                       <TableCell className="text-green-600 font-medium">{formatCurrency(Number(p.valor))}</TableCell>
                                       <TableCell className="text-muted-foreground text-sm">{p.observacoes || "—"}</TableCell>
-                                      <TableCell>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteTarget({ type: "pagamento", id: p.id });
-                                          }}
-                                        >
-                                          <Trash2 className="w-4 h-4 text-destructive" />
-                                        </Button>
-                                      </TableCell>
+                                        <TableCell>
+                                          <div className="flex gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingPagamento(p);
+                                                setAddPagamentoCasalId(casal.id);
+                                                setPgtoData(p.data_pagamento || todayDateStr());
+                                                setPgtoForma(p.forma_pagamento || "");
+                                                setPgtoValor(String(p.valor || ""));
+                                              }}
+                                            >
+                                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteTarget({ type: "pagamento", id: p.id });
+                                              }}
+                                            >
+                                              <Trash2 className="w-4 h-4 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
