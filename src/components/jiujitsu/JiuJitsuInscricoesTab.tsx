@@ -172,18 +172,24 @@ export function JiuJitsuInscricoesTab() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma inscrição encontrada</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhuma inscrição encontrada</TableCell>
               </TableRow>
             ) : (
               filtered.map((insc: any) => {
                 const st = STATUS_MAP[insc.status] || STATUS_MAP.pendente;
+                const idade = calcularIdade(insc.data_nascimento);
+                const turmaSugerida = sugerirTurma(idade);
                 return (
                   <TableRow key={insc.id}>
                     <TableCell className="font-medium">{insc.nome}</TableCell>
+                    <TableCell>{idade !== null ? `${idade} anos` : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="whitespace-nowrap">{turmaSugerida}</Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={insc.tipo === "membro" ? "default" : "secondary"}>
                         {insc.tipo === "membro" ? "Membro" : "Visitante"}
