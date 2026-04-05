@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Info, Users, DollarSign, Check, Clock, TrendingUp, ArrowDownCircle, Scale } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Plus, Info, Users, DollarSign, Check, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JiuJitsuDespesasTab from "./JiuJitsuDespesasTab";
