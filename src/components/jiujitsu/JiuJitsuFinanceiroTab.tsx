@@ -407,9 +407,9 @@ export function JiuJitsuFinanceiroTab() {
         </Table>
       </div>
 
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+      <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingPagamento(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Novo Pagamento</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingPagamento ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Aluno</Label>
@@ -457,8 +457,8 @@ export function JiuJitsuFinanceiroTab() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setFormOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Registrar</Button>
+            <Button variant="outline" onClick={() => { setFormOpen(false); setEditingPagamento(null); }}>Cancelar</Button>
+            <Button onClick={handleSave}>{editingPagamento ? "Salvar" : "Registrar"}</Button>
           </div>
         </DialogContent>
       </Dialog>
