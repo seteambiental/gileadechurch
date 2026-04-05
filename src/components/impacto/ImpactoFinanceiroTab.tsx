@@ -651,7 +651,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
             <SelectContent>
               {eventos?.map((e) => (
                 <SelectItem key={e.id} value={e.id}>
-                  {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}
+                  {format(parseLocalDate(e.data_inicio), "dd/MM", { locale: ptBR })} — {e.titulo}{e.finalizado ? " (Finalizado)" : ""}
                 </SelectItem>
               ))}
             </SelectContent>
