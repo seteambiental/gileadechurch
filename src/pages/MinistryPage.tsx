@@ -273,6 +273,20 @@ const MinistryPage = () => {
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
   const [impactoEventoId, setImpactoEventoId] = useState(initialEvento);
 
+  // Sync URL with active tab so browser back restores correct tab
+  useEffect(() => {
+    const currentTab = searchParams.get("tab");
+    if (activeTab !== "info" && activeTab !== currentTab) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set("tab", activeTab);
+      navigate(`?${newParams.toString()}`, { replace: true });
+    } else if (activeTab === "info" && currentTab) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("tab");
+      navigate(`?${newParams.toString()}`, { replace: true });
+    }
+  }, [activeTab]);
+
   const handleTabChange = (newTab: string) => {
     setTabHistory(prev => [...prev, activeTab]);
     setActiveTab(newTab);
