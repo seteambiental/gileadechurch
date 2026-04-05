@@ -93,7 +93,7 @@ const formatCurrency = (value: number) =>
 
 export const InscricoesDashboard = () => {
   const { toast } = useToast();
-  const [selectedEvento, setSelectedEvento] = useState<string>("todos");
+  const [selectedEvento, setSelectedEvento] = useState<string>("");
   const [sendingReminders, setSendingReminders] = useState(false);
 
   // Fetch agenda inscriptions
@@ -215,10 +215,10 @@ export const InscricoesDashboard = () => {
     return result;
   }, [inscricoesAgenda, inscricoesImpacto]);
 
-  // Filter by selected event
-  const inscricoesFiltradas = selectedEvento === "todos"
-    ? allInscricoes
-    : allInscricoes.filter(i => i.evento_id === selectedEvento);
+  // Filter by selected event — empty means no data shown
+  const inscricoesFiltradas = selectedEvento && selectedEvento !== ""
+    ? allInscricoes.filter(i => i.evento_id === selectedEvento)
+    : [];
 
   const inscricoesPendentes = inscricoesFiltradas.filter(
     i => (i.status_pagamento === "pendente") && !i.lista_espera
