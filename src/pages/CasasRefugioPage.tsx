@@ -55,6 +55,7 @@ const CasasRefugioPage = () => {
   const searchTerm = searchParams.get("q") || "";
   const condominioFilter = searchParams.get("cond") || "all";
   const supervisorFilter = searchParams.get("sup") || "all";
+  const casaFilter = searchParams.get("casa") || "all";
 
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
