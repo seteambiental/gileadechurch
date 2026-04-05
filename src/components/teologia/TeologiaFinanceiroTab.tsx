@@ -797,10 +797,10 @@ const TeologiaFinanceiroTab = () => {
           </Dialog>
 
           {/* Dialog: Registrar Pagamento */}
-          <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => !o && setAddPagamentoAlunoId(null)}>
+          <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => { if (!o) { setAddPagamentoAlunoId(null); setEditingPagamento(null); } }}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Registrar Pagamento</DialogTitle>
+                <DialogTitle>{editingPagamento ? "Editar Pagamento" : "Registrar Pagamento"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -833,13 +833,13 @@ const TeologiaFinanceiroTab = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setAddPagamentoAlunoId(null)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => { setAddPagamentoAlunoId(null); setEditingPagamento(null); }}>Cancelar</Button>
                 <Button
                   onClick={() => addPagamentoMutation.mutate()}
                   disabled={!pgtoForma || !pgtoValor || addPagamentoMutation.isPending}
                 >
                   {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Registrar
+                  {editingPagamento ? "Salvar" : "Registrar"}
                 </Button>
               </DialogFooter>
             </DialogContent>
