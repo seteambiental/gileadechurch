@@ -280,8 +280,8 @@ export const InscricoesDashboard = () => {
   const receitaRecebida = inscricoesAtivas.reduce((sum, i) => sum + i.valor_pago, 0);
   const receitaPendente = receitaPrevista - receitaRecebida;
 
-  // Inscriptions by event (only when showing all)
-  const inscricoesPorEvento = selectedEvento === "todos" ? allEventos.map(evento => {
+  // Inscriptions by event (only when no specific event selected)
+  const inscricoesPorEvento = !selectedEvento ? allEventos.map(evento => {
     const count = allInscricoes.filter(i => i.evento_id === evento.id && !i.lista_espera).length;
     return {
       name: evento.titulo.length > 20 ? evento.titulo.substring(0, 20) + "..." : evento.titulo,
