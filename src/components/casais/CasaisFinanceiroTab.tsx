@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
+  DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -52,6 +52,7 @@ export function CasaisFinanceiroTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addPagamentoCasalId, setAddPagamentoCasalId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "pagamento"; id: string } | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
 
   // Payment form
   const [pgtoData, setPgtoData] = useState(todayDateStr());
