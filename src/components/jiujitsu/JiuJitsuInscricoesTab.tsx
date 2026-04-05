@@ -136,6 +136,8 @@ export function JiuJitsuInscricoesTab() {
             data={filtered}
             columns={[
               { header: "Nome", accessor: "nome" },
+              { header: "Idade", accessor: (r: any) => { const i = calcularIdade(r.data_nascimento); return i !== null ? `${i} anos` : "—"; } },
+              { header: "Turma Sugerida", accessor: (r: any) => sugerirTurma(calcularIdade(r.data_nascimento)) },
               { header: "Tipo", accessor: (r: any) => r.tipo === "membro" ? "Membro" : "Visitante" },
               { header: "WhatsApp", accessor: (r: any) => r.whatsapp || "—" },
               { header: "Data", accessor: (r: any) => new Date(r.created_at).toLocaleDateString("pt-BR") },
@@ -156,6 +158,8 @@ export function JiuJitsuInscricoesTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Idade</TableHead>
+              <TableHead>Turma Sugerida</TableHead>
               <TableHead>
                 <ColumnFilterPopover title="Tipo" options={tipoOptions} selected={tipoFilter} onChange={setTipoFilter} />
               </TableHead>
