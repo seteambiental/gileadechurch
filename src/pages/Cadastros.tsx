@@ -19,6 +19,7 @@ import PastorAuxiliarPermissoesTab from "@/components/cadastros/PastorAuxiliarPe
 import SistemaTab from "@/components/cadastros/SistemaTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const Cadastros = () => {
   const isBypassed = isAuthBypassed();
