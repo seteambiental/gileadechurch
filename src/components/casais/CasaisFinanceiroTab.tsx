@@ -174,40 +174,46 @@ export function CasaisFinanceiroTab() {
   const addPagamentoMutation = useMutation({
     mutationFn: async () => {
       if (!addPagamentoCasalId) return;
-      const casal = casais.find((c: any) => c.id === addPagamentoCasalId);
-
-      // Buscar member.id a partir do auth user id
-      let memberId: string | null = null;
-      if (user?.id) {
-        const { data: memberData } = await supabase
-          .from("members")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        memberId = memberData?.id || null;
-      }
-
-      const { error } = await supabase.from("casais_pagamentos").insert({
-        casal_id: addPagamentoCasalId,
-        turma_id: casal?.turma_id || null,
+      const payload = {
         data_pagamento: pgtoData,
         forma_pagamento: pgtoForma,
         valor: parseFloat(pgtoValor) || 0,
-        status: "pago",
-        registrado_por: memberId,
-      } as any);
-      if (error) throw error;
+      };
+      if (editingPagamento) {
+        const { error } = await supabase.from("casais_pagamentos").update(payload).eq("id", editingPagamento.id);
+        if (error) throw error;
+      } else {
+        const casal = casais.find((c: any) => c.id === addPagamentoCasalId);
+        let memberId: string | null = null;
+        if (user?.id) {
+          const { data: memberData } = await supabase
+            .from("members")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          memberId = memberData?.id || null;
+        }
+        const { error } = await supabase.from("casais_pagamentos").insert({
+          ...payload,
+          casal_id: addPagamentoCasalId,
+          turma_id: casal?.turma_id || null,
+          status: "pago",
+          registrado_por: memberId,
+        } as any);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["casais_pagamentos"] });
-      toast({ title: "Pagamento registrado" });
+      toast({ title: editingPagamento ? "Pagamento atualizado" : "Pagamento registrado" });
       setAddPagamentoCasalId(null);
+      setEditingPagamento(null);
       setPgtoData(todayDateStr());
       setPgtoForma("");
       setPgtoValor("");
     },
     onError: (e: any) => {
-      toast({ title: "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar pagamento", description: e.message, variant: "destructive" });
     },
   });
 
