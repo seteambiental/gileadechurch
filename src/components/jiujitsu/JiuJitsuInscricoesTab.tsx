@@ -190,14 +190,20 @@ export function JiuJitsuInscricoesTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
-              <TableHead>Idade</TableHead>
-              <TableHead>Turma Sugerida</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Idade" options={idadeOptions} selected={idadeFilter} onChange={setIdadeFilter} />
+              </TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Turma Sugerida" options={turmaOptions} selected={turmaFilter} onChange={setTurmaFilter} />
+              </TableHead>
               <TableHead>
                 <ColumnFilterPopover title="Tipo" options={tipoOptions} selected={tipoFilter} onChange={setTipoFilter} />
               </TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Data</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>
+                <ColumnFilterPopover title="Status" options={statusColOptions} selected={statusColFilter} onChange={setStatusColFilter} />
+              </TableHead>
               <TableHead className="w-12" />
             </TableRow>
           </TableHeader>
