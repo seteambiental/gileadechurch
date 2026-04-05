@@ -100,6 +100,20 @@ const CasasRefugioPage = () => {
     },
   });
 
+  // Fetch member count per casa refúgio
+  const { data: membrosPorCasa = [] } = useQuery({
+    queryKey: ["membros-por-casa-refugio"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("casa_refugio_id")
+        .not("casa_refugio_id", "is", null)
+        .neq("excluido", true);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   const condominios = useMemo(() => {
     const unique = [...new Set(casas.map((c) => c.condominio).filter(Boolean))];
     return unique.sort();
