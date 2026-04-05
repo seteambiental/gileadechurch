@@ -78,21 +78,29 @@ const TeologiaFinanceiroTab = () => {
   const [pgtoValor, setPgtoValor] = useState("");
   const [syncing, setSyncing] = useState(false);
 
+  const handleSyncApi = async () => {
+    setSyncing(true);
+    try {
+      const { error } = await supabase.functions.invoke("sync-teologia-alunos");
+      if (error) {
+        console.error("Sync error:", error);
+        toast({ title: "Erro ao atualizar API", description: "Tente novamente.", variant: "destructive" });
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["teologia-alunos"] });
+        await queryClient.invalidateQueries({ queryKey: ["teologia-pagamentos"] });
+        toast({ title: "API atualizada com sucesso!" });
+      }
+    } catch (e) {
+      console.error("Sync failed:", e);
+      toast({ title: "Erro ao atualizar API", variant: "destructive" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // Auto-sync on mount
   useEffect(() => {
-    const doSync = async () => {
-      setSyncing(true);
-      try {
-        const { error } = await supabase.functions.invoke("sync-teologia-alunos");
-        if (error) console.error("Sync error:", error);
-        else queryClient.invalidateQueries({ queryKey: ["teologia-alunos"] });
-      } catch (e) {
-        console.error("Sync failed:", e);
-      } finally {
-        setSyncing(false);
-      }
-    };
-    doSync();
+    handleSyncApi();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: alunos = [], isLoading } = useQuery({
