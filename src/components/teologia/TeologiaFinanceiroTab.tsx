@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Users } from "lucide-react";
+import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -66,6 +66,7 @@ const TeologiaFinanceiroTab = () => {
   const [addAlunoOpen, setAddAlunoOpen] = useState(false);
   const [addPagamentoAlunoId, setAddPagamentoAlunoId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "aluno" | "pagamento"; id: string } | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
 
   // Add aluno form
   const [novoMemberId, setNovoMemberId] = useState("");
