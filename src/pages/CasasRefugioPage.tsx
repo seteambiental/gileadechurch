@@ -249,20 +249,32 @@ const CasasRefugioPage = () => {
 
           <TabsContent value="casas">
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{casas.length}</p>
-            <p className="text-xs text-muted-foreground">Total de Casas</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{condominios.length}</p>
-            <p className="text-xs text-muted-foreground">Condomínios</p>
-          </div>
-          <div className="bg-card border border-border rounded-lg p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{supervisoresMap.length}</p>
-            <p className="text-xs text-muted-foreground">Supervisores</p>
-          </div>
-        </div>
+        {(() => {
+          const filteredIds = new Set(filteredCasas.map(c => c.id));
+          const filteredCondominios = new Set(filteredCasas.map(c => c.condominio).filter(Boolean));
+          const filteredSupervisores = new Set(filteredCasas.map(c => getSupervisorName(c)).filter(Boolean));
+          const filteredMembros = membrosPorCasa.filter(m => filteredIds.has(m.casa_refugio_id)).length;
+          return (
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{filteredCasas.length}</p>
+                <p className="text-xs text-muted-foreground">Casas</p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{filteredCondominios.size}</p>
+                <p className="text-xs text-muted-foreground">Condomínios</p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{filteredSupervisores.size}</p>
+                <p className="text-xs text-muted-foreground">Supervisores</p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{filteredMembros}</p>
+                <p className="text-xs text-muted-foreground">Membros</p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Search and Filters */}
         <div className="space-y-4 mb-6">
