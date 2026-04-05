@@ -153,10 +153,15 @@ const Cadastros = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="solicitacoes" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2 relative"
             >
               <UserPlus className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Solicitações</span>
+              <span className="hidden sm:inline">Novas</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {pendingCount}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger 
               value="ministerios" 
