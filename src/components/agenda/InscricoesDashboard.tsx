@@ -93,7 +93,7 @@ const formatCurrency = (value: number) =>
 
 export const InscricoesDashboard = () => {
   const { toast } = useToast();
-  const [selectedEvento, setSelectedEvento] = useState<string>("todos");
+  const [selectedEvento, setSelectedEvento] = useState<string>("");
   const [sendingReminders, setSendingReminders] = useState(false);
 
   // Fetch agenda inscriptions
@@ -215,10 +215,10 @@ export const InscricoesDashboard = () => {
     return result;
   }, [inscricoesAgenda, inscricoesImpacto]);
 
-  // Filter by selected event
-  const inscricoesFiltradas = selectedEvento === "todos"
-    ? allInscricoes
-    : allInscricoes.filter(i => i.evento_id === selectedEvento);
+  // Filter by selected event — empty means no data shown
+  const inscricoesFiltradas = selectedEvento && selectedEvento !== ""
+    ? allInscricoes.filter(i => i.evento_id === selectedEvento)
+    : [];
 
   const inscricoesPendentes = inscricoesFiltradas.filter(
     i => (i.status_pagamento === "pendente") && !i.lista_espera
@@ -280,8 +280,8 @@ export const InscricoesDashboard = () => {
   const receitaRecebida = inscricoesAtivas.reduce((sum, i) => sum + i.valor_pago, 0);
   const receitaPendente = receitaPrevista - receitaRecebida;
 
-  // Inscriptions by event (only when showing all)
-  const inscricoesPorEvento = selectedEvento === "todos" ? allEventos.map(evento => {
+  // Inscriptions by event (only when no specific event selected)
+  const inscricoesPorEvento = !selectedEvento ? allEventos.map(evento => {
     const count = allInscricoes.filter(i => i.evento_id === evento.id && !i.lista_espera).length;
     return {
       name: evento.titulo.length > 20 ? evento.titulo.substring(0, 20) + "..." : evento.titulo,
@@ -332,13 +332,12 @@ export const InscricoesDashboard = () => {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Filtrar por Evento</label>
+              <label className="text-sm font-medium mb-2 block">Selecione o Evento</label>
               <Select value={selectedEvento} onValueChange={setSelectedEvento}>
                 <SelectTrigger className="w-full md:w-80">
-                  <SelectValue placeholder="Todos os eventos" />
+                  <SelectValue placeholder="Selecione um evento..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os eventos</SelectItem>
                   {allEventos.map(evento => (
                     <SelectItem key={evento.id} value={evento.id}>
                       {evento.titulo} - {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
@@ -348,7 +347,7 @@ export const InscricoesDashboard = () => {
               </Select>
             </div>
             
-            {selectedEvento !== "todos" && isUpcomingEvent && inscricoesPendentes.length > 0 && (
+            {selectedEvento && isUpcomingEvent && inscricoesPendentes.length > 0 && (
               <Button
                 variant="outline"
                 onClick={handleEnviarLembretes}
@@ -369,7 +368,7 @@ export const InscricoesDashboard = () => {
             )}
           </div>
           
-          {selectedEvento !== "todos" && eventoSelecionado && (
+          {selectedEvento && eventoSelecionado && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <h3 className="font-semibold">{eventoSelecionado.titulo}</h3>
               <p className="text-sm text-muted-foreground">
@@ -486,7 +485,7 @@ export const InscricoesDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {selectedEvento === "todos" ? (
+        {!selectedEvento ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Inscrições por Evento</CardTitle>
