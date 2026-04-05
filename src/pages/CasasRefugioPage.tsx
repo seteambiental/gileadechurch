@@ -357,6 +357,7 @@ const CasasRefugioPage = () => {
             </Select>
 
             {hasActiveFilters && (
+              <Button
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
