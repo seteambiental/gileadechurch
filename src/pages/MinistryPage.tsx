@@ -263,7 +263,7 @@ const ministriesData: Record<string, MinistryInfo> = {
 
 const MinistryPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const initialTab = searchParams.get("tab") || "info";
@@ -277,15 +277,19 @@ const MinistryPage = () => {
   useEffect(() => {
     const currentTab = searchParams.get("tab");
     if (activeTab !== "info" && activeTab !== currentTab) {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.set("tab", activeTab);
-      navigate(`?${newParams.toString()}`, { replace: true });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set("tab", activeTab);
+        return next;
+      }, { replace: true });
     } else if (activeTab === "info" && currentTab) {
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("tab");
-      navigate(`?${newParams.toString()}`, { replace: true });
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("tab");
+        return next;
+      }, { replace: true });
     }
-  }, [activeTab]);
+  }, [activeTab, setSearchParams]);
 
   const handleTabChange = (newTab: string) => {
     setTabHistory(prev => [...prev, activeTab]);
