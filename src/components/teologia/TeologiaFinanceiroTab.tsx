@@ -149,25 +149,34 @@ const TeologiaFinanceiroTab = () => {
   const addPagamentoMutation = useMutation({
     mutationFn: async () => {
       if (!addPagamentoAlunoId) return;
-      const { error } = await supabase.from("teologia_pagamentos").insert({
-        aluno_id: addPagamentoAlunoId,
+      const payload = {
         data_pagamento: pgtoData,
         forma_pagamento: pgtoForma,
         valor: parseFloat(pgtoValor) || 0,
-        registrado_por: user?.id,
-      });
-      if (error) throw error;
+      };
+      if (editingPagamento) {
+        const { error } = await supabase.from("teologia_pagamentos").update(payload).eq("id", editingPagamento.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("teologia_pagamentos").insert({
+          ...payload,
+          aluno_id: addPagamentoAlunoId,
+          registrado_por: user?.id,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teologia-pagamentos"] });
-      toast({ title: "Pagamento registrado" });
+      toast({ title: editingPagamento ? "Pagamento atualizado" : "Pagamento registrado" });
       setAddPagamentoAlunoId(null);
+      setEditingPagamento(null);
       setPgtoData(todayDateStr());
       setPgtoForma("");
       setPgtoValor("");
     },
     onError: (e: any) => {
-      toast({ title: "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar pagamento", description: e.message, variant: "destructive" });
     },
   });
 
