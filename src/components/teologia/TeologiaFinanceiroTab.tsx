@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil } from "lucide-react";
+import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil, RefreshCw } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
