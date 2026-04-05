@@ -115,8 +115,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_eventos")
-        .select("id, titulo, data_inicio, data_fim, tipo, valor_inscricao, valores_por_tipo, tipos_inscricao, tem_custo")
-        .eq("finalizado", false)
+        .select("id, titulo, data_inicio, data_fim, tipo, valor_inscricao, valores_por_tipo, tipos_inscricao, tem_custo, finalizado")
         .order("data_inicio", { ascending: false });
       if (error) throw error;
       return data;
