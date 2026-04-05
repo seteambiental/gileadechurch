@@ -130,25 +130,69 @@ export function JiuJitsuFinanceiroTab() {
   const saldoGeral = stats.totalPago - totalDespesas;
 
   const handleSave = async () => {
-    if (!alunoId || !mesRef) {
-      toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
-      return;
-    }
-    const { error } = await supabase.from("jiujitsu_pagamentos").insert({
-      aluno_id: alunoId,
-      mes_referencia: mesRef,
-      valor: Number(valor) || 0,
-      status,
-      data_pagamento: dataPagamento || null,
-    });
-    if (error) {
-      toast({ title: "Erro ao registrar pagamento", variant: "destructive" });
+    if (editingPagamento) {
+      const { error } = await supabase.from("jiujitsu_pagamentos").update({
+        aluno_id: alunoId,
+        mes_referencia: mesRef,
+        valor: Number(valor) || 0,
+        status,
+        data_pagamento: dataPagamento || null,
+      }).eq("id", editingPagamento.id);
+      if (error) {
+        toast({ title: "Erro ao atualizar pagamento", variant: "destructive" });
+      } else {
+        toast({ title: "Pagamento atualizado!" });
+        queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+        setFormOpen(false);
+        setEditingPagamento(null);
+        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      }
     } else {
-      toast({ title: "Pagamento registrado!" });
-      queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
-      setFormOpen(false);
-      setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      if (!alunoId || !mesRef) {
+        toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
+        return;
+      }
+      const { error } = await supabase.from("jiujitsu_pagamentos").insert({
+        aluno_id: alunoId,
+        mes_referencia: mesRef,
+        valor: Number(valor) || 0,
+        status,
+        data_pagamento: dataPagamento || null,
+      });
+      if (error) {
+        toast({ title: "Erro ao registrar pagamento", variant: "destructive" });
+      } else {
+        toast({ title: "Pagamento registrado!" });
+        queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+        setFormOpen(false);
+        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      }
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("jiujitsu_pagamentos").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir pagamento", variant: "destructive" });
+    } else {
+      toast({ title: "Pagamento excluído!" });
+      queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+    }
+  };
+
+  const handleEdit = (p: any) => {
+    setEditingPagamento(p);
+    setAlunoId(p.aluno_id);
+    setMesRef(p.mes_referencia || "");
+    setValor(String(p.valor || ""));
+    setStatus(p.status || "pendente");
+    setDataPagamento(p.data_pagamento || "");
+    const aluno = alunos.find((a: any) => a.id === p.aluno_id);
+    if (aluno) {
+      const { faixa } = calcularMensalidade(aluno.data_nascimento);
+      setInfoMensalidade(faixa);
+    }
+    setFormOpen(true);
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
