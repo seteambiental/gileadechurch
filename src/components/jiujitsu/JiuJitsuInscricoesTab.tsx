@@ -219,18 +219,16 @@ export function JiuJitsuInscricoesTab() {
             ) : (
               filtered.map((insc: any) => {
                 const st = STATUS_MAP[insc.status] || STATUS_MAP.pendente;
-                const idade = calcularIdade(insc.data_nascimento);
-                const turmaSugerida = sugerirTurma(idade);
                 return (
                   <TableRow key={insc.id}>
                     <TableCell className="font-medium">{insc.nome}</TableCell>
-                    <TableCell>{idade !== null ? `${idade} anos` : "—"}</TableCell>
+                    <TableCell>{insc._idadeLabel}</TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="whitespace-nowrap">{turmaSugerida}</Badge>
+                      <Badge variant="outline" className="whitespace-nowrap">{insc._turmaSugerida}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={insc.tipo === "membro" ? "default" : "secondary"}>
-                        {insc.tipo === "membro" ? "Membro" : "Visitante"}
+                        {insc._tipoLabel}
                       </Badge>
                     </TableCell>
                     <TableCell>{insc.whatsapp || "—"}</TableCell>
