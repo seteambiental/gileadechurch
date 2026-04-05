@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,6 +25,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+const calcularIdade = (dataNascimento: string | null): number | null => {
+  if (!dataNascimento) return null;
+  try {
+    return differenceInYears(new Date(), parseLocalDate(dataNascimento));
+  } catch {
+    return null;
+  }
+};
+
+const sugerirTurma = (idade: number | null): string => {
+  if (idade === null) return "—";
+  if (idade >= 6 && idade <= 9) return "Kids (6-9)";
+  if (idade >= 10 && idade <= 13) return "Juvenil (10-13)";
+  if (idade >= 14) return "Adulto (14+)";
+  return "Abaixo da idade mínima";
+};
 
 const STATUS_MAP: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pendente: { label: "Pendente", variant: "secondary" },
@@ -117,6 +136,8 @@ export function JiuJitsuInscricoesTab() {
             data={filtered}
             columns={[
               { header: "Nome", accessor: "nome" },
+              { header: "Idade", accessor: (r: any) => { const i = calcularIdade(r.data_nascimento); return i !== null ? `${i} anos` : "—"; } },
+              { header: "Turma Sugerida", accessor: (r: any) => sugerirTurma(calcularIdade(r.data_nascimento)) },
               { header: "Tipo", accessor: (r: any) => r.tipo === "membro" ? "Membro" : "Visitante" },
               { header: "WhatsApp", accessor: (r: any) => r.whatsapp || "—" },
               { header: "Data", accessor: (r: any) => new Date(r.created_at).toLocaleDateString("pt-BR") },
@@ -137,6 +158,8 @@ export function JiuJitsuInscricoesTab() {
           <TableHeader>
             <TableRow>
               <TableHead>Nome</TableHead>
+              <TableHead>Idade</TableHead>
+              <TableHead>Turma Sugerida</TableHead>
               <TableHead>
                 <ColumnFilterPopover title="Tipo" options={tipoOptions} selected={tipoFilter} onChange={setTipoFilter} />
               </TableHead>
@@ -149,18 +172,24 @@ export function JiuJitsuInscricoesTab() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma inscrição encontrada</TableCell>
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhuma inscrição encontrada</TableCell>
               </TableRow>
             ) : (
               filtered.map((insc: any) => {
                 const st = STATUS_MAP[insc.status] || STATUS_MAP.pendente;
+                const idade = calcularIdade(insc.data_nascimento);
+                const turmaSugerida = sugerirTurma(idade);
                 return (
                   <TableRow key={insc.id}>
                     <TableCell className="font-medium">{insc.nome}</TableCell>
+                    <TableCell>{idade !== null ? `${idade} anos` : "—"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="whitespace-nowrap">{turmaSugerida}</Badge>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={insc.tipo === "membro" ? "default" : "secondary"}>
                         {insc.tipo === "membro" ? "Membro" : "Visitante"}
