@@ -518,7 +518,11 @@ const TeologiaFinanceiroTab = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={handleSyncApi} size="sm" variant="outline" disabled={syncing}>
+                {syncing ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-1" />}
+                Atualizar API
+              </Button>
               <ExportButton
                 data={alunoExportData}
                 columns={alunoExportColumns}
