@@ -332,13 +332,12 @@ export const InscricoesDashboard = () => {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Filtrar por Evento</label>
+              <label className="text-sm font-medium mb-2 block">Selecione o Evento</label>
               <Select value={selectedEvento} onValueChange={setSelectedEvento}>
                 <SelectTrigger className="w-full md:w-80">
-                  <SelectValue placeholder="Todos os eventos" />
+                  <SelectValue placeholder="Selecione um evento..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="todos">Todos os eventos</SelectItem>
                   {allEventos.map(evento => (
                     <SelectItem key={evento.id} value={evento.id}>
                       {evento.titulo} - {format(parseLocalDate(evento.data_evento), "dd/MM/yyyy")}
@@ -348,7 +347,7 @@ export const InscricoesDashboard = () => {
               </Select>
             </div>
             
-            {selectedEvento !== "todos" && isUpcomingEvent && inscricoesPendentes.length > 0 && (
+            {selectedEvento && isUpcomingEvent && inscricoesPendentes.length > 0 && (
               <Button
                 variant="outline"
                 onClick={handleEnviarLembretes}
