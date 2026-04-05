@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
-  DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle,
+  DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -52,6 +52,7 @@ export function CasaisFinanceiroTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addPagamentoCasalId, setAddPagamentoCasalId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "pagamento"; id: string } | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
 
   // Payment form
   const [pgtoData, setPgtoData] = useState(todayDateStr());
@@ -173,40 +174,46 @@ export function CasaisFinanceiroTab() {
   const addPagamentoMutation = useMutation({
     mutationFn: async () => {
       if (!addPagamentoCasalId) return;
-      const casal = casais.find((c: any) => c.id === addPagamentoCasalId);
-
-      // Buscar member.id a partir do auth user id
-      let memberId: string | null = null;
-      if (user?.id) {
-        const { data: memberData } = await supabase
-          .from("members")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        memberId = memberData?.id || null;
-      }
-
-      const { error } = await supabase.from("casais_pagamentos").insert({
-        casal_id: addPagamentoCasalId,
-        turma_id: casal?.turma_id || null,
+      const payload = {
         data_pagamento: pgtoData,
         forma_pagamento: pgtoForma,
         valor: parseFloat(pgtoValor) || 0,
-        status: "pago",
-        registrado_por: memberId,
-      } as any);
-      if (error) throw error;
+      };
+      if (editingPagamento) {
+        const { error } = await supabase.from("casais_pagamentos").update(payload).eq("id", editingPagamento.id);
+        if (error) throw error;
+      } else {
+        const casal = casais.find((c: any) => c.id === addPagamentoCasalId);
+        let memberId: string | null = null;
+        if (user?.id) {
+          const { data: memberData } = await supabase
+            .from("members")
+            .select("id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+          memberId = memberData?.id || null;
+        }
+        const { error } = await supabase.from("casais_pagamentos").insert({
+          ...payload,
+          casal_id: addPagamentoCasalId,
+          turma_id: casal?.turma_id || null,
+          status: "pago",
+          registrado_por: memberId,
+        } as any);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["casais_pagamentos"] });
-      toast({ title: "Pagamento registrado" });
+      toast({ title: editingPagamento ? "Pagamento atualizado" : "Pagamento registrado" });
       setAddPagamentoCasalId(null);
+      setEditingPagamento(null);
       setPgtoData(todayDateStr());
       setPgtoForma("");
       setPgtoValor("");
     },
     onError: (e: any) => {
-      toast({ title: "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar pagamento", description: e.message, variant: "destructive" });
     },
   });
 
@@ -496,18 +503,34 @@ export function CasaisFinanceiroTab() {
                                       <TableCell>{FORMAS_LABELS[p.forma_pagamento] || p.forma_pagamento || "—"}</TableCell>
                                       <TableCell className="text-green-600 font-medium">{formatCurrency(Number(p.valor))}</TableCell>
                                       <TableCell className="text-muted-foreground text-sm">{p.observacoes || "—"}</TableCell>
-                                      <TableCell>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setDeleteTarget({ type: "pagamento", id: p.id });
-                                          }}
-                                        >
-                                          <Trash2 className="w-4 h-4 text-destructive" />
-                                        </Button>
-                                      </TableCell>
+                                        <TableCell>
+                                          <div className="flex gap-1">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingPagamento(p);
+                                                setAddPagamentoCasalId(casal.id);
+                                                setPgtoData(p.data_pagamento || todayDateStr());
+                                                setPgtoForma(p.forma_pagamento || "");
+                                                setPgtoValor(String(p.valor || ""));
+                                              }}
+                                            >
+                                              <Pencil className="w-3 h-3 text-muted-foreground" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteTarget({ type: "pagamento", id: p.id });
+                                              }}
+                                            >
+                                              <Trash2 className="w-4 h-4 text-destructive" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
@@ -526,10 +549,10 @@ export function CasaisFinanceiroTab() {
       </div>
 
       {/* Add payment dialog */}
-      <Dialog open={!!addPagamentoCasalId} onOpenChange={(open) => !open && setAddPagamentoCasalId(null)}>
+      <Dialog open={!!addPagamentoCasalId} onOpenChange={(open) => { if (!open) { setAddPagamentoCasalId(null); setEditingPagamento(null); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar Pagamento</DialogTitle>
+            <DialogTitle>{editingPagamento ? "Editar Pagamento" : "Registrar Pagamento"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -555,13 +578,13 @@ export function CasaisFinanceiroTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddPagamentoCasalId(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setAddPagamentoCasalId(null); setEditingPagamento(null); }}>Cancelar</Button>
             <Button
               onClick={() => addPagamentoMutation.mutate()}
               disabled={addPagamentoMutation.isPending || !pgtoForma || !pgtoValor}
             >
               {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              Registrar
+              {editingPagamento ? "Salvar" : "Registrar"}
             </Button>
           </DialogFooter>
         </DialogContent>

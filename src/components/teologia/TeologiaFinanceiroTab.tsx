@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemberSelect } from "@/components/ui/member-select";
-import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Check, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Users } from "lucide-react";
+import { DollarSign, Plus, ChevronDown, ChevronRight, Trash2, Loader2, GraduationCap, Clock, BarChart3, Filter, ArrowDownCircle, TrendingUp, Scale, Pencil } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import TeologiaDespesasTab from "./TeologiaDespesasTab";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -66,6 +66,7 @@ const TeologiaFinanceiroTab = () => {
   const [addAlunoOpen, setAddAlunoOpen] = useState(false);
   const [addPagamentoAlunoId, setAddPagamentoAlunoId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "aluno" | "pagamento"; id: string } | null>(null);
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
 
   // Add aluno form
   const [novoMemberId, setNovoMemberId] = useState("");
@@ -148,25 +149,34 @@ const TeologiaFinanceiroTab = () => {
   const addPagamentoMutation = useMutation({
     mutationFn: async () => {
       if (!addPagamentoAlunoId) return;
-      const { error } = await supabase.from("teologia_pagamentos").insert({
-        aluno_id: addPagamentoAlunoId,
+      const payload = {
         data_pagamento: pgtoData,
         forma_pagamento: pgtoForma,
         valor: parseFloat(pgtoValor) || 0,
-        registrado_por: user?.id,
-      });
-      if (error) throw error;
+      };
+      if (editingPagamento) {
+        const { error } = await supabase.from("teologia_pagamentos").update(payload).eq("id", editingPagamento.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("teologia_pagamentos").insert({
+          ...payload,
+          aluno_id: addPagamentoAlunoId,
+          registrado_por: user?.id,
+        });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teologia-pagamentos"] });
-      toast({ title: "Pagamento registrado" });
+      toast({ title: editingPagamento ? "Pagamento atualizado" : "Pagamento registrado" });
       setAddPagamentoAlunoId(null);
+      setEditingPagamento(null);
       setPgtoData(todayDateStr());
       setPgtoForma("");
       setPgtoValor("");
     },
     onError: (e: any) => {
-      toast({ title: "Erro ao registrar pagamento", description: e.message, variant: "destructive" });
+      toast({ title: "Erro ao salvar pagamento", description: e.message, variant: "destructive" });
     },
   });
 
@@ -637,16 +647,32 @@ const TeologiaFinanceiroTab = () => {
                                           <TableCell>{FORMAS_LABELS[p.forma_pagamento] || p.forma_pagamento}</TableCell>
                                           <TableCell className="text-green-600 font-medium">{formatCurrency(Number(p.valor))}</TableCell>
                                           <TableCell>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteTarget({ type: "pagamento", id: p.id });
-                                              }}
-                                            >
-                                              <Trash2 className="w-3 h-3 text-destructive" />
-                                            </Button>
+                                            <div className="flex gap-1">
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setEditingPagamento(p);
+                                                  setAddPagamentoAlunoId(aluno.id);
+                                                  setPgtoData(p.data_pagamento || todayDateStr());
+                                                  setPgtoForma(p.forma_pagamento || "");
+                                                  setPgtoValor(String(p.valor || ""));
+                                                }}
+                                              >
+                                                <Pencil className="w-3 h-3 text-muted-foreground" />
+                                              </Button>
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setDeleteTarget({ type: "pagamento", id: p.id });
+                                                }}
+                                              >
+                                                <Trash2 className="w-3 h-3 text-destructive" />
+                                              </Button>
+                                            </div>
                                           </TableCell>
                                         </TableRow>
                                       ))}
@@ -771,10 +797,10 @@ const TeologiaFinanceiroTab = () => {
           </Dialog>
 
           {/* Dialog: Registrar Pagamento */}
-          <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => !o && setAddPagamentoAlunoId(null)}>
+          <Dialog open={!!addPagamentoAlunoId} onOpenChange={(o) => { if (!o) { setAddPagamentoAlunoId(null); setEditingPagamento(null); } }}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Registrar Pagamento</DialogTitle>
+                <DialogTitle>{editingPagamento ? "Editar Pagamento" : "Registrar Pagamento"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -807,13 +833,13 @@ const TeologiaFinanceiroTab = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setAddPagamentoAlunoId(null)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => { setAddPagamentoAlunoId(null); setEditingPagamento(null); }}>Cancelar</Button>
                 <Button
                   onClick={() => addPagamentoMutation.mutate()}
                   disabled={!pgtoForma || !pgtoValor || addPagamentoMutation.isPending}
                 >
                   {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-                  Registrar
+                  {editingPagamento ? "Salvar" : "Registrar"}
                 </Button>
               </DialogFooter>
             </DialogContent>

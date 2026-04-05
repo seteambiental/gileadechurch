@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Info, Users, DollarSign, Check, Clock, TrendingUp, ArrowDownCircle, Scale } from "lucide-react";
+import { Plus, Info, Users, DollarSign, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JiuJitsuDespesasTab from "./JiuJitsuDespesasTab";
@@ -51,6 +51,8 @@ export function JiuJitsuFinanceiroTab() {
   const [status, setStatus] = useState("pendente");
   const [dataPagamento, setDataPagamento] = useState("");
   const [infoMensalidade, setInfoMensalidade] = useState("");
+  const [editingPagamento, setEditingPagamento] = useState<any>(null);
+  
 
   // Column filters
   const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
@@ -127,25 +129,69 @@ export function JiuJitsuFinanceiroTab() {
   const saldoGeral = stats.totalPago - totalDespesas;
 
   const handleSave = async () => {
-    if (!alunoId || !mesRef) {
-      toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
-      return;
-    }
-    const { error } = await supabase.from("jiujitsu_pagamentos").insert({
-      aluno_id: alunoId,
-      mes_referencia: mesRef,
-      valor: Number(valor) || 0,
-      status,
-      data_pagamento: dataPagamento || null,
-    });
-    if (error) {
-      toast({ title: "Erro ao registrar pagamento", variant: "destructive" });
+    if (editingPagamento) {
+      const { error } = await supabase.from("jiujitsu_pagamentos").update({
+        aluno_id: alunoId,
+        mes_referencia: mesRef,
+        valor: Number(valor) || 0,
+        status,
+        data_pagamento: dataPagamento || null,
+      }).eq("id", editingPagamento.id);
+      if (error) {
+        toast({ title: "Erro ao atualizar pagamento", variant: "destructive" });
+      } else {
+        toast({ title: "Pagamento atualizado!" });
+        queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+        setFormOpen(false);
+        setEditingPagamento(null);
+        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      }
     } else {
-      toast({ title: "Pagamento registrado!" });
-      queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
-      setFormOpen(false);
-      setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      if (!alunoId || !mesRef) {
+        toast({ title: "Selecione o aluno e o mês", variant: "destructive" });
+        return;
+      }
+      const { error } = await supabase.from("jiujitsu_pagamentos").insert({
+        aluno_id: alunoId,
+        mes_referencia: mesRef,
+        valor: Number(valor) || 0,
+        status,
+        data_pagamento: dataPagamento || null,
+      });
+      if (error) {
+        toast({ title: "Erro ao registrar pagamento", variant: "destructive" });
+      } else {
+        toast({ title: "Pagamento registrado!" });
+        queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+        setFormOpen(false);
+        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+      }
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("jiujitsu_pagamentos").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir pagamento", variant: "destructive" });
+    } else {
+      toast({ title: "Pagamento excluído!" });
+      queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
+    }
+  };
+
+  const handleEdit = (p: any) => {
+    setEditingPagamento(p);
+    setAlunoId(p.aluno_id);
+    setMesRef(p.mes_referencia || "");
+    setValor(String(p.valor || ""));
+    setStatus(p.status || "pendente");
+    setDataPagamento(p.data_pagamento || "");
+    const aluno = alunos.find((a: any) => a.id === p.aluno_id);
+    if (aluno) {
+      const { faixa } = calcularMensalidade(aluno.data_nascimento);
+      setInfoMensalidade(faixa);
+    }
+    setFormOpen(true);
   };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
@@ -340,11 +386,19 @@ export function JiuJitsuFinanceiroTab() {
                   </TableCell>
                   <TableCell>{p.data_pagamento || "—"}</TableCell>
                   <TableCell>
-                    {p.status !== "pago" && (
-                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
-                        Marcar Pago
+                    <div className="flex gap-1">
+                      {p.status !== "pago" && (
+                        <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
+                          Marcar Pago
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}>
+                        <Pencil className="w-3 h-3 text-muted-foreground" />
                       </Button>
-                    )}
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -353,9 +407,9 @@ export function JiuJitsuFinanceiroTab() {
         </Table>
       </div>
 
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+      <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingPagamento(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Novo Pagamento</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingPagamento ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Aluno</Label>
@@ -403,8 +457,8 @@ export function JiuJitsuFinanceiroTab() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => setFormOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Registrar</Button>
+            <Button variant="outline" onClick={() => { setFormOpen(false); setEditingPagamento(null); }}>Cancelar</Button>
+            <Button onClick={handleSave}>{editingPagamento ? "Salvar" : "Registrar"}</Button>
           </div>
         </DialogContent>
       </Dialog>
