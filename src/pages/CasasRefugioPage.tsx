@@ -76,6 +76,7 @@ const CasasRefugioPage = () => {
   const setSearchTerm = (value: string) => updateSearchParams("q", value);
   const setCondominioFilter = (value: string) => updateSearchParams("cond", value);
   const setSupervisorFilter = (value: string) => updateSearchParams("sup", value);
+  const setCasaFilter = (value: string) => updateSearchParams("casa", value);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
