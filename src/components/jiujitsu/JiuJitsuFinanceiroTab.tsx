@@ -387,11 +387,19 @@ export function JiuJitsuFinanceiroTab() {
                   </TableCell>
                   <TableCell>{p.data_pagamento || "—"}</TableCell>
                   <TableCell>
-                    {p.status !== "pago" && (
-                      <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
-                        Marcar Pago
+                    <div className="flex gap-1">
+                      {p.status !== "pago" && (
+                        <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
+                          Marcar Pago
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}>
+                        <Pencil className="w-3 h-3 text-muted-foreground" />
                       </Button>
-                    )}
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
