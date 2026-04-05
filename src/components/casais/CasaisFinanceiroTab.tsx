@@ -549,10 +549,10 @@ export function CasaisFinanceiroTab() {
       </div>
 
       {/* Add payment dialog */}
-      <Dialog open={!!addPagamentoCasalId} onOpenChange={(open) => !open && setAddPagamentoCasalId(null)}>
+      <Dialog open={!!addPagamentoCasalId} onOpenChange={(open) => { if (!open) { setAddPagamentoCasalId(null); setEditingPagamento(null); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registrar Pagamento</DialogTitle>
+            <DialogTitle>{editingPagamento ? "Editar Pagamento" : "Registrar Pagamento"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -578,13 +578,13 @@ export function CasaisFinanceiroTab() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddPagamentoCasalId(null)}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setAddPagamentoCasalId(null); setEditingPagamento(null); }}>Cancelar</Button>
             <Button
               onClick={() => addPagamentoMutation.mutate()}
               disabled={addPagamentoMutation.isPending || !pgtoForma || !pgtoValor}
             >
               {addPagamentoMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              Registrar
+              {editingPagamento ? "Salvar" : "Registrar"}
             </Button>
           </DialogFooter>
         </DialogContent>
