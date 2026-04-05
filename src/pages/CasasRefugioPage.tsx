@@ -342,7 +342,20 @@ const CasasRefugioPage = () => {
               </SelectContent>
             </Select>
 
-            {hasActiveFilters && (
+            <Select value={casaFilter} onValueChange={setCasaFilter}>
+              <SelectTrigger className="w-[220px] bg-card border-border">
+                <SelectValue placeholder="Casa Refúgio" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Casas</SelectItem>
+                {casasNomes.map((casa) => (
+                  <SelectItem key={casa.id} value={casa.id}>
+                    {casa.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
               <Button
                 variant="ghost"
                 size="sm"
