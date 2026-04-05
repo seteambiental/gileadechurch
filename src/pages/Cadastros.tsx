@@ -19,6 +19,7 @@ import PastorAuxiliarPermissoesTab from "@/components/cadastros/PastorAuxiliarPe
 import SistemaTab from "@/components/cadastros/SistemaTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const Cadastros = () => {
   const isBypassed = isAuthBypassed();
@@ -47,6 +48,18 @@ const Cadastros = () => {
       return data && data.length > 0;
     },
     enabled: !!user?.id,
+  });
+
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["member-requests-pending-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("member_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente");
+      if (error) throw error;
+      return count || 0;
+    },
   });
 
   useEffect(() => {
@@ -140,10 +153,15 @@ const Cadastros = () => {
             </TabsTrigger>
             <TabsTrigger 
               value="solicitacoes" 
-              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2 relative"
             >
               <UserPlus className="w-4 h-4 shrink-0" />
-              <span className="hidden sm:inline">Solicitações</span>
+              <span className="hidden sm:inline">Novas</span>
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+                  {pendingCount}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger 
               value="ministerios" 
