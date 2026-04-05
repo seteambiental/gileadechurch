@@ -368,7 +368,7 @@ export const InscricoesDashboard = () => {
             )}
           </div>
           
-          {selectedEvento !== "todos" && eventoSelecionado && (
+          {selectedEvento && eventoSelecionado && (
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <h3 className="font-semibold">{eventoSelecionado.titulo}</h3>
               <p className="text-sm text-muted-foreground">
@@ -485,7 +485,7 @@ export const InscricoesDashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {selectedEvento === "todos" ? (
+        {!selectedEvento ? (
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Inscrições por Evento</CardTitle>
