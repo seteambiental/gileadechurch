@@ -151,13 +151,13 @@ Deno.serve(async (req) => {
           results.linked++;
           console.log(`Vinculado: ${member.full_name} (${loginEmail})`);
         } else {
-          // Gerar senha padrão: Iniciais + 6 primeiros dígitos do CPF + !
+          // Gerar senha padrão: iniciais + 6 primeiros dígitos do CPF
           const nameParts = (member.full_name || "").trim().split(/\s+/);
           const iniciais = nameParts.length >= 2
             ? nameParts[0][0].toUpperCase() + nameParts[nameParts.length - 1][0].toLowerCase()
             : "";
           const defaultPassword = cpfDigits.length >= 6 && iniciais.length === 2
-            ? iniciais + cpfDigits.slice(0, 6) + "!"
+            ? iniciais + cpfDigits.slice(0, 6)
             : generateSecurePassword(14);
 
           // Criar novo usuário
