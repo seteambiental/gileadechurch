@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare, Reply, ThumbsUp } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare, Reply, ThumbsUp, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
