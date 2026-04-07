@@ -41,6 +41,7 @@ export function JiuJitsuTurmasTab() {
 
   // Column filters
   const [categoriaFilter, setCategoriaFilter] = useState<Set<string>>(new Set());
+  const [turmaFilter, setTurmaFilter] = useState<Set<string>>(new Set());
 
   const { data: turmas = [] } = useQuery({
     queryKey: ["jiujitsu_turmas_com_alunos"],
@@ -86,31 +87,50 @@ export function JiuJitsuTurmasTab() {
   });
 
   const categoriaOptions = useMemo(() => [...new Set(turmas.map((t: any) => t.categoria_idade))], [turmas]);
+  const turmaOptions = useMemo(() => turmas.map((t: any) => t.nome as string), [turmas]);
 
   useMemo(() => {
     if (categoriaFilter.size === 0 && categoriaOptions.length > 0) setCategoriaFilter(new Set(categoriaOptions));
   }, [categoriaOptions]);
 
+  useMemo(() => {
+    if (turmaFilter.size === 0 && turmaOptions.length > 0) setTurmaFilter(new Set(turmaOptions));
+  }, [turmaOptions]);
+
   const filtered = useMemo(() => {
     return turmas.filter((t: any) => {
       if (search && !t.nome?.toLowerCase().includes(search.toLowerCase())) return false;
       if (categoriaFilter.size > 0 && categoriaFilter.size < categoriaOptions.length && !categoriaFilter.has(t.categoria_idade)) return false;
+      if (turmaFilter.size > 0 && turmaFilter.size < turmaOptions.length && !turmaFilter.has(t.nome)) return false;
       return true;
     });
-  }, [turmas, search, categoriaFilter, categoriaOptions.length]);
+  }, [turmas, search, categoriaFilter, categoriaOptions.length, turmaFilter, turmaOptions.length]);
 
-  // Flatten for export
+  // Flatten for export — one row per aluno, grouped by turma
   const exportData = useMemo(() => {
-    return filtered.map((t: any) => ({
-      nome: t.nome,
-      categoria_idade: t.categoria_idade,
-      faixa_minima: t.faixa_minima,
-      faixa_maxima: t.faixa_maxima,
-      dia_semana: t.dia_semana || "—",
-      horario: t.horario || "—",
-      lider_nome: t.lider_nome || "—",
-      total_alunos: t.alunos.length,
-    }));
+    const rows: any[] = [];
+    filtered.forEach((t: any) => {
+      if (t.alunos.length === 0) {
+        rows.push({
+          turma: t.nome,
+          aluno: "—",
+          faixa: "—",
+          graus: "—",
+          tipo: "—",
+        });
+      } else {
+        t.alunos.forEach((a: any) => {
+          rows.push({
+            turma: t.nome,
+            aluno: a.nome,
+            faixa: a.faixa || "—",
+            graus: a.graus != null ? String(a.graus) : "0",
+            tipo: a.tipo === "membro" ? "Membro" : "Visitante",
+          });
+        });
+      }
+    });
+    return rows;
   }, [filtered]);
 
   const handleDelete = async () => {
