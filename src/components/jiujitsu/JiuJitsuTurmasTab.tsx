@@ -160,14 +160,11 @@ export function JiuJitsuTurmasTab() {
           <ExportButton
             data={exportData}
             columns={[
-              { header: "Nome", accessor: "nome" },
-              { header: "Categoria", accessor: "categoria_idade" },
-              { header: "Faixa Mín.", accessor: "faixa_minima" },
-              { header: "Faixa Máx.", accessor: "faixa_maxima" },
-              { header: "Dia", accessor: "dia_semana" },
-              { header: "Horário", accessor: "horario" },
-              { header: "Líder", accessor: "lider_nome" },
-              { header: "Alunos", accessor: (r: any) => String(r.total_alunos) },
+              { header: "Turma", accessor: "turma" },
+              { header: "Aluno", accessor: "aluno" },
+              { header: "Faixa", accessor: "faixa" },
+              { header: "Graus", accessor: "graus" },
+              { header: "Tipo", accessor: "tipo" },
             ]}
             filename="jiujitsu-turmas"
             title="Turmas - Jiu-Jitsu"
@@ -179,9 +176,10 @@ export function JiuJitsuTurmasTab() {
         </div>
       </div>
 
-      {/* Category filter indicator */}
-      <div className="flex items-center gap-2">
+      {/* Filters */}
+      <div className="flex items-center gap-2 flex-wrap">
         <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={categoriaFilter} onChange={setCategoriaFilter} />
+        <ColumnFilterPopover title="Turma" options={turmaOptions} selected={turmaFilter} onChange={setTurmaFilter} />
       </div>
 
       {filtered.length === 0 && (
