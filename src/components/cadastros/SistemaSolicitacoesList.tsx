@@ -366,9 +366,22 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                   {/* Admin response */}
                   {item.resposta_admin && (
                     <div className="bg-muted/50 rounded-md p-3 border border-border space-y-1">
-                      <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-                        <MessageSquare className="w-3 h-3" />
-                        Resposta do Administrador
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                          <MessageSquare className="w-3 h-3" />
+                          Resposta do Administrador
+                        </div>
+                        {!hideAdminActions && isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setActionDialog({ type: "editar_resposta", itemId: item.id, initialText: item.resposta_admin })}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
                       </div>
                       <p className="text-sm text-foreground">{item.resposta_admin}</p>
                       {item.respondido_por && (
