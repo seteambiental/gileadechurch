@@ -173,9 +173,8 @@ export function JiuJitsuTurmasTab() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="text-lg">
                   {turma.nome}
-                  <Badge variant="secondary">{turma.categoria_idade}</Badge>
                 </CardTitle>
                 <div className="flex flex-wrap gap-2 mt-1 text-sm text-muted-foreground">
                   <span>Faixas: {turma.faixa_minima} → {turma.faixa_maxima}</span>
