@@ -461,6 +461,7 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
           onOpenChange={(open) => !open && setActionDialog(null)}
           isPending={updateMutation.isPending}
           onConfirm={handleAction}
+          initialText={actionDialog.initialText}
           {...getDialogConfig()}
         />
       )}

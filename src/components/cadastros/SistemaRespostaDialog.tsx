@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +14,7 @@ interface Props {
   confirmLabel: string;
   confirmVariant?: "default" | "destructive";
   isPending?: boolean;
+  initialText?: string;
   onConfirm: (texto: string) => void;
 }
 
@@ -26,9 +27,16 @@ const SistemaRespostaDialog = ({
   confirmLabel,
   confirmVariant = "default",
   isPending,
+  initialText,
   onConfirm,
 }: Props) => {
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState(initialText || "");
+
+  useEffect(() => {
+    if (open) {
+      setTexto(initialText || "");
+    }
+  }, [open, initialText]);
 
   const handleConfirm = () => {
     onConfirm(texto);
