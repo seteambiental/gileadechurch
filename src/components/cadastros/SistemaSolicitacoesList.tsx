@@ -38,8 +38,9 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [actionDialog, setActionDialog] = useState<{
-    type: "aceitar" | "rejeitar" | "finalizar" | "responder" | "confirmar";
+    type: "aceitar" | "rejeitar" | "finalizar" | "responder" | "confirmar" | "editar_resposta";
     itemId: string;
+    initialText?: string;
   } | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const config = LABELS[tipo];
