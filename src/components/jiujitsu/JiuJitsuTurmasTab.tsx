@@ -9,8 +9,8 @@ import { SearchInput } from "@/components/ui/search-input";
 import { ExportButton } from "@/components/ui/export-button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, Trash2, Users } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, MoreHorizontal, Pencil, Trash2, Users, ChevronDown } from "lucide-react";
 import { TurmaFormDialog } from "./TurmaFormDialog";
 import {
   AlertDialog,
