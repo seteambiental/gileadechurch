@@ -189,10 +189,9 @@ const TeologiaFinanceiroTab = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!deleteTarget) return;
-      const table = deleteTarget.type === "aluno" ? "teologia_alunos" : "teologia_pagamentos";
-      const { error } = await supabase.from(table).delete().eq("id", deleteTarget.id);
+    mutationFn: async (target: { type: "aluno" | "pagamento"; id: string }) => {
+      const table = target.type === "aluno" ? "teologia_alunos" : "teologia_pagamentos";
+      const { error } = await supabase.from(table).delete().eq("id", target.id);
       if (error) throw error;
     },
     onSuccess: () => {
