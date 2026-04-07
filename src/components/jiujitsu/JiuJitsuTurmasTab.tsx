@@ -40,8 +40,6 @@ export function JiuJitsuTurmasTab() {
   const [editingTurma, setEditingTurma] = useState<any>(null);
   const [deletingTurma, setDeletingTurma] = useState<any>(null);
   const [search, setSearch] = useState("");
-
-  // Turma filter only (categoria = turma, no separate filter needed)
   const [turmaFilter, setTurmaFilter] = useState<Set<string>>(new Set());
 
   const { data: turmas = [] } = useQuery({
@@ -87,38 +85,45 @@ export function JiuJitsuTurmasTab() {
     },
   });
 
-  const categoriaOptions = useMemo(() => [...new Set(turmas.map((t: any) => t.categoria_idade))], [turmas]);
   const turmaOptions = useMemo(() => turmas.map((t: any) => t.nome as string), [turmas]);
-
-  useMemo(() => {
-    if (categoriaFilter.size === 0 && categoriaOptions.length > 0) setCategoriaFilter(new Set(categoriaOptions));
-  }, [categoriaOptions]);
 
   useMemo(() => {
     if (turmaFilter.size === 0 && turmaOptions.length > 0) setTurmaFilter(new Set(turmaOptions));
   }, [turmaOptions]);
 
+  const allSelected = turmaFilter.size === turmaOptions.length;
+
+  const toggleTurma = (nome: string) => {
+    setTurmaFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(nome)) next.delete(nome);
+      else next.add(nome);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setTurmaFilter(new Set());
+    } else {
+      setTurmaFilter(new Set(turmaOptions));
+    }
+  };
+
   const filtered = useMemo(() => {
     return turmas.filter((t: any) => {
       if (search && !t.nome?.toLowerCase().includes(search.toLowerCase())) return false;
-      if (categoriaFilter.size > 0 && categoriaFilter.size < categoriaOptions.length && !categoriaFilter.has(t.categoria_idade)) return false;
       if (turmaFilter.size > 0 && turmaFilter.size < turmaOptions.length && !turmaFilter.has(t.nome)) return false;
       return true;
     });
-  }, [turmas, search, categoriaFilter, categoriaOptions.length, turmaFilter, turmaOptions.length]);
+  }, [turmas, search, turmaFilter, turmaOptions.length]);
 
   // Flatten for export — one row per aluno, grouped by turma
   const exportData = useMemo(() => {
     const rows: any[] = [];
     filtered.forEach((t: any) => {
       if (t.alunos.length === 0) {
-        rows.push({
-          turma: t.nome,
-          aluno: "—",
-          faixa: "—",
-          graus: "—",
-          tipo: "—",
-        });
+        rows.push({ turma: t.nome, aluno: "—", faixa: "—", graus: "—", tipo: "—" });
       } else {
         t.alunos.forEach((a: any) => {
           rows.push({
@@ -148,15 +153,59 @@ export function JiuJitsuTurmasTab() {
     setDeletingTurma(null);
   };
 
+  const filterLabel = turmaFilter.size === 0 || turmaFilter.size === turmaOptions.length
+    ? "Todas as Turmas"
+    : turmaFilter.size === 1
+    ? [...turmaFilter][0]
+    : `${turmaFilter.size} turmas`;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <SearchInput
-          placeholder="Buscar turma..."
-          value={search}
-          onChange={setSearch}
-          className="w-full sm:w-64"
-        />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <SearchInput
+            placeholder="Buscar turma..."
+            value={search}
+            onChange={setSearch}
+            className="w-full sm:w-64"
+          />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="shrink-0">
+                <ChevronDown className="w-4 h-4 mr-2" />
+                {filterLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3" align="start">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                  <Checkbox
+                    id="turma-all"
+                    checked={allSelected}
+                    onCheckedChange={toggleAll}
+                  />
+                  <Label htmlFor="turma-all" className="text-sm font-medium cursor-pointer">
+                    Todas
+                  </Label>
+                </div>
+                <div className="max-h-52 overflow-y-auto space-y-1.5">
+                  {turmaOptions.map((nome) => (
+                    <div key={nome} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`turma-${nome}`}
+                        checked={turmaFilter.has(nome)}
+                        onCheckedChange={() => toggleTurma(nome)}
+                      />
+                      <Label htmlFor={`turma-${nome}`} className="text-sm cursor-pointer">
+                        {nome}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="flex gap-2">
           <ExportButton
             data={exportData}
@@ -175,12 +224,6 @@ export function JiuJitsuTurmasTab() {
             <Plus className="h-4 w-4 mr-2" /> Nova Turma
           </Button>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={categoriaFilter} onChange={setCategoriaFilter} />
-        <ColumnFilterPopover title="Turma" options={turmaOptions} selected={turmaFilter} onChange={setTurmaFilter} />
       </div>
 
       {filtered.length === 0 && (
