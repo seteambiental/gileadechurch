@@ -860,7 +860,7 @@ const TeologiaFinanceiroTab = () => {
           <ConfirmDialog
             open={!!deleteTarget}
             onOpenChange={(o) => !o && setDeleteTarget(null)}
-            onConfirm={() => deleteMutation.mutate()}
+            onConfirm={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget); }}
             title={deleteTarget?.type === "aluno" ? "Excluir aluno" : "Excluir pagamento"}
             description={deleteTarget?.type === "aluno"
               ? "Isso removerá o aluno e todos os pagamentos associados. Deseja continuar?"
