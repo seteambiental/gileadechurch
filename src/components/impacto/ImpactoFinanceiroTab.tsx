@@ -335,7 +335,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   // Calculate real totals from inscription data
   const totalPrevisao = inscricoes?.reduce((sum, i) => sum + (i.valor_inscricao || 0), 0) || 0;
   const totalPago = inscricoes?.reduce((sum, i) => sum + (i.valor_pago || 0), 0) || 0;
-  const totalAReceber = Math.max(0, totalPrevisao - totalPago);
+  const totalAReceber = inscricoes?.reduce((sum, i) => {
+    const norm = normalizeStatus(i.status_pagamento);
+    if (norm === "pendente") return sum + (i.valor_inscricao || 0);
+    if (norm === "parcial") return sum + Math.max(0, (i.valor_inscricao || 0) - (i.valor_pago || 0));
+    return sum;
+  }, 0) || 0;
   const totalDespesas = (despesas as any[]).reduce((sum, d) => sum + (d.valor || 0), 0);
   const saldoEvento = totalPago - totalDespesas;
 

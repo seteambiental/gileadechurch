@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare, Reply, ThumbsUp } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, Trash2, RotateCcw, Flag, Image as ImageIcon, MessageSquare, Reply, ThumbsUp, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -38,8 +38,9 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [actionDialog, setActionDialog] = useState<{
-    type: "aceitar" | "rejeitar" | "finalizar" | "responder" | "confirmar";
+    type: "aceitar" | "rejeitar" | "finalizar" | "responder" | "confirmar" | "editar_resposta";
     itemId: string;
+    initialText?: string;
   } | null>(null);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const config = LABELS[tipo];
@@ -117,12 +118,26 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     };
 
     if (actionDialog.type === "responder") {
-      getAdminName().then((nome) => {
+      getAdminName().then(() => {
         updateMutation.mutate({
           id: actionDialog.itemId,
           updates: {
             resposta_solicitante: texto || null,
             resposta_solicitante_em: new Date().toISOString(),
+          },
+        });
+      });
+      return;
+    }
+
+    if (actionDialog.type === "editar_resposta") {
+      getAdminName().then((adminName) => {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            resposta_admin: texto || null,
+            respondido_por: adminName,
+            respondido_em: new Date().toISOString(),
           },
         });
       });
@@ -220,6 +235,8 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
         return { title: "Responder Solicitação", label: "Sua resposta", confirmLabel: "Enviar Resposta", confirmVariant: "default" as const };
       case "confirmar":
         return { title: "Confirmar Solução", label: "Comentário sobre a solução (opcional)", confirmLabel: "Confirmar Solução", confirmVariant: "default" as const };
+      case "editar_resposta":
+        return { title: "Editar Resposta", label: "Resposta do administrador", confirmLabel: "Salvar", confirmVariant: "default" as const };
     }
   };
 
@@ -349,9 +366,22 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
                   {/* Admin response */}
                   {item.resposta_admin && (
                     <div className="bg-muted/50 rounded-md p-3 border border-border space-y-1">
-                      <div className="flex items-center gap-1 text-xs font-medium text-foreground">
-                        <MessageSquare className="w-3 h-3" />
-                        Resposta do Administrador
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-xs font-medium text-foreground">
+                          <MessageSquare className="w-3 h-3" />
+                          Resposta do Administrador
+                        </div>
+                        {!hideAdminActions && isAdmin && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setActionDialog({ type: "editar_resposta", itemId: item.id, initialText: item.resposta_admin })}
+                          >
+                            <Pencil className="w-3 h-3 mr-1" />
+                            Editar
+                          </Button>
+                        )}
                       </div>
                       <p className="text-sm text-foreground">{item.resposta_admin}</p>
                       {item.respondido_por && (
@@ -431,6 +461,7 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
           onOpenChange={(open) => !open && setActionDialog(null)}
           isPending={updateMutation.isPending}
           onConfirm={handleAction}
+          initialText={actionDialog.initialText}
           {...getDialogConfig()}
         />
       )}
