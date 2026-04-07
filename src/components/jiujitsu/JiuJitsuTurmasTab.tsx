@@ -41,8 +41,7 @@ export function JiuJitsuTurmasTab() {
   const [deletingTurma, setDeletingTurma] = useState<any>(null);
   const [search, setSearch] = useState("");
 
-  // Column filters
-  const [categoriaFilter, setCategoriaFilter] = useState<Set<string>>(new Set());
+  // Turma filter only (categoria = turma, no separate filter needed)
   const [turmaFilter, setTurmaFilter] = useState<Set<string>>(new Set());
 
   const { data: turmas = [] } = useQuery({
