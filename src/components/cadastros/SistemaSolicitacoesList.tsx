@@ -118,12 +118,26 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
     };
 
     if (actionDialog.type === "responder") {
-      getAdminName().then((nome) => {
+      getAdminName().then(() => {
         updateMutation.mutate({
           id: actionDialog.itemId,
           updates: {
             resposta_solicitante: texto || null,
             resposta_solicitante_em: new Date().toISOString(),
+          },
+        });
+      });
+      return;
+    }
+
+    if (actionDialog.type === "editar_resposta") {
+      getAdminName().then((adminName) => {
+        updateMutation.mutate({
+          id: actionDialog.itemId,
+          updates: {
+            resposta_admin: texto || null,
+            respondido_por: adminName,
+            respondido_em: new Date().toISOString(),
           },
         });
       });
