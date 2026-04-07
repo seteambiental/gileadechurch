@@ -235,6 +235,8 @@ const SistemaSolicitacoesList = ({ tipo, hideAdminActions }: Props) => {
         return { title: "Responder Solicitação", label: "Sua resposta", confirmLabel: "Enviar Resposta", confirmVariant: "default" as const };
       case "confirmar":
         return { title: "Confirmar Solução", label: "Comentário sobre a solução (opcional)", confirmLabel: "Confirmar Solução", confirmVariant: "default" as const };
+      case "editar_resposta":
+        return { title: "Editar Resposta", label: "Resposta do administrador", confirmLabel: "Salvar", confirmVariant: "default" as const };
     }
   };
 
