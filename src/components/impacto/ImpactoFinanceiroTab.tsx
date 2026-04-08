@@ -332,6 +332,15 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const totalInscritos = inscricoes?.length || 0;
 
+  // Normalize payment status across legacy/new values
+  const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
+    const s = String(status || "").toLowerCase().trim();
+    if (["pago", "confirmado", "aprovado", "quitado", "pago_total"].includes(s)) return "pago";
+    if (["parcial", "parcialmente_pago", "parcialmente pago", "pago_parcial"].includes(s)) return "parcial";
+    if (["pendente", "a pagar", "aguardando", "em_aberto", "aberto"].includes(s)) return "pendente";
+    return "pendente";
+  };
+
   // Calculate real totals from inscription data
   const totalPrevisao = inscricoes?.reduce((sum, i) => sum + (i.valor_inscricao || 0), 0) || 0;
   const totalPago = inscricoes?.reduce((sum, i) => sum + (i.valor_pago || 0), 0) || 0;
@@ -355,15 +364,6 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         .reduce((s, p) => s + (parseFloat(String(p.valor)) || 0), 0);
     }, 0);
   }, [inscricoes, dataPrevisao]);
-
-  // Normalize payment status across legacy/new values
-  const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
-    const s = String(status || "").toLowerCase().trim();
-    if (["pago", "confirmado", "aprovado", "quitado", "pago_total"].includes(s)) return "pago";
-    if (["parcial", "parcialmente_pago", "parcialmente pago", "pago_parcial"].includes(s)) return "parcial";
-    if (["pendente", "a pagar", "aguardando", "em_aberto", "aberto"].includes(s)) return "pendente";
-    return "pendente";
-  };
 
   // Count by status
   const pagos = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "pago").length || 0;
