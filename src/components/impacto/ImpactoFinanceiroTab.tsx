@@ -353,6 +353,18 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const totalDespesas = (despesas as any[]).reduce((sum, d) => sum + (d.valor || 0), 0);
   const saldoEvento = totalPago - totalDespesas;
 
+  // Calculate forecast total up to selected date
+  const totalPrevisaoPorData = useMemo(() => {
+    if (!dataPrevisao || !inscricoes) return 0;
+    return inscricoes.reduce((sum, i) => {
+      const previsoes = i.previsoes_pagamento as Array<{ data: string; valor: number }> | null;
+      if (!previsoes || !Array.isArray(previsoes)) return sum;
+      return sum + previsoes
+        .filter((p) => p.data && p.data <= dataPrevisao)
+        .reduce((s, p) => s + (parseFloat(String(p.valor)) || 0), 0);
+    }, 0);
+  }, [inscricoes, dataPrevisao]);
+
   // Count by status
   const pagos = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "pago").length || 0;
   const parciais = inscricoes?.filter((i) => normalizeStatus(i.status_pagamento) === "parcial").length || 0;
