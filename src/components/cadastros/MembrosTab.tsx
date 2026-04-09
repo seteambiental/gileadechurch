@@ -254,7 +254,35 @@ const MembrosTab = () => {
     },
   });
 
-  const filteredMembers = members.filter((member) => {
+  const sendWhatsappMutation = useMutation({
+    mutationFn: async (member: Member) => {
+      if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
+      
+      const mensagem = `Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! Esta é uma mensagem da Igreja Gileade. 🙏`;
+      
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: { 
+          telefone: member.whatsapp,
+          mensagem,
+        },
+      });
+      
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Erro ao enviar mensagem");
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
+    },
+    onError: (err: any) => {
+      toast({ 
+        title: "Erro ao enviar WhatsApp", 
+        description: err?.message || "Erro desconhecido",
+        variant: "destructive" 
+      });
+    },
+  });
+
     // Filter by name search
     const matchesSearch = includesNormalized(member.full_name, searchTerm);
     
