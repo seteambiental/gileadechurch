@@ -211,7 +211,10 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   const [showPreviewDialog, setShowPreviewDialog] = useState<any>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [sending, setSending] = useState<string | null>(null); // 'email' | 'whatsapp' | null
+  const [sending, setSending] = useState<string | null>(null);
+  const [whatsappChoiceCrId, setWhatsappChoiceCrId] = useState<string | null>(null);
+  const [whatsappSpecificPhone, setWhatsappSpecificPhone] = useState("");
+  const [sendingSpecific, setSendingSpecific] = useState(false);
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
