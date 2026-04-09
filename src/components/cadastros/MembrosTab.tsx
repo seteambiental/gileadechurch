@@ -257,10 +257,9 @@ const MembrosTab = () => {
   });
 
   const sendWhatsappMutation = useMutation({
-    mutationFn: async (member: Member) => {
+    mutationFn: async ({ member, mensagem }: { member: Member; mensagem: string }) => {
       if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
-      
-      const mensagem = `Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! Esta é uma mensagem da Igreja Gileade. 🙏`;
+      if (!mensagem.trim()) throw new Error("Digite uma mensagem");
       
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
         body: { 
@@ -276,6 +275,8 @@ const MembrosTab = () => {
     },
     onSuccess: () => {
       toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
+      setWhatsappMember(null);
+      setWhatsappMessage("");
     },
     onError: (err: any) => {
       toast({ 
