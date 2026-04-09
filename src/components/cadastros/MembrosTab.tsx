@@ -475,6 +475,15 @@ const MembrosTab = () => {
             </Button>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="text-green-600 border-green-600 hover:bg-green-50"
+              onClick={() => setShowWhatsappChoice(true)}
+              disabled={filteredMembers.length === 0 || bulkSending}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={filteredMembers.length === 0}>
