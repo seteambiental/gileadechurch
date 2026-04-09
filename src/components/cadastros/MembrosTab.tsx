@@ -262,6 +262,7 @@ const MembrosTab = () => {
       
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
         body: { 
+          action: 'mensagem_direta',
           telefone: member.whatsapp,
           mensagem,
         },
