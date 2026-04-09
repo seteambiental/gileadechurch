@@ -600,7 +600,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                           size="sm"
                           title="Enviar por WhatsApp"
                           disabled={!!sending}
-                          onClick={() => handleEnviar(cr.id, 'whatsapp')}
+                          onClick={() => setWhatsappChoiceCrId(cr.id)}
                         >
                           {sending === `whatsapp-${cr.id}` ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4 text-green-600" />}
                         </Button>
@@ -832,7 +832,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                         variant="outline"
                         size="sm"
                         disabled={!!sending}
-                        onClick={() => handleEnviar(showPreviewDialog.id, 'whatsapp')}
+                        onClick={() => setWhatsappChoiceCrId(showPreviewDialog.id)}
                       >
                         {sending === `whatsapp-${showPreviewDialog.id}` ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <MessageCircle className="w-4 h-4 mr-1" />}
                         WhatsApp
