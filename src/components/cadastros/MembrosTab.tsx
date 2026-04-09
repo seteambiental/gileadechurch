@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
-import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchInput } from "@/components/ui/search-input";
@@ -131,6 +131,10 @@ const MembrosTab = () => {
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
   const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
+  const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ sent: 0, total: 0, current: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
