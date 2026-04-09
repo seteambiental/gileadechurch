@@ -378,7 +378,8 @@ serve(async (req) => {
           enviados++;
           console.log(`Flyer enviado para ${membro.full_name}`);
           
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Delay de 30 segundos entre envios para evitar spam
+          await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           console.error(`Erro ao enviar para ${membro.full_name}:`, err);
           erros++;
@@ -632,7 +633,7 @@ serve(async (req) => {
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Louvor)`);
-              await new Promise(resolve => setTimeout(resolve, 1500));
+              await new Promise(resolve => setTimeout(resolve, 30000));
             } catch (err) {
               console.error(`Erro ao enviar para ${membro.full_name}:`, err);
               erros++;
@@ -650,7 +651,7 @@ serve(async (req) => {
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Líder)`);
-              await new Promise(resolve => setTimeout(resolve, 1500));
+              await new Promise(resolve => setTimeout(resolve, 30000));
             } catch (err) {
               console.error(`Erro ao enviar para ${membro.full_name}:`, err);
               erros++;
@@ -668,7 +669,7 @@ serve(async (req) => {
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Integrante)`);
-              await new Promise(resolve => setTimeout(resolve, 1500));
+              await new Promise(resolve => setTimeout(resolve, 30000));
             } catch (err) {
               console.error(`Erro ao enviar para ${membro.full_name}:`, err);
               erros++;
@@ -734,7 +735,7 @@ serve(async (req) => {
             await enviarMensagemEvolution(membro.whatsapp, mensagem);
             enviados++;
             console.log(`Notificação enviada para ${membro.full_name}`);
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 30000));
           } catch (err) {
             console.error(`Erro ao enviar para ${membro.full_name}:`, err);
             erros++;
@@ -871,7 +872,7 @@ serve(async (req) => {
           enviados++;
           console.log(`Lembrete enviado para ${nome}`);
 
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           console.error(`Erro ao enviar lembrete para ${nome}:`, err);
           erros++;
