@@ -193,8 +193,8 @@ serve(async (req) => {
           resultados.push({ nome: membro.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${membro.full_name}`);
           
-          // Delay de 2 segundos entre envios
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Delay de 30 segundos entre envios para evitar spam
+          await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -238,7 +238,7 @@ serve(async (req) => {
           resultados.push({ nome: convertido.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${convertido.full_name} (novo convertido)`);
           
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
