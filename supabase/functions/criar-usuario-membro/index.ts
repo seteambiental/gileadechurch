@@ -5,9 +5,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
-const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
-const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 interface RequestBody {
   email: string;
@@ -17,28 +18,28 @@ interface RequestBody {
   perfil?: string;
 }
 
-async function enviarMensagemZAPI(telefone: string, mensagem: string) {
+async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
   
-  console.log(`Enviando mensagem de boas-vindas para: ${phoneFormatted}`);
+  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
   
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+      'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      phone: phoneFormatted,
-      message: mensagem,
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
     }),
   });
   
   const result = await response.json();
-  console.log('Resposta Z-API:', result);
+  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
     throw new Error(result.message || 'Erro ao enviar mensagem');
@@ -154,7 +155,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Criar cliente com service role para operações admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -166,7 +166,6 @@ Deno.serve(async (req) => {
       }
     );
 
-    // Buscar CPF e nome do membro para gerar senha padrão
     const { data: memberCpfData } = await supabaseAdmin
       .from("members")
       .select("cpf, full_name")
@@ -179,7 +178,6 @@ Deno.serve(async (req) => {
       ? iniciais + cpfDigits.slice(0, 6)
       : generateSecurePassword(14);
 
-    // Verificar se membro já tem user_id vinculado
     const { data: usersByEmail } = await supabaseAdmin
       .from("members")
       .select("user_id")
@@ -198,12 +196,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Determinar qual email usar para autenticação
-    // Se auth_email foi informado (ex: CPF@gileade.app para familiares), usar esse
     const loginEmail = auth_email || email;
     const isCpfLogin = !!auth_email && auth_email !== email;
 
-    // Criar novo usuário com o email de login
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email: loginEmail,
       password: defaultPassword,
@@ -218,9 +213,7 @@ Deno.serve(async (req) => {
 
     if (createError) {
       if (createError.message?.includes("already been registered") || createError.message?.includes("already exists")) {
-        // Email already taken — check if this member has a CPF to use as alternative login
         if (cpfDigits.length >= 11 && !isCpfLogin) {
-          // Retry with CPF-based login email
           const cpfLoginEmail = `${cpfDigits}@gileade.app`;
           const retryPassword = iniciais.length === 2
             ? iniciais + cpfDigits.slice(0, 6)
@@ -241,7 +234,6 @@ Deno.serve(async (req) => {
           if (!retryError && retryUser?.user) {
             await supabaseAdmin.from("members").update({ user_id: retryUser.user.id }).eq("id", member_id);
 
-            // Enviar WhatsApp de boas-vindas
             const { data: mData } = await supabaseAdmin
               .from("members")
               .select("full_name, whatsapp")
@@ -257,7 +249,7 @@ Deno.serve(async (req) => {
                   cpfDigits.length >= 6,
                   true
                 );
-                await enviarMensagemZAPI(mData.whatsapp, msg);
+                await enviarMensagemEvolution(mData.whatsapp, msg);
               } catch (e) {
                 console.error("Erro ao enviar WhatsApp (retry CPF):", e);
               }
@@ -276,7 +268,6 @@ Deno.serve(async (req) => {
             );
           }
 
-          // If retry also failed (CPF email already exists), try to find and link
           if (retryError?.message?.includes("already been registered") || retryError?.message?.includes("already exists")) {
             let page = 1;
             let found = null;
@@ -297,7 +288,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Fallback: find and link existing user (same person, same email)
         let page = 1;
         let found = null;
         while (!found) {
@@ -308,7 +298,6 @@ Deno.serve(async (req) => {
           page++;
         }
         if (found) {
-          // Only link if this member doesn't already have a different user_id
           await supabaseAdmin.from("members").update({ user_id: found.id }).eq("id", member_id);
           return new Response(
             JSON.stringify({ success: true, message: "Usuário já existia e foi vinculado", user_id: found.id, was_existing: true }),
@@ -323,7 +312,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Vincular user_id ao membro
     const { error: updateError } = await supabaseAdmin
       .from("members")
       .update({ user_id: newUser.user.id })
@@ -333,7 +321,6 @@ Deno.serve(async (req) => {
       console.error("Erro ao vincular usuário ao membro:", updateError);
     }
 
-    // Buscar dados do membro para enviar WhatsApp
     const { data: memberData, error: memberError } = await supabaseAdmin
       .from("members")
       .select("full_name, whatsapp")
@@ -342,7 +329,6 @@ Deno.serve(async (req) => {
 
     const nomeCompleto = memberData?.full_name || "Novo Membro";
 
-    // Enviar WhatsApp de boas-vindas
     if (!memberError && memberData?.whatsapp) {
       try {
         const isCpfPassword = cpfDigits.length >= 6;
@@ -353,13 +339,11 @@ Deno.serve(async (req) => {
           isCpfPassword,
           isCpfLogin
         );
-        await enviarMensagemZAPI(memberData.whatsapp, mensagem);
+        await enviarMensagemEvolution(memberData.whatsapp, mensagem);
         console.log("Mensagem de boas-vindas enviada com sucesso para:", memberData.whatsapp);
       } catch (whatsappError) {
         console.error("Erro ao enviar WhatsApp de boas-vindas:", whatsappError);
       }
-    } else {
-      console.log("WhatsApp não disponível para o membro, mensagem não enviada");
     }
 
     return new Response(
