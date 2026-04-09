@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
-import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle, Users } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchInput } from "@/components/ui/search-input";
@@ -131,6 +132,10 @@ const MembrosTab = () => {
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
   const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
+  const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
+  const [bulkSending, setBulkSending] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ sent: 0, total: 0, current: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -288,6 +293,40 @@ const MembrosTab = () => {
     },
   });
 
+  const sendBulkWhatsapp = async (mensagem: string) => {
+    const membersWithWhatsapp = filteredMembers.filter(m => m.whatsapp);
+    if (membersWithWhatsapp.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum membro com WhatsApp na lista filtrada" });
+      return;
+    }
+    setBulkSending(true);
+    setBulkProgress({ sent: 0, total: membersWithWhatsapp.length, current: "" });
+    let enviados = 0;
+    let erros = 0;
+    for (let i = 0; i < membersWithWhatsapp.length; i++) {
+      const member = membersWithWhatsapp[i];
+      const msgPersonalizada = mensagem.replace("{nome}", member.full_name.split(" ")[0]);
+      setBulkProgress({ sent: i, total: membersWithWhatsapp.length, current: member.full_name });
+      try {
+        const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada },
+        });
+        if (error || !data?.success) { erros++; } else { enviados++; }
+      } catch { erros++; }
+      // Intervalo de 30 segundos entre mensagens para evitar SPAM
+      if (i < membersWithWhatsapp.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 30000));
+      }
+    }
+    setBulkSending(false);
+    setBulkProgress({ sent: 0, total: 0, current: "" });
+    setWhatsappBulkMode(false);
+    setWhatsappMessage("");
+    toast({
+      title: `Envio concluído: ${enviados} enviadas, ${erros} erros`,
+      description: `Total: ${membersWithWhatsapp.length} membros`,
+    });
+  };
 
   const filteredMembers = members.filter((member) => {
     // Filter by name search
@@ -437,6 +476,15 @@ const MembrosTab = () => {
             </Button>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="text-green-600 border-green-600 hover:bg-green-50"
+              onClick={() => setShowWhatsappChoice(true)}
+              disabled={filteredMembers.length === 0 || bulkSending}
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              WhatsApp
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" disabled={filteredMembers.length === 0}>
@@ -795,7 +843,110 @@ const MembrosTab = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Delete Confirmation */}
+      {/* WhatsApp Choice Dialog - Todos ou Individual */}
+      <AlertDialog open={showWhatsappChoice} onOpenChange={setShowWhatsappChoice}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Enviar WhatsApp
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja enviar a mensagem para todos os membros filtrados ({filteredMembers.filter(m => m.whatsapp).length} com WhatsApp) ou selecionar um membro específico?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 px-4"
+              onClick={() => {
+                setShowWhatsappChoice(false);
+                setWhatsappBulkMode(true);
+                setWhatsappMessage("Olá {nome}! 👋\n\nPaz do Senhor! ");
+              }}
+            >
+              <Users className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">Enviar para todos</p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredMembers.filter(m => m.whatsapp).length} membros com WhatsApp (intervalo de 30s entre envios)
+                </p>
+              </div>
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 px-4"
+              onClick={() => {
+                setShowWhatsappChoice(false);
+                toast({ title: "Clique no ícone 💬 ao lado do membro desejado na tabela" });
+              }}
+            >
+              <MessageCircle className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">Enviar para um membro</p>
+                <p className="text-xs text-muted-foreground">Selecione o membro na tabela pelo ícone do WhatsApp</p>
+              </div>
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* WhatsApp Bulk Message Dialog */}
+      <AlertDialog open={whatsappBulkMode} onOpenChange={(open) => {
+        if (!open && !bulkSending) {
+          setWhatsappBulkMode(false);
+          setWhatsappMessage("");
+        }
+      }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-green-600" />
+              Enviar para {filteredMembers.filter(m => m.whatsapp).length} membros
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Use {"{nome}"} para personalizar com o primeiro nome de cada membro. O envio será espaçado (30s entre cada mensagem).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {bulkSending ? (
+            <div className="space-y-3 py-2">
+              <Progress value={(bulkProgress.sent / bulkProgress.total) * 100} />
+              <p className="text-sm text-muted-foreground text-center">
+                Enviando {bulkProgress.sent}/{bulkProgress.total} — {bulkProgress.current}
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                Intervalo de 30s entre mensagens. Não feche esta janela.
+              </p>
+            </div>
+          ) : (
+            <Textarea
+              placeholder="Digite sua mensagem... Use {nome} para personalizar"
+              value={whatsappMessage}
+              onChange={(e) => setWhatsappMessage(e.target.value)}
+              rows={5}
+              className="mt-2"
+            />
+          )}
+          <AlertDialogFooter>
+            {!bulkSending && <AlertDialogCancel>Cancelar</AlertDialogCancel>}
+            {!bulkSending && (
+              <AlertDialogAction
+                className="bg-green-600 text-white hover:bg-green-700"
+                disabled={!whatsappMessage.trim()}
+                onClick={() => sendBulkWhatsapp(whatsappMessage)}
+              >
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Enviar para todos
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+
       <AlertDialog open={!!deletingMemberId} onOpenChange={() => setDeletingMemberId(null)}>
         <AlertDialogContent className="bg-card border-border">
           <AlertDialogHeader>
