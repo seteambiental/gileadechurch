@@ -176,11 +176,11 @@ Ministério Kids - Igreja Gileade`;
         continue;
       }
 
-      if (!zapiToken || !zapiInstanceId) {
+      if (!evolutionApiUrl || !evolutionApiKey || !evolutionInstanceName) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
           status: 'erro',
-          erro_mensagem: 'Z-API não configurado',
+          erro_mensagem: 'Evolution API não configurada',
         });
         erros++;
         continue;
@@ -190,16 +190,16 @@ Ministério Kids - Igreja Gileade`;
         const telefoneFormatado = formatarTelefone(data.responsavel.whatsapp);
         
         const response = await fetch(
-          `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`,
+          `${evolutionApiUrl}/message/sendText/${evolutionInstanceName}`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken || '',
+              'apikey': evolutionApiKey,
             },
             body: JSON.stringify({
-              phone: telefoneFormatado,
-              message: mensagem,
+              number: `${telefoneFormatado}@s.whatsapp.net`,
+              text: mensagem,
             }),
           }
         );
