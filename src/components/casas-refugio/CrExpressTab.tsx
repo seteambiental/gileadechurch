@@ -896,6 +896,79 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* WhatsApp Choice Dialog */}
+      <AlertDialog open={!!whatsappChoiceCrId} onOpenChange={(open) => { if (!open) setWhatsappChoiceCrId(null); }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Enviar CR Express por WhatsApp
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja enviar para todos os líderes ou para um número específico?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 px-4"
+              disabled={!!sending}
+              onClick={() => {
+                if (whatsappChoiceCrId) {
+                  setWhatsappChoiceCrId(null);
+                  handleEnviar(whatsappChoiceCrId, 'whatsapp');
+                }
+              }}
+            >
+              <Users className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">Enviar para todos os líderes</p>
+                <p className="text-xs text-muted-foreground">Líderes, supervisores e síndicos (intervalo de 30s entre envios)</p>
+              </div>
+            </Button>
+            <div className="border rounded-lg p-3 space-y-2">
+              <p className="font-medium text-sm">Enviar para número específico</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Ex: 41999999999"
+                  value={whatsappSpecificPhone}
+                  onChange={(e) => setWhatsappSpecificPhone(e.target.value.replace(/\D/g, ''))}
+                  className="flex-1"
+                />
+                <Button
+                  size="sm"
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  disabled={!whatsappSpecificPhone.trim() || sendingSpecific}
+                  onClick={async () => {
+                    if (!whatsappChoiceCrId) return;
+                    setSendingSpecific(true);
+                    try {
+                      const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
+                        body: { action: 'whatsapp', crExpressId: whatsappChoiceCrId, destinatarioTelefone: whatsappSpecificPhone },
+                      });
+                      if (error) throw error;
+                      if (data?.error) throw new Error(data.error);
+                      toast.success(`CR Express enviado para ${whatsappSpecificPhone}!`);
+                      setWhatsappChoiceCrId(null);
+                      setWhatsappSpecificPhone("");
+                    } catch (err: any) {
+                      toast.error(err.message || "Erro ao enviar");
+                    } finally {
+                      setSendingSpecific(false);
+                    }
+                  }}
+                >
+                  {sendingSpecific ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
