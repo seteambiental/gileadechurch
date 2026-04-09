@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -746,6 +747,53 @@ const MembrosTab = () => {
         }}
         member={editingMember}
       />
+
+
+      {/* WhatsApp Message Dialog */}
+      <AlertDialog open={!!whatsappMember} onOpenChange={(open) => {
+        if (!open) {
+          setWhatsappMember(null);
+          setWhatsappMessage("");
+        }
+      }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Enviar WhatsApp para {whatsappMember?.full_name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              WhatsApp: {whatsappMember?.whatsapp ? formatPhone(whatsappMember.whatsapp) : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder="Digite sua mensagem..."
+            value={whatsappMessage}
+            onChange={(e) => setWhatsappMessage(e.target.value)}
+            rows={5}
+            className="mt-2"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-green-600 text-white hover:bg-green-700"
+              disabled={!whatsappMessage.trim() || sendWhatsappMutation.isPending}
+              onClick={() => {
+                if (whatsappMember) {
+                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage });
+                }
+              }}
+            >
+              {sendWhatsappMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <MessageCircle className="w-4 h-4 mr-2" />
+              )}
+              Enviar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deletingMemberId} onOpenChange={() => setDeletingMemberId(null)}>
