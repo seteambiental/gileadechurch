@@ -98,9 +98,9 @@ serve(async (req) => {
       return turma?.turma || null;
     };
 
-    const zapiToken = Deno.env.get('ZAPI_TOKEN');
-    const zapiInstanceId = Deno.env.get('ZAPI_INSTANCE_ID');
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
+    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
+    const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
+    const evolutionInstanceName = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
     const diaCulto = tipo_culto === 'domingo' ? 'amanhã no domingo' : 'amanhã na quarta-feira';
     const horario = tipo_culto === 'domingo' ? '09h' : '19h30';
