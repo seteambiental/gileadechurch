@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
 import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -128,6 +129,8 @@ const MembrosTab = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
+  const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -255,10 +258,9 @@ const MembrosTab = () => {
   });
 
   const sendWhatsappMutation = useMutation({
-    mutationFn: async (member: Member) => {
+    mutationFn: async ({ member, mensagem }: { member: Member; mensagem: string }) => {
       if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
-      
-      const mensagem = `Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! Esta é uma mensagem da Igreja Gileade. 🙏`;
+      if (!mensagem.trim()) throw new Error("Digite uma mensagem");
       
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
         body: { 
@@ -274,6 +276,8 @@ const MembrosTab = () => {
     },
     onSuccess: () => {
       toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
+      setWhatsappMember(null);
+      setWhatsappMessage("");
     },
     onError: (err: any) => {
       toast({ 
@@ -655,15 +659,13 @@ const MembrosTab = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-green-600 hover:text-green-700"
-                            onClick={() => sendWhatsappMutation.mutate(member)}
-                            disabled={sendWhatsappMutation.isPending}
+                            onClick={() => {
+                              setWhatsappMember(member);
+                              setWhatsappMessage(`Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! `);
+                            }}
                             title="Enviar WhatsApp via Evolution"
                           >
-                            {sendWhatsappMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <MessageCircle className="w-4 h-4" />
-                            )}
+                            <MessageCircle className="w-4 h-4" />
                           </Button>
                         )}
                         {member.email && (
@@ -745,6 +747,53 @@ const MembrosTab = () => {
         }}
         member={editingMember}
       />
+
+
+      {/* WhatsApp Message Dialog */}
+      <AlertDialog open={!!whatsappMember} onOpenChange={(open) => {
+        if (!open) {
+          setWhatsappMember(null);
+          setWhatsappMessage("");
+        }
+      }}>
+        <AlertDialogContent className="bg-card border-border">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-green-600" />
+              Enviar WhatsApp para {whatsappMember?.full_name}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              WhatsApp: {whatsappMember?.whatsapp ? formatPhone(whatsappMember.whatsapp) : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            placeholder="Digite sua mensagem..."
+            value={whatsappMessage}
+            onChange={(e) => setWhatsappMessage(e.target.value)}
+            rows={5}
+            className="mt-2"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-green-600 text-white hover:bg-green-700"
+              disabled={!whatsappMessage.trim() || sendWhatsappMutation.isPending}
+              onClick={() => {
+                if (whatsappMember) {
+                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage });
+                }
+              }}
+            >
+              {sendWhatsappMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <MessageCircle className="w-4 h-4 mr-2" />
+              )}
+              Enviar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deletingMemberId} onOpenChange={() => setDeletingMemberId(null)}>
