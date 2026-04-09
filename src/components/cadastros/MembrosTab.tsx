@@ -283,6 +283,8 @@ const MembrosTab = () => {
     },
   });
 
+
+  const filteredMembers = members.filter((member) => {
     // Filter by name search
     const matchesSearch = includesNormalized(member.full_name, searchTerm);
     
