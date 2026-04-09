@@ -6,7 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL');
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
