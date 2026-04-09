@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Dialog,
   DialogContent,
@@ -37,12 +37,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Send,
   Mail,
   MessageCircle,
   Users,
 } from "lucide-react";
-import { Input as MaskedInputBase } from "@/components/ui/input";
+
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
