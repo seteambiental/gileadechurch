@@ -292,8 +292,42 @@ const MembrosTab = () => {
     },
   });
 
+  const sendBulkWhatsapp = async (mensagem: string) => {
+    const membersWithWhatsapp = filteredMembers.filter(m => m.whatsapp);
+    if (membersWithWhatsapp.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum membro com WhatsApp na lista filtrada" });
+      return;
+    }
+    setBulkSending(true);
+    setBulkProgress({ sent: 0, total: membersWithWhatsapp.length, current: "" });
+    let enviados = 0;
+    let erros = 0;
+    for (let i = 0; i < membersWithWhatsapp.length; i++) {
+      const member = membersWithWhatsapp[i];
+      const msgPersonalizada = mensagem.replace("{nome}", member.full_name.split(" ")[0]);
+      setBulkProgress({ sent: i, total: membersWithWhatsapp.length, current: member.full_name });
+      try {
+        const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada },
+        });
+        if (error || !data?.success) { erros++; } else { enviados++; }
+      } catch { erros++; }
+      // Intervalo de 30 segundos entre mensagens para evitar SPAM
+      if (i < membersWithWhatsapp.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 30000));
+      }
+    }
+    setBulkSending(false);
+    setBulkProgress({ sent: 0, total: 0, current: "" });
+    setWhatsappBulkMode(false);
+    setWhatsappMessage("");
+    toast({
+      title: `Envio concluído: ${enviados} enviadas, ${erros} erros`,
+      description: `Total: ${membersWithWhatsapp.length} membros`,
+    });
+  };
 
-  const filteredMembers = members.filter((member) => {
+
     // Filter by name search
     const matchesSearch = includesNormalized(member.full_name, searchTerm);
     
