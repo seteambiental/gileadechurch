@@ -7,27 +7,39 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
-const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
-const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
+// Evolution API config
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
-async function enviarMensagemZAPI(telefone: string, mensagem: string) {
+async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
 
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
+
+  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
 
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+      'apikey': EVOLUTION_API_KEY || '',
     },
-    body: JSON.stringify({ phone: phoneFormatted, message: mensagem }),
+    body: JSON.stringify({
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
+    }),
   });
 
   const result = await response.json();
-  if (!response.ok) throw new Error(result.message || 'Erro ao enviar mensagem');
+  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
+
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
+  }
+
   return result;
 }
 
@@ -138,7 +150,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, crExpressId } = await req.json();
+    const { action, crExpressId, destinatarioTelefone } = await req.json();
 
     if (!crExpressId) throw new Error('crExpressId é obrigatório');
 
@@ -150,44 +162,6 @@ serve(async (req) => {
       .single();
 
     if (crError || !crExpress) throw new Error('CR Express não encontrado');
-
-    // Fetch all leaders, supervisors, and syndics from casas_refugio and condominios
-    const { data: casas } = await supabase
-      .from('casas_refugio')
-      .select('lider_id, lider_esposa_id, supervisor_id, supervisor_esposa_id');
-
-    const { data: condominios } = await supabase
-      .from('condominios')
-      .select('sindico_id, sindico_esposa_id');
-
-    // Collect unique member IDs
-    const memberIds = new Set<string>();
-    casas?.forEach((c: any) => {
-      if (c.lider_id) memberIds.add(c.lider_id);
-      if (c.lider_esposa_id) memberIds.add(c.lider_esposa_id);
-      if (c.supervisor_id) memberIds.add(c.supervisor_id);
-      if (c.supervisor_esposa_id) memberIds.add(c.supervisor_esposa_id);
-    });
-    condominios?.forEach((c: any) => {
-      if (c.sindico_id) memberIds.add(c.sindico_id);
-      if (c.sindico_esposa_id) memberIds.add(c.sindico_esposa_id);
-    });
-
-    if (memberIds.size === 0) {
-      return new Response(JSON.stringify({ success: false, error: 'Nenhum líder encontrado' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Fetch member contact info
-    const { data: members } = await supabase
-      .from('members')
-      .select('id, full_name, email, whatsapp')
-      .in('id', Array.from(memberIds));
-
-    if (!members || members.length === 0) {
-      throw new Error('Nenhum membro encontrado');
-    }
 
     const dataCultoFormatada = formatarData(crExpress.data_culto);
     const avisosTexto = formatarAvisos(crExpress.avisos_importantes);
@@ -226,6 +200,56 @@ serve(async (req) => {
 
     let resultados = { email: { enviados: 0, erros: 0 }, whatsapp: { enviados: 0, erros: 0 } };
 
+    // If sending to a specific phone number (destinatarioTelefone), send only to that number
+    if (action === 'whatsapp' && destinatarioTelefone) {
+      try {
+        await enviarMensagemEvolution(destinatarioTelefone, mensagemWhatsApp);
+        resultados.whatsapp.enviados = 1;
+      } catch (err: any) {
+        console.error(`Erro WhatsApp para ${destinatarioTelefone}:`, err);
+        resultados.whatsapp.erros = 1;
+      }
+      return new Response(JSON.stringify({ success: true, resultados }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Otherwise, fetch all leaders/supervisors/syndics
+    const { data: casas } = await supabase
+      .from('casas_refugio')
+      .select('lider_id, lider_esposa_id, supervisor_id, supervisor_esposa_id');
+
+    const { data: condominios } = await supabase
+      .from('condominios')
+      .select('sindico_id, sindico_esposa_id');
+
+    const memberIds = new Set<string>();
+    casas?.forEach((c: any) => {
+      if (c.lider_id) memberIds.add(c.lider_id);
+      if (c.lider_esposa_id) memberIds.add(c.lider_esposa_id);
+      if (c.supervisor_id) memberIds.add(c.supervisor_id);
+      if (c.supervisor_esposa_id) memberIds.add(c.supervisor_esposa_id);
+    });
+    condominios?.forEach((c: any) => {
+      if (c.sindico_id) memberIds.add(c.sindico_id);
+      if (c.sindico_esposa_id) memberIds.add(c.sindico_esposa_id);
+    });
+
+    if (memberIds.size === 0) {
+      return new Response(JSON.stringify({ success: false, error: 'Nenhum líder encontrado' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: members } = await supabase
+      .from('members')
+      .select('id, full_name, email, whatsapp')
+      .in('id', Array.from(memberIds));
+
+    if (!members || members.length === 0) {
+      throw new Error('Nenhum membro encontrado');
+    }
+
     if (action === 'email' || action === 'ambos') {
       const resendKey = Deno.env.get('RESEND_API_KEY');
       console.log('Action:', action, '| RESEND_API_KEY configurada:', !!resendKey);
@@ -247,7 +271,6 @@ serve(async (req) => {
             });
             console.log(`Email enviado para ${member.email}:`, JSON.stringify(sendResult));
             resultados.email.enviados++;
-            // Delay de 600ms para respeitar limite de 2 req/s do Resend
             await new Promise(resolve => setTimeout(resolve, 600));
           } catch (err: any) {
             console.error(`Erro email para ${member.full_name} (${member.email}):`, err?.message || err);
@@ -260,13 +283,16 @@ serve(async (req) => {
     }
 
     if (action === 'whatsapp' || action === 'ambos') {
-      for (const member of members) {
+      for (let i = 0; i < members.length; i++) {
+        const member = members[i];
         if (!member.whatsapp) continue;
         try {
-          await enviarMensagemZAPI(member.whatsapp, mensagemWhatsApp);
+          await enviarMensagemEvolution(member.whatsapp, mensagemWhatsApp);
           resultados.whatsapp.enviados++;
           // Delay de 30 segundos entre envios WhatsApp para evitar spam
-          await new Promise(resolve => setTimeout(resolve, 30000));
+          if (i < members.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          }
         } catch (err) {
           console.error(`Erro WhatsApp para ${member.full_name}:`, err);
           resultados.whatsapp.erros++;
