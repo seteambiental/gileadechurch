@@ -257,8 +257,8 @@ Ministério Kids - Igreja Gileade`;
         });
         erros++;
       }
-
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay de 30 segundos entre envios para evitar spam
+      await new Promise(resolve => setTimeout(resolve, 30000));
     }
 
     return new Response(

@@ -265,8 +265,8 @@ serve(async (req) => {
         try {
           await enviarMensagemZAPI(member.whatsapp, mensagemWhatsApp);
           resultados.whatsapp.enviados++;
-          // Delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Delay de 30 segundos entre envios WhatsApp para evitar spam
+          await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           console.error(`Erro WhatsApp para ${member.full_name}:`, err);
           resultados.whatsapp.erros++;

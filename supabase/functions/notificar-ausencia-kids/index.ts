@@ -274,8 +274,8 @@ Ministério Kids - Igreja Gileade`;
         console.error(`Erro ao enviar notificação:`, error);
       }
 
-      // Aguardar um pouco entre envios para não sobrecarregar a API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay de 30 segundos entre envios para evitar spam
+      await new Promise(resolve => setTimeout(resolve, 30000));
     }
 
     return new Response(
