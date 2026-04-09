@@ -6,9 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
-const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
-const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
+const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL');
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
@@ -26,62 +26,63 @@ const versiculosReconciliacao = [
   { texto: "Assim vos digo que há alegria diante dos anjos de Deus por um pecador que se arrepende.", referencia: "Lucas 15:10" },
 ];
 
-async function enviarMensagemZAPI(telefone: string, mensagem: string) {
+async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
   
-  console.log(`Enviando mensagem para: ${phoneFormatted}`);
+  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
   
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+      'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      phone: phoneFormatted,
-      message: mensagem,
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
     }),
   });
   
   const result = await response.json();
-  console.log('Resposta Z-API:', result);
+  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || 'Erro ao enviar mensagem');
+    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
   }
   
   return result;
 }
 
-async function enviarImagemZAPI(telefone: string, imageUrl: string, caption?: string) {
+async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-image`;
+  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
   
-  console.log(`Enviando imagem para: ${phoneFormatted}`);
+  console.log(`Enviando imagem Evolution para: ${phoneFormatted}`);
   
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+      'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      phone: phoneFormatted,
-      image: imageUrl,
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      mediatype: 'image',
+      media: imageUrl,
       caption: caption || '',
     }),
   });
   
   const result = await response.json();
-  console.log('Resposta Z-API imagem:', result);
+  console.log('Resposta Evolution imagem:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || 'Erro ao enviar imagem');
+    throw new Error(result.message || result.error || 'Erro ao enviar imagem');
   }
   
   return result;
@@ -159,7 +160,6 @@ serve(async (req) => {
     console.log(`Action: ${action}, ConvertidoId: ${convertidoId}`);
 
     if (action === 'boas_vindas') {
-      // Buscar dados do convertido
       const { data: convertido, error: convError } = await supabase
         .from('novos_convertidos')
         .select('*')
@@ -180,16 +180,14 @@ serve(async (req) => {
 
       const mensagem = gerarMensagemBoasVindas(convertido.full_name, convertido.tipo_conversao);
       
-      await enviarMensagemZAPI(convertido.whatsapp, mensagem);
+      await enviarMensagemEvolution(convertido.whatsapp, mensagem);
 
-      // Registrar mensagem enviada
       await supabase.from('mensagens_whatsapp').insert({
         novo_convertido_id: convertidoId,
         tipo_mensagem: 'boas_vindas',
         conteudo: mensagem,
       });
 
-      // Atualizar contagem de mensagens
       await supabase
         .from('novos_convertidos')
         .update({
@@ -229,12 +227,10 @@ serve(async (req) => {
         throw new Error('Evento não encontrado');
       }
 
-      // Verificar se o evento é adequado para o gênero
       if (evento.genero_alvo !== 'todos' && evento.genero_alvo !== convertido.genero) {
         throw new Error('Evento não adequado para o gênero do convertido');
       }
 
-      // Verificar idade se necessário
       if (convertido.data_nascimento && (evento.idade_minima || evento.idade_maxima)) {
         const idade = calcularIdade(convertido.data_nascimento);
         if (evento.idade_minima && idade < evento.idade_minima) {
@@ -247,7 +243,7 @@ serve(async (req) => {
 
       const mensagem = gerarMensagemConvite(convertido.full_name, evento, convertido.mensagens_enviadas || 0);
       
-      await enviarMensagemZAPI(convertido.whatsapp, mensagem);
+      await enviarMensagemEvolution(convertido.whatsapp, mensagem);
 
       await supabase.from('mensagens_whatsapp').insert({
         novo_convertido_id: convertidoId,
@@ -289,7 +285,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Filtrar eventos adequados
       const eventosFiltrados = eventos?.filter(evento => {
         if (evento.genero_alvo !== 'todos' && convertido?.genero && evento.genero_alvo !== convertido.genero) {
           return false;
@@ -314,7 +309,6 @@ serve(async (req) => {
 
       console.log(`Enviando flyer para grupo: ${grupo}`);
       
-      // Determinar filtro de gênero baseado no grupo
       let generoFiltro: string | null = null;
       let idadeMinima: number | null = null;
       let idadeMaxima: number | null = null;
@@ -339,10 +333,8 @@ serve(async (req) => {
         case 'criancas':
           idadeMaxima = 11;
           break;
-        // 'todos' não precisa de filtro
       }
 
-      // Buscar membros com base nos filtros
       let query = supabase
         .from('members')
         .select('id, full_name, whatsapp, genero, birth_date')
@@ -358,10 +350,9 @@ serve(async (req) => {
         throw new Error('Erro ao buscar membros');
       }
 
-      // Filtrar por idade se necessário
       const membrosFiltrados = membros?.filter(membro => {
         if (!idadeMinima && !idadeMaxima) return true;
-        if (!membro.birth_date) return grupo === 'todos'; // Sem data de nascimento, só inclui se for "todos"
+        if (!membro.birth_date) return grupo === 'todos';
         
         const idade = calcularIdade(membro.birth_date);
         if (idadeMinima && idade < idadeMinima) return false;
@@ -371,12 +362,10 @@ serve(async (req) => {
 
       console.log(`Encontrados ${membrosFiltrados.length} membros para envio`);
 
-      // Gerar legenda do flyer
       const caption = evento?.titulo 
         ? `📢 *${evento.titulo}*\n\n${evento.descricao || 'Não perca esse evento especial!'}\n\n📅 ${evento.data_evento ? new Date(evento.data_evento).toLocaleDateString('pt-BR') : ''} ${evento.hora_inicio ? `às ${evento.hora_inicio}` : ''}\n📍 ${evento.local || 'Igreja Gileade'}\n\n_Igreja Gileade_ 💙`
         : '📢 Confira esse evento especial!\n\n_Igreja Gileade_ 💙';
 
-      // Enviar para cada membro (com delay para não sobrecarregar a API)
       let enviados = 0;
       let erros = 0;
       
@@ -384,11 +373,10 @@ serve(async (req) => {
         if (!membro.whatsapp) continue;
         
         try {
-          await enviarImagemZAPI(membro.whatsapp, flyerUrl, caption);
+          await enviarImagemEvolution(membro.whatsapp, flyerUrl, caption);
           enviados++;
           console.log(`Flyer enviado para ${membro.full_name}`);
           
-          // Delay de 2 segundos entre envios para evitar rate limiting
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (err) {
           console.error(`Erro ao enviar para ${membro.full_name}:`, err);
@@ -410,7 +398,6 @@ serve(async (req) => {
     if (action === 'confirmacao_inscricao') {
       const { inscricaoId, evento } = body;
       
-      // Buscar dados da inscrição
       const { data: inscricao, error: inscError } = await supabase
         .from('inscricoes_eventos')
         .select('*')
@@ -460,7 +447,7 @@ serve(async (req) => {
 
       const mensagem = `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+      await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -473,7 +460,6 @@ serve(async (req) => {
     if (action === 'notificar_vaga_liberada') {
       const { inscricaoId, evento } = body;
       
-      // Buscar dados da inscrição na lista de espera
       const { data: inscricao, error: inscError } = await supabase
         .from('inscricoes_eventos')
         .select('*')
@@ -499,7 +485,7 @@ serve(async (req) => {
 
       const mensagem = `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+      await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -512,7 +498,6 @@ serve(async (req) => {
     if (action === 'lembrete_pagamento') {
       const { inscricaoId, evento } = body;
       
-      // Buscar dados da inscrição
       const { data: inscricao, error: inscError } = await supabase
         .from('inscricoes_eventos')
         .select('*')
@@ -538,7 +523,7 @@ serve(async (req) => {
 
       const mensagem = `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
       
-      await enviarMensagemZAPI(inscricao.telefone_contato, mensagem);
+      await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -553,7 +538,6 @@ serve(async (req) => {
       
       console.log(`Notificando escala ${escalaId} para ministérios:`, ministeriosDestino);
 
-      // Buscar dados da escala
       const { data: escala, error: escalaError } = await supabase
         .from('ministerio_escalas')
         .select('id, data_culto, tipo_culto, ministry_id')
@@ -564,7 +548,6 @@ serve(async (req) => {
         throw new Error('Escala não encontrada');
       }
 
-      // Buscar músicas da escala
       const { data: musicas, error: musicasError } = await supabase
         .from('ministerio_repertorio')
         .select('titulo, artista, tom')
@@ -575,7 +558,6 @@ serve(async (req) => {
         throw new Error('Erro ao buscar músicas');
       }
 
-      // Formatar data
       const dataFormatada = new Date(escala.data_culto).toLocaleDateString('pt-BR', {
         weekday: 'long',
         day: 'numeric',
@@ -589,7 +571,6 @@ serve(async (req) => {
         evento: 'Evento'
       };
 
-      // Montar lista de músicas
       let listaMusicas = '';
       musicas?.forEach((m, i) => {
         listaMusicas += `${i + 1}. *${m.titulo}*`;
@@ -598,7 +579,6 @@ serve(async (req) => {
         listaMusicas += '\n';
       });
 
-      // Buscar integrantes do ministério de louvor para notificar
       const { data: integrantesLouvor, error: integrantesError } = await supabase
         .from('ministerio_integrantes')
         .select(`
@@ -613,7 +593,6 @@ serve(async (req) => {
         console.error('Erro ao buscar integrantes do louvor:', integrantesError);
       }
 
-      // Buscar líderes dos ministérios de destino (Dança e Mídia)
       const { data: lideresMiniDest } = await supabase
         .from('member_functions')
         .select(`
@@ -625,7 +604,6 @@ serve(async (req) => {
         .in('ministry_id', ministeriosDestino)
         .eq('function_type', 'lider_ministerio');
 
-      // Também buscar integrantes dos ministérios de destino
       const { data: integrantesDestino } = await supabase
         .from('ministerio_integrantes')
         .select(`
@@ -636,23 +614,20 @@ serve(async (req) => {
         .in('ministry_id', ministeriosDestino)
         .eq('ativo', true);
 
-      // Mensagem para equipe de louvor
       const mensagemLouvor = `🎵 *REPERTÓRIO DO CULTO*\n\n📅 *${dataFormatada}*\nCulto: ${tipoCultoMap[escala.tipo_culto] || escala.tipo_culto}\n\n🎶 *Músicas:*\n${listaMusicas}\nBons ensaios! 🙏\n\n_${ministerioOrigem || 'Ministério de Louvor'}_ 💙`;
 
-      // Mensagem para Dança e Mídia
       const mensagemOutros = `📢 *REPERTÓRIO COMPARTILHADO*\n\nO Ministério de Louvor compartilhou o repertório para:\n\n📅 *${dataFormatada}*\nCulto: ${tipoCultoMap[escala.tipo_culto] || escala.tipo_culto}\n\n🎶 *Músicas:*\n${listaMusicas}\nPreparem-se! 🙏\n\n_Igreja Gileade_ 💙`;
 
       let enviados = 0;
       let erros = 0;
       const telefonesEnviados = new Set<string>();
 
-      // Enviar para integrantes do louvor
       if (integrantesLouvor) {
         for (const integrante of integrantesLouvor) {
           const membro = integrante.members as any;
           if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
             try {
-              await enviarMensagemZAPI(membro.whatsapp, mensagemLouvor);
+              await enviarMensagemEvolution(membro.whatsapp, mensagemLouvor);
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Louvor)`);
@@ -665,13 +640,12 @@ serve(async (req) => {
         }
       }
 
-      // Enviar para líderes dos ministérios de destino
       if (lideresMiniDest) {
         for (const lider of lideresMiniDest) {
           const membro = lider.members as any;
           if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
             try {
-              await enviarMensagemZAPI(membro.whatsapp, mensagemOutros);
+              await enviarMensagemEvolution(membro.whatsapp, mensagemOutros);
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Líder)`);
@@ -684,13 +658,12 @@ serve(async (req) => {
         }
       }
 
-      // Enviar para integrantes dos ministérios de destino
       if (integrantesDestino) {
         for (const integrante of integrantesDestino) {
           const membro = integrante.members as any;
           if (membro?.whatsapp && !telefonesEnviados.has(membro.whatsapp)) {
             try {
-              await enviarMensagemZAPI(membro.whatsapp, mensagemOutros);
+              await enviarMensagemEvolution(membro.whatsapp, mensagemOutros);
               telefonesEnviados.add(membro.whatsapp);
               enviados++;
               console.log(`Enviado para ${membro.full_name} (Integrante)`);
@@ -718,7 +691,6 @@ serve(async (req) => {
       
       console.log(`Notificando escala de dança para membros:`, membrosIds);
 
-      // Buscar membros escalados
       const { data: membrosEscalados, error: membrosError } = await supabase
         .from('ministerio_integrantes')
         .select(`
@@ -732,7 +704,6 @@ serve(async (req) => {
         throw new Error('Erro ao buscar membros');
       }
 
-      // Formatar data
       const dataFormatada = new Date(dataCulto).toLocaleDateString('pt-BR', {
         weekday: 'long',
         day: 'numeric',
@@ -746,7 +717,6 @@ serve(async (req) => {
         especial: 'Evento Especial'
       };
 
-      // Montar nome da equipe com sub-time
       const nomeEquipeCompleto = subTime && subTime !== 'todos' 
         ? `${equipeNome} - ${subTime}` 
         : equipeNome;
@@ -760,7 +730,7 @@ serve(async (req) => {
         const membro = integrante.member as any;
         if (membro?.whatsapp) {
           try {
-            await enviarMensagemZAPI(membro.whatsapp, mensagem);
+            await enviarMensagemEvolution(membro.whatsapp, mensagem);
             enviados++;
             console.log(`Notificação enviada para ${membro.full_name}`);
             await new Promise(resolve => setTimeout(resolve, 1500));
@@ -786,7 +756,6 @@ serve(async (req) => {
       
       console.log(`Enviando agradecimento de missões para contribuinte: ${contribuinteId}`);
       
-      // Buscar dados do contribuinte
       const { data: contribuinte, error: contError } = await supabase
         .from('missoes_mocambique_contribuintes')
         .select(`
@@ -800,7 +769,6 @@ serve(async (req) => {
         throw new Error('Contribuinte não encontrado');
       }
 
-      // Determinar nome e WhatsApp
       const nome = contribuinte.member?.full_name || contribuinte.nome_manual;
       const whatsapp = contribuinte.member?.whatsapp;
 
@@ -815,15 +783,13 @@ serve(async (req) => {
       const primeiroNome = nome.split(' ')[0];
       const valor = valorMensal || contribuinte.valor_mensal;
       
-      // Usar cotação informada ou padrão (aproximadamente 1 BRL = 10 MZN)
       const cotacao = cotacaoMZN || 10.5;
       const valorMZN = valor * cotacao;
 
-      // Referências de poder de compra em Moçambique (valores aproximados)
-      const salarioMinimo = 6500; // MZN - salário mínimo em Moçambique aprox.
-      const refeicoesBasicas = Math.floor(valorMZN / 50); // Uma refeição básica ~50 MZN
-      const kilosArroz = Math.floor(valorMZN / 80); // 1kg arroz ~80 MZN
-      const litrosLeite = Math.floor(valorMZN / 100); // 1L leite ~100 MZN
+      const salarioMinimo = 6500;
+      const refeicoesBasicas = Math.floor(valorMZN / 50);
+      const kilosArroz = Math.floor(valorMZN / 80);
+      const litrosLeite = Math.floor(valorMZN / 100);
       const percentualSalario = ((valorMZN / salarioMinimo) * 100).toFixed(1);
 
       let comparacaoPoder = '';
@@ -838,7 +804,7 @@ serve(async (req) => {
 
       const mensagem = `🙏 *Olá, ${primeiroNome}!*\n\nQueremos agradecer imensamente pelo seu carinho e fidelidade no apoio às *Missões Moçambique*! 🌍\n\nSua oferta de *R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}* se transforma em *${valorMZN.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} Meticais* em Moçambique!\n\n📊 *O que isso representa lá:*\n${comparacaoPoder}\n🍚 Pode comprar *${kilosArroz} kg de arroz*\n🥛 Ou *${litrosLeite} litros de leite*\n🍽️ Ou *${refeicoesBasicas} refeições básicas*\n\nCada centavo faz diferença na vida de famílias que precisam! Você está ajudando a transformar vidas e levar esperança. 💙\n\n_"Cada um contribua segundo propôs no seu coração, não com tristeza ou por necessidade; porque Deus ama ao que dá com alegria."_ - 2 Coríntios 9:7\n\nQue Deus multiplique essa semente! 🌱\n\n_Igreja Gileade - Missões Moçambique_ 🇲🇿`;
       
-      await enviarMensagemZAPI(whatsapp, mensagem);
+      await enviarMensagemEvolution(whatsapp, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -857,10 +823,8 @@ serve(async (req) => {
       const amanha = new Date(hoje);
       amanha.setDate(amanha.getDate() + 1);
       const diaAmanha = amanha.getDate();
-      const mesAtual = hoje.toISOString().slice(0, 7); // YYYY-MM
+      const mesAtual = hoje.toISOString().slice(0, 7);
 
-      // Buscar contribuintes ativos cujo dia de vencimento é amanhã
-      // e que ainda não receberam lembrete este mês
       const { data: contribuintes, error: contError } = await supabase
         .from('missoes_mocambique_contribuintes')
         .select(`
@@ -896,9 +860,8 @@ serve(async (req) => {
 
           const mensagem = `🙏 Olá, ${primeiroNome}!\n\nEste é um lembrete carinhoso sobre sua contribuição para as *Missões Moçambique*! 🌍\n\nAmanhã, dia *${diaVencimento}*, é o dia do seu compromisso mensal de *R$ ${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}*.\n\nSua fidelidade transforma vidas! Cada centavo faz diferença para as famílias em Moçambique. 💙\n\n_"Lembrai-vos das palavras do Senhor Jesus, que disse: Mais bem-aventurada coisa é dar do que receber."_ - Atos 20:35\n\nDeus abençoe você! 🙌\n\n_Igreja Gileade - Missões Moçambique_ 🇲🇿`;
 
-          await enviarMensagemZAPI(whatsapp, mensagem);
+          await enviarMensagemEvolution(whatsapp, mensagem);
 
-          // Marcar que o lembrete foi enviado este mês
           await supabase
             .from('missoes_mocambique_contribuintes')
             .update({ lembrete_enviado_mes: mesAtual })
@@ -907,7 +870,6 @@ serve(async (req) => {
           enviados++;
           console.log(`Lembrete enviado para ${nome}`);
 
-          // Delay entre envios
           await new Promise(resolve => setTimeout(resolve, 2000));
         } catch (err) {
           console.error(`Erro ao enviar lembrete para ${nome}:`, err);
