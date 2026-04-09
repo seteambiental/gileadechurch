@@ -128,6 +128,8 @@ const MembrosTab = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
+  const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
+  const [whatsappMessage, setWhatsappMessage] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
