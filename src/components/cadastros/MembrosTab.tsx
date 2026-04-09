@@ -649,6 +649,22 @@ const MembrosTab = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+                        {member.whatsapp && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-green-600 hover:text-green-700"
+                            onClick={() => sendWhatsappMutation.mutate(member)}
+                            disabled={sendWhatsappMutation.isPending}
+                            title="Enviar WhatsApp via Evolution"
+                          >
+                            {sendWhatsappMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <MessageCircle className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
                         {member.email && (
                           <Button
                             variant="ghost"
