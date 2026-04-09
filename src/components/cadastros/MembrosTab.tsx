@@ -658,15 +658,13 @@ const MembrosTab = () => {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-green-600 hover:text-green-700"
-                            onClick={() => sendWhatsappMutation.mutate(member)}
-                            disabled={sendWhatsappMutation.isPending}
+                            onClick={() => {
+                              setWhatsappMember(member);
+                              setWhatsappMessage(`Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! `);
+                            }}
                             title="Enviar WhatsApp via Evolution"
                           >
-                            {sendWhatsappMutation.isPending ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <MessageCircle className="w-4 h-4" />
-                            )}
+                            <MessageCircle className="w-4 h-4" />
                           </Button>
                         )}
                         {member.email && (
