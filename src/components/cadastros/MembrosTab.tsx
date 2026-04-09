@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import pgChurchKidsIcon from "@/assets/pg-church-kids.png";
-import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Filter, X, Download, FileSpreadsheet, FileText, Eye, Mail, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -253,6 +253,37 @@ const MembrosTab = () => {
       });
     },
   });
+
+  const sendWhatsappMutation = useMutation({
+    mutationFn: async (member: Member) => {
+      if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
+      
+      const mensagem = `Olá ${member.full_name.split(' ')[0]}! 👋\n\nPaz do Senhor! Esta é uma mensagem da Igreja Gileade. 🙏`;
+      
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: { 
+          action: 'mensagem_direta',
+          telefone: member.whatsapp,
+          mensagem,
+        },
+      });
+      
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || "Erro ao enviar mensagem");
+      return data;
+    },
+    onSuccess: () => {
+      toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
+    },
+    onError: (err: any) => {
+      toast({ 
+        title: "Erro ao enviar WhatsApp", 
+        description: err?.message || "Erro desconhecido",
+        variant: "destructive" 
+      });
+    },
+  });
+
 
   const filteredMembers = members.filter((member) => {
     // Filter by name search
@@ -619,6 +650,22 @@ const MembrosTab = () => {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+                        {member.whatsapp && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-green-600 hover:text-green-700"
+                            onClick={() => sendWhatsappMutation.mutate(member)}
+                            disabled={sendWhatsappMutation.isPending}
+                            title="Enviar WhatsApp via Evolution"
+                          >
+                            {sendWhatsappMutation.isPending ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <MessageCircle className="w-4 h-4" />
+                            )}
+                          </Button>
+                        )}
                         {member.email && (
                           <Button
                             variant="ghost"
