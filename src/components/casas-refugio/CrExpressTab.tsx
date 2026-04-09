@@ -40,7 +40,9 @@ import {
   Send,
   Mail,
   MessageCircle,
+  Users,
 } from "lucide-react";
+import { Input as MaskedInputBase } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
