@@ -2,9 +2,10 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const ZAPI_INSTANCE_ID = Deno.env.get("ZAPI_INSTANCE_ID");
-const ZAPI_TOKEN = Deno.env.get("ZAPI_TOKEN");
-const ZAPI_CLIENT_TOKEN = Deno.env.get("ZAPI_CLIENT_TOKEN");
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,32 +61,32 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  if (!ZAPI_INSTANCE_ID || !ZAPI_TOKEN) {
-    console.log("Credenciais Z-API não configuradas, pulando WhatsApp");
+  if (!EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
+    console.log("Evolution API não configurada, pulando WhatsApp");
     return null;
   }
 
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
 
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
 
-  console.log(`Enviando WhatsApp para: ${phoneFormatted}`);
+  console.log(`Enviando WhatsApp Evolution para: ${phoneFormatted}`);
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Client-Token": ZAPI_CLIENT_TOKEN || "",
+      "apikey": EVOLUTION_API_KEY || "",
     },
     body: JSON.stringify({
-      phone: phoneFormatted,
-      message: mensagem,
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
     }),
   });
 
   const result = await response.json();
-  console.log("Resposta Z-API:", result);
+  console.log("Resposta Evolution:", JSON.stringify(result).substring(0, 300));
 
   if (!response.ok) {
     throw new Error(result.message || "Erro ao enviar WhatsApp");
@@ -121,7 +122,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("mudanca_id é obrigatório");
     }
 
-    // Buscar dados da mudança pendente
     const { data: mudanca, error: mudancaError } = await supabase
       .from("mudancas_pendentes")
       .select(`
@@ -236,8 +236,6 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (emailError) {
         console.error("Erro ao enviar email:", emailError);
       }
-    } else {
-      console.log("Aprovador não tem email cadastrado");
     }
 
     // ==================== ENVIAR WHATSAPP ====================
@@ -257,11 +255,8 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (whatsappError) {
         console.error("Erro ao enviar WhatsApp:", whatsappError);
       }
-    } else {
-      console.log("Aprovador não tem WhatsApp cadastrado");
     }
 
-    // Atualizar registro para marcar notificações como enviadas
     await supabase
       .from("mudancas_pendentes")
       .update({

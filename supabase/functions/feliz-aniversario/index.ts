@@ -6,9 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ZAPI_INSTANCE_ID = Deno.env.get('ZAPI_INSTANCE_ID');
-const ZAPI_TOKEN = Deno.env.get('ZAPI_TOKEN');
-const ZAPI_CLIENT_TOKEN = Deno.env.get('ZAPI_CLIENT_TOKEN');
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 const versiculosAniversario = [
   { texto: "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal, para vos dar o fim que esperais.", referencia: "Jeremias 29:11" },
@@ -20,33 +21,30 @@ const versiculosAniversario = [
   { texto: "Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", referencia: "Eclesiastes 3:1" },
 ];
 
-async function enviarMensagemZAPI(telefone: string, mensagem: string) {
+async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
-  // Usar a mesma URL que funciona no enviar-whatsapp
-  const url = `https://api.z-api.io/instances/${ZAPI_INSTANCE_ID}/token/${ZAPI_TOKEN}/send-text`;
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
   
   console.log(`Enviando mensagem de aniversário para: ${phoneFormatted}`);
-  console.log(`URL: ${url}`);
   
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Client-Token': ZAPI_CLIENT_TOKEN || '',
+      'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      phone: phoneFormatted,
-      message: mensagem,
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
     }),
   });
   
   const result = await response.json();
-  console.log('Resposta Z-API:', JSON.stringify(result));
+  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
   
-  // Verificar se houve erro na resposta
-  if (result.error || !response.ok) {
+  if (!response.ok) {
     throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
   }
   
@@ -57,7 +55,6 @@ function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null)
   const primeiroNome = nome.split(' ')[0];
   const versiculo = versiculosAniversario[Math.floor(Math.random() * versiculosAniversario.length)];
   
-  // Se tiver mensagem personalizada, usar ela
   if (mensagemTemplate) {
     return mensagemTemplate
       .replace(/{NOME}/g, primeiroNome)
@@ -65,7 +62,6 @@ function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null)
       .replace(/{REFERENCIA}/g, versiculo.referencia);
   }
   
-  // Mensagem padrão
   return `🎂🎉 *FELIZ ANIVERSÁRIO, ${primeiroNome.toUpperCase()}!* 🎉🎂
 
 Que o Senhor continue abençoando sua vida abundantemente neste novo ciclo que se inicia!
@@ -92,7 +88,6 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action } = body;
 
-    // Obter data atual no formato MM-DD para comparar com birth_date
     const hoje = new Date();
     const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
     const diaAtual = String(hoje.getDate()).padStart(2, '0');
@@ -100,7 +95,6 @@ serve(async (req) => {
     console.log(`Verificando aniversariantes para: ${mesAtual}-${diaAtual}`);
 
     if (action === 'enviar_aniversarios' || !action) {
-      // Buscar mensagem personalizada
       const { data: homepageConfig } = await supabase
         .from('homepage_config')
         .select('mensagem_aniversario')
@@ -108,10 +102,7 @@ serve(async (req) => {
         .maybeSingle();
       
       const mensagemTemplate = homepageConfig?.mensagem_aniversario || null;
-      console.log(`Mensagem personalizada: ${mensagemTemplate ? 'Sim' : 'Não (usando padrão)'}`);
 
-      // Buscar membros que fazem aniversário hoje
-      // birth_date está no formato YYYY-MM-DD
       const { data: membros, error: membrosError } = await supabase
         .from('members')
         .select('id, full_name, whatsapp, birth_date')
@@ -122,7 +113,6 @@ serve(async (req) => {
         throw new Error(`Erro ao buscar membros: ${membrosError.message}`);
       }
 
-      // Filtrar aniversariantes do dia
       const aniversariantes = membros?.filter(m => {
         if (!m.birth_date) return false;
         const [ano, mes, dia] = m.birth_date.split('-');
@@ -131,7 +121,6 @@ serve(async (req) => {
 
       console.log(`Encontrados ${aniversariantes.length} aniversariantes hoje`);
 
-      // Buscar também novos convertidos que fazem aniversário hoje
       const { data: convertidos, error: convertidosError } = await supabase
         .from('novos_convertidos')
         .select('id, full_name, whatsapp, data_nascimento')
@@ -148,9 +137,6 @@ serve(async (req) => {
         return mes === mesAtual && dia === diaAtual;
       }) || [];
 
-      console.log(`Encontrados ${aniversariantesConvertidos.length} novos convertidos aniversariantes`);
-
-      // Verificar quais já receberam mensagem hoje
       const dataHoje = hoje.toISOString().split('T')[0];
       const { data: jaEnviados } = await supabase
         .from('aniversarios_enviados')
@@ -161,18 +147,13 @@ serve(async (req) => {
       const membrosJaEnviados = new Set(jaEnviados?.filter(e => e.member_id).map(e => e.member_id) || []);
       const convertidosJaEnviados = new Set(jaEnviados?.filter(e => e.novo_convertido_id).map(e => e.novo_convertido_id) || []);
 
-      console.log(`Já enviados hoje: ${membrosJaEnviados.size} membros, ${convertidosJaEnviados.size} convertidos`);
-
       let enviados = 0;
       let erros = 0;
       let ignorados = 0;
       const resultados: { nome: string; sucesso: boolean; erro?: string; ignorado?: boolean }[] = [];
 
-      // Enviar para membros (que ainda não receberam hoje)
       for (const membro of aniversariantes) {
-        // Verificar se já enviou hoje
         if (membrosJaEnviados.has(membro.id)) {
-          console.log(`⏭️ ${membro.full_name} já recebeu mensagem hoje, ignorando`);
           ignorados++;
           resultados.push({ nome: membro.full_name, sucesso: true, ignorado: true });
           continue;
@@ -180,9 +161,8 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(membro.full_name, mensagemTemplate);
-          await enviarMensagemZAPI(membro.whatsapp, mensagem);
+          await enviarMensagemEvolution(membro.whatsapp, mensagem);
           
-          // Registrar log de envio
           await supabase.from('aniversarios_enviados').insert({
             member_id: membro.id,
             data_envio: dataHoje,
@@ -193,13 +173,11 @@ serve(async (req) => {
           resultados.push({ nome: membro.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${membro.full_name}`);
           
-          // Delay de 30 segundos entre envios para evitar spam
           await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
           
-          // Registrar erro
           try {
             await supabase.from('aniversarios_enviados').insert({
               member_id: membro.id,
@@ -214,11 +192,8 @@ serve(async (req) => {
         }
       }
 
-      // Enviar para novos convertidos (que ainda não receberam hoje)
       for (const convertido of aniversariantesConvertidos) {
-        // Verificar se já enviou hoje
         if (convertidosJaEnviados.has(convertido.id)) {
-          console.log(`⏭️ ${convertido.full_name} já recebeu mensagem hoje, ignorando`);
           ignorados++;
           resultados.push({ nome: convertido.full_name, sucesso: true, ignorado: true });
           continue;
@@ -226,7 +201,7 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(convertido.full_name, mensagemTemplate);
-          await enviarMensagemZAPI(convertido.whatsapp, mensagem);
+          await enviarMensagemEvolution(convertido.whatsapp, mensagem);
           
           await supabase.from('aniversarios_enviados').insert({
             novo_convertido_id: convertido.id,
@@ -236,7 +211,6 @@ serve(async (req) => {
           
           enviados++;
           resultados.push({ nome: convertido.full_name, sucesso: true });
-          console.log(`✅ Mensagem enviada para ${convertido.full_name} (novo convertido)`);
           
           await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (err) {
@@ -253,7 +227,6 @@ serve(async (req) => {
           } catch {}
           
           resultados.push({ nome: convertido.full_name, sucesso: false, erro: errorMsg });
-          console.error(`❌ Erro ao enviar para ${convertido.full_name}:`, err);
         }
       }
 
@@ -272,7 +245,6 @@ serve(async (req) => {
     }
 
     if (action === 'verificar_aniversariantes') {
-      // Apenas listar aniversariantes do dia sem enviar
       const { data: membros, error: membrosError } = await supabase
         .from('members')
         .select('id, full_name, whatsapp, birth_date')

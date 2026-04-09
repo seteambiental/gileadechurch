@@ -6,6 +6,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
+const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
+const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
+const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
+
 interface CriancaAusente {
   crianca_id: string;
   crianca_nome: string;
@@ -18,14 +23,10 @@ interface CriancaAusente {
 }
 
 const formatarTelefone = (telefone: string): string => {
-  // Remove caracteres não numéricos
   let numero = telefone.replace(/\D/g, '');
-  
-  // Adiciona código do país se não tiver
   if (!numero.startsWith('55')) {
     numero = '55' + numero;
   }
-  
   return numero;
 };
 
@@ -38,6 +39,35 @@ const getTurmaNome = (turma: string): string => {
   };
   return nomes[turma] || turma;
 };
+
+async function enviarMensagemEvolution(telefone: string, mensagem: string) {
+  const phoneFormatted = formatarTelefone(telefone);
+  
+  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
+  
+  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': EVOLUTION_API_KEY || '',
+    },
+    body: JSON.stringify({
+      number: `${phoneFormatted}@s.whatsapp.net`,
+      text: mensagem,
+    }),
+  });
+  
+  const result = await response.json();
+  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
+  
+  if (!response.ok) {
+    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
+  }
+  
+  return result;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -68,7 +98,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Buscar presenças do dia
     let presencasQuery = supabase
       .from('kids_presencas')
       .select('*')
@@ -86,7 +115,6 @@ serve(async (req) => {
     }
 
     if (!ausencias || ausencias.length === 0) {
-      console.log('Nenhuma ausência registrada');
       return new Response(
         JSON.stringify({ success: true, message: 'Nenhuma ausência registrada', notificacoes: 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -95,11 +123,9 @@ serve(async (req) => {
 
     console.log(`Encontradas ${ausencias.length} ausências`);
 
-    // Buscar responsáveis para cada criança ausente
     const criancasAusentes: CriancaAusente[] = [];
 
     for (const ausencia of ausencias) {
-      // Buscar responsáveis
       let responsaveisQuery = supabase
         .from('kids_responsaveis')
         .select(`
@@ -121,12 +147,8 @@ serve(async (req) => {
         continue;
       }
 
-      if (!responsaveis || responsaveis.length === 0) {
-        console.log(`Nenhum responsável cadastrado para criança ${ausencia.member_id || ausencia.novo_convertido_id}`);
-        continue;
-      }
+      if (!responsaveis || responsaveis.length === 0) continue;
 
-      // Buscar nome da criança
       let criancaNome = '';
       if (ausencia.member_id) {
         const { data: member } = await supabase
@@ -160,8 +182,6 @@ serve(async (req) => {
       }
     }
 
-    console.log(`${criancasAusentes.length} notificações a enviar`);
-
     if (criancasAusentes.length === 0) {
       return new Response(
         JSON.stringify({ 
@@ -172,11 +192,6 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Enviar notificações via Z-API
-    const zapiToken = Deno.env.get('ZAPI_TOKEN');
-    const zapiInstanceId = Deno.env.get('ZAPI_INSTANCE_ID');
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
 
     let enviadas = 0;
     let erros = 0;
@@ -193,7 +208,6 @@ Esperamos vocês no próximo culto! 🙏
 Com carinho,
 Ministério Kids - Igreja Gileade`;
 
-      // Registrar no log
       const logData = {
         crianca_member_id: item.crianca_tipo === 'membro' ? item.crianca_id : null,
         crianca_novo_convertido_id: item.crianca_tipo === 'novo_convertido' ? item.crianca_id : null,
@@ -207,7 +221,6 @@ Ministério Kids - Igreja Gileade`;
       };
 
       if (!enviar_agora) {
-        // Apenas registrar, não enviar
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
           status: 'pendente',
@@ -216,54 +229,25 @@ Ministério Kids - Igreja Gileade`;
         continue;
       }
 
-      // Enviar via Z-API
-      if (!zapiToken || !zapiInstanceId) {
-        console.log('Z-API não configurado, apenas registrando');
+      if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
           status: 'erro',
-          erro_mensagem: 'Z-API não configurado',
+          erro_mensagem: 'Evolution API não configurada',
         });
         erros++;
         continue;
       }
 
       try {
-        const telefoneFormatado = formatarTelefone(item.responsavel_whatsapp);
+        await enviarMensagemEvolution(item.responsavel_whatsapp, mensagem);
         
-        const response = await fetch(
-          `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken || '',
-            },
-            body: JSON.stringify({
-              phone: telefoneFormatado,
-              message: mensagem,
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (response.ok) {
-          await supabase.from('kids_notificacoes_log').insert({
-            ...logData,
-            status: 'enviada',
-          });
-          enviadas++;
-          console.log(`Notificação enviada para ${item.responsavel_nome}`);
-        } else {
-          await supabase.from('kids_notificacoes_log').insert({
-            ...logData,
-            status: 'erro',
-            erro_mensagem: result.message || 'Erro ao enviar',
-          });
-          erros++;
-          console.error(`Erro ao enviar para ${item.responsavel_nome}:`, result);
-        }
+        await supabase.from('kids_notificacoes_log').insert({
+          ...logData,
+          status: 'enviada',
+        });
+        enviadas++;
+        console.log(`Notificação enviada para ${item.responsavel_nome}`);
       } catch (error: any) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
