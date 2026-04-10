@@ -105,7 +105,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
   const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
-  const TIPO_OPTIONS = ["Membro", "Não membro", "Líderes e Anfitriões", "Equipe", "—"];
+  const TIPO_OPTIONS = ["Membro", "Não membro", "Família", "Líderes e Anfitriões", "Equipe (apoio/serviço)", "—"];
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
@@ -622,7 +622,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-heading font-bold">Inscrições</h2>
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); setSelectedIds([]); }}>
+          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); setSelectedIds([]); setFiltroGenero(new Set(GENERO_OPTIONS)); setFiltroTipo(new Set(TIPO_OPTIONS)); }}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>
@@ -746,8 +746,23 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         <div className="text-center py-8">Carregando...</div>
       ) : inscricoes.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Nenhuma inscrição registrada para este evento.
+          <CardContent className="py-8 text-center text-muted-foreground space-y-3">
+            <p>{(rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0
+              ? "Nenhuma inscrição encontrada com os filtros atuais."
+              : "Nenhuma inscrição registrada para este evento."}</p>
+            {((rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setFiltroGenero(new Set(GENERO_OPTIONS));
+                  setFiltroTipo(new Set(TIPO_OPTIONS));
+                  setSearchNome("");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
