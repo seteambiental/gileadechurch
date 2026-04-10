@@ -356,23 +356,25 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
       const isAgenda = source === "agenda_inscricao";
       const primaryTable = isAgenda ? "inscricoes_eventos" : "impacto_inscricoes";
-      const secondaryTable = isAgenda ? "impacto_inscricoes" : "inscricoes_eventos";
 
       // Delete from primary table
       const { error } = await supabase.from(primaryTable as any).delete().eq("id", id);
       if (error) throw error;
 
-      // Also delete counterpart in the other table (by member_id or nome)
+      // Delete counterpart in BOTH tables to ensure no ghost records remain
       const evId = evento_id || selectedEventoId;
       if (evId) {
+        // Always try to delete by member_id from both tables
         if (member_id) {
-          await supabase.from(secondaryTable as any).delete().eq("evento_id", evId).eq("member_id", member_id);
-        } else if (nome) {
+          await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).eq("member_id", member_id);
+          await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).eq("member_id", member_id);
+        }
+        // Also try to delete by name (handles cases without member_id or name-only records)
+        if (nome) {
           const nomeNorm = nome.trim();
-          if (isAgenda) {
-            await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).ilike("nome", nomeNorm);
-          } else {
-            await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).ilike("nome_participante", nomeNorm);
+          if (nomeNorm) {
+            await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).ilike("nome", `%${nomeNorm}%`);
+            await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).ilike("nome_participante", `%${nomeNorm}%`);
           }
         }
       }

@@ -350,11 +350,15 @@ export const InscricoesEventoDialog = ({
       if (error) throw error;
 
       // Also delete counterpart in impacto_inscricoes
-      if (deletedInscricao && eventoId) {
-        if (deletedInscricao.member_id) {
+      if (eventoId) {
+        if (deletedInscricao?.member_id) {
           await supabase.from("impacto_inscricoes").delete().eq("evento_id", eventoId).eq("member_id", deletedInscricao.member_id);
-        } else if (deletedInscricao.nome_participante) {
-          await supabase.from("impacto_inscricoes").delete().eq("evento_id", eventoId).ilike("nome", deletedInscricao.nome_participante.trim());
+        }
+        if (deletedInscricao?.nome_participante) {
+          const nomeNorm = deletedInscricao.nome_participante.trim();
+          if (nomeNorm) {
+            await supabase.from("impacto_inscricoes").delete().eq("evento_id", eventoId).ilike("nome", `%${nomeNorm}%`);
+          }
         }
       }
 
