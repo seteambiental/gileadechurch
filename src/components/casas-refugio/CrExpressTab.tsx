@@ -40,6 +40,8 @@ import {
   Mail,
   MessageCircle,
   Users,
+  Plus,
+  Send,
 } from "lucide-react";
 
 import { toast } from "sonner";
