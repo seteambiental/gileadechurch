@@ -622,7 +622,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-xl font-heading font-bold">Inscrições</h2>
         <div className="flex flex-wrap gap-2">
-          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); setSelectedIds([]); }}>
+          <Select value={selectedEventoId} onValueChange={(v) => { setSelectedEventoId(v); setSearchNome(""); setSelectedIds([]); setFiltroGenero(new Set(GENERO_OPTIONS)); setFiltroTipo(new Set(TIPO_OPTIONS)); }}>
             <SelectTrigger className="w-[250px]">
               <SelectValue placeholder="Selecione um evento" />
             </SelectTrigger>
