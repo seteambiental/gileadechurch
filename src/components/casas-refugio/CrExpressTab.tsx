@@ -944,69 +944,137 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
                 <p className="text-xs text-muted-foreground">Líderes, supervisores e síndicos (intervalo de 30s entre envios)</p>
               </div>
             </Button>
-            <div className="border rounded-lg p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="font-medium text-sm">Enviar para destinatários específicos</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setWhatsappSpecificPhones([...whatsappSpecificPhones, ""])}
-                >
-                  <Plus className="w-4 h-4 mr-1" /> Adicionar
-                </Button>
+            <div className="border rounded-lg p-3 space-y-3">
+              <p className="font-medium text-sm">Enviar para destinatários específicos</p>
+              
+              {/* Member search and selection */}
+              <div className="space-y-2">
+                <Input
+                  placeholder="Buscar membro pelo nome..."
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                />
+                {memberSearch.trim() && (
+                  <div className="max-h-40 overflow-y-auto border rounded-md">
+                    {allMembers
+                      .filter(m =>
+                        m.full_name.toLowerCase().includes(memberSearch.toLowerCase()) &&
+                        !selectedMemberIds.includes(m.id)
+                      )
+                      .slice(0, 20)
+                      .map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex justify-between items-center"
+                          onClick={() => {
+                            setSelectedMemberIds([...selectedMemberIds, m.id]);
+                            setMemberSearch("");
+                          }}
+                        >
+                          <span>{m.full_name}</span>
+                          <span className="text-xs text-muted-foreground">{m.whatsapp}</span>
+                        </button>
+                      ))}
+                    {allMembers.filter(m =>
+                      m.full_name.toLowerCase().includes(memberSearch.toLowerCase()) &&
+                      !selectedMemberIds.includes(m.id)
+                    ).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">Nenhum membro encontrado</p>
+                    )}
+                  </div>
+                )}
               </div>
-              {whatsappSpecificPhones.map((phone, idx) => (
-                <div key={idx} className="flex gap-2 items-center">
-                  <Input
-                    placeholder="Ex: 41999999999"
-                    value={phone}
-                    onChange={(e) => {
-                      const updated = [...whatsappSpecificPhones];
-                      updated[idx] = e.target.value.replace(/\D/g, '');
-                      setWhatsappSpecificPhones(updated);
-                    }}
-                    className="flex-1"
-                  />
-                  {whatsappSpecificPhones.length > 1 && (
+
+              {/* Selected members */}
+              {selectedMemberIds.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Membros selecionados:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedMemberIds.map(id => {
+                      const m = allMembers.find(mb => mb.id === id);
+                      return m ? (
+                        <span key={id} className="inline-flex items-center gap-1 bg-muted rounded-full px-2 py-0.5 text-xs">
+                          {m.full_name.split(" ")[0]}
+                          <button type="button" onClick={() => setSelectedMemberIds(selectedMemberIds.filter(sid => sid !== id))}>
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Manual phones */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">Números manuais (opcional):</p>
+                  <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setManualPhones([...manualPhones, ""])}>
+                    <Plus className="w-3 h-3 mr-1" /> Número
+                  </Button>
+                </div>
+                {manualPhones.map((phone, idx) => (
+                  <div key={idx} className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Ex: 41999999999"
+                      value={phone}
+                      onChange={(e) => {
+                        const updated = [...manualPhones];
+                        updated[idx] = e.target.value.replace(/\D/g, '');
+                        setManualPhones(updated);
+                      }}
+                      className="flex-1 h-8 text-sm"
+                    />
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-destructive px-2"
-                      onClick={() => setWhatsappSpecificPhones(whatsappSpecificPhones.filter((_, i) => i !== idx))}
+                      className="text-destructive px-1 h-8"
+                      onClick={() => setManualPhones(manualPhones.filter((_, i) => i !== idx))}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3 h-3" />
                     </Button>
-                  )}
-                </div>
-              ))}
-              <Button
-                size="sm"
-                className="w-full bg-green-600 text-white hover:bg-green-700"
-                disabled={whatsappSpecificPhones.every(p => !p.trim()) || sendingSpecific}
-                onClick={async () => {
-                  if (!whatsappChoiceCrId) return;
-                  const phones = whatsappSpecificPhones.filter(p => p.trim());
-                  if (phones.length === 0) return;
-                  setSendingSpecific(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
-                      body: { action: 'whatsapp', crExpressId: whatsappChoiceCrId, destinatarioTelefones: phones },
-                    });
-                    if (error) throw error;
-                    if (data?.error) throw new Error(data.error);
-                    toast.success(`CR Express enviado para ${phones.length} destinatário(s)!`);
-                    setWhatsappChoiceCrId(null);
-                    setWhatsappSpecificPhones([""]);
-                  } catch (err: any) {
-                    toast.error(err.message || "Erro ao enviar");
-                  } finally {
-                    setSendingSpecific(false);
-                  }
-                }}
-              >
-                {sendingSpecific ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
-                Enviar ({whatsappSpecificPhones.filter(p => p.trim()).length})
-              </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Send button */}
+              {(() => {
+                const memberPhones = selectedMemberIds
+                  .map(id => allMembers.find(m => m.id === id)?.whatsapp)
+                  .filter(Boolean) as string[];
+                const manual = manualPhones.filter(p => p.trim());
+                const totalPhones = [...memberPhones, ...manual];
+                return (
+                  <Button
+                    size="sm"
+                    className="w-full bg-green-600 text-white hover:bg-green-700"
+                    disabled={totalPhones.length === 0 || sendingSpecific}
+                    onClick={async () => {
+                      if (!whatsappChoiceCrId || totalPhones.length === 0) return;
+                      setSendingSpecific(true);
+                      try {
+                        const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
+                          body: { action: 'whatsapp', crExpressId: whatsappChoiceCrId, destinatarioTelefones: totalPhones },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success(`CR Express enviado para ${totalPhones.length} destinatário(s)!`);
+                        setWhatsappChoiceCrId(null);
+                        setSelectedMemberIds([]);
+                        setManualPhones([]);
+                      } catch (err: any) {
+                        toast.error(err.message || "Erro ao enviar");
+                      } finally {
+                        setSendingSpecific(false);
+                      }
+                    }}
+                  >
+                    {sendingSpecific ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
+                    Enviar ({totalPhones.length})
+                  </Button>
+                );
+              })()}
             </div>
           </div>
           <AlertDialogFooter>
