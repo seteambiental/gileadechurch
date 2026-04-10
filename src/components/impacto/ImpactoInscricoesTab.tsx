@@ -941,7 +941,13 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         onOpenChange={(open) => !open && setDeletingInscricao(null)}
         onConfirm={() => {
           if (deletingInscricao) {
-            deleteMutation.mutate({ id: deletingInscricao.id, source: deletingInscricao.source });
+            deleteMutation.mutate({
+              id: deletingInscricao.id,
+              source: deletingInscricao.source,
+              member_id: deletingInscricao.member_id,
+              nome: deletingInscricao.nome,
+              evento_id: deletingInscricao.evento_id,
+            });
             setDeletingInscricao(null);
           }
         }}
