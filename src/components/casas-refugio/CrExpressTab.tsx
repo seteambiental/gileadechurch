@@ -40,6 +40,8 @@ import {
   Mail,
   MessageCircle,
   Users,
+  Plus,
+  Send,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -212,7 +214,7 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [whatsappChoiceCrId, setWhatsappChoiceCrId] = useState<string | null>(null);
-  const [whatsappSpecificPhone, setWhatsappSpecificPhone] = useState("");
+  const [whatsappSpecificPhones, setWhatsappSpecificPhones] = useState<string[]>([""]);
   const [sendingSpecific, setSendingSpecific] = useState(false);
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
@@ -927,40 +929,68 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
               </div>
             </Button>
             <div className="border rounded-lg p-3 space-y-2">
-              <p className="font-medium text-sm">Enviar para número específico</p>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Ex: 41999999999"
-                  value={whatsappSpecificPhone}
-                  onChange={(e) => setWhatsappSpecificPhone(e.target.value.replace(/\D/g, ''))}
-                  className="flex-1"
-                />
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-sm">Enviar para destinatários específicos</p>
                 <Button
                   size="sm"
-                  className="bg-green-600 text-white hover:bg-green-700"
-                  disabled={!whatsappSpecificPhone.trim() || sendingSpecific}
-                  onClick={async () => {
-                    if (!whatsappChoiceCrId) return;
-                    setSendingSpecific(true);
-                    try {
-                      const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
-                        body: { action: 'whatsapp', crExpressId: whatsappChoiceCrId, destinatarioTelefone: whatsappSpecificPhone },
-                      });
-                      if (error) throw error;
-                      if (data?.error) throw new Error(data.error);
-                      toast.success(`CR Express enviado para ${whatsappSpecificPhone}!`);
-                      setWhatsappChoiceCrId(null);
-                      setWhatsappSpecificPhone("");
-                    } catch (err: any) {
-                      toast.error(err.message || "Erro ao enviar");
-                    } finally {
-                      setSendingSpecific(false);
-                    }
-                  }}
+                  variant="ghost"
+                  onClick={() => setWhatsappSpecificPhones([...whatsappSpecificPhones, ""])}
                 >
-                  {sendingSpecific ? <Loader2 className="w-4 h-4 animate-spin" /> : <MessageCircle className="w-4 h-4" />}
+                  <Plus className="w-4 h-4 mr-1" /> Adicionar
                 </Button>
               </div>
+              {whatsappSpecificPhones.map((phone, idx) => (
+                <div key={idx} className="flex gap-2 items-center">
+                  <Input
+                    placeholder="Ex: 41999999999"
+                    value={phone}
+                    onChange={(e) => {
+                      const updated = [...whatsappSpecificPhones];
+                      updated[idx] = e.target.value.replace(/\D/g, '');
+                      setWhatsappSpecificPhones(updated);
+                    }}
+                    className="flex-1"
+                  />
+                  {whatsappSpecificPhones.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive px-2"
+                      onClick={() => setWhatsappSpecificPhones(whatsappSpecificPhones.filter((_, i) => i !== idx))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                size="sm"
+                className="w-full bg-green-600 text-white hover:bg-green-700"
+                disabled={whatsappSpecificPhones.every(p => !p.trim()) || sendingSpecific}
+                onClick={async () => {
+                  if (!whatsappChoiceCrId) return;
+                  const phones = whatsappSpecificPhones.filter(p => p.trim());
+                  if (phones.length === 0) return;
+                  setSendingSpecific(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke("enviar-cr-express", {
+                      body: { action: 'whatsapp', crExpressId: whatsappChoiceCrId, destinatarioTelefones: phones },
+                    });
+                    if (error) throw error;
+                    if (data?.error) throw new Error(data.error);
+                    toast.success(`CR Express enviado para ${phones.length} destinatário(s)!`);
+                    setWhatsappChoiceCrId(null);
+                    setWhatsappSpecificPhones([""]);
+                  } catch (err: any) {
+                    toast.error(err.message || "Erro ao enviar");
+                  } finally {
+                    setSendingSpecific(false);
+                  }
+                }}
+              >
+                {sendingSpecific ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Send className="w-4 h-4 mr-1" />}
+                Enviar ({whatsappSpecificPhones.filter(p => p.trim()).length})
+              </Button>
             </div>
           </div>
           <AlertDialogFooter>
