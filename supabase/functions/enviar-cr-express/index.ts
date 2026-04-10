@@ -150,7 +150,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, crExpressId, destinatarioTelefone } = await req.json();
+    const { action, crExpressId, destinatarioTelefone, destinatarioTelefones } = await req.json();
 
     if (!crExpressId) throw new Error('crExpressId é obrigatório');
 
@@ -200,14 +200,21 @@ serve(async (req) => {
 
     let resultados = { email: { enviados: 0, erros: 0 }, whatsapp: { enviados: 0, erros: 0 } };
 
-    // If sending to a specific phone number (destinatarioTelefone), send only to that number
-    if (action === 'whatsapp' && destinatarioTelefone) {
-      try {
-        await enviarMensagemEvolution(destinatarioTelefone, mensagemWhatsApp);
-        resultados.whatsapp.enviados = 1;
-      } catch (err: any) {
-        console.error(`Erro WhatsApp para ${destinatarioTelefone}:`, err);
-        resultados.whatsapp.erros = 1;
+    // Handle specific recipients (single or multiple)
+    const telefones: string[] = destinatarioTelefones || (destinatarioTelefone ? [destinatarioTelefone] : []);
+    if (action === 'whatsapp' && telefones.length > 0) {
+      for (let i = 0; i < telefones.length; i++) {
+        try {
+          await enviarMensagemEvolution(telefones[i], mensagemWhatsApp);
+          resultados.whatsapp.enviados++;
+        } catch (err: any) {
+          console.error(`Erro WhatsApp para ${telefones[i]}:`, err);
+          resultados.whatsapp.erros++;
+        }
+        // Intervalo de 30s entre envios para múltiplos destinatários
+        if (telefones.length > 1 && i < telefones.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 30000));
+        }
       }
       return new Response(JSON.stringify({ success: true, resultados }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
