@@ -214,8 +214,24 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [whatsappChoiceCrId, setWhatsappChoiceCrId] = useState<string | null>(null);
-  const [whatsappSpecificPhones, setWhatsappSpecificPhones] = useState<string[]>([""]);
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [manualPhones, setManualPhones] = useState<string[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
   const [sendingSpecific, setSendingSpecific] = useState(false);
+
+  const { data: allMembers = [] } = useQuery({
+    queryKey: ["members-whatsapp-list"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp")
+        .eq("excluido", false)
+        .not("whatsapp", "is", null)
+        .order("full_name");
+      return data || [];
+    },
+    enabled: !!whatsappChoiceCrId,
+  });
   const [page, setPage] = useState(1);
   const PER_PAGE = 10;
 
