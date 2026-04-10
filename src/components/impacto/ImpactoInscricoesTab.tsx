@@ -746,8 +746,23 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         <div className="text-center py-8">Carregando...</div>
       ) : inscricoes.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-muted-foreground">
-            Nenhuma inscrição registrada para este evento.
+          <CardContent className="py-8 text-center text-muted-foreground space-y-3">
+            <p>{(rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0
+              ? "Nenhuma inscrição encontrada com os filtros atuais."
+              : "Nenhuma inscrição registrada para este evento."}</p>
+            {((rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setFiltroGenero(new Set(GENERO_OPTIONS));
+                  setFiltroTipo(new Set(TIPO_OPTIONS));
+                  setSearchNome("");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
