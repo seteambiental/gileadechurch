@@ -400,6 +400,8 @@ export const InscricoesEventoDialog = ({
       }
       
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } finally {
