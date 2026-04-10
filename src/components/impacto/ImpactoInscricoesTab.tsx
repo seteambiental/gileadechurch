@@ -107,7 +107,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
   const TIPO_OPTIONS = ["Membro", "Não membro", "Família", "Líderes e Anfitriões", "Equipe (apoio/serviço)", "—"];
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
-  const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string } | null>(null);
+  const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
@@ -353,10 +353,29 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   };
 
   const deleteMutation = useMutation({
-    mutationFn: async ({ id, source }: { id: string; source?: string }) => {
-      const table = source === "agenda_inscricao" ? "inscricoes_eventos" : "impacto_inscricoes";
-      const { error } = await supabase.from(table as any).delete().eq("id", id);
+    mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
+      const isAgenda = source === "agenda_inscricao";
+      const primaryTable = isAgenda ? "inscricoes_eventos" : "impacto_inscricoes";
+      const secondaryTable = isAgenda ? "impacto_inscricoes" : "inscricoes_eventos";
+
+      // Delete from primary table
+      const { error } = await supabase.from(primaryTable as any).delete().eq("id", id);
       if (error) throw error;
+
+      // Also delete counterpart in the other table (by member_id or nome)
+      const evId = evento_id || selectedEventoId;
+      if (evId) {
+        if (member_id) {
+          await supabase.from(secondaryTable as any).delete().eq("evento_id", evId).eq("member_id", member_id);
+        } else if (nome) {
+          const nomeNorm = nome.trim();
+          if (isAgenda) {
+            await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).ilike("nome", nomeNorm);
+          } else {
+            await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).ilike("nome_participante", nomeNorm);
+          }
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Inscrição removida!");
@@ -890,7 +909,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                         <Button
                           size="sm"
                            variant="ghost"
-                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome })}
+                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome, member_id: inscricao.member_id, evento_id: inscricao.evento_id })}
                          >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
@@ -922,7 +941,13 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         onOpenChange={(open) => !open && setDeletingInscricao(null)}
         onConfirm={() => {
           if (deletingInscricao) {
-            deleteMutation.mutate({ id: deletingInscricao.id, source: deletingInscricao.source });
+            deleteMutation.mutate({
+              id: deletingInscricao.id,
+              source: deletingInscricao.source,
+              member_id: deletingInscricao.member_id,
+              nome: deletingInscricao.nome,
+              evento_id: deletingInscricao.evento_id,
+            });
             setDeletingInscricao(null);
           }
         }}

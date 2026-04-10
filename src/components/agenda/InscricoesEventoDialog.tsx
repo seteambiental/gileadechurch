@@ -340,11 +340,23 @@ export const InscricoesEventoDialog = ({
     if (!deleteId) return;
     setIsDeleting(true);
     try {
+      // Find the inscription to get member_id/nome for cross-table cleanup
+      const deletedInscricao = inscricoes.find(i => i.id === deleteId);
+
       const { error } = await supabase
         .from("inscricoes_eventos")
         .delete()
         .eq("id", deleteId);
       if (error) throw error;
+
+      // Also delete counterpart in impacto_inscricoes
+      if (deletedInscricao && eventoId) {
+        if (deletedInscricao.member_id) {
+          await supabase.from("impacto_inscricoes").delete().eq("evento_id", eventoId).eq("member_id", deletedInscricao.member_id);
+        } else if (deletedInscricao.nome_participante) {
+          await supabase.from("impacto_inscricoes").delete().eq("evento_id", eventoId).ilike("nome", deletedInscricao.nome_participante.trim());
+        }
+      }
 
       // Verificar se há alguém na lista de espera para notificar
       if (limiteVagas) {
@@ -388,6 +400,8 @@ export const InscricoesEventoDialog = ({
       }
       
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
     } finally {
