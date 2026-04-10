@@ -763,163 +763,167 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         </Card>
       ) : isLoading ? (
         <div className="text-center py-8">Carregando...</div>
-      ) : inscricoes.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground space-y-3">
-            <p>{(rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0
-              ? "Nenhuma inscrição encontrada com os filtros atuais."
-              : "Nenhuma inscrição registrada para este evento."}</p>
-            {((rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setFiltroGenero(new Set(GENERO_OPTIONS));
-                  setFiltroTipo(new Set(TIPO_OPTIONS));
-                  setSearchNome("");
-                }}
-              >
-                Limpar filtros
-              </Button>
-            )}
-          </CardContent>
-        </Card>
       ) : (
         <Card>
           <div className="overflow-x-auto max-h-[70vh] overflow-y-auto">
-          <Table className="min-w-max">
-             <TableHeader className="sticky top-0 z-10 bg-card">
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedIds.length === inscricoes.length}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                {isCol("referencia") && <TableHead>Ref.</TableHead>}
-                <TableHead></TableHead>
-                {isCol("nome") && <TableHead>Nome</TableHead>}
-                {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
-                {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
-                {isCol("telefone") && <TableHead>Contato</TableHead>}
-                {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
-                {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
-                {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
-                {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
-                {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
-                {isCol("status") && <TableHead>Status</TableHead>}
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {inscricoes.map((inscricao) => {
-                const valorPago = getValorPago(inscricao);
-                const valorInscricao = getValorInscricaoEvento(inscricao);
-                const aPagar = valorInscricao != null
-                  ? Math.max(0, valorInscricao - valorPago)
-                  : null;
-                return (
-                  <TableRow key={inscricao.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedIds.includes(inscricao.id)}
-                        onCheckedChange={(checked) => handleSelect(inscricao.id, !!checked)}
-                      />
-                    </TableCell>
-                    {isCol("referencia") && <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>}
-                    <TableCell>
-                      {inscricao.member?.photo_url ? (
-                        <img src={inscricao.member.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                          {(inscricao.nome || "?")[0]?.toUpperCase()}
-                        </div>
-                      )}
-                    </TableCell>
-                    {isCol("nome") && (
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {inscricao.nome}
-                          <button
-                            title={inscricao.aprovado ? "Aprovado" : "Clique para aprovar"}
-                            onClick={async () => {
-                              if (inscricao.aprovado) return;
-                              const { error } = await supabase
-                                .from("impacto_inscricoes")
-                                .update({ aprovado: true } as any)
-                                .eq("id", inscricao.id);
-                              if (error) {
-                                toast.error("Erro ao aprovar inscrição");
-                              } else {
-                                toast.success(`Inscrição de ${inscricao.nome} aprovada!`);
-                                queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
-                              }
+            <Table className="min-w-max">
+              <TableHeader className="sticky top-0 z-10 bg-card">
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={inscricoes.length > 0 && selectedIds.length === inscricoes.length}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  {isCol("referencia") && <TableHead>Ref.</TableHead>}
+                  <TableHead></TableHead>
+                  {isCol("nome") && <TableHead>Nome</TableHead>}
+                  {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
+                  {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
+                  {isCol("telefone") && <TableHead>Contato</TableHead>}
+                  {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
+                  {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
+                  {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
+                  {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
+                  {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
+                  {isCol("status") && <TableHead>Status</TableHead>}
+                  <TableHead className="w-20"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {inscricoes.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={visibleColumns.size + 3} className="py-8 text-center text-muted-foreground">
+                      <div className="space-y-3">
+                        <p>{(rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0
+                          ? "Nenhuma inscrição encontrada com os filtros atuais."
+                          : "Nenhuma inscrição registrada para este evento."}</p>
+                        {((rawImpactoInscricoes?.length || 0) + (rawAgendaInscricoes?.length || 0) > 0) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setFiltroGenero(new Set(GENERO_OPTIONS));
+                              setFiltroTipo(new Set(TIPO_OPTIONS));
+                              setSearchNome("");
                             }}
-                            className={`flex-shrink-0 ${inscricao.aprovado ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
                           >
-                            <CheckCircle className={`w-4 h-4 ${inscricao.aprovado ? "text-muted-foreground/40" : "text-green-500"}`} />
-                          </button>
-                        </div>
-                      </TableCell>
-                    )}
-                    {isCol("tipo") && (
-                      <TableCell className="text-sm">
-                        {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
-                      </TableCell>
-                    )}
-                    {isCol("genero") && (
-                      <TableCell className="text-sm">
-                        {resolveGeneroLabel(inscricao)}
-                      </TableCell>
-                    )}
-                    {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
-                    {isCol("local") && <TableCell>{getLocationLabel(inscricao)}</TableCell>}
-                    {isCol("forma_pagamento") && (
-                      <TableCell>{inscricao.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[inscricao.forma_pagamento] || inscricao.forma_pagamento) : "—"}</TableCell>
-                    )}
-                    {isCol("valor_inscricao") && (
-                      <TableCell className="text-sm">
-                        {valorInscricao != null ? formatCurrency(valorInscricao) : "—"}
-                      </TableCell>
-                    )}
-                    {isCol("a_pagar") && (
-                      <TableCell className="text-sm font-medium">
-                        {aPagar != null
-                          ? aPagar > 0
-                          ? <span className="text-destructive">{formatCurrency(aPagar)}</span>
-                            : <span className="text-primary">Quitado</span>
-                          : "—"}
-                      </TableCell>
-                    )}
-                    {isCol("valor_pago") && (
-                      <TableCell className="text-sm">
-                        {valorPago > 0 ? formatCurrency(valorPago) : "—"}
-                      </TableCell>
-                    )}
-                    {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleEdit(inscricao)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                           variant="ghost"
-                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome, member_id: inscricao.member_id, evento_id: inscricao.evento_id })}
-                         >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
+                            Limpar filtros
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : (
+                  inscricoes.map((inscricao) => {
+                    const valorPago = getValorPago(inscricao);
+                    const valorInscricao = getValorInscricaoEvento(inscricao);
+                    const aPagar = valorInscricao != null
+                      ? Math.max(0, valorInscricao - valorPago)
+                      : null;
+                    return (
+                      <TableRow key={inscricao.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.includes(inscricao.id)}
+                            onCheckedChange={(checked) => handleSelect(inscricao.id, !!checked)}
+                          />
+                        </TableCell>
+                        {isCol("referencia") && <TableCell className="text-xs font-mono text-muted-foreground">{inscricao.referencia || "—"}</TableCell>}
+                        <TableCell>
+                          {inscricao.member?.photo_url ? (
+                            <img src={inscricao.member.photo_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                              {(inscricao.nome || "?")[0]?.toUpperCase()}
+                            </div>
+                          )}
+                        </TableCell>
+                        {isCol("nome") && (
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {inscricao.nome}
+                              <button
+                                title={inscricao.aprovado ? "Aprovado" : "Clique para aprovar"}
+                                onClick={async () => {
+                                  if (inscricao.aprovado) return;
+                                  const { error } = await supabase
+                                    .from("impacto_inscricoes")
+                                    .update({ aprovado: true } as any)
+                                    .eq("id", inscricao.id);
+                                  if (error) {
+                                    toast.error("Erro ao aprovar inscrição");
+                                  } else {
+                                    toast.success(`Inscrição de ${inscricao.nome} aprovada!`);
+                                    queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+                                  }
+                                }}
+                                className={`flex-shrink-0 ${inscricao.aprovado ? "cursor-default" : "cursor-pointer hover:opacity-80"}`}
+                              >
+                                <CheckCircle className={`w-4 h-4 ${inscricao.aprovado ? "text-muted-foreground/40" : "text-green-500"}`} />
+                              </button>
+                            </div>
+                          </TableCell>
+                        )}
+                        {isCol("tipo") && (
+                          <TableCell className="text-sm">
+                            {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao] || "Membro"}
+                          </TableCell>
+                        )}
+                        {isCol("genero") && (
+                          <TableCell className="text-sm">
+                            {resolveGeneroLabel(inscricao)}
+                          </TableCell>
+                        )}
+                        {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
+                        {isCol("local") && <TableCell>{getLocationLabel(inscricao)}</TableCell>}
+                        {isCol("forma_pagamento") && (
+                          <TableCell>{inscricao.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[inscricao.forma_pagamento] || inscricao.forma_pagamento) : "—"}</TableCell>
+                        )}
+                        {isCol("valor_inscricao") && (
+                          <TableCell className="text-sm">
+                            {valorInscricao != null ? formatCurrency(valorInscricao) : "—"}
+                          </TableCell>
+                        )}
+                        {isCol("a_pagar") && (
+                          <TableCell className="text-sm font-medium">
+                            {aPagar != null
+                              ? aPagar > 0
+                                ? <span className="text-destructive">{formatCurrency(aPagar)}</span>
+                                : <span className="text-primary">Quitado</span>
+                              : "—"}
+                          </TableCell>
+                        )}
+                        {isCol("valor_pago") && (
+                          <TableCell className="text-sm">
+                            {valorPago > 0 ? formatCurrency(valorPago) : "—"}
+                          </TableCell>
+                        )}
+                        {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleEdit(inscricao)}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome, member_id: inscricao.member_id, evento_id: inscricao.evento_id })}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
           </div>
         </Card>
       )}
