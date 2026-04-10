@@ -48,7 +48,7 @@ export function ColumnFilterPopover({ title, options, selected, onChange }: Colu
   return (
     <div className="flex items-center gap-1">
       <span>{title}</span>
-      <Popover>
+      <Popover modal={true}>
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
