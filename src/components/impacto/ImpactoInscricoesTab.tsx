@@ -909,7 +909,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                         <Button
                           size="sm"
                            variant="ghost"
-                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome })}
+                           onClick={() => setDeletingInscricao({ id: inscricao.id, source: inscricao.source, nome: inscricao.nome, member_id: inscricao.member_id, evento_id: inscricao.evento_id })}
                          >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
