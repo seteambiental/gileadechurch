@@ -32,6 +32,8 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe (apoio/serviço)",
 };
 
+const TIPOS_INSCRICAO_PADRAO = ["membro", "nao_membro", "familia", "equipe"] as const;
+
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
   { value: "dinheiro", label: "Dinheiro" },
