@@ -379,6 +379,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-financeiro", eventoId] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
+      queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes", eventoId] });
       onOpenChange(false);
     },
     onError: (error: any) => {
