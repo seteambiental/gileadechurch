@@ -315,6 +315,21 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
             </div>
           )}
 
+          <div className="space-y-2">
+            <Label>Tipo de Inscrição</Label>
+            <Select value={tipoInscricao} onValueChange={setTipoInscricao}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="membro">Membro</SelectItem>
+                <SelectItem value="nao_membro">Não Membro</SelectItem>
+                <SelectItem value="familia">Líderes e Anfitriões</SelectItem>
+                <SelectItem value="equipe">Equipe (Apoio/Serviço)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button
             className="w-full"
             disabled={mutation.isPending}
