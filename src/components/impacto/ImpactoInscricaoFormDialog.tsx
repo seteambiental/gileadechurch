@@ -32,6 +32,8 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe (apoio/serviço)",
 };
 
+const TIPOS_INSCRICAO_PADRAO = ["membro", "nao_membro", "familia", "equipe"] as const;
+
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
   { value: "dinheiro", label: "Dinheiro" },
@@ -93,7 +95,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     enabled: !!eventoId,
   });
 
-  const tiposPermitidos: string[] = (evento?.tipos_inscricao as string[] | null) || ["membro", "nao_membro", "familia", "equipe"];
+  const tiposPermitidos = Array.from(new Set([...(evento?.tipos_inscricao || []), ...TIPOS_INSCRICAO_PADRAO]));
 
   const { data: members } = useQuery({
     queryKey: ["members-list"],
