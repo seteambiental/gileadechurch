@@ -299,6 +299,20 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               .insert({ ...payload, member_id: inscricao.member_id || null, aprovado: true });
             if (error) throw error;
           }
+
+          // Also update the inscricoes_eventos record so data stays in sync
+          const agendaUpdate: Record<string, any> = {
+            tipo_inscricao: payload.tipo_inscricao,
+            status_pagamento: payload.status_pagamento,
+            nome_participante: payload.nome,
+          };
+          if (payload.telefone) agendaUpdate.telefone_contato = payload.telefone;
+          if (payload.genero) agendaUpdate.genero = payload.genero;
+          
+          await supabase
+            .from("inscricoes_eventos")
+            .update(agendaUpdate)
+            .eq("id", inscricao.id);
         } else {
           const { error } = await supabase
             .from("impacto_inscricoes")
