@@ -5,6 +5,13 @@ import { toast } from "sonner";
 import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
 import { maskCPF } from "@/lib/masks";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -39,6 +46,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [manualMinisterio, setManualMinisterio] = useState("");
   const [manualCpf, setManualCpf] = useState("");
   const [manualRg, setManualRg] = useState("");
+  const [tipoInscricao, setTipoInscricao] = useState("membro");
 
   const { data: eventoConfig } = useQuery({
     queryKey: ["impacto-evento-config", eventoId],
@@ -108,6 +116,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           ministerio_igreja: manualMinisterio || null,
           cpf: manualCpf || null,
           rg: manualRg || null,
+          tipo_inscricao: tipoInscricao,
         });
         if (error) throw error;
       } else {
@@ -140,6 +149,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           genero: selectedMember.genero || null,
           cpf: selectedMember.cpf || null,
           casa_refugio_id: selectedMember.casa_refugio_id || null,
+          tipo_inscricao: tipoInscricao,
         });
         if (error) throw error;
       }
@@ -165,6 +175,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     setManualMinisterio("");
     setManualCpf("");
     setManualRg("");
+    setTipoInscricao("membro");
     setIsManual(false);
     onOpenChange(false);
   };
@@ -303,6 +314,21 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
               )}
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>Tipo de Inscrição</Label>
+            <Select value={tipoInscricao} onValueChange={setTipoInscricao}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="membro">Membro</SelectItem>
+                <SelectItem value="nao_membro">Não Membro</SelectItem>
+                <SelectItem value="familia">Líderes e Anfitriões</SelectItem>
+                <SelectItem value="equipe">Equipe (Apoio/Serviço)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
           <Button
             className="w-full"
