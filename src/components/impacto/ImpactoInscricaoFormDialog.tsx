@@ -528,6 +528,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   <p className="text-sm font-medium">{casaRefugio.name}</p>
                 </div>
               )}
+              <div>
+                <Label>Tel. Emergência</Label>
+                <Input
+                  value={telefoneEmergencia}
+                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
             </>
           )}
 
