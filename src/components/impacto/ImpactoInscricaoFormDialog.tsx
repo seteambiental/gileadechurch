@@ -555,12 +555,30 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </div>
               )}
               <div>
-                <Label>Tel. Emergência</Label>
+                <Label>Nome Contato Emergência</Label>
                 <Input
-                  value={telefoneEmergencia}
-                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
-                  placeholder="(00) 00000-0000"
+                  value={nomeResponsavel}
+                  onChange={(e) => setNomeResponsavel(e.target.value)}
+                  placeholder="Nome do responsável / emergência"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tel. Responsável</Label>
+                  <Input
+                    value={telefoneResponsavel}
+                    onChange={(e) => setTelefoneResponsavel(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label>Tel. Emergência</Label>
+                  <Input
+                    value={telefoneEmergencia}
+                    onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
               </div>
             </>
           )}
