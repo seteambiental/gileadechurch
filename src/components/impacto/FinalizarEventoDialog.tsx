@@ -22,9 +22,10 @@ interface FinalizarEventoDialogProps {
   onOpenChange: (open: boolean) => void;
   eventoId: string;
   eventoNome: string;
+  onFinalized?: () => void;
 }
 
-const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome }: FinalizarEventoDialogProps) => {
+const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome, onFinalized }: FinalizarEventoDialogProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
