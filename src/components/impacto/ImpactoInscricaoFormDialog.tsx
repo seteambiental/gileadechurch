@@ -71,6 +71,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [genero, setGenero] = useState("");
+  const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [statusPagamento, setStatusPagamento] = useState("pendente");
   const [formaPagamento, setFormaPagamento] = useState("");
@@ -131,6 +132,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTelefone(inscricao.telefone || memberData?.whatsapp || "");
       setEmail(inscricao.email || memberData?.email || "");
       setGenero(inscricao.genero || memberData?.genero || "");
+      setTelefoneEmergencia(inscricao.telefone_emergencia || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
@@ -169,6 +171,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTelefone("");
       setEmail("");
       setGenero("");
+      setTelefoneEmergencia("");
       setObservacoes("");
       const defaultTipo = tiposPermitidos[0] || "membro";
       setTipoInscricao(defaultTipo);
@@ -278,6 +281,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         email: finalEmail || null,
         genero: finalGenero || null,
         observacoes: observacoes || null,
+        telefone_emergencia: telefoneEmergencia || null,
         tipo_inscricao: tipoInscricao || "membro",
         valor_inscricao: parseFloat(valorInscricao) || null,
         status_pagamento: statusPagamento,
@@ -491,6 +495,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   placeholder="email@exemplo.com"
                 />
               </div>
+              <div>
+                <Label>Tel. Emergência</Label>
+                <Input
+                  value={telefoneEmergencia}
+                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
             </>
           ) : (
             <>
@@ -516,6 +528,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   <p className="text-sm font-medium">{casaRefugio.name}</p>
                 </div>
               )}
+              <div>
+                <Label>Tel. Emergência</Label>
+                <Input
+                  value={telefoneEmergencia}
+                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
             </>
           )}
 
