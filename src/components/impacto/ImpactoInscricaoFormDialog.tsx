@@ -130,7 +130,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setNome(inscricao.nome || memberData?.full_name || "");
       setTelefone(inscricao.telefone || memberData?.whatsapp || "");
       setEmail(inscricao.email || memberData?.email || "");
-      setGenero(inscricao.genero || "");
+      setGenero(inscricao.genero || memberData?.genero || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
@@ -190,7 +190,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         setValorInscricao("");
       }
     }
-  }, [open, inscricao, evento]);
+  }, [open, inscricao, evento, members]);
 
   const selectedMember = members?.find((m) => m.id === memberId);
   const casaRefugio = selectedMember?.casa_refugio_id
