@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Info, Users, DollarSign, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2 } from "lucide-react";
+import { Plus, Info, Users, DollarSign, Clock, TrendingUp, ArrowDownCircle, Scale, Pencil, Trash2, ChevronDown, ChevronRight } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import JiuJitsuDespesasTab from "./JiuJitsuDespesasTab";
@@ -52,14 +52,20 @@ export function JiuJitsuFinanceiroTab() {
   const [dataPagamento, setDataPagamento] = useState("");
   const [infoMensalidade, setInfoMensalidade] = useState("");
   const [editingPagamento, setEditingPagamento] = useState<any>(null);
-  
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Column filters
   const [statusColFilter, setStatusColFilter] = useState<Set<string>>(new Set());
+  const [turmaColFilter, setTurmaColFilter] = useState<Set<string>>(new Set());
+
   const { data: alunos = [] } = useQuery({
-    queryKey: ["jiujitsu_alunos"],
+    queryKey: ["jiujitsu_alunos_financeiro"],
     queryFn: async () => {
-      const { data } = await supabase.from("jiujitsu_alunos").select("*").eq("ativo", true).order("nome");
+      const { data } = await supabase
+        .from("jiujitsu_alunos")
+        .select("*, jiujitsu_turmas(nome)")
+        .eq("ativo", true)
+        .order("nome");
       return (data || []) as any[];
     },
   });
@@ -67,10 +73,53 @@ export function JiuJitsuFinanceiroTab() {
   const { data: pagamentos = [] } = useQuery({
     queryKey: ["jiujitsu_pagamentos"],
     queryFn: async () => {
-      const { data } = await supabase.from("jiujitsu_pagamentos").select("*, jiujitsu_alunos(nome)").order("created_at", { ascending: false });
+      const { data } = await supabase.from("jiujitsu_pagamentos").select("*").order("created_at", { ascending: false });
       return (data || []) as any[];
     },
   });
+
+  // Group pagamentos by aluno
+  const pagamentosByAluno = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const p of pagamentos) {
+      if (!map[p.aluno_id]) map[p.aluno_id] = [];
+      map[p.aluno_id].push(p);
+    }
+    return map;
+  }, [pagamentos]);
+
+  // Build enriched aluno rows
+  const alunoRows = useMemo(() => {
+    return alunos.map((a: any) => {
+      const pgtos = pagamentosByAluno[a.id] || [];
+      const { valor: mensalidade, faixa } = calcularMensalidade(a.data_nascimento);
+      const totalPago = pgtos.filter((p: any) => p.status === "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+      const totalPendente = pgtos.filter((p: any) => p.status !== "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+      const turma = a.jiujitsu_turmas?.nome || "Sem turma";
+      const statusGeral = mensalidade === 0 ? "Isento" : totalPago > 0 && totalPendente === 0 && pgtos.length > 0 ? "Em dia" : totalPendente > 0 ? "Pendente" : "Sem registro";
+      return { ...a, pgtos, mensalidade, faixa, totalPago, totalPendente, turma, statusGeral };
+    });
+  }, [alunos, pagamentosByAluno]);
+
+  // Filter options
+  const turmaOptions = useMemo(() => [...new Set(alunoRows.map((a: any) => a.turma))], [alunoRows]);
+  const statusOptions = useMemo(() => [...new Set(alunoRows.map((a: any) => a.statusGeral))], [alunoRows]);
+
+  useMemo(() => {
+    if (turmaColFilter.size === 0 && turmaOptions.length > 0) setTurmaColFilter(new Set(turmaOptions));
+  }, [turmaOptions]);
+  useMemo(() => {
+    if (statusColFilter.size === 0 && statusOptions.length > 0) setStatusColFilter(new Set(statusOptions));
+  }, [statusOptions]);
+
+  const filtered = useMemo(() => {
+    return alunoRows.filter((a: any) => {
+      if (search && !a.nome?.toLowerCase().includes(search.toLowerCase())) return false;
+      if (turmaColFilter.size > 0 && turmaColFilter.size < turmaOptions.length && !turmaColFilter.has(a.turma)) return false;
+      if (statusColFilter.size > 0 && statusColFilter.size < statusOptions.length && !statusColFilter.has(a.statusGeral)) return false;
+      return true;
+    });
+  }, [alunoRows, search, turmaColFilter, turmaOptions.length, statusColFilter, statusOptions.length]);
 
   // Auto-preencher valor quando selecionar aluno
   useEffect(() => {
@@ -86,28 +135,10 @@ export function JiuJitsuFinanceiroTab() {
     }
   }, [alunoId, alunos]);
 
-  const statusOptions = useMemo(() => [...new Set(pagamentos.map((p: any) => p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"))], [pagamentos]);
-
-  useMemo(() => {
-    if (statusColFilter.size === 0 && statusOptions.length > 0) setStatusColFilter(new Set(statusOptions));
-  }, [statusOptions]);
-
-  const filtered = useMemo(() => {
-    return pagamentos.filter((p: any) => {
-      if (search && !p.jiujitsu_alunos?.nome?.toLowerCase().includes(search.toLowerCase())) return false;
-      const statusLabel = p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado";
-      if (statusColFilter.size > 0 && statusColFilter.size < statusOptions.length && !statusColFilter.has(statusLabel)) return false;
-      return true;
-    });
-  }, [pagamentos, search, statusColFilter, statusOptions.length]);
-
   // Dashboard stats
   const stats = useMemo(() => {
     const totalAlunos = alunos.length;
-    const totalPrevisto = alunos.reduce((s: number, a: any) => {
-      const { valor: v } = calcularMensalidade(a.data_nascimento);
-      return s + v;
-    }, 0);
+    const totalPrevisto = alunos.reduce((s: number, a: any) => s + calcularMensalidade(a.data_nascimento).valor, 0);
     const totalPago = pagamentos.filter((p: any) => p.status === "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
     const totalPendente = pagamentos.filter((p: any) => p.status !== "pago").reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
     const pagos = pagamentos.filter((p: any) => p.status === "pago").length;
@@ -116,7 +147,6 @@ export function JiuJitsuFinanceiroTab() {
     return { totalAlunos, totalPrevisto, totalPago, totalPendente, pagos, pendentes, atrasados };
   }, [alunos, pagamentos]);
 
-  // Fetch despesas
   const { data: jiuDespesas = [] } = useQuery({
     queryKey: ["jiujitsu-despesas-summary"],
     queryFn: async () => {
@@ -127,6 +157,11 @@ export function JiuJitsuFinanceiroTab() {
   });
   const totalDespesas = jiuDespesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
   const saldoGeral = stats.totalPago - totalDespesas;
+
+  const resetForm = () => {
+    setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+    setEditingPagamento(null);
+  };
 
   const handleSave = async () => {
     if (editingPagamento) {
@@ -143,8 +178,7 @@ export function JiuJitsuFinanceiroTab() {
         toast({ title: "Pagamento atualizado!" });
         queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
         setFormOpen(false);
-        setEditingPagamento(null);
-        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+        resetForm();
       }
     } else {
       if (!alunoId || !mesRef) {
@@ -164,7 +198,7 @@ export function JiuJitsuFinanceiroTab() {
         toast({ title: "Pagamento registrado!" });
         queryClient.invalidateQueries({ queryKey: ["jiujitsu_pagamentos"] });
         setFormOpen(false);
-        setAlunoId(""); setMesRef(""); setValor(""); setStatus("pendente"); setDataPagamento(""); setInfoMensalidade("");
+        resetForm();
       }
     }
   };
@@ -194,6 +228,12 @@ export function JiuJitsuFinanceiroTab() {
     setFormOpen(true);
   };
 
+  const handleAddForAluno = (alunoIdParam: string) => {
+    resetForm();
+    setAlunoId(alunoIdParam);
+    setFormOpen(true);
+  };
+
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     const update: any = { status: newStatus };
     if (newStatus === "pago") {
@@ -207,9 +247,20 @@ export function JiuJitsuFinanceiroTab() {
     }
   };
 
+  const exportData = useMemo(() => {
+    return filtered.map((a: any) => ({
+      nome: a.nome,
+      turma: a.turma,
+      mensalidade: a.mensalidade === 0 ? "Isento" : formatCurrency(a.mensalidade),
+      total_pago: formatCurrency(a.totalPago),
+      total_pendente: formatCurrency(a.totalPendente),
+      status: a.statusGeral,
+    }));
+  }, [filtered]);
+
   return (
     <div className="space-y-6">
-      {/* Dashboard cards - matching Impacto style */}
+      {/* Dashboard cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -229,9 +280,7 @@ export function JiuJitsuFinanceiroTab() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(stats.totalPrevisto)}</div>
-            <p className="text-xs text-muted-foreground">
-              Valor mensal esperado
-            </p>
+            <p className="text-xs text-muted-foreground">Valor mensal esperado</p>
           </CardContent>
         </Card>
 
@@ -299,115 +348,194 @@ export function JiuJitsuFinanceiroTab() {
         </TabsList>
 
         <TabsContent value="receitas" className="space-y-6">
+          {/* Tabela de valores */}
+          <Card className="border-dashed">
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Tabela de Mensalidades</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">6–9 anos</Badge>
+                  <span className="text-muted-foreground">Isento</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">10–13 anos</Badge>
+                  <span className="text-muted-foreground">R$ 25,00</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="text-xs">14+ anos</Badge>
+                  <span className="text-muted-foreground">R$ 50,00</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Tabela de valores */}
-      <Card className="border-dashed">
-        <CardContent className="py-3 px-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Tabela de Mensalidades</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <SearchInput
+              placeholder="Buscar por aluno..."
+              value={search}
+              onChange={setSearch}
+              className="w-full sm:w-80"
+            />
+            <div className="flex gap-2">
+              <ExportButton
+                data={exportData}
+                columns={[
+                  { header: "Aluno", accessor: "nome" },
+                  { header: "Turma", accessor: "turma" },
+                  { header: "Mensalidade", accessor: "mensalidade" },
+                  { header: "Total Pago", accessor: "total_pago" },
+                  { header: "Pendente", accessor: "total_pendente" },
+                  { header: "Status", accessor: "status" },
+                ]}
+                filename="jiujitsu-financeiro"
+                title="Financeiro - Jiu-Jitsu"
+                sheetName="Financeiro"
+              />
+              <Button onClick={() => { resetForm(); setFormOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
+              </Button>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">6–9 anos</Badge>
-              <span className="text-muted-foreground">Isento</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">10–13 anos</Badge>
-              <span className="text-muted-foreground">R$ 25,00</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">14+ anos</Badge>
-              <span className="text-muted-foreground">R$ 50,00</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <SearchInput
-          placeholder="Buscar por aluno..."
-          value={search}
-          onChange={setSearch}
-          className="w-full sm:w-80"
-        />
-        <div className="flex gap-2">
-          <ExportButton
-            data={filtered}
-            columns={[
-              { header: "Aluno", accessor: (r: any) => r.jiujitsu_alunos?.nome || "—" },
-              { header: "Mês Ref.", accessor: "mes_referencia" },
-              { header: "Valor", accessor: (r: any) => Number(r.valor) === 0 ? "Isento" : `R$ ${Number(r.valor).toFixed(2)}` },
-              { header: "Status", accessor: (r: any) => r.status === "pago" ? "Pago" : r.status === "pendente" ? "Pendente" : "Atrasado" },
-              { header: "Data Pgto.", accessor: (r: any) => r.data_pagamento || "—" },
-            ]}
-            filename="jiujitsu-pagamentos"
-            title="Pagamentos - Jiu-Jitsu"
-            sheetName="Pagamentos"
-          />
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Pagamento
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Aluno</TableHead>
-              <TableHead>Mês Ref.</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>
-                <ColumnFilterPopover title="Status" options={statusOptions} selected={statusColFilter} onChange={setStatusColFilter} />
-              </TableHead>
-              <TableHead>Data Pgto.</TableHead>
-              <TableHead className="w-32">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum pagamento registrado</TableCell></TableRow>
-            ) : (
-              filtered.map((p: any) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.jiujitsu_alunos?.nome}</TableCell>
-                  <TableCell>{p.mes_referencia}</TableCell>
-                  <TableCell>
-                    {Number(p.valor) === 0 
-                      ? <Badge variant="outline" className="text-xs">Isento</Badge>
-                      : `R$ ${Number(p.valor).toFixed(2)}`
-                    }
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
-                      {p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"}
-                    </span>
-                  </TableCell>
-                  <TableCell>{p.data_pagamento || "—"}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {p.status !== "pago" && (
-                        <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
-                          Marcar Pago
-                        </Button>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}>
-                        <Pencil className="w-3 h-3 text-muted-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="rounded-md border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>Aluno</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Turma" options={turmaOptions} selected={turmaColFilter} onChange={setTurmaColFilter} />
+                  </TableHead>
+                  <TableHead>Mensalidade</TableHead>
+                  <TableHead>Total Pago</TableHead>
+                  <TableHead>Pendente</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Status" options={statusOptions} selected={statusColFilter} onChange={setStatusColFilter} />
+                  </TableHead>
+                  <TableHead className="w-20">Ações</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum aluno encontrado</TableCell>
+                  </TableRow>
+                ) : (
+                  filtered.map((a: any) => (
+                    <>
+                      <TableRow
+                        key={a.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}
+                      >
+                        <TableCell className="px-2">
+                          {a.pgtos.length > 0 ? (
+                            expandedId === a.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="font-medium">{a.nome}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">{a.turma}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {a.mensalidade === 0
+                            ? <Badge variant="outline" className="text-xs">Isento</Badge>
+                            : formatCurrency(a.mensalidade)
+                          }
+                        </TableCell>
+                        <TableCell className="text-green-600 font-medium">{formatCurrency(a.totalPago)}</TableCell>
+                        <TableCell className={a.totalPendente > 0 ? "text-yellow-600 font-medium" : ""}>
+                          {formatCurrency(a.totalPendente)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={a.statusGeral === "Isento" ? "outline" : a.statusGeral === "Em dia" ? "default" : a.statusGeral === "Pendente" ? "destructive" : "secondary"}
+                            className="text-xs"
+                          >
+                            {a.statusGeral}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); handleAddForAluno(a.id); }}
+                          >
+                            <Plus className="w-3 h-3 mr-1" /> Pgto
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                      {/* Expanded detail rows */}
+                      {expandedId === a.id && a.pgtos.length > 0 && (
+                        <TableRow key={`${a.id}-detail`}>
+                          <TableCell colSpan={8} className="bg-muted/30 p-0">
+                            <div className="px-8 py-3">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Mês Ref.</TableHead>
+                                    <TableHead>Valor</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Data Pgto.</TableHead>
+                                    <TableHead className="w-32">Ações</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {a.pgtos.map((p: any) => (
+                                    <TableRow key={p.id}>
+                                      <TableCell>{p.mes_referencia}</TableCell>
+                                      <TableCell>
+                                        {Number(p.valor) === 0
+                                          ? <Badge variant="outline" className="text-xs">Isento</Badge>
+                                          : formatCurrency(Number(p.valor))
+                                        }
+                                      </TableCell>
+                                      <TableCell>
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[p.status]}`}>
+                                          {p.status === "pago" ? "Pago" : p.status === "pendente" ? "Pendente" : "Atrasado"}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell>{p.data_pagamento || "—"}</TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          {p.status !== "pago" && (
+                                            <Button size="sm" variant="outline" onClick={() => handleUpdateStatus(p.id, "pago")}>
+                                              Pago
+                                            </Button>
+                                          )}
+                                          <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}>
+                                            <Pencil className="w-3 h-3 text-muted-foreground" />
+                                          </Button>
+                                          <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)}>
+                                            <Trash2 className="w-3 h-3 text-destructive" />
+                                          </Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
 
-      <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setEditingPagamento(null); }}>
+        <TabsContent value="despesas">
+          <JiuJitsuDespesasTab />
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) resetForm(); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingPagamento ? "Editar Pagamento" : "Novo Pagamento"}</DialogTitle></DialogHeader>
           <div className="space-y-3">
@@ -457,17 +585,11 @@ export function JiuJitsuFinanceiroTab() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => { setFormOpen(false); setEditingPagamento(null); }}>Cancelar</Button>
+            <Button variant="outline" onClick={() => { setFormOpen(false); resetForm(); }}>Cancelar</Button>
             <Button onClick={handleSave}>{editingPagamento ? "Salvar" : "Registrar"}</Button>
           </div>
         </DialogContent>
       </Dialog>
-        </TabsContent>
-
-        <TabsContent value="despesas">
-          <JiuJitsuDespesasTab />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
