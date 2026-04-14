@@ -71,6 +71,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [genero, setGenero] = useState("");
+  const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [statusPagamento, setStatusPagamento] = useState("pendente");
   const [formaPagamento, setFormaPagamento] = useState("");
