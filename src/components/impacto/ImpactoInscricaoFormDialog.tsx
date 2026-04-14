@@ -125,10 +125,12 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     if (open && inscricao) {
       setIsManual(!inscricao.member_id);
       setMemberId(inscricao.member_id || "");
-      setNome(inscricao.nome || "");
-      setTelefone(inscricao.telefone || "");
-      setEmail(inscricao.email || "");
-      setGenero(inscricao.genero || "");
+      // For member-based inscriptions, pull full data from the member's profile
+      const memberData = inscricao.member_id ? members?.find((m) => m.id === inscricao.member_id) : null;
+      setNome(inscricao.nome || memberData?.full_name || "");
+      setTelefone(inscricao.telefone || memberData?.whatsapp || "");
+      setEmail(inscricao.email || memberData?.email || "");
+      setGenero(inscricao.genero || memberData?.genero || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
@@ -188,7 +190,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         setValorInscricao("");
       }
     }
-  }, [open, inscricao, evento]);
+  }, [open, inscricao, evento, members]);
 
   const selectedMember = members?.find((m) => m.id === memberId);
   const casaRefugio = selectedMember?.casa_refugio_id
@@ -434,8 +436,21 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             </div>
           )}
 
-          {isManual ? (
+          {(isManual || isEditing) ? (
             <>
+              {/* When editing a member inscription, show member reference */}
+              {isEditing && !isManual && memberId && (
+                <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+                  <p className="text-xs text-muted-foreground">Membro vinculado</p>
+                  <p className="text-sm font-medium">{selectedMember?.full_name || nome}</p>
+                  {casaRefugio && (
+                    <>
+                      <p className="text-xs text-muted-foreground mt-1">Casa Refúgio</p>
+                      <p className="text-sm font-medium">{casaRefugio.name}</p>
+                    </>
+                  )}
+                </div>
+              )}
               <div>
                 <Label>Nome *</Label>
                 <Input
