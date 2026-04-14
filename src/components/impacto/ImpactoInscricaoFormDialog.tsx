@@ -130,11 +130,22 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail(inscricao.email || "");
       setGenero(inscricao.genero || "");
       setObservacoes(inscricao.observacoes || "");
-      setTipoInscricao(inscricao.tipo_inscricao || "membro");
+      const editTipo = inscricao.tipo_inscricao || "membro";
+      setTipoInscricao(editTipo);
       setStatusPagamento(inscricao.status_pagamento || "pendente");
       setFormaPagamento(inscricao.forma_pagamento || "");
       setValorPago(inscricao.valor_pago?.toString() || "0");
-      setValorInscricao(inscricao.valor_inscricao?.toString() || "");
+      // Use inscription value, or fall back to event config for the type
+      let editValor = inscricao.valor_inscricao?.toString() || "";
+      if ((!editValor || editValor === "0") && evento?.tem_custo) {
+        const vpt = evento?.valores_por_tipo as Record<string, string> | null;
+        const hasVpt = vpt && Object.keys(vpt).length > 0;
+        const valorTipo = hasVpt ? vpt[editTipo] : null;
+        const valorBase = evento?.valor_inscricao;
+        const valorFinal = valorTipo ? parseFloat(valorTipo) : (valorBase || null);
+        editValor = valorFinal && valorFinal > 0 ? valorFinal.toString() : "";
+      }
+      setValorInscricao(editValor);
       const existingPagamentos = inscricao.pagamentos as Pagamento[] | null;
       if (existingPagamentos && existingPagamentos.length > 0) {
         setPagamentos(existingPagamentos.map((p: any) => ({ tipo: p.tipo, valor: p.valor?.toString() || "" })));
