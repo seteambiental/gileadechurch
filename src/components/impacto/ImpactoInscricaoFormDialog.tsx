@@ -436,8 +436,21 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             </div>
           )}
 
-          {isManual ? (
+          {(isManual || isEditing) ? (
             <>
+              {/* When editing a member inscription, show member reference */}
+              {isEditing && !isManual && memberId && (
+                <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+                  <p className="text-xs text-muted-foreground">Membro vinculado</p>
+                  <p className="text-sm font-medium">{selectedMember?.full_name || nome}</p>
+                  {casaRefugio && (
+                    <>
+                      <p className="text-xs text-muted-foreground mt-1">Casa Refúgio</p>
+                      <p className="text-sm font-medium">{casaRefugio.name}</p>
+                    </>
+                  )}
+                </div>
+              )}
               <div>
                 <Label>Nome *</Label>
                 <Input
