@@ -132,6 +132,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTelefone(inscricao.telefone || memberData?.whatsapp || "");
       setEmail(inscricao.email || memberData?.email || "");
       setGenero(inscricao.genero || memberData?.genero || "");
+      setTelefoneEmergencia(inscricao.telefone_emergencia || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
