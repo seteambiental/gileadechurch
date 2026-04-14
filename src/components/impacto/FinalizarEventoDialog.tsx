@@ -22,9 +22,10 @@ interface FinalizarEventoDialogProps {
   onOpenChange: (open: boolean) => void;
   eventoId: string;
   eventoNome: string;
+  onFinalized?: () => void;
 }
 
-const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome }: FinalizarEventoDialogProps) => {
+const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome, onFinalized }: FinalizarEventoDialogProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [password, setPassword] = useState("");
@@ -53,12 +54,15 @@ const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome }: Fin
       }
 
       toast.success("Evento finalizado e arquivado com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["impacto-eventos"] });
-      queryClient.invalidateQueries({ queryKey: ["impacto-eventos-financeiro"] });
-      queryClient.invalidateQueries({ queryKey: ["impacto-eventos-finalizados"] });
-      queryClient.invalidateQueries({ queryKey: ["agenda-eventos-inscricao-for-impacto"] });
-      queryClient.invalidateQueries({ queryKey: ["agenda-eventos-financeiro"] });
+      await queryClient.invalidateQueries({ queryKey: ["impacto-eventos"] });
+      await queryClient.invalidateQueries({ queryKey: ["impacto-eventos-financeiro"] });
+      await queryClient.invalidateQueries({ queryKey: ["impacto-eventos-finalizados"] });
+      await queryClient.invalidateQueries({ queryKey: ["agenda-eventos-inscricao-for-impacto"] });
+      await queryClient.invalidateQueries({ queryKey: ["agenda-eventos-financeiro"] });
+      await queryClient.invalidateQueries({ queryKey: ["impacto-eventos-finalizados-ids"] });
       onOpenChange(false);
+      setPassword("");
+      onFinalized?.();
       setPassword("");
     } catch (err: any) {
       console.error("Erro ao finalizar evento:", err);

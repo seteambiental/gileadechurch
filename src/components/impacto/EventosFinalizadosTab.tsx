@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -7,6 +7,10 @@ import { formatCurrency } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -20,8 +24,38 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Archive, ChevronDown, ChevronRight, Users, Loader2, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { SearchInput } from "@/components/ui/search-input";
+import {
+  Archive,
+  ChevronDown,
+  ChevronRight,
+  Users,
+  Loader2,
+  DollarSign,
+  ArrowDownCircle,
+  Scale,
+  TrendingUp,
+  Clock,
+  Plus,
+  Check,
+} from "lucide-react";
+import { toast } from "sonner";
+import { DateInput } from "@/components/ui/date-input";
+import { todayDateStr } from "@/lib/date-utils";
 
 const TIPOS_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -30,9 +64,39 @@ const TIPOS_LABELS: Record<string, string> = {
   equipe: "Equipe",
 };
 
+const CATEGORIAS_DESPESA = [
+  "Chácara", "Decoração", "Alimentação", "Transporte", "Material",
+  "Equipamento", "Comunicação", "Outros",
+];
+
+const FORMAS_PAGAMENTO = [
+  { value: "pix", label: "PIX" },
+  { value: "dinheiro", label: "Dinheiro" },
+  { value: "credito", label: "Cartão Crédito" },
+  { value: "debito", label: "Cartão Débito" },
+  { value: "transferencia", label: "Transferência" },
+];
+
 const EventosFinalizadosTab = () => {
+  const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [searchNome, setSearchNome] = useState("");
+  const [searchStatus, setSearchStatus] = useState("todos");
+
+  // Payment dialog state
+  const [pagamentoOpen, setPagamentoOpen] = useState(false);
+  const [pagamentoInscricao, setPagamentoInscricao] = useState<any>(null);
+  const [pagamentoValor, setPagamentoValor] = useState("");
+  const [pagamentoForma, setPagamentoForma] = useState("pix");
+
+  // Expense dialog state
+  const [despesaOpen, setDespesaOpen] = useState(false);
+  const [despesaEvento, setDespesaEvento] = useState<{ id: string; titulo: string } | null>(null);
+  const [despesaDescricao, setDespesaDescricao] = useState("");
+  const [despesaValor, setDespesaValor] = useState("");
+  const [despesaCategoria, setDespesaCategoria] = useState("Outros");
+  const [despesaData, setDespesaData] = useState(todayDateStr());
 
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["impacto-eventos-finalizados"],
@@ -53,9 +117,23 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia")
+        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos")
         .eq("evento_id", expandedId)
         .order("nome");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!expandedId,
+  });
+
+  const { data: despesas = [] } = useQuery({
+    queryKey: ["impacto-despesas-finalizados", expandedId],
+    queryFn: async () => {
+      if (!expandedId) return [];
+      const { data, error } = await supabase
+        .from("impacto_despesas")
+        .select("valor")
+        .eq("evento_id", expandedId);
       if (error) throw error;
       return data || [];
     },
@@ -70,6 +148,20 @@ const EventosFinalizadosTab = () => {
     return g;
   };
 
+  const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
+    const s = String(status || "").toLowerCase().trim();
+    if (["pago", "confirmado", "aprovado", "quitado", "pago_total"].includes(s)) return "pago";
+    if (["parcial", "parcialmente_pago", "parcialmente pago", "pago_parcial"].includes(s)) return "parcial";
+    return "pendente";
+  };
+
+  const getStatusLabel = (status: string | null | undefined) => {
+    const n = normalizeStatus(status);
+    if (n === "pago") return "Pago";
+    if (n === "parcial") return "Parcial";
+    return "Pendente";
+  };
+
   const filteredEventos = useMemo(() => {
     if (!search.trim()) return eventos;
     const q = search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -78,23 +170,140 @@ const EventosFinalizadosTab = () => {
     );
   }, [eventos, search]);
 
+  const filteredInscricoes = useMemo(() => {
+    let result = inscricoes;
+    if (searchNome.trim()) {
+      const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      result = result.filter((i: any) =>
+        (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+      );
+    }
+    if (searchStatus !== "todos") {
+      result = result.filter((i: any) => normalizeStatus(i.status_pagamento) === searchStatus);
+    }
+    return result;
+  }, [inscricoes, searchNome, searchStatus]);
+
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
+    setSearchNome("");
+    setSearchStatus("todos");
   };
 
   // Stats per expanded event
   const stats = useMemo(() => {
-    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, receita: 0, recebido: 0 };
-    let masc = 0, fem = 0, receita = 0, recebido = 0;
+    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, receita: 0, recebido: 0, aReceber: 0 };
+    let masc = 0, fem = 0, receita = 0, recebido = 0, aReceber = 0;
     inscricoes.forEach((i: any) => {
       const g = (i.genero || "").toLowerCase();
       if (g === "m" || g === "masculino") masc++;
       else if (g === "f" || g === "feminino") fem++;
       receita += parseFloat(i.valor_inscricao) || 0;
       recebido += parseFloat(i.valor_pago) || 0;
+      const norm = normalizeStatus(i.status_pagamento);
+      if (norm === "pendente") aReceber += parseFloat(i.valor_inscricao) || 0;
+      else if (norm === "parcial") aReceber += Math.max(0, (parseFloat(i.valor_inscricao) || 0) - (parseFloat(i.valor_pago) || 0));
     });
-    return { total: inscricoes.length, masc, fem, receita, recebido };
+    return { total: inscricoes.length, masc, fem, receita, recebido, aReceber };
   }, [inscricoes]);
+
+  const totalDespesas = useMemo(() => {
+    return (despesas as any[]).reduce((sum, d) => sum + (d.valor || 0), 0);
+  }, [despesas]);
+
+  const saldoEvento = stats.recebido - totalDespesas;
+
+  // Payment mutation
+  const pagamentoMutation = useMutation({
+    mutationFn: async ({ inscricaoId, valor, forma }: { inscricaoId: string; valor: number; forma: string }) => {
+      // Get current inscription data
+      const { data: insc, error: fetchErr } = await supabase
+        .from("impacto_inscricoes")
+        .select("valor_pago, valor_inscricao, pagamentos")
+        .eq("id", inscricaoId)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      const currentPago = parseFloat(String(insc.valor_pago)) || 0;
+      const newPago = currentPago + valor;
+      const valorInsc = parseFloat(String(insc.valor_inscricao)) || 0;
+      const newStatus = newPago >= valorInsc ? "pago" : newPago > 0 ? "parcial" : "pendente";
+
+      const currentPagamentos = Array.isArray(insc.pagamentos) ? insc.pagamentos : [];
+      const newPagamentos = [...currentPagamentos, { tipo: forma, valor: String(valor) }];
+
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({
+          valor_pago: newPago,
+          status_pagamento: newStatus,
+          forma_pagamento: forma,
+          pagamentos: newPagamentos,
+        })
+        .eq("id", inscricaoId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Pagamento registrado com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", expandedId] });
+      setPagamentoOpen(false);
+      setPagamentoValor("");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao registrar pagamento.");
+    },
+  });
+
+  // Expense mutation
+  const despesaMutation = useMutation({
+    mutationFn: async ({ eventoId, descricao, valor, categoria, data }: { eventoId: string; descricao: string; valor: number; categoria: string; data: string }) => {
+      const { error } = await supabase
+        .from("impacto_despesas")
+        .insert({ evento_id: eventoId, descricao, valor, categoria, data_despesa: data });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Despesa registrada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["impacto-despesas-finalizados", expandedId] });
+      setDespesaOpen(false);
+      setDespesaDescricao("");
+      setDespesaValor("");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao registrar despesa.");
+    },
+  });
+
+  const handleOpenPagamento = (insc: any) => {
+    setPagamentoInscricao(insc);
+    setPagamentoValor("");
+    setPagamentoForma("pix");
+    setPagamentoOpen(true);
+  };
+
+  const handleOpenDespesa = (evento: { id: string; titulo: string }) => {
+    setDespesaEvento(evento);
+    setDespesaDescricao("");
+    setDespesaValor("");
+    setDespesaCategoria("Outros");
+    setDespesaData(todayDateStr());
+    setDespesaOpen(true);
+  };
+
+  const handleSavePagamento = () => {
+    const valor = parseFloat(pagamentoValor);
+    if (!valor || valor <= 0) { toast.error("Informe um valor válido."); return; }
+    if (!pagamentoInscricao) return;
+    pagamentoMutation.mutate({ inscricaoId: pagamentoInscricao.id, valor, forma: pagamentoForma });
+  };
+
+  const handleSaveDespesa = () => {
+    const valor = parseFloat(despesaValor);
+    if (!valor || valor <= 0) { toast.error("Informe um valor válido."); return; }
+    if (!despesaDescricao.trim()) { toast.error("Informe a descrição."); return; }
+    if (!despesaEvento) return;
+    despesaMutation.mutate({ eventoId: despesaEvento.id, descricao: despesaDescricao, valor, categoria: despesaCategoria, data: despesaData });
+  };
 
   if (isLoading) {
     return (
@@ -114,15 +323,12 @@ const EventosFinalizadosTab = () => {
       </div>
 
       {eventos.length > 3 && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar evento..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <SearchInput
+          placeholder="Buscar evento..."
+          value={search}
+          onChange={setSearch}
+          className="max-w-sm"
+        />
       )}
 
       {filteredEventos.length === 0 ? (
@@ -185,28 +391,84 @@ const EventosFinalizadosTab = () => {
                         </p>
                       ) : (
                         <>
-                          {/* Summary cards */}
-                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                          {/* Summary cards - full financial */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                             <div className="bg-muted/50 rounded-lg p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                              </div>
                               <p className="text-xs text-muted-foreground">Total</p>
                               <p className="text-lg font-bold">{stats.total}</p>
+                              <p className="text-[10px] text-muted-foreground">{stats.masc}M / {stats.fem}F</p>
                             </div>
                             <div className="bg-muted/50 rounded-lg p-3 text-center">
-                              <p className="text-xs text-muted-foreground">Masculino</p>
-                              <p className="text-lg font-bold">{stats.masc}</p>
-                            </div>
-                            <div className="bg-muted/50 rounded-lg p-3 text-center">
-                              <p className="text-xs text-muted-foreground">Feminino</p>
-                              <p className="text-lg font-bold">{stats.fem}</p>
-                            </div>
-                            <div className="bg-muted/50 rounded-lg p-3 text-center">
-                              <p className="text-xs text-muted-foreground">Receita</p>
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+                              </div>
+                              <p className="text-xs text-muted-foreground">Previsão</p>
                               <p className="text-lg font-bold">{formatCurrency(stats.receita)}</p>
                             </div>
                             <div className="bg-muted/50 rounded-lg p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <DollarSign className="w-3.5 h-3.5 text-green-600" />
+                              </div>
                               <p className="text-xs text-muted-foreground">Recebido</p>
-                              <p className="text-lg font-bold">{formatCurrency(stats.recebido)}</p>
+                              <p className="text-lg font-bold text-green-600">{formatCurrency(stats.recebido)}</p>
                             </div>
+                            <div className="bg-muted/50 rounded-lg p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Clock className="w-3.5 h-3.5 text-yellow-600" />
+                              </div>
+                              <p className="text-xs text-muted-foreground">A Receber</p>
+                              <p className="text-lg font-bold text-yellow-600">{formatCurrency(stats.aReceber)}</p>
+                            </div>
+                            <div className="bg-muted/50 rounded-lg p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <ArrowDownCircle className="w-3.5 h-3.5 text-destructive" />
+                              </div>
+                              <p className="text-xs text-muted-foreground">Despesas</p>
+                              <p className="text-lg font-bold text-destructive">{formatCurrency(totalDespesas)}</p>
+                            </div>
+                            <div className="bg-muted/50 rounded-lg p-3 text-center">
+                              <div className="flex items-center justify-center gap-1 mb-1">
+                                <Scale className={`w-3.5 h-3.5 ${saldoEvento >= 0 ? "text-green-600" : "text-destructive"}`} />
+                              </div>
+                              <p className="text-xs text-muted-foreground">Saldo</p>
+                              <p className={`text-lg font-bold ${saldoEvento >= 0 ? "text-green-600" : "text-destructive"}`}>
+                                {formatCurrency(saldoEvento)}
+                              </p>
+                            </div>
+                            <div className="bg-muted/50 rounded-lg p-3 text-center flex items-center justify-center">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); handleOpenDespesa({ id: evento.id, titulo: evento.titulo }); }}
+                              >
+                                <Plus className="w-3.5 h-3.5 mr-1" />
+                                Despesa
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Search filters */}
+                          <div className="flex flex-wrap gap-3 items-end">
+                            <SearchInput
+                              placeholder="Buscar participante..."
+                              value={searchNome}
+                              onChange={setSearchNome}
+                              className="max-w-xs w-full"
+                            />
+                            <Select value={searchStatus} onValueChange={setSearchStatus}>
+                              <SelectTrigger className="w-[150px]">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="todos">Todos</SelectItem>
+                                <SelectItem value="pago">Pago</SelectItem>
+                                <SelectItem value="parcial">Parcial</SelectItem>
+                                <SelectItem value="pendente">Pendente</SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           {/* Participants table */}
@@ -220,36 +482,74 @@ const EventosFinalizadosTab = () => {
                                   <TableHead>Gênero</TableHead>
                                   <TableHead>Valor</TableHead>
                                   <TableHead>Pago</TableHead>
+                                  <TableHead>Saldo</TableHead>
                                   <TableHead>Status</TableHead>
+                                  <TableHead>Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {inscricoes.map((insc: any) => (
-                                  <TableRow key={insc.id}>
-                                    <TableCell className="text-xs font-mono text-muted-foreground">
-                                      {insc.referencia || "—"}
-                                    </TableCell>
-                                    <TableCell className="font-medium">{insc.nome}</TableCell>
-                                    <TableCell className="text-sm">
-                                      {TIPOS_LABELS[insc.tipo_inscricao] || insc.tipo_inscricao || "—"}
-                                    </TableCell>
-                                    <TableCell className="text-sm">{resolveGenero(insc.genero)}</TableCell>
-                                    <TableCell className="text-sm">
-                                      {insc.valor_inscricao ? formatCurrency(parseFloat(insc.valor_inscricao)) : "—"}
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                      {parseFloat(insc.valor_pago) > 0 ? formatCurrency(parseFloat(insc.valor_pago)) : "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge
-                                        variant={insc.status_pagamento === "pago" ? "default" : "secondary"}
-                                        className={insc.status_pagamento === "pago" ? "bg-green-600 text-white" : ""}
-                                      >
-                                        {insc.status_pagamento === "pago" ? "Pago" : insc.status_pagamento === "parcial" ? "Parcial" : "Pendente"}
-                                      </Badge>
+                                {filteredInscricoes.length === 0 ? (
+                                  <TableRow>
+                                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                                      Nenhum resultado encontrado.
                                     </TableCell>
                                   </TableRow>
-                                ))}
+                                ) : filteredInscricoes.map((insc: any) => {
+                                  const valorInsc = parseFloat(insc.valor_inscricao) || 0;
+                                  const valorPago = parseFloat(insc.valor_pago) || 0;
+                                  const saldo = Math.max(0, valorInsc - valorPago);
+                                  const status = normalizeStatus(insc.status_pagamento);
+                                  return (
+                                    <TableRow
+                                      key={insc.id}
+                                      className={status === "pendente" ? "bg-yellow-50 hover:bg-yellow-100" : ""}
+                                    >
+                                      <TableCell className="text-xs font-mono text-muted-foreground">
+                                        {insc.referencia || "—"}
+                                      </TableCell>
+                                      <TableCell className="font-medium">{insc.nome}</TableCell>
+                                      <TableCell className="text-sm">
+                                        {TIPOS_LABELS[insc.tipo_inscricao] || insc.tipo_inscricao || "—"}
+                                      </TableCell>
+                                      <TableCell className="text-sm">{resolveGenero(insc.genero)}</TableCell>
+                                      <TableCell className="text-sm">
+                                        {valorInsc > 0 ? formatCurrency(valorInsc) : "—"}
+                                      </TableCell>
+                                      <TableCell className="text-sm font-medium text-green-600">
+                                        {valorPago > 0 ? formatCurrency(valorPago) : "—"}
+                                      </TableCell>
+                                      <TableCell className={`text-sm font-medium ${saldo > 0 ? "text-yellow-600" : "text-green-600"}`}>
+                                        {formatCurrency(saldo)}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge
+                                          variant={status === "pago" ? "default" : "secondary"}
+                                          className={
+                                            status === "pago" ? "bg-green-600 text-white" :
+                                            status === "parcial" ? "bg-yellow-600 text-white" : ""
+                                          }
+                                        >
+                                          {status === "pago" && <Check className="w-3 h-3 mr-1" />}
+                                          {status === "parcial" && <Clock className="w-3 h-3 mr-1" />}
+                                          {getStatusLabel(insc.status_pagamento)}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        {status !== "pago" && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleOpenPagamento(insc)}
+                                            className="text-xs"
+                                          >
+                                            <DollarSign className="w-3.5 h-3.5 mr-1" />
+                                            Lançar Pgto
+                                          </Button>
+                                        )}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
                               </TableBody>
                             </Table>
                           </div>
@@ -263,6 +563,124 @@ const EventosFinalizadosTab = () => {
           })}
         </div>
       )}
+
+      {/* Payment Dialog */}
+      <Dialog open={pagamentoOpen} onOpenChange={setPagamentoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lançar Pagamento Pós-Finalização</DialogTitle>
+          </DialogHeader>
+          {pagamentoInscricao && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium">{pagamentoInscricao.nome}</p>
+                <p className="text-xs text-muted-foreground">
+                  Valor inscrição: {formatCurrency(parseFloat(pagamentoInscricao.valor_inscricao) || 0)} |
+                  Já pago: {formatCurrency(parseFloat(pagamentoInscricao.valor_pago) || 0)} |
+                  Saldo: {formatCurrency(Math.max(0, (parseFloat(pagamentoInscricao.valor_inscricao) || 0) - (parseFloat(pagamentoInscricao.valor_pago) || 0)))}
+                </p>
+              </div>
+              <div>
+                <Label>Valor</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={pagamentoValor}
+                  onChange={(e) => setPagamentoValor(e.target.value)}
+                  placeholder="0,00"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label>Forma de Pagamento</Label>
+                <Select value={pagamentoForma} onValueChange={setPagamentoForma}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORMAS_PAGAMENTO.map((f) => (
+                      <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPagamentoOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSavePagamento} disabled={pagamentoMutation.isPending}>
+              {pagamentoMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Dialog */}
+      <Dialog open={despesaOpen} onOpenChange={setDespesaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lançar Despesa Pós-Finalização</DialogTitle>
+          </DialogHeader>
+          {despesaEvento && (
+            <div className="space-y-4">
+              <p className="text-sm font-medium">{despesaEvento.titulo}</p>
+              <div>
+                <Label>Descrição</Label>
+                <Textarea
+                  value={despesaDescricao}
+                  onChange={(e) => setDespesaDescricao(e.target.value)}
+                  placeholder="Descreva a despesa..."
+                  className="mt-1"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Valor</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={despesaValor}
+                    onChange={(e) => setDespesaValor(e.target.value)}
+                    placeholder="0,00"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Categoria</Label>
+                  <Select value={despesaCategoria} onValueChange={setDespesaCategoria}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIAS_DESPESA.map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>Data</Label>
+                <DateInput
+                  value={despesaData}
+                  onChange={setDespesaData}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDespesaOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveDespesa} disabled={despesaMutation.isPending}>
+              {despesaMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
