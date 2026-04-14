@@ -224,9 +224,9 @@ const EventosFinalizadosTab = () => {
         .single();
       if (fetchErr) throw fetchErr;
 
-      const currentPago = parseFloat(insc.valor_pago) || 0;
+      const currentPago = parseFloat(String(insc.valor_pago)) || 0;
       const newPago = currentPago + valor;
-      const valorInsc = parseFloat(insc.valor_inscricao) || 0;
+      const valorInsc = parseFloat(String(insc.valor_inscricao)) || 0;
       const newStatus = newPago >= valorInsc ? "pago" : newPago > 0 ? "parcial" : "pendente";
 
       const currentPagamentos = Array.isArray(insc.pagamentos) ? insc.pagamentos : [];
