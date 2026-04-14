@@ -999,6 +999,9 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
           onOpenChange={setFinalizarOpen}
           eventoId={selectedEventoId}
           eventoNome={selectedEvento?.titulo || ""}
+          onFinalized={() => {
+            setSelectedEventoId("");
+          }}
         />
       )}
     </div>
