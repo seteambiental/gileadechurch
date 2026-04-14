@@ -72,6 +72,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [email, setEmail] = useState("");
   const [genero, setGenero] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
+  const [nomeResponsavel, setNomeResponsavel] = useState("");
+  const [telefoneResponsavel, setTelefoneResponsavel] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [statusPagamento, setStatusPagamento] = useState("pendente");
   const [formaPagamento, setFormaPagamento] = useState("");
@@ -133,6 +135,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail(inscricao.email || memberData?.email || "");
       setGenero(inscricao.genero || memberData?.genero || "");
       setTelefoneEmergencia(inscricao.telefone_emergencia || "");
+      setNomeResponsavel(inscricao.nome_responsavel || "");
+      setTelefoneResponsavel(inscricao.telefone_responsavel || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
@@ -172,6 +176,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail("");
       setGenero("");
       setTelefoneEmergencia("");
+      setNomeResponsavel("");
+      setTelefoneResponsavel("");
       setObservacoes("");
       const defaultTipo = tiposPermitidos[0] || "membro";
       setTipoInscricao(defaultTipo);
@@ -282,6 +288,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         genero: finalGenero || null,
         observacoes: observacoes || null,
         telefone_emergencia: telefoneEmergencia || null,
+        nome_responsavel: nomeResponsavel || null,
+        telefone_responsavel: telefoneResponsavel || null,
         tipo_inscricao: tipoInscricao || "membro",
         valor_inscricao: parseFloat(valorInscricao) || null,
         status_pagamento: statusPagamento,
@@ -496,12 +504,30 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 />
               </div>
               <div>
-                <Label>Tel. Emergência</Label>
+                <Label>Nome Contato Emergência</Label>
                 <Input
-                  value={telefoneEmergencia}
-                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
-                  placeholder="(00) 00000-0000"
+                  value={nomeResponsavel}
+                  onChange={(e) => setNomeResponsavel(e.target.value)}
+                  placeholder="Nome do responsável / emergência"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tel. Responsável</Label>
+                  <Input
+                    value={telefoneResponsavel}
+                    onChange={(e) => setTelefoneResponsavel(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label>Tel. Emergência</Label>
+                  <Input
+                    value={telefoneEmergencia}
+                    onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
               </div>
             </>
           ) : (
@@ -529,12 +555,30 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </div>
               )}
               <div>
-                <Label>Tel. Emergência</Label>
+                <Label>Nome Contato Emergência</Label>
                 <Input
-                  value={telefoneEmergencia}
-                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
-                  placeholder="(00) 00000-0000"
+                  value={nomeResponsavel}
+                  onChange={(e) => setNomeResponsavel(e.target.value)}
+                  placeholder="Nome do responsável / emergência"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Tel. Responsável</Label>
+                  <Input
+                    value={telefoneResponsavel}
+                    onChange={(e) => setTelefoneResponsavel(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+                <div>
+                  <Label>Tel. Emergência</Label>
+                  <Input
+                    value={telefoneEmergencia}
+                    onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
               </div>
             </>
           )}
