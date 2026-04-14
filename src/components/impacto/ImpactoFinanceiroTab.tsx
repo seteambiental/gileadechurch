@@ -142,6 +142,16 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   };
 
   const eventos = useMemo(() => {
+    // Track ALL finalized event IDs and titles to exclude from both sources
+    const finalizadoIds = new Set<string>();
+    const finalizadoTitles = new Set<string>();
+    (impactoEventos || []).forEach((e) => {
+      if ((e as any).finalizado) {
+        finalizadoIds.add(e.id);
+        if (e.titulo) finalizadoTitles.add(e.titulo.trim().toLowerCase());
+      }
+    });
+
     // Deduplicar impacto_eventos por título normalizado e excluir finalizados
     const seenTitles = new Set<string>();
     const impactoDeduped = (impactoEventos || []).filter((e) => {
@@ -160,6 +170,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     }));
     const agenda = (agendaEventos || [])
       .filter((e) => !isTeologiaEvent(e.titulo))
+      .filter((e) => !finalizadoIds.has(e.id) && !finalizadoTitles.has(e.titulo?.trim().toLowerCase() || ""))
       .map((e) => ({
         id: e.id,
         titulo: e.titulo,
