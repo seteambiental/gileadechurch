@@ -135,6 +135,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail(inscricao.email || memberData?.email || "");
       setGenero(inscricao.genero || memberData?.genero || "");
       setTelefoneEmergencia(inscricao.telefone_emergencia || "");
+      setNomeResponsavel(inscricao.nome_responsavel || "");
+      setTelefoneResponsavel(inscricao.telefone_responsavel || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
       setTipoInscricao(editTipo);
@@ -174,6 +176,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setEmail("");
       setGenero("");
       setTelefoneEmergencia("");
+      setNomeResponsavel("");
+      setTelefoneResponsavel("");
       setObservacoes("");
       const defaultTipo = tiposPermitidos[0] || "membro";
       setTipoInscricao(defaultTipo);
@@ -284,6 +288,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         genero: finalGenero || null,
         observacoes: observacoes || null,
         telefone_emergencia: telefoneEmergencia || null,
+        nome_responsavel: nomeResponsavel || null,
+        telefone_responsavel: telefoneResponsavel || null,
         tipo_inscricao: tipoInscricao || "membro",
         valor_inscricao: parseFloat(valorInscricao) || null,
         status_pagamento: statusPagamento,
