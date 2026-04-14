@@ -14,30 +14,24 @@ interface ImpactoEventosTabProps {
 }
 
 const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEventosTabProps) => {
-  const { data: finalizadosIds = [] } = useQuery({
-    queryKey: ["impacto-eventos-finalizados-ids"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("impacto_eventos")
-        .select("id")
-        .eq("finalizado", true);
-      if (error) throw error;
-      return (data || []).map((e) => e.id);
-    },
-  });
-
   const { data: eventosAgenda = [], isLoading } = useQuery({
-    queryKey: ["agenda-eventos-inscricao", finalizadosIds],
+    queryKey: ["agenda-eventos-inscricao"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agenda_igreja")
-        .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, necessita_inscricao")
-        .eq("necessita_inscricao", true)
-        .eq("recorrente", false)
-        .order("data_evento", { ascending: true });
-      if (error) throw error;
-      const finalizadosSet = new Set(finalizadosIds);
-      return (data || []).filter((e) => {
+      const [agendaRes, finalizadosRes] = await Promise.all([
+        supabase
+          .from("agenda_igreja")
+          .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, necessita_inscricao")
+          .eq("necessita_inscricao", true)
+          .eq("recorrente", false)
+          .order("data_evento", { ascending: true }),
+        supabase
+          .from("impacto_eventos")
+          .select("id")
+          .eq("finalizado", true),
+      ]);
+      if (agendaRes.error) throw agendaRes.error;
+      const finalizadosSet = new Set((finalizadosRes.data || []).map((e) => e.id));
+      return (agendaRes.data || []).filter((e) => {
         if (finalizadosSet.has(e.id)) return false;
         const norm = (e.titulo || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         return !norm.includes("teologia");
