@@ -131,14 +131,23 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const { data: agendaEventos } = useQuery({
     queryKey: ["agenda-eventos-inscricao-for-impacto"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("agenda_igreja")
-        .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, tem_custo, valores_por_tipo")
-        .eq("necessita_inscricao", true)
-        .eq("recorrente", false)
-        .order("data_evento", { ascending: false });
-      if (error) throw error;
-      return data || [];
+      const [agendaRes, finalizadosRes] = await Promise.all([
+        supabase
+          .from("agenda_igreja")
+          .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, tem_custo, valores_por_tipo")
+          .eq("necessita_inscricao", true)
+          .eq("recorrente", false)
+          .order("data_evento", { ascending: false }),
+        supabase
+          .from("impacto_eventos")
+          .select("id")
+          .eq("finalizado", true),
+      ]);
+      if (agendaRes.error) throw agendaRes.error;
+      if (finalizadosRes.error) throw finalizadosRes.error;
+
+      const finalizadosSet = new Set((finalizadosRes.data || []).map((e) => e.id));
+      return (agendaRes.data || []).filter((e) => !finalizadosSet.has(e.id));
     },
   });
 
