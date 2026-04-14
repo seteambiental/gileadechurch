@@ -125,21 +125,17 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
       // Se for membro vinculado, buscar dados faltantes do cadastro
       if (aluno.member_id) {
         supabase
-          .from("members")
-          .select("full_name, whatsapp, phone, email, address, neighborhood, city, state, zip_code, birth_date, gender, emergency_contact_name, emergency_contact_phone, blood_type")
+          .from("members_safe")
+          .select("full_name, whatsapp, email, address, birth_date")
           .eq("id", aluno.member_id)
           .maybeSingle()
           .then(({ data: member }) => {
             if (member) {
-              if (!aluno.telefone && !aluno.whatsapp) setTelefone(member.whatsapp || member.phone || "");
+              if (!aluno.telefone && !aluno.whatsapp) setTelefone(member.whatsapp || "");
               if (!aluno.whatsapp) setWhatsapp(member.whatsapp || "");
               if (!aluno.email) setEmail(member.email || "");
               if (!aluno.endereco) setEndereco(member.address || "");
               if (!aluno.data_nascimento) setDataNascimento(member.birth_date || "");
-              if (!aluno.genero) setGenero(member.gender || "");
-              if (!aluno.contato_emergencia_nome) setContatoEmergenciaNome(member.emergency_contact_name || "");
-              if (!aluno.contato_emergencia_telefone) setContatoEmergenciaTelefone(member.emergency_contact_phone || "");
-              if (!aluno.tipo_sanguineo) setTipoSanguineo(member.blood_type || "");
             }
           });
       }
