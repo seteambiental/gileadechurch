@@ -14,8 +14,20 @@ interface ImpactoEventosTabProps {
 }
 
 const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEventosTabProps) => {
+  const { data: finalizadosIds = [] } = useQuery({
+    queryKey: ["impacto-eventos-finalizados-ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_eventos")
+        .select("id")
+        .eq("finalizado", true);
+      if (error) throw error;
+      return (data || []).map((e) => e.id);
+    },
+  });
+
   const { data: eventosAgenda = [], isLoading } = useQuery({
-    queryKey: ["agenda-eventos-inscricao"],
+    queryKey: ["agenda-eventos-inscricao", finalizadosIds],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
@@ -24,8 +36,9 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
         .eq("recorrente", false)
         .order("data_evento", { ascending: true });
       if (error) throw error;
-      // Filter out teologia events
+      const finalizadosSet = new Set(finalizadosIds);
       return (data || []).filter((e) => {
+        if (finalizadosSet.has(e.id)) return false;
         const norm = (e.titulo || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         return !norm.includes("teologia");
       });
