@@ -62,6 +62,8 @@ const FinalizarEventoDialog = ({ open, onOpenChange, eventoId, eventoNome, onFin
       await queryClient.invalidateQueries({ queryKey: ["impacto-eventos-finalizados-ids"] });
       onOpenChange(false);
       setPassword("");
+      onFinalized?.();
+      setPassword("");
     } catch (err: any) {
       console.error("Erro ao finalizar evento:", err);
       toast.error(err.message || "Erro ao finalizar evento.");
