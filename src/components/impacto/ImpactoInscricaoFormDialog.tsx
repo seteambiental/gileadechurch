@@ -171,6 +171,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTelefone("");
       setEmail("");
       setGenero("");
+      setTelefoneEmergencia("");
       setObservacoes("");
       const defaultTipo = tiposPermitidos[0] || "membro";
       setTipoInscricao(defaultTipo);
@@ -280,6 +281,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         email: finalEmail || null,
         genero: finalGenero || null,
         observacoes: observacoes || null,
+        telefone_emergencia: telefoneEmergencia || null,
         tipo_inscricao: tipoInscricao || "membro",
         valor_inscricao: parseFloat(valorInscricao) || null,
         status_pagamento: statusPagamento,
@@ -491,6 +493,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="email@exemplo.com"
+                />
+              </div>
+              <div>
+                <Label>Tel. Emergência</Label>
+                <Input
+                  value={telefoneEmergencia}
+                  onChange={(e) => setTelefoneEmergencia(e.target.value)}
+                  placeholder="(00) 00000-0000"
                 />
               </div>
             </>
