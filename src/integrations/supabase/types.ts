@@ -2980,6 +2980,7 @@ export type Database = {
           referencia: string | null
           status_pagamento: string
           telefone: string | null
+          telefone_emergencia: string | null
           tipo_inscricao: string | null
           updated_at: string
           valor_inscricao: number | null
@@ -3003,6 +3004,7 @@ export type Database = {
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
+          telefone_emergencia?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
           valor_inscricao?: number | null
@@ -3026,6 +3028,7 @@ export type Database = {
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
+          telefone_emergencia?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
           valor_inscricao?: number | null

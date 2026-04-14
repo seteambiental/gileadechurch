@@ -1,0 +1,1 @@
+ALTER TABLE public.impacto_inscricoes ADD COLUMN telefone_emergencia TEXT;
