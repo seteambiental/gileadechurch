@@ -358,7 +358,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     const valores = selectedEventoDetalhes?.valores_por_tipo as Record<string, number> | null;
     if (!valores) return null;
     const tipo = inscricao.tipo_inscricao || "membro";
-    return valores[tipo] ?? null;
+    const raw = valores[tipo] ?? null;
+    return raw != null ? parseFloat(String(raw)) : null;
   };
 
   const deleteMutation = useMutation({
