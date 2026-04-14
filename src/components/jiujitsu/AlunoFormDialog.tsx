@@ -103,7 +103,7 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
       setDataNascimento(aluno.data_nascimento || "");
       setGenero(aluno.genero || "");
       setEndereco(aluno.endereco || "");
-      setTelefone(aluno.telefone || "");
+      setTelefone(aluno.telefone || aluno.whatsapp || "");
       setWhatsapp(aluno.whatsapp || "");
       setEmail(aluno.email || "");
       setContatoEmergenciaNome(aluno.contato_emergencia_nome || "");
@@ -121,6 +121,24 @@ export function AlunoFormDialog({ open, onOpenChange, aluno }: AlunoFormDialogPr
       setSelectedMemberId(aluno.member_id || null);
       setTermoEmergencia(aluno.termo_emergencia_aceito || false);
       setTermoImagem(aluno.termo_imagem_aceito || false);
+
+      // Se for membro vinculado, buscar dados faltantes do cadastro
+      if (aluno.member_id) {
+        supabase
+          .from("members_safe")
+          .select("full_name, whatsapp, email, address, birth_date")
+          .eq("id", aluno.member_id)
+          .maybeSingle()
+          .then(({ data: member }) => {
+            if (member) {
+              if (!aluno.telefone && !aluno.whatsapp) setTelefone(member.whatsapp || "");
+              if (!aluno.whatsapp) setWhatsapp(member.whatsapp || "");
+              if (!aluno.email) setEmail(member.email || "");
+              if (!aluno.endereco) setEndereco(member.address || "");
+              if (!aluno.data_nascimento) setDataNascimento(member.birth_date || "");
+            }
+          });
+      }
     } else {
       resetForm();
     }
