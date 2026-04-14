@@ -125,9 +125,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     if (open && inscricao) {
       setIsManual(!inscricao.member_id);
       setMemberId(inscricao.member_id || "");
-      setNome(inscricao.nome || "");
-      setTelefone(inscricao.telefone || "");
-      setEmail(inscricao.email || "");
+      // For member-based inscriptions, pull full data from the member's profile
+      const memberData = inscricao.member_id ? members?.find((m) => m.id === inscricao.member_id) : null;
+      setNome(inscricao.nome || memberData?.full_name || "");
+      setTelefone(inscricao.telefone || memberData?.whatsapp || "");
+      setEmail(inscricao.email || memberData?.email || "");
       setGenero(inscricao.genero || "");
       setObservacoes(inscricao.observacoes || "");
       const editTipo = inscricao.tipo_inscricao || "membro";
