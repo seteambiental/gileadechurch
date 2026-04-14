@@ -52,6 +52,7 @@ const NovasInscricoesTab = () => {
           id,
           nome_participante,
           telefone_contato,
+          telefone_emergencia,
           tipo_inscricao,
           valor_inscricao,
           genero,
