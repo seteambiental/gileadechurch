@@ -2974,12 +2974,15 @@ export type Database = {
           id: string
           member_id: string | null
           nome: string
+          nome_responsavel: string | null
           observacoes: string | null
           pagamentos: Json | null
           previsoes_pagamento: Json | null
           referencia: string | null
           status_pagamento: string
           telefone: string | null
+          telefone_emergencia: string | null
+          telefone_responsavel: string | null
           tipo_inscricao: string | null
           updated_at: string
           valor_inscricao: number | null
@@ -2997,12 +3000,15 @@ export type Database = {
           id?: string
           member_id?: string | null
           nome: string
+          nome_responsavel?: string | null
           observacoes?: string | null
           pagamentos?: Json | null
           previsoes_pagamento?: Json | null
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
+          telefone_emergencia?: string | null
+          telefone_responsavel?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
           valor_inscricao?: number | null
@@ -3020,12 +3026,15 @@ export type Database = {
           id?: string
           member_id?: string | null
           nome?: string
+          nome_responsavel?: string | null
           observacoes?: string | null
           pagamentos?: Json | null
           previsoes_pagamento?: Json | null
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
+          telefone_emergencia?: string | null
+          telefone_responsavel?: string | null
           tipo_inscricao?: string | null
           updated_at?: string
           valor_inscricao?: number | null
