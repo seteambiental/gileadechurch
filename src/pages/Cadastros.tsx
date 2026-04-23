@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed, setAuthBypassed } from "@/lib/auth-bypass";
-import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound, Shield, Settings } from "lucide-react";
+import { Users, Church, Home, Building2, ArrowLeft, Loader2, Building, UserCheck, LogOut, UserPlus, UserRound, Shield, Settings, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -17,6 +17,7 @@ import SolicitacoesMembrosTab from "@/components/cadastros/SolicitacoesMembrosTa
 import VisitantesTab from "@/components/cadastros/VisitantesTab";
 import PastorAuxiliarPermissoesTab from "@/components/cadastros/PastorAuxiliarPermissoesTab";
 import SistemaTab from "@/components/cadastros/SistemaTab";
+import AcessosTab from "@/components/cadastros/AcessosTab";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,21 @@ const Cadastros = () => {
         .select("role")
         .eq("user_id", user.id)
         .in("role", ["pastor_geral", "pastor_auxiliar", "admin"]);
+      return data && data.length > 0;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Check strict admin (apenas admin ou pastor_geral) — para aba Acessos
+  const { data: isStrictAdmin } = useQuery({
+    queryKey: ["user_is_strict_admin", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return false;
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["admin", "pastor_geral"]);
       return data && data.length > 0;
     },
     enabled: !!user?.id,
@@ -136,7 +152,7 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-10">
+          <TabsList className={`grid w-full mb-6 bg-card border border-border h-12 ${isStrictAdmin ? "grid-cols-11" : "grid-cols-10"}`}>
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
@@ -214,6 +230,15 @@ const Cadastros = () => {
               <Settings className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Sistema</span>
             </TabsTrigger>
+            {isStrictAdmin && (
+              <TabsTrigger 
+                value="acessos" 
+                className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              >
+                <KeyRound className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Acessos</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="membros">
@@ -257,6 +282,12 @@ const Cadastros = () => {
           <TabsContent value="sistema">
             <SistemaTab />
           </TabsContent>
+
+          {isStrictAdmin && (
+            <TabsContent value="acessos">
+              <AcessosTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
