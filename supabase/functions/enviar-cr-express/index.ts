@@ -211,9 +211,9 @@ serve(async (req) => {
           console.error(`Erro WhatsApp para ${telefones[i]}:`, err);
           resultados.whatsapp.erros++;
         }
-        // Intervalo de 30s entre envios para múltiplos destinatários
         if (telefones.length > 1 && i < telefones.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 30000));
+          // Intervalo aleatório entre 15-30s para evitar SPAM
+          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
         }
       }
       return new Response(JSON.stringify({ success: true, resultados }), {
@@ -296,9 +296,9 @@ serve(async (req) => {
         try {
           await enviarMensagemEvolution(member.whatsapp, mensagemWhatsApp);
           resultados.whatsapp.enviados++;
-          // Delay de 30 segundos entre envios WhatsApp para evitar spam
           if (i < members.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            // Intervalo aleatório entre 15-30s para evitar SPAM
+            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
           }
         } catch (err) {
           console.error(`Erro WhatsApp para ${member.full_name}:`, err);
