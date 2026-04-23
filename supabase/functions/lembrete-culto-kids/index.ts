@@ -230,8 +230,8 @@ Ministério Kids - Igreja Gileade`;
         erros++;
       }
 
-      // Delay de 30 segundos entre envios para evitar spam
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      // Intervalo aleatório entre 15-30s para evitar SPAM
+      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
     }
 
     return new Response(
