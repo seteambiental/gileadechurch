@@ -152,7 +152,7 @@ const Cadastros = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full mb-6 bg-card border border-border h-12 grid-cols-10">
+          <TabsList className={`grid w-full mb-6 bg-card border border-border h-12 ${isStrictAdmin ? "grid-cols-11" : "grid-cols-10"}`}>
             <TabsTrigger 
               value="membros" 
               className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
@@ -230,6 +230,15 @@ const Cadastros = () => {
               <Settings className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Sistema</span>
             </TabsTrigger>
+            {isStrictAdmin && (
+              <TabsTrigger 
+                value="acessos" 
+                className="data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-foreground flex items-center gap-2"
+              >
+                <KeyRound className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Acessos</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="membros">
@@ -273,6 +282,12 @@ const Cadastros = () => {
           <TabsContent value="sistema">
             <SistemaTab />
           </TabsContent>
+
+          {isStrictAdmin && (
+            <TabsContent value="acessos">
+              <AcessosTab />
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
