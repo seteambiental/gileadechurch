@@ -24,11 +24,46 @@ const versiculosAniversario = [
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  
+
+  // Descobrir o JID real no WhatsApp (alguns números brasileiros antigos não usam o 9)
+  let jidFinal = `${phoneFormatted}@s.whatsapp.net`;
+  try {
+    const checkUrl = `${EVOLUTION_API_URL}/chat/whatsappNumbers/${EVOLUTION_INSTANCE_NAME}`;
+    const variantes = new Set<string>([phoneFormatted]);
+    // Variante sem o 9 extra: 55 + DDD(2) + 9 + 8dígitos -> remover o 9
+    if (phoneFormatted.length === 13 && phoneFormatted.charAt(4) === "9") {
+      variantes.add(phoneFormatted.slice(0, 4) + phoneFormatted.slice(5));
+    }
+    // Variante com 9 extra
+    if (phoneFormatted.length === 12) {
+      variantes.add(phoneFormatted.slice(0, 4) + "9" + phoneFormatted.slice(4));
+    }
+
+    const checkResp = await fetch(checkUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": EVOLUTION_API_KEY || "",
+      },
+      body: JSON.stringify({ numbers: Array.from(variantes) }),
+    });
+    const checkData = await checkResp.json();
+    if (Array.isArray(checkData)) {
+      const valido = checkData.find((n: any) => n.exists === true && n.jid);
+      if (valido?.jid) {
+        jidFinal = valido.jid;
+        console.log(`JID resolvido: ${telefone} -> ${jidFinal}`);
+      } else {
+        throw new Error(`Número não existe no WhatsApp: ${phoneFormatted}`);
+      }
+    }
+  } catch (err) {
+    console.warn("Falha ao verificar JID, tentando formato padrão:", err);
+  }
+
   const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  
-  console.log(`Enviando mensagem de aniversário para: ${phoneFormatted}`);
-  
+  console.log(`Enviando mensagem de aniversário para: ${jidFinal}`);
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -36,7 +71,7 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
       'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
+      number: jidFinal,
       text: mensagem,
     }),
   });
