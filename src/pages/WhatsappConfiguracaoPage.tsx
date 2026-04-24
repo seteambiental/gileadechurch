@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,9 @@ import {
   Server,
   Loader2,
   Activity,
+  Settings2,
+  Save,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,25 +34,32 @@ interface StatusResponse {
   instance_name?: string;
   api_host?: string;
   owner_number?: string | null;
-  owner_number_masked?: string | null;
   owner_name?: string | null;
-  profile_picture_url?: string | null;
   latency_ms?: number;
-  last_response_status?: number;
-  last_response_body?: any;
   missing?: string[];
   message?: string;
   error?: string;
   checked_at: string;
+  last_response_body?: any;
 }
 
-interface TestResult {
-  ok: boolean;
-  at: string;
-  status?: number;
-  message: string;
-  raw?: any;
+interface FilaConfig {
+  batch_size: number;
+  delay_min_seconds: number;
+  delay_max_seconds: number;
+  max_tentativas: number;
+  backoff_base_minutes: number;
+  backoff_factor: number;
 }
+
+const DEFAULTS: FilaConfig = {
+  batch_size: 6,
+  delay_min_seconds: 5,
+  delay_max_seconds: 15,
+  max_tentativas: 3,
+  backoff_base_minutes: 1,
+  backoff_factor: 5,
+};
 
 function formatPhone(p?: string | null) {
   if (!p) return "—";
@@ -65,14 +75,18 @@ function formatPhone(p?: string | null) {
 
 export default function WhatsappConfiguracaoPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [testTelefone, setTestTelefone] = useState("");
   const [testMensagem, setTestMensagem] = useState(
     "🔧 Teste de conexão Gileade Church.\n\nSe você recebeu esta mensagem, a integração está funcionando! ✅",
   );
   const [testando, setTestando] = useState(false);
-  const [historico, setHistorico] = useState<TestResult[]>([]);
+  const [historico, setHistorico] = useState<
+    { ok: boolean; at: string; message: string }[]
+  >([]);
 
+  // ====== STATUS ======
   const {
     data: status,
     isLoading,
@@ -92,151 +106,200 @@ export default function WhatsappConfiguracaoPage() {
     refetchOnWindowFocus: false,
   });
 
-  // Métricas da fila (últimas 24h)
-  const { data: filaStats } = useQuery({
-    queryKey: ["whatsapp-fila-stats"],
+  // ====== CONFIG DA FILA ======
+  const { data: cfgRow, isLoading: loadingCfg } = useQuery({
+    queryKey: ["whatsapp-config"],
     queryFn: async () => {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await supabase
-        .from("comunicacao_envios")
-        .select("status")
-        .gte("created_at", since);
+        .from("whatsapp_config" as any)
+        .select("*")
+        .eq("id", true)
+        .maybeSingle();
       if (error) throw error;
-      const arr = data || [];
-      const enviados = arr.filter((r: any) =>
-        ["enviado", "sucesso"].includes(r.status || ""),
-      ).length;
-      const erros = arr.filter((r: any) =>
-        ["erro", "falhou"].includes(r.status || ""),
-      ).length;
-      const pendentes = arr.filter((r: any) =>
-        ["pendente", "processando"].includes(r.status || ""),
-      ).length;
-      return { total: arr.length, enviados, erros, pendentes };
+      return (data as any) || null;
     },
-    refetchInterval: autoRefresh ? 15_000 : false,
   });
 
+  const [cfg, setCfg] = useState<FilaConfig>(DEFAULTS);
+
+  useEffect(() => {
+    if (cfgRow) {
+      setCfg({
+        batch_size: cfgRow.batch_size ?? DEFAULTS.batch_size,
+        delay_min_seconds: cfgRow.delay_min_seconds ?? DEFAULTS.delay_min_seconds,
+        delay_max_seconds: cfgRow.delay_max_seconds ?? DEFAULTS.delay_max_seconds,
+        max_tentativas: cfgRow.max_tentativas ?? DEFAULTS.max_tentativas,
+        backoff_base_minutes:
+          cfgRow.backoff_base_minutes ?? DEFAULTS.backoff_base_minutes,
+        backoff_factor: Number(cfgRow.backoff_factor ?? DEFAULTS.backoff_factor),
+      });
+    }
+  }, [cfgRow]);
+
+  const dirty = useMemo(() => {
+    if (!cfgRow) return false;
+    return (
+      cfg.batch_size !== cfgRow.batch_size ||
+      cfg.delay_min_seconds !== cfgRow.delay_min_seconds ||
+      cfg.delay_max_seconds !== cfgRow.delay_max_seconds ||
+      cfg.max_tentativas !== cfgRow.max_tentativas ||
+      cfg.backoff_base_minutes !== cfgRow.backoff_base_minutes ||
+      Number(cfg.backoff_factor) !== Number(cfgRow.backoff_factor)
+    );
+  }, [cfg, cfgRow]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      // Validação cliente
+      if (cfg.delay_min_seconds < 1 || cfg.delay_max_seconds > 120)
+        throw new Error("Delays devem estar entre 1 e 120 segundos");
+      if (cfg.delay_max_seconds < cfg.delay_min_seconds)
+        throw new Error("Delay máximo não pode ser menor que o mínimo");
+      if (cfg.batch_size < 1 || cfg.batch_size > 50)
+        throw new Error("Lote deve estar entre 1 e 50");
+      if (cfg.max_tentativas < 1 || cfg.max_tentativas > 10)
+        throw new Error("Tentativas: 1 a 10");
+
+      const { data: u } = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from("whatsapp_config" as any)
+        .update({
+          ...cfg,
+          updated_by: u.user?.id ?? null,
+        })
+        .eq("id", true);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Configurações salvas");
+      qc.invalidateQueries({ queryKey: ["whatsapp-config"] });
+    },
+    onError: (err: any) => toast.error(err?.message || "Erro ao salvar"),
+  });
+
+  function resetDefaults() {
+    setCfg(DEFAULTS);
+  }
+
+  // ====== TESTE DE ENVIO ======
   async function handleTeste() {
     const telefone = testTelefone.replace(/\D/g, "");
     if (telefone.length < 10) {
       toast.error("Informe um telefone válido (com DDD).");
       return;
     }
-    if (!testMensagem.trim()) {
-      toast.error("Mensagem vazia.");
-      return;
-    }
+    if (!testMensagem.trim()) return toast.error("Mensagem vazia.");
     setTestando(true);
     const startedAt = new Date().toISOString();
     try {
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-        body: {
-          action: "mensagem_direta",
-          telefone,
-          mensagem: testMensagem,
-        },
+        body: { action: "mensagem_direta", telefone, mensagem: testMensagem },
       });
       if (error) throw error;
       const ok = !!data?.success;
-      const result: TestResult = {
-        ok,
-        at: startedAt,
-        status: 200,
-        message: ok
-          ? "Mensagem enviada com sucesso para o WhatsApp."
-          : data?.error || "Falha ao enviar — verifique o painel abaixo.",
-        raw: data,
-      };
-      setHistorico((h) => [result, ...h].slice(0, 10));
-      if (ok) toast.success("Mensagem de teste enviada");
-      else toast.error(result.message);
+      setHistorico((h) =>
+        [
+          {
+            ok,
+            at: startedAt,
+            message: ok
+              ? "Mensagem enviada com sucesso."
+              : data?.error || "Falha no envio.",
+          },
+          ...h,
+        ].slice(0, 10),
+      );
+      ok ? toast.success("Mensagem de teste enviada") : toast.error("Falha");
     } catch (err: any) {
-      const result: TestResult = {
-        ok: false,
-        at: startedAt,
-        message: err?.message || "Erro desconhecido",
-        raw: err,
-      };
-      setHistorico((h) => [result, ...h].slice(0, 10));
-      toast.error(result.message);
+      setHistorico((h) =>
+        [{ ok: false, at: startedAt, message: err?.message || "Erro" }, ...h].slice(
+          0,
+          10,
+        ),
+      );
+      toast.error(err?.message || "Erro");
     } finally {
       setTestando(false);
     }
   }
 
+  async function processarAgora() {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "processar-fila-whatsapp",
+        { body: {} },
+      );
+      if (error) throw error;
+      toast.success(
+        `Processados: ${data?.processados ?? 0} (enviados: ${data?.enviados ?? 0}, erros: ${data?.erros_reagendados ?? 0}, descartados: ${data?.descartados ?? 0})`,
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao processar fila");
+    }
+  }
+
   const statusBadge = useMemo(() => {
-    if (isLoading) {
+    if (isLoading)
       return (
         <Badge variant="secondary" className="gap-1.5">
-          <Loader2 className="w-3 h-3 animate-spin" />
-          Verificando…
+          <Loader2 className="w-3 h-3 animate-spin" /> Verificando…
         </Badge>
       );
-    }
-    if (!status?.configured) {
+    if (!status?.configured)
       return (
         <Badge className="gap-1.5 bg-amber-500 hover:bg-amber-500/90 text-white">
-          <AlertTriangle className="w-3 h-3" />
-          Não configurado
+          <AlertTriangle className="w-3 h-3" /> Não configurado
         </Badge>
       );
-    }
-    if (status.connected) {
+    if (status.connected)
       return (
         <Badge className="gap-1.5 bg-green-600 hover:bg-green-600/90 text-white">
-          <CheckCircle2 className="w-3 h-3" />
-          Conectado
+          <CheckCircle2 className="w-3 h-3" /> Conectado
         </Badge>
       );
-    }
     return (
       <Badge variant="destructive" className="gap-1.5">
-        <XCircle className="w-3 h-3" />
-        Desconectado
+        <XCircle className="w-3 h-3" /> Desconectado
       </Badge>
     );
   }, [isLoading, status]);
+
+  // Exemplos calculados
+  const exemplosBackoff = useMemo(() => {
+    const b = Math.max(1, cfg.backoff_base_minutes);
+    const f = Math.max(1, cfg.backoff_factor);
+    return Array.from({ length: Math.max(1, cfg.max_tentativas - 1) }, (_, i) => {
+      const min = b * Math.pow(f, i);
+      return { tentativa: i + 1, minutos: min };
+    });
+  }, [cfg]);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            aria-label="Voltar"
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Configuração do WhatsApp</h1>
             <p className="text-sm text-muted-foreground">
-              Provedor de envio, status da conexão e teste em tempo real
+              Provedor, conexão, fila de envios e teste em tempo real
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw
-              className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
-            />
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
         </div>
 
-        {/* Status principal */}
+        {/* Status */}
         <Card className="border-border">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5 text-green-600" />
-                Status da conexão
+                <Activity className="w-5 h-5 text-green-600" /> Status da conexão
               </CardTitle>
               {statusBadge}
             </div>
@@ -259,32 +322,14 @@ export default function WhatsappConfiguracaoPage() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Configure os secrets em Lovable Cloud para habilitar a
-                  integração.
-                </p>
               </div>
             )}
 
             {status && status.configured && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoRow
-                  icon={<Server className="w-4 h-4" />}
-                  label="Provedor"
-                  value={status.provider}
-                />
-                <InfoRow
-                  icon={<Server className="w-4 h-4" />}
-                  label="Servidor"
-                  value={status.api_host || "—"}
-                  mono
-                />
-                <InfoRow
-                  icon={<Server className="w-4 h-4" />}
-                  label="Instância"
-                  value={status.instance_name || "—"}
-                  mono
-                />
+                <InfoRow icon={<Server className="w-4 h-4" />} label="Provedor" value={status.provider} />
+                <InfoRow icon={<Server className="w-4 h-4" />} label="Servidor" value={status.api_host || "—"} mono />
+                <InfoRow icon={<Server className="w-4 h-4" />} label="Instância" value={status.instance_name || "—"} mono />
                 <InfoRow
                   icon={<Phone className="w-4 h-4" />}
                   label="Número remetente"
@@ -292,37 +337,25 @@ export default function WhatsappConfiguracaoPage() {
                     status.owner_number
                       ? formatPhone(status.owner_number)
                       : status.connected
-                        ? "—"
+                        ? status.owner_name || "—"
                         : "(indisponível: desconectado)"
                   }
                   mono={!!status.owner_number}
                 />
-                <InfoRow
-                  icon={<CheckCircle2 className="w-4 h-4" />}
-                  label="Estado bruto"
-                  value={status.state || "—"}
-                  mono
-                />
+                <InfoRow icon={<CheckCircle2 className="w-4 h-4" />} label="Estado" value={status.state || "—"} mono />
                 <InfoRow
                   icon={<Activity className="w-4 h-4" />}
                   label="Latência"
-                  value={
-                    status.latency_ms !== undefined
-                      ? `${status.latency_ms} ms`
-                      : "—"
-                  }
+                  value={status.latency_ms !== undefined ? `${status.latency_ms} ms` : "—"}
                 />
               </div>
             )}
 
             <Separator />
-
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
                 Última verificação:{" "}
-                {status?.checked_at
-                  ? new Date(status.checked_at).toLocaleString("pt-BR")
-                  : "—"}
+                {status?.checked_at ? new Date(status.checked_at).toLocaleString("pt-BR") : "—"}
               </span>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -337,32 +370,124 @@ export default function WhatsappConfiguracaoPage() {
           </CardContent>
         </Card>
 
-        {/* Métricas 24h */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard label="Envios 24h" value={filaStats?.total ?? "—"} />
-          <StatCard
-            label="Sucesso"
-            value={filaStats?.enviados ?? "—"}
-            tone="success"
-          />
-          <StatCard
-            label="Erros"
-            value={filaStats?.erros ?? "—"}
-            tone="destructive"
-          />
-          <StatCard
-            label="Pendentes"
-            value={filaStats?.pendentes ?? "—"}
-            tone="warning"
-          />
-        </div>
+        {/* CONFIGURAÇÃO DA FILA */}
+        <Card className="border-border">
+          <CardHeader className="pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-blue-600" />
+                Parâmetros da fila
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={resetDefaults}>
+                  <RotateCcw className="w-4 h-4 mr-2" /> Padrão
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => saveMutation.mutate()}
+                  disabled={!dirty || saveMutation.isPending || loadingCfg}
+                >
+                  {saveMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
+                  Salvar
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <NumberField
+                label="Lote por execução"
+                hint="Quantas mensagens enviar por ciclo (1–50)"
+                value={cfg.batch_size}
+                min={1}
+                max={50}
+                onChange={(v) => setCfg({ ...cfg, batch_size: v })}
+              />
+              <NumberField
+                label="Tentativas máximas"
+                hint="Antes de descartar a mensagem (1–10)"
+                value={cfg.max_tentativas}
+                min={1}
+                max={10}
+                onChange={(v) => setCfg({ ...cfg, max_tentativas: v })}
+              />
+              <NumberField
+                label="Backoff base (min)"
+                hint="Espera após a 1ª falha"
+                value={cfg.backoff_base_minutes}
+                min={1}
+                max={60}
+                onChange={(v) => setCfg({ ...cfg, backoff_base_minutes: v })}
+              />
+              <NumberField
+                label="Espaçamento mín. (s)"
+                hint="Tempo mínimo entre mensagens"
+                value={cfg.delay_min_seconds}
+                min={1}
+                max={120}
+                onChange={(v) => setCfg({ ...cfg, delay_min_seconds: v })}
+              />
+              <NumberField
+                label="Espaçamento máx. (s)"
+                hint="Tempo máximo entre mensagens"
+                value={cfg.delay_max_seconds}
+                min={1}
+                max={120}
+                onChange={(v) => setCfg({ ...cfg, delay_max_seconds: v })}
+              />
+              <NumberField
+                label="Fator de backoff"
+                hint="Multiplica a espera a cada nova falha"
+                value={cfg.backoff_factor}
+                min={1}
+                max={20}
+                onChange={(v) => setCfg({ ...cfg, backoff_factor: v })}
+              />
+            </div>
 
-        {/* Teste de envio */}
+            <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1.5">
+              <p className="font-medium text-foreground">Pré-visualização</p>
+              <p className="text-muted-foreground">
+                Cada execução envia até <strong>{cfg.batch_size}</strong> mensagens com
+                espaçamento aleatório de{" "}
+                <strong>
+                  {cfg.delay_min_seconds}–{cfg.delay_max_seconds}s
+                </strong>{" "}
+                entre cada uma.
+              </p>
+              <p className="text-muted-foreground">
+                Em caso de falha, as próximas tentativas acontecem em:{" "}
+                {exemplosBackoff
+                  .map((b) =>
+                    b.minutos >= 60
+                      ? `${(b.minutos / 60).toFixed(1)}h`
+                      : `${b.minutos}min`,
+                  )
+                  .join(" → ")}
+                {" "}
+                — depois descartada.
+              </p>
+            </div>
+
+            <Separator />
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={processarAgora}>
+                <Send className="w-4 h-4 mr-2" />
+                Processar fila agora
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* TESTE DE ENVIO */}
         <Card className="border-border">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5 text-green-600" />
-              Enviar mensagem de teste
+              <Send className="w-5 h-5 text-green-600" /> Enviar mensagem de teste
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -402,17 +527,10 @@ export default function WhatsappConfiguracaoPage() {
               </Button>
             </div>
 
-            {!status?.connected && (
-              <p className="text-xs text-muted-foreground">
-                O envio de teste é desabilitado enquanto a integração não está
-                conectada.
-              </p>
-            )}
-
             {historico.length > 0 && (
               <div className="space-y-2">
                 <Label>Resultados recentes</Label>
-                <div className="space-y-2 max-h-72 overflow-auto">
+                <div className="space-y-2 max-h-64 overflow-auto">
                   {historico.map((h, i) => (
                     <div
                       key={i}
@@ -435,9 +553,7 @@ export default function WhatsappConfiguracaoPage() {
                           {new Date(h.at).toLocaleTimeString("pt-BR")}
                         </span>
                       </div>
-                      <p className="text-muted-foreground break-words">
-                        {h.message}
-                      </p>
+                      <p className="text-muted-foreground break-words">{h.message}</p>
                     </div>
                   ))}
                 </div>
@@ -445,20 +561,6 @@ export default function WhatsappConfiguracaoPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Detalhes técnicos */}
-        {status?.last_response_body && (
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-sm">Resposta bruta do provedor</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <pre className="text-[11px] bg-muted/40 rounded-md p-3 overflow-auto max-h-72">
-                {JSON.stringify(status.last_response_body, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </div>
   );
@@ -486,29 +588,35 @@ function InfoRow({
   );
 }
 
-function StatCard({
+function NumberField({
   label,
+  hint,
   value,
-  tone,
+  min,
+  max,
+  onChange,
 }: {
   label: string;
-  value: React.ReactNode;
-  tone?: "success" | "destructive" | "warning";
+  hint?: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
 }) {
-  const toneClass =
-    tone === "success"
-      ? "text-green-600"
-      : tone === "destructive"
-        ? "text-destructive"
-        : tone === "warning"
-          ? "text-amber-600"
-          : "text-foreground";
   return (
-    <Card className="border-border">
-      <CardContent className="p-4">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`text-2xl font-bold ${toneClass}`}>{value}</p>
-      </CardContent>
-    </Card>
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      <Input
+        type="number"
+        value={value}
+        min={min}
+        max={max}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (Number.isFinite(n)) onChange(n);
+        }}
+      />
+      {hint && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+    </div>
   );
 }

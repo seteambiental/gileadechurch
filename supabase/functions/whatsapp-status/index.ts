@@ -1,5 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -12,13 +10,6 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
   : `https://${rawEvolutionUrl}`;
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
 const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
-
-function maskPhone(p?: string | null) {
-  if (!p) return null;
-  const d = String(p).replace(/\D/g, "");
-  if (d.length < 4) return d;
-  return `${d.slice(0, 4)}••••${d.slice(-2)}`;
-}
 
 function publicHost(url: string) {
   try {
@@ -34,19 +25,19 @@ async function fetchJson(url: string, init: RequestInit, timeoutMs = 8000) {
   try {
     const res = await fetch(url, { ...init, signal: ctrl.signal });
     const text = await res.text();
-    let json: any = null;
+    let body: any = null;
     try {
-      json = text ? JSON.parse(text) : null;
+      body = text ? JSON.parse(text) : null;
     } catch {
-      json = { raw: text?.slice(0, 500) };
+      body = { raw: text?.slice(0, 500) };
     }
-    return { ok: res.ok, status: res.status, body: json };
+    return { ok: res.ok, status: res.status, body };
   } finally {
     clearTimeout(to);
   }
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -54,47 +45,40 @@ serve(async (req) => {
   const provider = "Evolution API";
   const startedAt = Date.now();
 
+  const missing: string[] = [];
+  if (!EVOLUTION_API_URL) missing.push("EVOLUTION_API_URL");
+  if (!EVOLUTION_API_KEY) missing.push("EVOLUTION_API_KEY");
+  if (!EVOLUTION_INSTANCE_NAME) missing.push("EVOLUTION_INSTANCE_NAME");
+
+  if (missing.length > 0) {
+    return new Response(
+      JSON.stringify({
+        provider,
+        configured: false,
+        connected: false,
+        missing,
+        message: `Faltam variáveis: ${missing.join(", ")}`,
+        checked_at: new Date().toISOString(),
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
+  }
+
   try {
-    const missing: string[] = [];
-    if (!EVOLUTION_API_URL) missing.push("EVOLUTION_API_URL");
-    if (!EVOLUTION_API_KEY) missing.push("EVOLUTION_API_KEY");
-    if (!EVOLUTION_INSTANCE_NAME) missing.push("EVOLUTION_INSTANCE_NAME");
-
-    if (missing.length > 0) {
-      return new Response(
-        JSON.stringify({
-          provider,
-          configured: false,
-          connected: false,
-          missing,
-          message: `Faltam variáveis: ${missing.join(", ")}`,
-          checked_at: new Date().toISOString(),
-        }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        },
-      );
-    }
-
     const headers = {
       "Content-Type": "application/json",
       apikey: EVOLUTION_API_KEY!,
     };
 
-    // 1) Estado da conexão da instância
     const stateUrl = `${EVOLUTION_API_URL}/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`;
     const stateRes = await fetchJson(stateUrl, { headers });
-
-    // Evolution costuma responder algo como { instance: { state: "open"|"close"|"connecting" } }
     const state =
-      stateRes.body?.instance?.state ??
-      stateRes.body?.state ??
-      (stateRes.ok ? "unknown" : "error");
-
+      stateRes.body?.instance?.state ?? stateRes.body?.state ?? "unknown";
     const connected = state === "open";
 
-    // 2) Tentar obter dados do número remetente conectado
     let ownerNumber: string | null = null;
     let ownerName: string | null = null;
     let profilePicUrl: string | null = null;
@@ -107,7 +91,7 @@ serve(async (req) => {
       const arr = Array.isArray(instRes.body) ? instRes.body : [];
       const inst = arr[0]?.instance ?? arr[0] ?? instRes.body?.instance;
       ownerNumber =
-        inst?.owner?.replace?.("@s.whatsapp.net", "") ||
+        (inst?.owner ? String(inst.owner).replace("@s.whatsapp.net", "") : null) ||
         inst?.number ||
         inst?.wuid ||
         null;
@@ -124,7 +108,6 @@ serve(async (req) => {
         instance_name: EVOLUTION_INSTANCE_NAME,
         api_host: publicHost(EVOLUTION_API_URL),
         owner_number: ownerNumber,
-        owner_number_masked: maskPhone(ownerNumber),
         owner_name: ownerName,
         profile_picture_url: profilePicUrl,
         latency_ms: Date.now() - startedAt,
@@ -141,7 +124,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         provider,
-        configured: !!(EVOLUTION_API_URL && EVOLUTION_API_KEY && EVOLUTION_INSTANCE_NAME),
+        configured: true,
         connected: false,
         error: err?.message || String(err),
         checked_at: new Date().toISOString(),

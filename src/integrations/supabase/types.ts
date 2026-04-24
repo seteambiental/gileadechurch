@@ -6549,6 +6549,42 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_config: {
+        Row: {
+          backoff_base_minutes: number
+          backoff_factor: number
+          batch_size: number
+          delay_max_seconds: number
+          delay_min_seconds: number
+          id: boolean
+          max_tentativas: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          backoff_base_minutes?: number
+          backoff_factor?: number
+          batch_size?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
+          id?: boolean
+          max_tentativas?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          backoff_base_minutes?: number
+          backoff_factor?: number
+          batch_size?: number
+          delay_max_seconds?: number
+          delay_min_seconds?: number
+          id?: boolean
+          max_tentativas?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       inscricao_pessoas_busca: {
