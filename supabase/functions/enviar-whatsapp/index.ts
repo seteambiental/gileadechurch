@@ -946,6 +946,297 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // ===== INSCRIÇÃO RECEBIDA (qualquer evento/módulo) =====
+    if (action === 'inscricao_recebida') {
+      const { telefone, nome, tituloEvento } = body;
+      if (!telefone || !nome) {
+        throw new Error('Telefone e nome são obrigatórios');
+      }
+      const primeiroNome = String(nome).split(' ')[0];
+      const mensagem = MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
+      try {
+        await enviarMensagemEvolution(telefone, mensagem);
+        await supabase.from('comunicacao_envios').insert({
+          tipo: 'inscricao_recebida',
+          destinatario_telefone: telefone,
+          destinatario_nome: nome,
+          conteudo: mensagem,
+          status: 'enviado',
+        });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Erro';
+        await supabase.from('comunicacao_envios').insert({
+          tipo: 'inscricao_recebida',
+          destinatario_telefone: telefone,
+          destinatario_nome: nome,
+          conteudo: mensagem,
+          status: 'erro',
+          erro_mensagem: msg,
+        });
+        return new Response(JSON.stringify({ success: false, error: msg }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // ===== CADASTRO APROVADO =====
+    if (action === 'cadastro_aprovado') {
+      const { telefone, nome, memberId } = body;
+      if (!telefone || !nome) {
+        throw new Error('Telefone e nome são obrigatórios');
+      }
+      const primeiroNome = String(nome).split(' ')[0];
+      const mensagem = MENSAGEM_CADASTRO_APROVADO(primeiroNome);
+      try {
+        await enviarMensagemEvolution(telefone, mensagem);
+        await supabase.from('comunicacao_envios').insert({
+          tipo: 'cadastro_aprovado',
+          destinatario_telefone: telefone,
+          destinatario_nome: nome,
+          destinatario_member_id: memberId || null,
+          conteudo: mensagem,
+          status: 'enviado',
+        });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Erro';
+        await supabase.from('comunicacao_envios').insert({
+          tipo: 'cadastro_aprovado',
+          destinatario_telefone: telefone,
+          destinatario_nome: nome,
+          destinatario_member_id: memberId || null,
+          conteudo: mensagem,
+          status: 'erro',
+          erro_mensagem: msg,
+        });
+        return new Response(JSON.stringify({ success: false, error: msg }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // ===== ENVIO DE FLYER DA HOMEPAGE PARA TODOS OS MEMBROS =====
+    if (action === 'enviar_flyer_homepage') {
+      const { flyerUrl, caption, eventoId } = body;
+      if (!flyerUrl) {
+        throw new Error('URL do flyer é obrigatória');
+      }
+
+      const { data: membros, error: membrosError } = await supabase
+        .from('members')
+        .select('id, full_name, whatsapp')
+        .not('whatsapp', 'is', null)
+        .or('excluido.is.null,excluido.eq.false');
+
+      if (membrosError) throw new Error('Erro ao buscar membros');
+
+      const captionFinal = caption || '📢 Confira este aviso da Igreja Gileade! 💙\n\n_Igreja Gileade_';
+
+      let enviados = 0;
+      let erros = 0;
+      for (const membro of membros || []) {
+        if (!membro.whatsapp) continue;
+        try {
+          const captionPersonalizada = captionFinal.replace(
+            /\{nome\}/g,
+            (membro.full_name || '').split(' ')[0]
+          );
+          await enviarImagemEvolution(membro.whatsapp, flyerUrl, captionPersonalizada);
+          enviados++;
+          await supabase.from('comunicacao_envios').insert({
+            tipo: 'flyer_homepage',
+            destinatario_telefone: membro.whatsapp,
+            destinatario_nome: membro.full_name,
+            destinatario_member_id: membro.id,
+            conteudo: captionPersonalizada,
+            midia_url: flyerUrl,
+            evento_id: eventoId || null,
+            status: 'enviado',
+          });
+          await delayBulk();
+        } catch (err: unknown) {
+          erros++;
+          const msg = err instanceof Error ? err.message : 'Erro';
+          await supabase.from('comunicacao_envios').insert({
+            tipo: 'flyer_homepage',
+            destinatario_telefone: membro.whatsapp,
+            destinatario_nome: membro.full_name,
+            destinatario_member_id: membro.id,
+            conteudo: captionFinal,
+            midia_url: flyerUrl,
+            evento_id: eventoId || null,
+            status: 'erro',
+            erro_mensagem: msg,
+          });
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Flyer enviado para ${enviados} membros. ${erros > 0 ? `${erros} falhas.` : ''}`,
+        enviados,
+        erros,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ===== ENVIO SEGMENTADO PARA GRUPOS DE LIDERANÇA / MEMBROS =====
+    // body: { mensagem, segmentos: string[], ministerioId?: string }
+    // segmentos suportados:
+    //  - 'todos_membros'
+    //  - 'lideres_ministerio'
+    //  - 'lideres_casa_refugio'
+    //  - 'supervisores_casa_refugio'
+    //  - 'sindicos_condominio'
+    //  - 'pastores'
+    //  - 'integrantes_ministerio' (requer ministerioId)
+    if (action === 'enviar_segmentado') {
+      const { mensagem, segmentos, ministerioId } = body as {
+        mensagem: string;
+        segmentos: string[];
+        ministerioId?: string;
+      };
+      if (!mensagem || !Array.isArray(segmentos) || segmentos.length === 0) {
+        throw new Error('Mensagem e ao menos um segmento são obrigatórios');
+      }
+
+      const memberIdsSet = new Set<string>();
+
+      // Helper para coletar member_ids por function_type
+      async function coletarPorFuncao(funcoes: string[], filtroMinisterio?: string) {
+        let q = supabase
+          .from('member_functions')
+          .select('member_id, ministry_id')
+          .in('function_type', funcoes);
+        if (filtroMinisterio) q = q.eq('ministry_id', filtroMinisterio);
+        const { data, error } = await q;
+        if (error) throw new Error(`Erro coletando ${funcoes.join(',')}: ${error.message}`);
+        for (const r of data || []) {
+          if (r.member_id) memberIdsSet.add(r.member_id as string);
+        }
+      }
+
+      if (segmentos.includes('todos_membros')) {
+        const { data: todos, error } = await supabase
+          .from('members')
+          .select('id')
+          .not('whatsapp', 'is', null)
+          .or('excluido.is.null,excluido.eq.false');
+        if (error) throw new Error('Erro buscando membros');
+        for (const r of todos || []) memberIdsSet.add(r.id);
+      }
+      if (segmentos.includes('lideres_ministerio')) {
+        await coletarPorFuncao(['lider_ministerio']);
+      }
+      if (segmentos.includes('lideres_casa_refugio')) {
+        await coletarPorFuncao(['lider_casa_refugio', 'secretario_casa_refugio']);
+      }
+      if (segmentos.includes('supervisores_casa_refugio')) {
+        await coletarPorFuncao(['supervisor_casa_refugio']);
+      }
+      if (segmentos.includes('sindicos_condominio')) {
+        await coletarPorFuncao(['sindico_condominio']);
+      }
+      if (segmentos.includes('pastores')) {
+        // Pastores são identificados via user_roles
+        const { data: roles, error } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .in('role', ['pastor_geral', 'pastor_auxiliar']);
+        if (error) throw new Error('Erro buscando pastores');
+        const userIds = (roles || []).map((r) => r.user_id).filter(Boolean);
+        if (userIds.length > 0) {
+          const { data: membersPastores } = await supabase
+            .from('members')
+            .select('id')
+            .in('user_id', userIds);
+          for (const m of membersPastores || []) memberIdsSet.add(m.id);
+        }
+      }
+      if (segmentos.includes('integrantes_ministerio')) {
+        if (!ministerioId) {
+          throw new Error('Ministério é obrigatório para enviar a integrantes');
+        }
+        const { data: integrantes, error } = await supabase
+          .from('ministerio_integrantes')
+          .select('member_id')
+          .eq('ministry_id', ministerioId)
+          .eq('ativo', true);
+        if (error) throw new Error('Erro buscando integrantes');
+        for (const r of integrantes || []) {
+          if (r.member_id) memberIdsSet.add(r.member_id as string);
+        }
+      }
+
+      if (memberIdsSet.size === 0) {
+        return new Response(JSON.stringify({
+          success: true,
+          enviados: 0,
+          erros: 0,
+          message: 'Nenhum destinatário encontrado para os segmentos escolhidos',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const ids = Array.from(memberIdsSet);
+      const { data: destinatarios, error: destError } = await supabase
+        .from('members')
+        .select('id, full_name, whatsapp')
+        .in('id', ids)
+        .not('whatsapp', 'is', null);
+      if (destError) throw new Error('Erro carregando destinatários');
+
+      let enviados = 0;
+      let erros = 0;
+      const segLabel = segmentos.join('+');
+
+      for (const dest of destinatarios || []) {
+        if (!dest.whatsapp) continue;
+        const primeiroNome = (dest.full_name || '').split(' ')[0];
+        const msgPersonalizada = String(mensagem).replace(/\{nome\}/g, primeiroNome);
+        try {
+          await enviarMensagemEvolution(dest.whatsapp, msgPersonalizada);
+          enviados++;
+          await supabase.from('comunicacao_envios').insert({
+            tipo: 'segmentado_membros',
+            segmento: segLabel,
+            destinatario_telefone: dest.whatsapp,
+            destinatario_nome: dest.full_name,
+            destinatario_member_id: dest.id,
+            conteudo: msgPersonalizada,
+            status: 'enviado',
+          });
+          await delayBulk();
+        } catch (err: unknown) {
+          erros++;
+          const msg = err instanceof Error ? err.message : 'Erro';
+          await supabase.from('comunicacao_envios').insert({
+            tipo: 'segmentado_membros',
+            segmento: segLabel,
+            destinatario_telefone: dest.whatsapp,
+            destinatario_nome: dest.full_name,
+            destinatario_member_id: dest.id,
+            conteudo: msgPersonalizada,
+            status: 'erro',
+            erro_mensagem: msg,
+          });
+        }
+      }
+
+      return new Response(JSON.stringify({
+        success: true,
+        enviados,
+        erros,
+        total: destinatarios?.length || 0,
+        message: `Mensagem enviada para ${enviados} pessoa(s). ${erros > 0 ? `${erros} falha(s).` : ''}`,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
