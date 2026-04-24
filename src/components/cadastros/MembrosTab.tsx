@@ -817,13 +817,21 @@ const MembrosTab = () => {
               WhatsApp: {whatsappMember?.whatsapp ? formatPhone(whatsappMember.whatsapp) : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <Textarea
-            placeholder="Digite sua mensagem..."
-            value={whatsappMessage}
-            onChange={(e) => setWhatsappMessage(e.target.value)}
-            rows={5}
-            className="mt-2"
-          />
+          <div className="space-y-3 mt-2">
+            <Textarea
+              placeholder="Digite sua mensagem..."
+              value={whatsappMessage}
+              onChange={(e) => setWhatsappMessage(e.target.value)}
+              rows={5}
+            />
+            {whatsappMember && (
+              <WhatsappMensagemPreview
+                mensagem={whatsappMessage}
+                membros={[{ full_name: whatsappMember.full_name, whatsapp: whatsappMember.whatsapp }]}
+                amostras={1}
+              />
+            )}
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
