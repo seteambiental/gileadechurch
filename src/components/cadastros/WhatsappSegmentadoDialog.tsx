@@ -21,6 +21,7 @@ import {
   dispararEnvioSegmentado,
   type SegmentoEnvio,
 } from "@/lib/whatsapp-notifications";
+import WhatsappMensagemPreview from "./WhatsappMensagemPreview";
 
 interface Props {
   open: boolean;
@@ -55,6 +56,85 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
       return data || [];
     },
     enabled: open,
+  });
+
+  // Busca amostra de destinatários para a pré-visualização (até 50)
+  const { data: amostraDestinatarios = [] } = useQuery({
+    queryKey: [
+      "whatsapp-segmentado-amostra",
+      segmentos.slice().sort().join(","),
+      segmentos.includes("integrantes_ministerio") ? ministerioId : "",
+    ],
+    enabled:
+      open &&
+      segmentos.length > 0 &&
+      (!segmentos.includes("integrantes_ministerio") || !!ministerioId),
+    queryFn: async () => {
+      const memberIds = new Set<string>();
+
+      const coletarPorFuncao = async (funcoes: string[], filtroMinisterio?: string) => {
+        let q = supabase
+          .from("member_functions")
+          .select("member_id")
+          .in("function_type", funcoes as any);
+        if (filtroMinisterio) q = q.eq("ministry_id", filtroMinisterio);
+        const { data } = await q;
+        for (const r of data || []) {
+          if (r.member_id) memberIds.add(r.member_id as string);
+        }
+      };
+
+      if (segmentos.includes("todos_membros")) {
+        const { data } = await supabase
+          .from("members")
+          .select("id")
+          .not("whatsapp", "is", null)
+          .or("excluido.is.null,excluido.eq.false")
+          .limit(50);
+        for (const r of data || []) memberIds.add(r.id);
+      }
+      if (segmentos.includes("lideres_ministerio")) await coletarPorFuncao(["lider_ministerio"]);
+      if (segmentos.includes("lideres_casa_refugio"))
+        await coletarPorFuncao(["lider_casa_refugio", "secretario_casa_refugio"]);
+      if (segmentos.includes("supervisores_casa_refugio"))
+        await coletarPorFuncao(["supervisor_casa_refugio"]);
+      if (segmentos.includes("sindicos_condominio"))
+        await coletarPorFuncao(["sindico_condominio"]);
+      if (segmentos.includes("pastores")) {
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["pastor_geral", "pastor_auxiliar"] as any);
+        const userIds = (roles || []).map((r: any) => r.user_id).filter(Boolean);
+        if (userIds.length > 0) {
+          const { data: ms } = await supabase
+            .from("members")
+            .select("id")
+            .in("user_id", userIds);
+          for (const m of ms || []) memberIds.add(m.id);
+        }
+      }
+      if (segmentos.includes("integrantes_ministerio") && ministerioId) {
+        const { data } = await supabase
+          .from("ministerio_integrantes")
+          .select("member_id")
+          .eq("ministry_id", ministerioId)
+          .eq("ativo", true);
+        for (const r of data || []) {
+          if (r.member_id) memberIds.add(r.member_id as string);
+        }
+      }
+
+      if (memberIds.size === 0) return [];
+
+      const ids = Array.from(memberIds).slice(0, 50);
+      const { data: dest } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp")
+        .in("id", ids)
+        .not("whatsapp", "is", null);
+      return dest || [];
+    },
   });
 
   function toggleSegmento(seg: SegmentoEnvio) {
@@ -160,6 +240,14 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
               rows={6}
             />
           </div>
+
+          <WhatsappMensagemPreview
+            mensagem={mensagem}
+            membros={amostraDestinatarios.map((m: any) => ({
+              full_name: m.full_name,
+              whatsapp: m.whatsapp,
+            }))}
+          />
         </div>
 
         <AlertDialogFooter>
