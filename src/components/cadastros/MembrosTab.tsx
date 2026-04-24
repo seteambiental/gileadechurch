@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import MemberFormDialog from "./MemberFormDialog";
 import WhatsappSegmentadoDialog from "./WhatsappSegmentadoDialog";
+import WhatsappMensagemPreview from "./WhatsappMensagemPreview";
 import {
   AlertDialog,
   AlertDialogAction,
