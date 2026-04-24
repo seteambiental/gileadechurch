@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Search, CheckCircle2, Loader2 } from "lucide-react";
 import { differenceInYears } from "date-fns";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 const GENEROS = ["Masculino", "Feminino"];
 
@@ -157,6 +158,15 @@ export default function InscricaoJiuJitsu() {
     if (error) {
       toast({ title: "Erro ao enviar inscrição", description: error.message, variant: "destructive" });
     } else {
+      try {
+        await dispararMensagemInscricaoRecebida({
+          telefone: telefone || responsavelTelefone,
+          nome: nome,
+          tituloEvento: "Jiu-Jitsu",
+        });
+      } catch (waErr) {
+        console.warn("[jiujitsu] falha disparo whatsapp:", waErr);
+      }
       setSubmitted(true);
     }
   };
