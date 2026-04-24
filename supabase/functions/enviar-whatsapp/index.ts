@@ -11,6 +11,22 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl :
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
+// Pausa aleatória entre 5 e 15 segundos para envios em massa relacionados a
+// inscrições / cadastros / flyers / mensagens segmentadas, conforme política.
+function randomBulkDelayMs() {
+  return Math.floor(Math.random() * 10_000) + 5_000; // 5000..14999
+}
+
+async function delayBulk() {
+  await new Promise((resolve) => setTimeout(resolve, randomBulkDelayMs()));
+}
+
+const MENSAGEM_INSCRICAO_RECEBIDA = (primeiroNome: string, tituloEvento?: string) =>
+  `🙏 *Olá, ${primeiroNome}!*\n\nSomos da *Gileade Church*.\n\nRecebemos a sua inscrição${tituloEvento ? ` para *${tituloEvento}*` : ""}. Lembre-se que para garantir a sua vaga, é preciso efetuar o pagamento do valor da inscrição.\n\nDúvidas, por favor, chame nesse número! 💙\n\n_Igreja Gileade_`;
+
+const MENSAGEM_CADASTRO_APROVADO = (primeiroNome: string) =>
+  `🎉 *Olá, ${primeiroNome}!*\n\nSomos da *Gileade Church*.\n\nSeja bem-vindo(a) à família Gileade! Estamos felizes por receber o seu cadastro de membro.\n\nLembre-se: você é muito especial para nós. 💙\n\n_Igreja Gileade_`;
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
