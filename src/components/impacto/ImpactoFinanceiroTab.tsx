@@ -141,6 +141,21 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return norm.includes("teologia") || norm.includes("curso de teologia");
   };
 
+  const isCasaisEvent = (titulo: string | null) => {
+    if (!titulo) return false;
+    const norm = titulo.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return norm.includes("casais") || norm.includes("curso de casais");
+  };
+
+  const isJiuJitsuEvent = (titulo: string | null) => {
+    if (!titulo) return false;
+    const norm = titulo.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return norm.includes("jiu") || norm.includes("jitsu") || norm.includes("jiu-jitsu") || norm.includes("jiujitsu");
+  };
+
+  const isExcludedModule = (titulo: string | null) =>
+    isTeologiaEvent(titulo) || isCasaisEvent(titulo) || isJiuJitsuEvent(titulo);
+
   const eventos = useMemo(() => {
     // Track ALL finalized event IDs and titles to exclude from both sources
     const finalizadoIds = new Set<string>();
@@ -155,7 +170,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     // Deduplicar impacto_eventos por título normalizado e excluir finalizados
     const seenTitles = new Set<string>();
     const impactoDeduped = (impactoEventos || []).filter((e) => {
-      if (isTeologiaEvent(e.titulo)) return false;
+      if (isExcludedModule(e.titulo)) return false;
       if ((e as any).finalizado) return false;
       const key = e.titulo?.trim().toLowerCase();
       if (seenTitles.has(key)) return false;
@@ -169,7 +184,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       data_inicio: e.data_inicio,
     }));
     const agenda = (agendaEventos || [])
-      .filter((e) => !isTeologiaEvent(e.titulo))
+      .filter((e) => !isExcludedModule(e.titulo))
       .filter((e) => !finalizadoIds.has(e.id) && !finalizadoTitles.has(e.titulo?.trim().toLowerCase() || ""))
       .map((e) => ({
         id: e.id,
