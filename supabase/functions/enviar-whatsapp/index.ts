@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -954,33 +955,15 @@ serve(async (req) => {
       }
       const primeiroNome = String(nome).split(' ')[0];
       const mensagem = MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
-      try {
-        await enviarMensagemEvolution(telefone, mensagem);
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'inscricao_recebida',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          conteudo: mensagem,
-          status: 'enviado',
-        });
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erro';
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'inscricao_recebida',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          conteudo: mensagem,
-          status: 'erro',
-          erro_mensagem: msg,
-        });
-        return new Response(JSON.stringify({ success: false, error: msg }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      const r = await enfileirarComDedupe(supabase, {
+        tipo: 'inscricao_recebida',
+        destinatario_telefone: telefone,
+        destinatario_nome: nome,
+        conteudo: mensagem,
+      });
+      return new Response(JSON.stringify({ success: true, ...r }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // ===== CADASTRO APROVADO =====
@@ -991,35 +974,16 @@ serve(async (req) => {
       }
       const primeiroNome = String(nome).split(' ')[0];
       const mensagem = MENSAGEM_CADASTRO_APROVADO(primeiroNome);
-      try {
-        await enviarMensagemEvolution(telefone, mensagem);
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'cadastro_aprovado',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          destinatario_member_id: memberId || null,
-          conteudo: mensagem,
-          status: 'enviado',
-        });
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erro';
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'cadastro_aprovado',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          destinatario_member_id: memberId || null,
-          conteudo: mensagem,
-          status: 'erro',
-          erro_mensagem: msg,
-        });
-        return new Response(JSON.stringify({ success: false, error: msg }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      const r = await enfileirarComDedupe(supabase, {
+        tipo: 'cadastro_aprovado',
+        destinatario_telefone: telefone,
+        destinatario_nome: nome,
+        destinatario_member_id: memberId || null,
+        conteudo: mensagem,
+      });
+      return new Response(JSON.stringify({ success: true, ...r }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // ===== ENVIO DE FLYER DA HOMEPAGE PARA TODOS OS MEMBROS =====
@@ -1039,50 +1003,33 @@ serve(async (req) => {
 
       const captionFinal = caption || '📢 Confira este aviso da Igreja Gileade! 💙\n\n_Igreja Gileade_';
 
-      let enviados = 0;
-      let erros = 0;
+      let enfileirados = 0;
+      let duplicados = 0;
       for (const membro of membros || []) {
         if (!membro.whatsapp) continue;
-        try {
-          const captionPersonalizada = captionFinal.replace(
-            /\{nome\}/g,
-            (membro.full_name || '').split(' ')[0]
-          );
-          await enviarImagemEvolution(membro.whatsapp, flyerUrl, captionPersonalizada);
-          enviados++;
-          await supabase.from('comunicacao_envios').insert({
-            tipo: 'flyer_homepage',
-            destinatario_telefone: membro.whatsapp,
-            destinatario_nome: membro.full_name,
-            destinatario_member_id: membro.id,
-            conteudo: captionPersonalizada,
-            midia_url: flyerUrl,
-            evento_id: eventoId || null,
-            status: 'enviado',
-          });
-          await delayBulk();
-        } catch (err: unknown) {
-          erros++;
-          const msg = err instanceof Error ? err.message : 'Erro';
-          await supabase.from('comunicacao_envios').insert({
-            tipo: 'flyer_homepage',
-            destinatario_telefone: membro.whatsapp,
-            destinatario_nome: membro.full_name,
-            destinatario_member_id: membro.id,
-            conteudo: captionFinal,
-            midia_url: flyerUrl,
-            evento_id: eventoId || null,
-            status: 'erro',
-            erro_mensagem: msg,
-          });
-        }
+        const captionPersonalizada = captionFinal.replace(
+          /\{nome\}/g,
+          (membro.full_name || '').split(' ')[0],
+        );
+        const r = await enfileirarComDedupe(supabase, {
+          tipo: 'flyer_homepage',
+          destinatario_telefone: membro.whatsapp,
+          destinatario_nome: membro.full_name,
+          destinatario_member_id: membro.id,
+          conteudo: captionPersonalizada,
+          midia_url: flyerUrl,
+          evento_id: eventoId || null,
+        });
+        if (r.enfileirado) enfileirados++;
+        else duplicados++;
       }
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Flyer enviado para ${enviados} membros. ${erros > 0 ? `${erros} falhas.` : ''}`,
-        enviados,
-        erros,
+        message: `${enfileirados} envio(s) na fila. ${duplicados} duplicado(s) ignorado(s). O processamento ocorre automaticamente com pausa de 5 a 15 segundos entre mensagens.`,
+        enfileirados,
+        duplicados,
+        total: (membros || []).length,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -1191,49 +1138,32 @@ serve(async (req) => {
         .not('whatsapp', 'is', null);
       if (destError) throw new Error('Erro carregando destinatários');
 
-      let enviados = 0;
-      let erros = 0;
+      let enfileirados = 0;
+      let duplicados = 0;
       const segLabel = segmentos.join('+');
 
       for (const dest of destinatarios || []) {
         if (!dest.whatsapp) continue;
         const primeiroNome = (dest.full_name || '').split(' ')[0];
         const msgPersonalizada = String(mensagem).replace(/\{nome\}/g, primeiroNome);
-        try {
-          await enviarMensagemEvolution(dest.whatsapp, msgPersonalizada);
-          enviados++;
-          await supabase.from('comunicacao_envios').insert({
-            tipo: 'segmentado_membros',
-            segmento: segLabel,
-            destinatario_telefone: dest.whatsapp,
-            destinatario_nome: dest.full_name,
-            destinatario_member_id: dest.id,
-            conteudo: msgPersonalizada,
-            status: 'enviado',
-          });
-          await delayBulk();
-        } catch (err: unknown) {
-          erros++;
-          const msg = err instanceof Error ? err.message : 'Erro';
-          await supabase.from('comunicacao_envios').insert({
-            tipo: 'segmentado_membros',
-            segmento: segLabel,
-            destinatario_telefone: dest.whatsapp,
-            destinatario_nome: dest.full_name,
-            destinatario_member_id: dest.id,
-            conteudo: msgPersonalizada,
-            status: 'erro',
-            erro_mensagem: msg,
-          });
-        }
+        const r = await enfileirarComDedupe(supabase, {
+          tipo: 'segmentado_membros',
+          segmento: segLabel,
+          destinatario_telefone: dest.whatsapp,
+          destinatario_nome: dest.full_name,
+          destinatario_member_id: dest.id,
+          conteudo: msgPersonalizada,
+        });
+        if (r.enfileirado) enfileirados++;
+        else duplicados++;
       }
 
       return new Response(JSON.stringify({
         success: true,
-        enviados,
-        erros,
+        enfileirados,
+        duplicados,
         total: destinatarios?.length || 0,
-        message: `Mensagem enviada para ${enviados} pessoa(s). ${erros > 0 ? `${erros} falha(s).` : ''}`,
+        message: `${enfileirados} mensagem(ns) na fila. ${duplicados} duplicado(s) ignorado(s). O envio é gradual (5–15s entre mensagens).`,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
