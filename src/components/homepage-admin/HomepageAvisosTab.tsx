@@ -371,6 +371,41 @@ const HomepageAvisosTab = () => {
                     <Button
                       variant="ghost"
                       size="icon"
+                      title="Enviar flyer para todos os membros via WhatsApp"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                      disabled={enviandoFlyerId === evento.id}
+                      onClick={async () => {
+                        if (!confirm(`Enviar este flyer para TODOS os membros via WhatsApp?\n\nO envio é espaçado (5–15s entre mensagens) para evitar bloqueio.`)) {
+                          return;
+                        }
+                        setEnviandoFlyerId(evento.id);
+                        try {
+                          const dataFmt = format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR });
+                          const horaFmt = evento.hora_inicio ? ` às ${evento.hora_inicio}` : "";
+                          const caption = `📢 *${evento.titulo}*\n\n${evento.descricao || "Não perca esse evento especial!"}\n\n📅 ${dataFmt}${horaFmt}\n\n_Igreja Gileade_ 💙`;
+                          const { data, error } = await dispararEnvioFlyerHomepage({
+                            flyerUrl: evento.flyer_url,
+                            caption,
+                            eventoId: evento.id,
+                          });
+                          if (error) throw error;
+                          toast.success(data?.message || "Envio iniciado!");
+                        } catch (err: any) {
+                          toast.error("Erro ao enviar flyer: " + (err?.message || ""));
+                        } finally {
+                          setEnviandoFlyerId(null);
+                        }
+                      }}
+                    >
+                      {enviandoFlyerId === evento.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
                       onClick={async () => {
                         try {
