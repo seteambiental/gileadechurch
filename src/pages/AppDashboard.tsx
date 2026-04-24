@@ -39,6 +39,7 @@ import {
   ArrowRightLeft,
   Swords,
   CheckCircle2,
+  MessageSquare,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -129,6 +130,7 @@ const allOtherModules = [
   { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", path: "/financeiro", adminOnly: true, moduleKey: "financeiro" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
   { icon: Shield, title: "Contingência", description: "Backups, incidentes e recuperação", path: "/contingencia", adminOnly: true, moduleKey: "contingencia" },
+  { icon: MessageSquare, title: "Auditoria WhatsApp", description: "Histórico de envios", path: "/comunicacao/auditoria", adminOnly: true, moduleKey: "cadastros" },
 ];
 
 const AppDashboard = () => {
