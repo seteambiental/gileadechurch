@@ -288,6 +288,19 @@ const NovasInscricoesTab = () => {
         })
         .in("id", ids);
       if (error) throw error;
+
+      // Best-effort whatsapp para cada inscrição aprovada em lote
+      for (const inscricao of toApprove) {
+        try {
+          await dispararMensagemInscricaoRecebida({
+            telefone: inscricao.telefone_contato,
+            nome: inscricao.nome_participante,
+            tituloEvento: inscricao.evento?.titulo || null,
+          });
+        } catch (waErr) {
+          console.warn("[novasInscricoes/lote] disparo whatsapp falhou:", waErr);
+        }
+      }
     },
     onSuccess: () => {
       toast.success("Todas as inscrições foram aprovadas!");
