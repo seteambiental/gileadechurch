@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical, Image as ImageIcon, Send, Loader2 } from "lucide-react";
+import { dispararEnvioFlyerHomepage } from "@/lib/whatsapp-notifications";
 
 interface Aviso {
   id: string;
@@ -58,6 +59,7 @@ const HomepageAvisosTab = () => {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editingAviso, setEditingAviso] = useState<Aviso | null>(null);
+  const [enviandoFlyerId, setEnviandoFlyerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
