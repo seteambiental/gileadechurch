@@ -40,6 +40,7 @@ import {
   Swords,
   CheckCircle2,
   MessageSquare,
+  Settings2,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -118,6 +119,7 @@ const GESTAO_COLORS: Record<string, string> = {
   "Financeiro": "#15803d",
   "Indicadores": "#b45309",
   "Auditoria WhatsApp": "#0e7490",
+  "Conexão WhatsApp": "#047857",
 };
 
 // Outros módulos - serão filtrados por permissão
@@ -132,6 +134,7 @@ const allOtherModules = [
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
   { icon: Shield, title: "Contingência", description: "Backups, incidentes e recuperação", path: "/contingencia", adminOnly: true, moduleKey: "contingencia" },
   { icon: MessageSquare, title: "Auditoria WhatsApp", description: "Histórico de envios", path: "/comunicacao/auditoria", adminOnly: true, moduleKey: "cadastros" },
+  { icon: Settings2, title: "Conexão WhatsApp", description: "Provedor, número e teste", path: "/comunicacao/whatsapp", adminOnly: true, moduleKey: "cadastros" },
 ];
 
 const AppDashboard = () => {
