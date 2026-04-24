@@ -38,6 +38,7 @@ import {
   Cake,
   ArrowRightLeft,
   Swords,
+  CheckCircle2,
 } from "lucide-react";
 import MinistryCard from "@/components/MinistryCard";
 import SectionTitle from "@/components/SectionTitle";
@@ -112,6 +113,7 @@ const GESTAO_COLORS: Record<string, string> = {
   "Homepage": "#0f766e",
   "Agenda": "#7e22ce",
   "Eventos e Impacto": "#7c3aed",
+  "Eventos Finalizados": "#be123c",
   "Financeiro": "#15803d",
   "Indicadores": "#b45309",
 };
@@ -123,6 +125,7 @@ const allOtherModules = [
   { icon: Globe, title: "Homepage", description: "Editar página inicial", path: "/app/homepage", adminOnly: true, moduleKey: "homepage" },
   { icon: Calendar, title: "Agenda", description: "Programação e eventos", path: "/agenda", adminOnly: false, moduleKey: "agenda" },
   { icon: Zap, title: "Eventos e Impacto", description: "Eventos com inscrição", path: "/ministerio/impacto", adminOnly: false, moduleKey: "impacto" },
+  { icon: CheckCircle2, title: "Eventos Finalizados", description: "Histórico e relatórios", path: "/ministerio/impacto?tab=finalizados", adminOnly: false, moduleKey: "impacto" },
   { icon: DollarSign, title: "Financeiro", description: "Gestão financeira", path: "/financeiro", adminOnly: true, moduleKey: "financeiro" },
   { icon: BarChart3, title: "Indicadores", description: "Métricas e relatórios", adminOnly: true, moduleKey: "indicadores" },
   { icon: Shield, title: "Contingência", description: "Backups, incidentes e recuperação", path: "/contingencia", adminOnly: true, moduleKey: "contingencia" },
