@@ -943,13 +943,21 @@ const MembrosTab = () => {
               </p>
             </div>
           ) : (
-            <Textarea
-              placeholder="Digite sua mensagem... Use {nome} para personalizar"
-              value={whatsappMessage}
-              onChange={(e) => setWhatsappMessage(e.target.value)}
-              rows={5}
-              className="mt-2"
-            />
+            <div className="space-y-3 mt-2">
+              <Textarea
+                placeholder="Digite sua mensagem... Use {nome} para personalizar"
+                value={whatsappMessage}
+                onChange={(e) => setWhatsappMessage(e.target.value)}
+                rows={5}
+              />
+              <WhatsappMensagemPreview
+                mensagem={whatsappMessage}
+                membros={filteredMembers.filter((m) => m.whatsapp).map((m) => ({
+                  full_name: m.full_name,
+                  whatsapp: m.whatsapp,
+                }))}
+              />
+            </div>
           )}
           <AlertDialogFooter>
             {!bulkSending && <AlertDialogCancel>Cancelar</AlertDialogCancel>}
