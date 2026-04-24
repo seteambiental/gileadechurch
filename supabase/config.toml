@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.evolution-webhook]
 verify_jwt = false
+
+[functions.processar-fila-whatsapp]
+verify_jwt = false
