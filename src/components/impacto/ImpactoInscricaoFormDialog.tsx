@@ -133,7 +133,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setNome(inscricao.nome || memberData?.full_name || "");
       setTelefone(inscricao.telefone || memberData?.whatsapp || "");
       setEmail(inscricao.email || memberData?.email || "");
-      setGenero(inscricao.genero || memberData?.genero || "");
+      {
+        const rawGen = (inscricao.genero || memberData?.genero || "").toString().toLowerCase();
+        const normGen = rawGen === "m" ? "masculino" : rawGen === "f" ? "feminino" : rawGen;
+        setGenero(normGen);
+      }
       setTelefoneEmergencia(inscricao.telefone_emergencia || "");
       setNomeResponsavel(inscricao.nome_responsavel || "");
       setTelefoneResponsavel(inscricao.telefone_responsavel || "");
@@ -482,16 +486,16 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </div>
                 <div>
                   <Label>Gênero</Label>
-                  <Select value={genero || "none"} onValueChange={(v) => setGenero(v === "none" ? "" : v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Não informado</SelectItem>
-                      <SelectItem value="M">Masculino</SelectItem>
-                      <SelectItem value="F">Feminino</SelectItem>
-                    </SelectContent>
-                  </Select>
+                   <Select value={genero || "none"} onValueChange={(v) => setGenero(v === "none" ? "" : v)}>
+                     <SelectTrigger>
+                       <SelectValue placeholder="Selecione" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="none">Não informado</SelectItem>
+                       <SelectItem value="masculino">Masculino</SelectItem>
+                       <SelectItem value="feminino">Feminino</SelectItem>
+                     </SelectContent>
+                   </Select>
                 </div>
               </div>
               <div>
