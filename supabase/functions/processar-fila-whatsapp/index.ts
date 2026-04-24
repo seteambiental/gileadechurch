@@ -13,12 +13,30 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
 const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
 const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
-// Quantos itens processar por execução (cron a cada minuto).
-// Com pausa 5–15s entre envios, ~6 itens em 60s é seguro.
-const BATCH_SIZE = 6;
+// Padrões caso a tabela whatsapp_config esteja indisponível
+const DEFAULTS = {
+  batch_size: 6,
+  delay_min_seconds: 5,
+  delay_max_seconds: 15,
+  max_tentativas: 3,
+  backoff_base_minutes: 1,
+  backoff_factor: 5,
+};
 
-function randomBulkDelayMs() {
-  return Math.floor(Math.random() * 10_000) + 5_000; // 5–14.9s
+type FilaCfg = typeof DEFAULTS;
+
+function randomDelayMs(cfg: FilaCfg) {
+  const min = Math.max(1, cfg.delay_min_seconds) * 1000;
+  const max = Math.max(min, cfg.delay_max_seconds * 1000);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function backoffMinutes(cfg: FilaCfg, tentativaAtual: number) {
+  // tentativaAtual é a tentativa que acabou de falhar (1, 2, 3...)
+  // base * factor^(tentativaAtual - 1)
+  const base = Math.max(1, cfg.backoff_base_minutes);
+  const factor = Math.max(1, cfg.backoff_factor);
+  return base * Math.pow(factor, tentativaAtual - 1);
 }
 
 async function sleep(ms: number) {
@@ -83,6 +101,25 @@ serve(async (req) => {
       );
     }
 
+    // 0) Carregar configuração dinâmica da fila
+    const { data: cfgRow } = await supabase
+      .from("whatsapp_config")
+      .select(
+        "batch_size, delay_min_seconds, delay_max_seconds, max_tentativas, backoff_base_minutes, backoff_factor",
+      )
+      .eq("id", true)
+      .maybeSingle();
+
+    const cfg: FilaCfg = {
+      batch_size: cfgRow?.batch_size ?? DEFAULTS.batch_size,
+      delay_min_seconds: cfgRow?.delay_min_seconds ?? DEFAULTS.delay_min_seconds,
+      delay_max_seconds: cfgRow?.delay_max_seconds ?? DEFAULTS.delay_max_seconds,
+      max_tentativas: cfgRow?.max_tentativas ?? DEFAULTS.max_tentativas,
+      backoff_base_minutes:
+        cfgRow?.backoff_base_minutes ?? DEFAULTS.backoff_base_minutes,
+      backoff_factor: Number(cfgRow?.backoff_factor ?? DEFAULTS.backoff_factor),
+    };
+
     // 1) Selecionar itens prontos para envio
     const agora = new Date().toISOString();
     const { data: itens, error: selError } = await supabase
@@ -91,7 +128,7 @@ serve(async (req) => {
       .eq("status", "pendente")
       .lte("proxima_tentativa_em", agora)
       .order("created_at", { ascending: true })
-      .limit(BATCH_SIZE);
+      .limit(cfg.batch_size);
 
     if (selError) throw selError;
 
@@ -158,7 +195,8 @@ serve(async (req) => {
         enviados++;
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Erro desconhecido";
-        const maxT = item.max_tentativas || 3;
+        // max_tentativas pode estar fixado por item; cfg é o padrão atual
+        const maxT = item.max_tentativas || cfg.max_tentativas;
         if (tentativaAtual >= maxT) {
           // Estourou tentativas → descartado e registra falha definitiva no log
           await supabase
@@ -187,8 +225,8 @@ serve(async (req) => {
           });
           descartados++;
         } else {
-          // Reagenda com backoff exponencial: 1min, 5min, 15min...
-          const backoffMin = Math.pow(5, tentativaAtual - 1); // 1, 5, 25...
+          // Backoff dinâmico: base * factor^(n-1)
+          const backoffMin = backoffMinutes(cfg, tentativaAtual);
           const proximaTentativa = new Date(Date.now() + backoffMin * 60_000).toISOString();
           await supabase
             .from("comunicacao_fila")
@@ -203,9 +241,9 @@ serve(async (req) => {
         }
       }
 
-      // Espaçamento 5–15s entre envios (não no último)
+      // Espaçamento configurável entre envios (não no último)
       if (i < reservados.length - 1) {
-        await sleep(randomBulkDelayMs());
+        await sleep(randomDelayMs(cfg));
       }
     }
 
@@ -216,6 +254,7 @@ serve(async (req) => {
         enviados,
         erros_reagendados: erros,
         descartados,
+        config: cfg,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
