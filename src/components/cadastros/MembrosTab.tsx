@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import MemberFormDialog from "./MemberFormDialog";
+import WhatsappSegmentadoDialog from "./WhatsappSegmentadoDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,6 +135,7 @@ const MembrosTab = () => {
   const [whatsappMessage, setWhatsappMessage] = useState("");
   const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
   const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
+  const [showSegmentado, setShowSegmentado] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ sent: 0, total: 0, current: "" });
   const { toast } = useToast();
