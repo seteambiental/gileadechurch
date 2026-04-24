@@ -50,3 +50,48 @@ export async function dispararMensagemCadastroAprovado(params: {
     console.warn("[whatsapp] falha ao enviar cadastro_aprovado:", err);
   }
 }
+
+/**
+ * Dispara o envio do flyer da homepage para todos os membros (best-effort).
+ */
+export async function dispararEnvioFlyerHomepage(params: {
+  flyerUrl: string;
+  caption?: string;
+  eventoId?: string | null;
+}) {
+  return await supabase.functions.invoke("enviar-whatsapp", {
+    body: {
+      action: "enviar_flyer_homepage",
+      flyerUrl: params.flyerUrl,
+      caption: params.caption || null,
+      eventoId: params.eventoId || null,
+    },
+  });
+}
+
+export type SegmentoEnvio =
+  | "todos_membros"
+  | "lideres_ministerio"
+  | "lideres_casa_refugio"
+  | "supervisores_casa_refugio"
+  | "sindicos_condominio"
+  | "pastores"
+  | "integrantes_ministerio";
+
+/**
+ * Envio segmentado para múltiplos grupos (líderes, supervisores, etc.).
+ */
+export async function dispararEnvioSegmentado(params: {
+  mensagem: string;
+  segmentos: SegmentoEnvio[];
+  ministerioId?: string | null;
+}) {
+  return await supabase.functions.invoke("enviar-whatsapp", {
+    body: {
+      action: "enviar_segmentado",
+      mensagem: params.mensagem,
+      segmentos: params.segmentos,
+      ministerioId: params.ministerioId || null,
+    },
+  });
+}

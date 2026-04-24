@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical, Image as ImageIcon } from "lucide-react";
+import { Plus, Trash2, Edit, Calendar, Bell, AlertTriangle, Info, GripVertical, Image as ImageIcon, Send, Loader2 } from "lucide-react";
+import { dispararEnvioFlyerHomepage } from "@/lib/whatsapp-notifications";
 
 interface Aviso {
   id: string;
@@ -58,6 +59,7 @@ const HomepageAvisosTab = () => {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editingAviso, setEditingAviso] = useState<Aviso | null>(null);
+  const [enviandoFlyerId, setEnviandoFlyerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     titulo: "",
     descricao: "",
@@ -366,6 +368,41 @@ const HomepageAvisosTab = () => {
                         {format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
                       </p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Enviar flyer para todos os membros via WhatsApp"
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                      disabled={enviandoFlyerId === evento.id}
+                      onClick={async () => {
+                        if (!confirm(`Enviar este flyer para TODOS os membros via WhatsApp?\n\nO envio é espaçado (5–15s entre mensagens) para evitar bloqueio.`)) {
+                          return;
+                        }
+                        setEnviandoFlyerId(evento.id);
+                        try {
+                          const dataFmt = format(new Date(evento.data_evento), "dd/MM/yyyy", { locale: ptBR });
+                          const horaFmt = evento.hora_inicio ? ` às ${evento.hora_inicio}` : "";
+                          const caption = `📢 *${evento.titulo}*\n\n${evento.descricao || "Não perca esse evento especial!"}\n\n📅 ${dataFmt}${horaFmt}\n\n_Igreja Gileade_ 💙`;
+                          const { data, error } = await dispararEnvioFlyerHomepage({
+                            flyerUrl: evento.flyer_url,
+                            caption,
+                            eventoId: evento.id,
+                          });
+                          if (error) throw error;
+                          toast.success(data?.message || "Envio iniciado!");
+                        } catch (err: any) {
+                          toast.error("Erro ao enviar flyer: " + (err?.message || ""));
+                        } finally {
+                          setEnviandoFlyerId(null);
+                        }
+                      }}
+                    >
+                      {enviandoFlyerId === evento.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"

@@ -20,6 +20,7 @@ import MembrosExcluidosTab from "@/components/cadastros/MembrosExcluidosTab";
 import { includesNormalized } from "@/lib/text-utils";
 import { SearchInput } from "@/components/ui/search-input";
 import { needsResponsible, getAgeString } from "@/lib/age-utils";
+import { dispararMensagemCadastroAprovado } from "@/lib/whatsapp-notifications";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -282,6 +283,17 @@ const SolicitacoesMembrosTab = () => {
         } catch (emailError) {
           console.error("Erro ao enviar email de boas-vindas:", emailError);
         }
+      }
+
+      // Enviar mensagem de cadastro aprovado via WhatsApp (best-effort)
+      try {
+        await dispararMensagemCadastroAprovado({
+          telefone: request.whatsapp || (request as any).telefone,
+          nome: request.full_name,
+          memberId: newMember.id,
+        });
+      } catch (waErr) {
+        console.warn("[solicitacoes] falha cadastro_aprovado whatsapp:", waErr);
       }
 
       return newMember;

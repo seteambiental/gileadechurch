@@ -43,6 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { DateInput } from "@/components/ui/date-input";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
+import { dispararMensagemCadastroAprovado } from "@/lib/whatsapp-notifications";
 
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
@@ -450,6 +451,17 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           .single();
         if (error) throw error;
         memberId = newMember.id;
+
+        // Disparar mensagem de cadastro aprovado (best-effort) somente em criação manual
+        try {
+          await dispararMensagemCadastroAprovado({
+            telefone: memberData.whatsapp,
+            nome: memberData.full_name,
+            memberId,
+          });
+        } catch (waErr) {
+          console.warn("[memberForm] falha cadastro_aprovado:", waErr);
+        }
       }
 
       // Insert new functions

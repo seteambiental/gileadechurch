@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import MemberFormDialog from "./MemberFormDialog";
+import WhatsappSegmentadoDialog from "./WhatsappSegmentadoDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,6 +135,7 @@ const MembrosTab = () => {
   const [whatsappMessage, setWhatsappMessage] = useState("");
   const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
   const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
+  const [showSegmentado, setShowSegmentado] = useState(false);
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ sent: 0, total: 0, current: "" });
   const { toast } = useToast();
@@ -887,12 +889,30 @@ const MembrosTab = () => {
                 <p className="text-xs text-muted-foreground">Selecione o membro na tabela pelo ícone do WhatsApp</p>
               </div>
             </Button>
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 px-4"
+              onClick={() => {
+                setShowWhatsappChoice(false);
+                setShowSegmentado(true);
+              }}
+            >
+              <Users className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">Envio segmentado</p>
+                <p className="text-xs text-muted-foreground">
+                  Líderes, supervisores, síndicos, pastores ou integrantes de um ministério
+                </p>
+              </div>
+            </Button>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <WhatsappSegmentadoDialog open={showSegmentado} onOpenChange={setShowSegmentado} />
 
       {/* WhatsApp Bulk Message Dialog */}
       <AlertDialog open={whatsappBulkMode} onOpenChange={(open) => {
