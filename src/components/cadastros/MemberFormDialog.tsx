@@ -451,6 +451,17 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
           .single();
         if (error) throw error;
         memberId = newMember.id;
+
+        // Disparar mensagem de cadastro aprovado (best-effort) somente em criação manual
+        try {
+          await dispararMensagemCadastroAprovado({
+            telefone: memberData.whatsapp,
+            nome: memberData.full_name,
+            memberId,
+          });
+        } catch (waErr) {
+          console.warn("[memberForm] falha cadastro_aprovado:", waErr);
+        }
       }
 
       // Insert new functions
