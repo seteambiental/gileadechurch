@@ -36,6 +36,7 @@ import JiuJitsuPage from "./pages/JiuJitsuPage";
 import InscricaoJiuJitsu from "./pages/InscricaoJiuJitsu";
 import ContingenciaPage from "./pages/ContingenciaPage";
 import ComunicacaoAuditoriaPage from "./pages/ComunicacaoAuditoriaPage";
+import WhatsappConfiguracaoPage from "./pages/WhatsappConfiguracaoPage";
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/ministerio/jiujitsu" element={<JiuJitsuPage />} />
             <Route path="/contingencia" element={<ContingenciaPage />} />
             <Route path="/comunicacao/auditoria" element={<ComunicacaoAuditoriaPage />} />
+            <Route path="/comunicacao/whatsapp" element={<WhatsappConfiguracaoPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
