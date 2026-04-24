@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 export default function InscricaoCasais() {
   const { toast } = useToast();
@@ -222,6 +223,26 @@ export default function InscricaoCasais() {
         if (filhosPayload.length > 0) {
           await supabase.from("casais_inscritos_filhos").insert(filhosPayload);
         }
+      }
+
+      // Disparo (best-effort) das mensagens de inscrição recebida
+      try {
+        if (whatsappMasculino) {
+          await dispararMensagemInscricaoRecebida({
+            telefone: whatsappMasculino,
+            nome: nomeMasculino,
+            tituloEvento: "Curso de Casais",
+          });
+        }
+        if (whatsappFeminino) {
+          await dispararMensagemInscricaoRecebida({
+            telefone: whatsappFeminino,
+            nome: nomeFeminino,
+            tituloEvento: "Curso de Casais",
+          });
+        }
+      } catch (waErr) {
+        console.warn("[casais] falha disparo whatsapp:", waErr);
       }
 
       setSubmitted(true);
