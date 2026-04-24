@@ -1476,11 +1476,13 @@ export type Database = {
           destinatario_telefone: string | null
           erro_mensagem: string | null
           evento_id: string | null
+          fila_id: string | null
           id: string
           iniciado_por: string | null
           midia_url: string | null
           segmento: string | null
           status: string
+          tentativas: number
           tipo: string
         }
         Insert: {
@@ -1491,11 +1493,13 @@ export type Database = {
           destinatario_telefone?: string | null
           erro_mensagem?: string | null
           evento_id?: string | null
+          fila_id?: string | null
           id?: string
           iniciado_por?: string | null
           midia_url?: string | null
           segmento?: string | null
           status?: string
+          tentativas?: number
           tipo: string
         }
         Update: {
@@ -1506,12 +1510,80 @@ export type Database = {
           destinatario_telefone?: string | null
           erro_mensagem?: string | null
           evento_id?: string | null
+          fila_id?: string | null
           id?: string
           iniciado_por?: string | null
           midia_url?: string | null
           segmento?: string | null
           status?: string
+          tentativas?: number
           tipo?: string
+        }
+        Relationships: []
+      }
+      comunicacao_fila: {
+        Row: {
+          conteudo: string
+          created_at: string
+          dedupe_hash: string
+          destinatario_member_id: string | null
+          destinatario_nome: string | null
+          destinatario_telefone: string
+          enviado_em: string | null
+          evento_id: string | null
+          id: string
+          iniciado_por: string | null
+          max_tentativas: number
+          midia_url: string | null
+          proxima_tentativa_em: string
+          segmento: string | null
+          status: string
+          tentativas: number
+          tipo: string
+          ultimo_erro: string | null
+          updated_at: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          dedupe_hash: string
+          destinatario_member_id?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone: string
+          enviado_em?: string | null
+          evento_id?: string | null
+          id?: string
+          iniciado_por?: string | null
+          max_tentativas?: number
+          midia_url?: string | null
+          proxima_tentativa_em?: string
+          segmento?: string | null
+          status?: string
+          tentativas?: number
+          tipo: string
+          ultimo_erro?: string | null
+          updated_at?: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          dedupe_hash?: string
+          destinatario_member_id?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string
+          enviado_em?: string | null
+          evento_id?: string | null
+          id?: string
+          iniciado_por?: string | null
+          max_tentativas?: number
+          midia_url?: string | null
+          proxima_tentativa_em?: string
+          segmento?: string | null
+          status?: string
+          tentativas?: number
+          tipo?: string
+          ultimo_erro?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
