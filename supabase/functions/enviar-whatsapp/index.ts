@@ -955,33 +955,15 @@ serve(async (req) => {
       }
       const primeiroNome = String(nome).split(' ')[0];
       const mensagem = MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
-      try {
-        await enviarMensagemEvolution(telefone, mensagem);
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'inscricao_recebida',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          conteudo: mensagem,
-          status: 'enviado',
-        });
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erro';
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'inscricao_recebida',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          conteudo: mensagem,
-          status: 'erro',
-          erro_mensagem: msg,
-        });
-        return new Response(JSON.stringify({ success: false, error: msg }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      const r = await enfileirarComDedupe(supabase, {
+        tipo: 'inscricao_recebida',
+        destinatario_telefone: telefone,
+        destinatario_nome: nome,
+        conteudo: mensagem,
+      });
+      return new Response(JSON.stringify({ success: true, ...r }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // ===== CADASTRO APROVADO =====
@@ -992,35 +974,16 @@ serve(async (req) => {
       }
       const primeiroNome = String(nome).split(' ')[0];
       const mensagem = MENSAGEM_CADASTRO_APROVADO(primeiroNome);
-      try {
-        await enviarMensagemEvolution(telefone, mensagem);
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'cadastro_aprovado',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          destinatario_member_id: memberId || null,
-          conteudo: mensagem,
-          status: 'enviado',
-        });
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Erro';
-        await supabase.from('comunicacao_envios').insert({
-          tipo: 'cadastro_aprovado',
-          destinatario_telefone: telefone,
-          destinatario_nome: nome,
-          destinatario_member_id: memberId || null,
-          conteudo: mensagem,
-          status: 'erro',
-          erro_mensagem: msg,
-        });
-        return new Response(JSON.stringify({ success: false, error: msg }), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      const r = await enfileirarComDedupe(supabase, {
+        tipo: 'cadastro_aprovado',
+        destinatario_telefone: telefone,
+        destinatario_nome: nome,
+        destinatario_member_id: memberId || null,
+        conteudo: mensagem,
+      });
+      return new Response(JSON.stringify({ success: true, ...r }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // ===== ENVIO DE FLYER DA HOMEPAGE PARA TODOS OS MEMBROS =====
