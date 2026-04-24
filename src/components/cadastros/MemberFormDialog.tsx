@@ -43,6 +43,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { DateInput } from "@/components/ui/date-input";
 import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
+import { dispararMensagemCadastroAprovado } from "@/lib/whatsapp-notifications";
 
 const FUNCTION_TYPES = [
   { value: "membro", label: "Membro" },
