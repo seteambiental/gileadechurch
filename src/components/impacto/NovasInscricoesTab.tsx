@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Check, X, Search, UserPlus, Loader2 } from "lucide-react";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -163,6 +164,17 @@ const NovasInscricoesTab = () => {
         })
         .eq("id", id);
       if (error) throw error;
+
+      // Best-effort whatsapp
+      try {
+        await dispararMensagemInscricaoRecebida({
+          telefone: inscricao.telefone_contato,
+          nome: inscricao.nome_participante,
+          tituloEvento: inscricao.evento?.titulo || null,
+        });
+      } catch (waErr) {
+        console.warn("[novasInscricoes] disparo whatsapp falhou:", waErr);
+      }
     },
     onMutate: (id) => {
       setApprovingIds((prev) => new Set(prev).add(id));
