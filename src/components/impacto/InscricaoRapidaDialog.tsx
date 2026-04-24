@@ -25,6 +25,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { includesNormalized } from "@/lib/text-utils";
 import { formatNameField } from "@/lib/text-utils";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 interface InscricaoRapidaDialogProps {
   open: boolean;
@@ -119,6 +120,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           tipo_inscricao: tipoInscricao,
         });
         if (error) throw error;
+        dispararMensagemInscricaoRecebida({
+          telefone: manualPhone,
+          nome: nomeNorm,
+          tituloEvento: eventoTitulo,
+        });
       } else {
         if (!selectedMember) throw new Error("Selecione um membro");
 
@@ -152,6 +158,11 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           tipo_inscricao: tipoInscricao,
         });
         if (error) throw error;
+        dispararMensagemInscricaoRecebida({
+          telefone: selectedMember.whatsapp,
+          nome: selectedMember.full_name,
+          tituloEvento: eventoTitulo,
+        });
       }
     },
     onSuccess: () => {

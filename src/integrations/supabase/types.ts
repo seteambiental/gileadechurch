@@ -1467,6 +1467,54 @@ export type Database = {
           },
         ]
       }
+      comunicacao_envios: {
+        Row: {
+          conteudo: string | null
+          created_at: string
+          destinatario_member_id: string | null
+          destinatario_nome: string | null
+          destinatario_telefone: string | null
+          erro_mensagem: string | null
+          evento_id: string | null
+          id: string
+          iniciado_por: string | null
+          midia_url: string | null
+          segmento: string | null
+          status: string
+          tipo: string
+        }
+        Insert: {
+          conteudo?: string | null
+          created_at?: string
+          destinatario_member_id?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string | null
+          erro_mensagem?: string | null
+          evento_id?: string | null
+          id?: string
+          iniciado_por?: string | null
+          midia_url?: string | null
+          segmento?: string | null
+          status?: string
+          tipo: string
+        }
+        Update: {
+          conteudo?: string | null
+          created_at?: string
+          destinatario_member_id?: string | null
+          destinatario_nome?: string | null
+          destinatario_telefone?: string | null
+          erro_mensagem?: string | null
+          evento_id?: string | null
+          id?: string
+          iniciado_por?: string | null
+          midia_url?: string | null
+          segmento?: string | null
+          status?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       condominios: {
         Row: {
           created_at: string

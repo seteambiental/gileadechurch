@@ -24,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2 } from "lucide-react";
 import { formatNameField } from "@/lib/text-utils";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -89,7 +90,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_eventos")
-        .select("tipos_inscricao, tem_custo, valor_inscricao, valores_por_tipo")
+        .select("titulo, tipos_inscricao, tem_custo, valor_inscricao, valores_por_tipo")
         .eq("id", eventoId)
         .single();
       if (error) throw error;
@@ -403,6 +404,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
 
         const { error } = await supabase.from("impacto_inscricoes").insert({ ...payload, aprovado: true });
         if (error) throw error;
+        // Dispara mensagem de inscrição recebida (best-effort)
+        if (payload.telefone) {
+          dispararMensagemInscricaoRecebida({
+            telefone: payload.telefone,
+            nome: payload.nome,
+            tituloEvento: (evento as any)?.titulo || null,
+          });
+        }
       }
     },
     onSuccess: () => {
