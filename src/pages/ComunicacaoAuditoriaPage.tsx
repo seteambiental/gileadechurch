@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, MessageSquare, Search, Filter, RefreshCw, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, MessageSquare, Search, Filter, RefreshCw, CheckCircle2, XCircle, Clock, ListOrdered, History, RotateCcw, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 
 type Envio = {
@@ -54,12 +56,14 @@ const ComunicacaoAuditoriaPage = () => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, isStrictAdmin, loading: accessLoading } = useUserAccess(user?.id);
 
+  const [tab, setTab] = useState<"historico" | "fila">("historico");
   const [busca, setBusca] = useState("");
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [segmentoFiltro, setSegmentoFiltro] = useState<string>("todos");
   const [dataInicio, setDataInicio] = useState<string>("");
   const [dataFim, setDataFim] = useState<string>("");
+  const [processando, setProcessando] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -83,6 +87,66 @@ const ComunicacaoAuditoriaPage = () => {
     },
     enabled: !!user && (isAdmin || isStrictAdmin),
   });
+
+  const { data: fila = [], isLoading: filaLoading, refetch: refetchFila, isRefetching: filaRefetching } = useQuery({
+    queryKey: ["comunicacao-fila"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("comunicacao_fila")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: !!user && (isAdmin || isStrictAdmin),
+    refetchInterval: tab === "fila" ? 10_000 : false,
+  });
+
+  const filaStats = useMemo(() => {
+    return {
+      pendente: fila.filter((f) => f.status === "pendente").length,
+      processando: fila.filter((f) => f.status === "processando").length,
+      enviado: fila.filter((f) => f.status === "enviado").length,
+      descartado: fila.filter((f) => f.status === "descartado").length,
+    };
+  }, [fila]);
+
+  const reprocessarItem = async (id: string) => {
+    const { error } = await supabase
+      .from("comunicacao_fila")
+      .update({
+        status: "pendente",
+        tentativas: 0,
+        ultimo_erro: null,
+        proxima_tentativa_em: new Date().toISOString(),
+      })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao reprocessar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Item reagendado", description: "Será enviado no próximo ciclo." });
+    refetchFila();
+  };
+
+  const processarAgora = async () => {
+    setProcessando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("processar-fila-whatsapp", { body: {} });
+      if (error) throw error;
+      toast({
+        title: "Fila processada",
+        description: `Enviados: ${data?.enviados ?? 0} | Reagendados: ${data?.erros_reagendados ?? 0} | Descartados: ${data?.descartados ?? 0}`,
+      });
+      refetchFila();
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha ao processar", variant: "destructive" });
+    } finally {
+      setProcessando(false);
+    }
+  };
 
   const tipos = useMemo(() => {
     const set = new Set<string>();
@@ -166,18 +230,36 @@ const ComunicacaoAuditoriaPage = () => {
               <MessageSquare className="h-6 w-6 text-primary" />
               <div>
                 <h1 className="text-xl font-bold">Auditoria de WhatsApp</h1>
-                <p className="text-xs text-muted-foreground">Histórico de envios automáticos e manuais</p>
+                <p className="text-xs text-muted-foreground">Fila, histórico e auditoria de envios</p>
               </div>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="default" size="sm" onClick={processarAgora} disabled={processando}>
+              <Play className={`h-4 w-4 mr-2 ${processando ? "animate-pulse" : ""}`} />
+              Processar fila agora
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => { refetch(); refetchFila(); }} disabled={isRefetching || filaRefetching}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${(isRefetching || filaRefetching) ? "animate-spin" : ""}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "historico" | "fila")}>
+          <TabsList>
+            <TabsTrigger value="historico"><History className="h-4 w-4 mr-2" />Histórico</TabsTrigger>
+            <TabsTrigger value="fila">
+              <ListOrdered className="h-4 w-4 mr-2" />Fila
+              {filaStats.pendente + filaStats.processando > 0 && (
+                <Badge variant="secondary" className="ml-2">{filaStats.pendente + filaStats.processando}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="historico" className="space-y-6 mt-4">
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card>
@@ -344,6 +426,116 @@ const ComunicacaoAuditoriaPage = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="fila" className="space-y-6 mt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-muted-foreground">Pendentes</p>
+                  <p className="text-2xl font-bold text-amber-600">{filaStats.pendente}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-muted-foreground">Processando</p>
+                  <p className="text-2xl font-bold text-blue-600">{filaStats.processando}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-muted-foreground">Enviados</p>
+                  <p className="text-2xl font-bold text-green-600">{filaStats.enviado}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-4">
+                  <p className="text-xs text-muted-foreground">Descartados</p>
+                  <p className="text-2xl font-bold text-destructive">{filaStats.descartado}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardContent className="p-0">
+                {filaLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : fila.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Fila vazia. Tudo em dia! 🎉
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[140px]">Criado</TableHead>
+                          <TableHead>Tipo</TableHead>
+                          <TableHead>Destinatário</TableHead>
+                          <TableHead>Telefone</TableHead>
+                          <TableHead className="w-[80px]">Tent.</TableHead>
+                          <TableHead className="w-[140px]">Próx. tentativa</TableHead>
+                          <TableHead className="w-[120px]">Status</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {fila.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="text-xs whitespace-nowrap">
+                              {format(new Date(item.created_at), "dd/MM HH:mm", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {TIPO_LABELS[item.tipo] || item.tipo}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm font-medium">{item.destinatario_nome || "—"}</TableCell>
+                            <TableCell className="text-xs font-mono">{item.destinatario_telefone}</TableCell>
+                            <TableCell className="text-xs text-center">
+                              {item.tentativas}/{item.max_tentativas}
+                            </TableCell>
+                            <TableCell className="text-xs whitespace-nowrap text-muted-foreground">
+                              {item.proxima_tentativa_em
+                                ? format(new Date(item.proxima_tentativa_em), "dd/MM HH:mm", { locale: ptBR })
+                                : "—"}
+                              {item.ultimo_erro && (
+                                <p className="text-destructive truncate max-w-[180px]" title={item.ultimo_erro}>
+                                  ⚠ {item.ultimo_erro}
+                                </p>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={
+                                  item.status === "enviado" ? "default" :
+                                  item.status === "descartado" ? "destructive" :
+                                  item.status === "processando" ? "secondary" : "outline"
+                                }
+                                className="text-xs"
+                              >
+                                {item.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {item.status === "descartado" && (
+                                <Button size="sm" variant="ghost" onClick={() => reprocessarItem(item.id)}>
+                                  <RotateCcw className="h-3 w-3 mr-1" /> Reenviar
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
