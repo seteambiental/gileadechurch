@@ -889,12 +889,30 @@ const MembrosTab = () => {
                 <p className="text-xs text-muted-foreground">Selecione o membro na tabela pelo ícone do WhatsApp</p>
               </div>
             </Button>
+            <Button
+              variant="outline"
+              className="justify-start h-auto py-3 px-4"
+              onClick={() => {
+                setShowWhatsappChoice(false);
+                setShowSegmentado(true);
+              }}
+            >
+              <Users className="w-5 h-5 mr-3 text-green-600" />
+              <div className="text-left">
+                <p className="font-medium">Envio segmentado</p>
+                <p className="text-xs text-muted-foreground">
+                  Líderes, supervisores, síndicos, pastores ou integrantes de um ministério
+                </p>
+              </div>
+            </Button>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <WhatsappSegmentadoDialog open={showSegmentado} onOpenChange={setShowSegmentado} />
 
       {/* WhatsApp Bulk Message Dialog */}
       <AlertDialog open={whatsappBulkMode} onOpenChange={(open) => {
