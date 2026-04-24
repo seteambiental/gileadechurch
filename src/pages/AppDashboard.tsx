@@ -117,6 +117,7 @@ const GESTAO_COLORS: Record<string, string> = {
   "Eventos Finalizados": "#be123c",
   "Financeiro": "#15803d",
   "Indicadores": "#b45309",
+  "Auditoria WhatsApp": "#0e7490",
 };
 
 // Outros módulos - serão filtrados por permissão
