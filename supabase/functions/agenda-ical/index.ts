@@ -82,7 +82,6 @@ function buildEvent(evento: any, dtstamp: string): string[] {
   lines.push(`SUMMARY:${escapeICS(summary)}`);
   if (descParts.length) lines.push(`DESCRIPTION:${escapeICS(descParts.join("\n"))}`);
   if (evento.local) lines.push(`LOCATION:${escapeICS(evento.local)}`);
-  if (evento.categoria) lines.push(`CATEGORIES:${escapeICS(evento.categoria)}`);
 
   const TZID = "America/Sao_Paulo";
 
@@ -166,7 +165,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("agenda_igreja")
       .select(
-        "id, titulo, descricao, tipo_evento, categoria, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, status, ativo, visibilidade, genero_alvo, necessita_inscricao",
+        "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, status, ativo, visibilidade, genero_alvo, necessita_inscricao",
       )
       .eq("ativo", true)
       .eq("status", "aprovado")
