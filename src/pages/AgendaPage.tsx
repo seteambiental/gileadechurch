@@ -272,6 +272,7 @@ const AgendaPage = () => {
 
           {/* Aba Programação */}
           <TabsContent value="programacao" className="space-y-6">
+             <SincronizarGoogleCalendarCard />
              <AgendaCalendar
                eventos={[...eventosRecorrentes, ...eventosUnicos]}
               onEventoClick={(evento) => {
