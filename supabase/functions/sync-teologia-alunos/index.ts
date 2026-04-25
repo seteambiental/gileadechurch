@@ -59,8 +59,15 @@ Deno.serve(async (req) => {
     const normalizeNome = (nome: string | null) => removeAccents(nome?.toLowerCase().trim().replace(/\s+/g, " ") || "");
 
     // Build lookup maps
-    const memberByCpf = new Map<string, typeof members extends (infer T)[] ? T : never>();
-    const memberByNome = new Map<string, typeof members extends (infer T)[] ? T : never>();
+    type MemberRow = {
+      id: string;
+      full_name: string;
+      cpf: string | null;
+      email: string | null;
+      whatsapp: string | null;
+    };
+    const memberByCpf = new Map<string, MemberRow>();
+    const memberByNome = new Map<string, MemberRow>();
     const existingByMemberId = new Map(
       (existingAlunos || []).filter(a => a.member_id).map((item) => [item.member_id, item])
     );
