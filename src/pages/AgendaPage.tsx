@@ -48,6 +48,7 @@ import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDial
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -271,6 +272,7 @@ const AgendaPage = () => {
 
           {/* Aba Programação */}
           <TabsContent value="programacao" className="space-y-6">
+             <SincronizarGoogleCalendarCard />
              <AgendaCalendar
                eventos={[...eventosRecorrentes, ...eventosUnicos]}
               onEventoClick={(evento) => {
