@@ -216,23 +216,34 @@ function buildEvent(evento: any, dtstamp: string, occurrenceDate?: string): stri
   return lines;
 }
 
-// ICS line folding (RFC 5545: max 75 octets por linha)
+const textEncoder = new TextEncoder();
+
+function byteLength(value: string): number {
+  return textEncoder.encode(value).length;
+}
+
+// ICS line folding (RFC 5545: max 75 octetos por linha, contando UTF-8)
+function foldLine(line: string): string {
+  const parts: string[] = [];
+  let current = "";
+  let maxBytes = 75;
+
+  for (const char of line) {
+    if (current && byteLength(current + char) > maxBytes) {
+      parts.push(current);
+      current = char;
+      maxBytes = 74; // as linhas de continuação recebem 1 espaço no início
+    } else {
+      current += char;
+    }
+  }
+
+  parts.push(current);
+  return parts.map((part, index) => (index === 0 ? part : ` ${part}`)).join("\r\n");
+}
+
 function foldLines(lines: string[]): string {
-  return lines
-    .map((line) => {
-      if (line.length <= 75) return line;
-      const parts: string[] = [];
-      let remaining = line;
-      parts.push(remaining.slice(0, 75));
-      remaining = remaining.slice(75);
-      while (remaining.length > 74) {
-        parts.push(" " + remaining.slice(0, 74));
-        remaining = remaining.slice(74);
-      }
-      if (remaining.length) parts.push(" " + remaining);
-      return parts.join("\r\n");
-    })
-    .join("\r\n");
+  return lines.map(foldLine).join("\r\n");
 }
 
 Deno.serve(async (req) => {
