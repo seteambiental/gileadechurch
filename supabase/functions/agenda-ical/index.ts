@@ -106,6 +106,13 @@ function isWeeklyRecurring(evento: any): boolean {
   return evento.recorrente === true && typeof evento.dia_semana === "number";
 }
 
+// Registros marcados como recorrentes mas SEM dia_semana são inconsistentes:
+// não devem aparecer como recorrentes nem como evento único (a data_evento neles
+// costuma ser apenas um placeholder que duplicaria o evento real).
+function isInvalidRecurring(evento: any): boolean {
+  return evento.recorrente === true && (evento.dia_semana === null || evento.dia_semana === undefined);
+}
+
 function occursOnDate(evento: any, dateStr: string): boolean {
   const date = dateFromString(dateStr);
   if (isWeeklyRecurring(evento)) {
@@ -313,7 +320,7 @@ Deno.serve(async (req) => {
 
     const allEvents = eventos || [];
     const singleDateEvents = new Map<string, any[]>();
-    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && evento.data_evento)) {
+    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && !isInvalidRecurring(evento) && evento.data_evento)) {
       singleDateEvents.set(ev.data_evento, [...(singleDateEvents.get(ev.data_evento) || []), ev]);
     }
 
