@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
+import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -210,6 +211,8 @@ export const PortalLideresAgendaTab = ({
           Criar Agenda
         </Button>
       </div>
+
+      <SincronizarGoogleCalendarCard />
 
       {/* Eventos Pendentes de Aprovação (para aprovadores) */}
       {canApprove && eventosPendentes.length > 0 && (
