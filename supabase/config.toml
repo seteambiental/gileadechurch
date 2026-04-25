@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.processar-fila-whatsapp]
 verify_jwt = false
+
+[functions.agenda-ical]
+verify_jwt = false

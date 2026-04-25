@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { Loader2 } from "lucide-react";
 
 export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirSomenteConvidados?: boolean }) => {
@@ -61,6 +62,8 @@ export const PortalAgendaTab = ({ incluirSomenteConvidados = false }: { incluirS
           Veja os eventos e atividades programadas
         </p>
       </div>
+
+      <SincronizarGoogleCalendarCard />
 
       <AgendaCalendar
         eventos={eventosCalendario}
