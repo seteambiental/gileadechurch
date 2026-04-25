@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
 
     const allEvents = eventos || [];
     const singleDateEvents = new Map<string, any[]>();
-    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && evento.data_evento)) {
+    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && !isInvalidRecurring(evento) && evento.data_evento)) {
       singleDateEvents.set(ev.data_evento, [...(singleDateEvents.get(ev.data_evento) || []), ev]);
     }
 
