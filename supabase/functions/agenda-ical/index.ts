@@ -270,8 +270,14 @@ Deno.serve(async (req) => {
         "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, semana_mes, status, ativo, visibilidade, genero_alvo, necessita_inscricao, created_at",
       )
       .eq("ativo", true)
-      .eq("status", "aprovado")
-      .neq("genero_alvo", "somente_convidados");
+      .eq("status", "aprovado");
+
+    // Por padrão, o feed inclui também eventos "somente_convidados" para que líderes
+    // e convidados vejam esses compromissos no Google Calendar/Apple/Outlook.
+    // Para excluir, basta adicionar ?publico=1 à URL.
+    if (url.searchParams.get("publico") === "1") {
+      query = query.neq("genero_alvo", "somente_convidados");
+    }
 
     if (visibilidade) {
       query = query.eq("visibilidade", visibilidade);
