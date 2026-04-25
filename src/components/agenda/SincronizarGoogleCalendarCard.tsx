@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Copy, Check, ExternalLink, Smartphone, Apple, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, Copy, Check, ExternalLink, Smartphone, Apple, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 /**
@@ -13,9 +13,13 @@ export const SincronizarGoogleCalendarCard = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [cacheBuster, setCacheBuster] = useState<number | null>(null);
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
-  const icalUrl = `https://${projectId}.functions.supabase.co/agenda-ical`;
+  const baseIcalUrl = `https://${projectId}.functions.supabase.co/agenda-ical`;
+  const icalUrl = cacheBuster
+    ? `${baseIcalUrl}?v=${cacheBuster}`
+    : baseIcalUrl;
   // URL alternativa via webcal:// que abre direto no app de calendário
   const webcalUrl = icalUrl.replace(/^https?:\/\//, "webcal://");
 
@@ -36,6 +40,15 @@ export const SincronizarGoogleCalendarCard = () => {
         description: "Selecione e copie a URL manualmente.",
       });
     }
+  };
+
+  const handleGenerateNewUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCacheBuster(Date.now());
+    toast({
+      title: "Nova URL gerada!",
+      description: "Copie a URL e re-adicione no Google Calendar para forçar atualização.",
+    });
   };
 
   return (
@@ -101,6 +114,25 @@ export const SincronizarGoogleCalendarCard = () => {
           >
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? "Copiado" : "Copiar URL"}
+          </Button>
+        </div>
+
+        <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3 space-y-2">
+          <p className="text-xs text-amber-900 dark:text-amber-200">
+            <strong>Não está vendo eventos novos?</strong> O Google Calendar atualiza o feed
+            apenas a cada 6–24 horas. Para forçar atualização imediata, gere uma nova URL,
+            <strong> remova a agenda atual</strong> no Google Calendar e adicione novamente
+            com a URL nova.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={handleGenerateNewUrl}
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Gerar nova URL (forçar atualização)
           </Button>
         </div>
 
