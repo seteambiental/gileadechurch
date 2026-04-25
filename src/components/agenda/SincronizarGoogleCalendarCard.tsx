@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Copy, Check, ExternalLink, Smartphone, Apple } from "lucide-react";
+import { Calendar, Copy, Check, ExternalLink, Smartphone, Apple, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 /**
@@ -12,13 +12,15 @@ import { useToast } from "@/hooks/use-toast";
 export const SincronizarGoogleCalendarCard = () => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
   const icalUrl = `https://${projectId}.functions.supabase.co/agenda-ical`;
   // URL alternativa via webcal:// que abre direto no app de calendário
   const webcalUrl = icalUrl.replace(/^https?:\/\//, "webcal://");
 
-  const handleCopy = async () => {
+  const handleCopy = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     try {
       await navigator.clipboard.writeText(icalUrl);
       setCopied(true);
@@ -38,23 +40,54 @@ export const SincronizarGoogleCalendarCard = () => {
 
   return (
     <Card className="border-secondary/30 bg-gradient-to-br from-secondary/5 to-transparent">
-      <CardContent className="p-4 md:p-5 space-y-4">
-        <div className="flex items-start gap-3">
+      <CardContent className="p-3 md:p-4 space-y-3">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="w-full flex items-center gap-3 text-left"
+          aria-expanded={expanded}
+        >
           <div className="p-2 rounded-lg bg-secondary/10 text-secondary flex-shrink-0">
-            <Calendar className="w-5 h-5" />
+            <Calendar className="w-4 h-4 md:w-5 md:h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-heading font-bold text-base md:text-lg">
+            <h3 className="font-heading font-bold text-sm md:text-base">
               Sincronizar com seu calendário
             </h3>
-            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
+            {!expanded && (
+              <p className="text-[11px] md:text-xs text-muted-foreground truncate">
+                Google Calendar, Apple, Outlook — toque para ver a URL
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {!expanded && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="gap-1.5 h-8"
+                onClick={handleCopy}
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                <span className="hidden sm:inline">{copied ? "Copiado" : "Copiar URL"}</span>
+              </Button>
+            )}
+            {expanded ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </button>
+
+        {expanded && (
+          <>
+            <p className="text-xs md:text-sm text-muted-foreground">
               Adicione a agenda da igreja ao Google Calendar, Apple Calendar ou Outlook.
               A atualização é automática.
             </p>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
           <Input
             readOnly
             value={icalUrl}
@@ -128,6 +161,8 @@ export const SincronizarGoogleCalendarCard = () => {
             </li>
           </ol>
         </details>
+          </>
+        )}
       </CardContent>
     </Card>
   );
