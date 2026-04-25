@@ -282,7 +282,7 @@ export const VincularMembroDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[calc(100vw-1.5rem)] sm:w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-destructive" />
@@ -319,7 +319,7 @@ export const VincularMembroDialog = ({
                   return (
                     <div
                       key={membro.id}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
+                      className={`flex items-center justify-between gap-2 p-2 sm:p-3 rounded-lg ${
                         isAlreadyHere
                           ? "bg-muted/30 opacity-60"
                           : hasConflict
@@ -327,8 +327,8 @@ export const VincularMembroDialog = ({
                           : "bg-muted/50"
                       }`}
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar className="w-9 h-9 flex-shrink-0">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                        <Avatar className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
                           <AvatarImage src={membro.photo_url || undefined} alt={membro.full_name} />
                           <AvatarFallback className={hasConflict ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"}>
                             {hasConflict ? (
@@ -338,10 +338,10 @@ export const VincularMembroDialog = ({
                             )}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm text-foreground truncate">{membro.full_name}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-xs sm:text-sm text-foreground truncate">{membro.full_name}</p>
                           <div className="flex items-center gap-1 flex-wrap">
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                               {membro.whatsapp || membro.email || "Sem contato"}
                             </p>
                             {isAlreadyHere && (
@@ -350,9 +350,9 @@ export const VincularMembroDialog = ({
                               </Badge>
                             )}
                             {!isAlreadyHere && membro.casa_refugio_id && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-700">
-                                <Home className="w-3 h-3 mr-0.5" />
-                                {membro.casa_refugio?.name || "Outra CR"}
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-amber-500/50 text-amber-700 max-w-[120px]">
+                                <Home className="w-3 h-3 mr-0.5 flex-shrink-0" />
+                                <span className="truncate">{membro.casa_refugio?.name || "Outra CR"}</span>
                               </Badge>
                             )}
                           </div>
@@ -363,7 +363,7 @@ export const VincularMembroDialog = ({
                         variant={hasConflict && !isAlreadyHere ? "outline" : "secondary"}
                         onClick={() => handleVincular(membro)}
                         disabled={isLinking === membro.id || isAlreadyHere || isCreating}
-                        className="flex-shrink-0 ml-2"
+                        className="flex-shrink-0 h-8 px-2 text-xs sm:px-3"
                       >
                         {isLinking === membro.id ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
