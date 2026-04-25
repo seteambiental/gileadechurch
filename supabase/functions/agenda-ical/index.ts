@@ -55,6 +55,14 @@ function formatDateTimeLocal(date: string, time?: string | null): string {
   return `${y}${m}${d}T${hh}${mm}${ss}`;
 }
 
+function formatDateTimeUtcFromSaoPaulo(date: string, time?: string | null): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour = 0, minute = 0, second = 0] = (time || "00:00:00").split(":").map(Number);
+  const utcDate = new Date(Date.UTC(year, month - 1, day, hour + 3, minute, second));
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${utcDate.getUTCFullYear()}${pad(utcDate.getUTCMonth() + 1)}${pad(utcDate.getUTCDate())}T${pad(utcDate.getUTCHours())}${pad(utcDate.getUTCMinutes())}${pad(utcDate.getUTCSeconds())}Z`;
+}
+
 function formatDateOnly(date: string): string {
   return date.replace(/-/g, "");
 }
@@ -194,8 +202,6 @@ function buildEvent(evento: any, dtstamp: string, occurrenceDate?: string): stri
   if (descParts.length) lines.push(`DESCRIPTION:${escapeICS(descParts.join("\n"))}`);
   if (evento.local) lines.push(`LOCATION:${escapeICS(evento.local)}`);
 
-  const TZID = "America/Sao_Paulo";
-
   if (evento.hora_inicio) {
     const startTime = evento.hora_inicio;
     const endTime = evento.hora_fim || evento.hora_inicio;
@@ -204,8 +210,8 @@ function buildEvent(evento: any, dtstamp: string, occurrenceDate?: string): stri
       endDate = addDaysToDateString(eventDate, 1);
     }
 
-    lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(eventDate, startTime)}`);
-    lines.push(`DTEND;TZID=${TZID}:${formatDateTimeLocal(endDate, endTime)}`);
+    lines.push(`DTSTART:${formatDateTimeUtcFromSaoPaulo(eventDate, startTime)}`);
+    lines.push(`DTEND:${formatDateTimeUtcFromSaoPaulo(endDate, endTime)}`);
   } else {
     lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(eventDate)}`);
     const end = occurrenceDate ? eventDate : (evento.data_fim || eventDate);
