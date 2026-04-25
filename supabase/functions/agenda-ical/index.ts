@@ -234,7 +234,9 @@ Deno.serve(async (req) => {
         ...corsHeaders,
         "Content-Type": "text/calendar; charset=utf-8",
         "Content-Disposition": 'inline; filename="agenda-gileade.ics"',
-        "Cache-Control": "public, max-age=1800",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (err: unknown) {
