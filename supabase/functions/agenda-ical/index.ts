@@ -85,32 +85,19 @@ function buildEvent(evento: any, dtstamp: string): string[] {
 
   const TZID = "America/Sao_Paulo";
 
-  if (evento.recorrente) {
-    // Eventos recorrentes semanais
-    // Determina dia da semana: prioriza dia_semana; se ausente, deriva de data_evento
-    let diaSemana: number;
-    let anchorStr: string;
+  const shouldRepeatWeekly = evento.recorrente === true && typeof evento.dia_semana === "number";
 
-    if (typeof evento.dia_semana === "number") {
-      diaSemana = evento.dia_semana;
-      // Calcula próxima/última ocorrência desse dia da semana a partir de hoje
-      const today = new Date();
-      const dayOfWeekToday = today.getUTCDay();
-      let diff = diaSemana - dayOfWeekToday;
-      if (diff > 0) diff -= 7;
-      const anchor = new Date(today);
-      anchor.setUTCDate(today.getUTCDate() + diff);
-      anchorStr = `${anchor.getUTCFullYear()}-${String(anchor.getUTCMonth() + 1).padStart(2, "0")}-${String(anchor.getUTCDate()).padStart(2, "0")}`;
-    } else if (evento.data_evento) {
-      // Recorrente sem dia_semana: usa data_evento como âncora e deriva o dia da semana
-      anchorStr = evento.data_evento;
-      const [yy, mm, dd] = evento.data_evento.split("-").map(Number);
-      const ref = new Date(Date.UTC(yy, mm - 1, dd));
-      diaSemana = ref.getUTCDay();
-    } else {
-      // Sem âncora confiável — pula este evento
-      return [];
-    }
+  if (shouldRepeatWeekly) {
+    // Eventos recorrentes semanais: só gera RRULE quando o cadastro tem dia_semana explícito.
+    // Se recorrente estiver marcado por engano sem dia_semana, o evento é tratado como data única.
+    const diaSemana = evento.dia_semana;
+    const today = new Date();
+    const dayOfWeekToday = today.getUTCDay();
+    let diff = diaSemana - dayOfWeekToday;
+    if (diff > 0) diff -= 7;
+    const anchor = new Date(today);
+    anchor.setUTCDate(today.getUTCDate() + diff);
+    const anchorStr = `${anchor.getUTCFullYear()}-${String(anchor.getUTCMonth() + 1).padStart(2, "0")}-${String(anchor.getUTCDate()).padStart(2, "0")}`;
 
     if (evento.hora_inicio) {
       lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(anchorStr, evento.hora_inicio)}`);
