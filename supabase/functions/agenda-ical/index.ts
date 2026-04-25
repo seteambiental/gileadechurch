@@ -65,9 +65,120 @@ function nowUtcStamp(): string {
   return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
 }
 
-function buildEvent(evento: any, dtstamp: string): string[] {
+function normalizeKey(text: string | null | undefined): string {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function dateFromString(date: string): Date {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function dateToString(date: Date): string {
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+}
+
+function addDaysToDateString(date: string, days: number): string {
+  const d = dateFromString(date);
+  d.setUTCDate(d.getUTCDate() + days);
+  return dateToString(d);
+}
+
+function getWeekOfMonthUtc(date: Date): number {
+  const firstDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1)).getUTCDay();
+  return Math.ceil((date.getUTCDate() + firstDay) / 7);
+}
+
+function isWeeklyRecurring(evento: any): boolean {
+  return evento.recorrente === true && typeof evento.dia_semana === "number";
+}
+
+function occursOnDate(evento: any, dateStr: string): boolean {
+  const date = dateFromString(dateStr);
+  if (isWeeklyRecurring(evento)) {
+    if (evento.dia_semana !== date.getUTCDay()) return false;
+    if (evento.data_evento && dateStr < evento.data_evento) return false;
+    if (evento.data_fim && dateStr > evento.data_fim) return false;
+    if (evento.semana_mes !== null && evento.semana_mes !== undefined && evento.semana_mes > 0) {
+      return evento.semana_mes === getWeekOfMonthUtc(date);
+    }
+    return true;
+  }
+
+  if (!evento.data_evento) return false;
+  if (evento.data_fim) return dateStr >= evento.data_evento && dateStr <= evento.data_fim;
+  return evento.data_evento === dateStr;
+}
+
+function pickNewest(events: any[]): any {
+  return [...events].sort((a, b) => {
+    const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return bTime - aTime;
+  })[0];
+}
+
+function dedupeSameDayEvents(events: any[], dateStr: string): any[] {
+  const groups = new Map<string, any[]>();
+
+  for (const evento of events) {
+    const titleKey = normalizeKey(evento.titulo || tipoEventoLabels[evento.tipo_evento] || "evento");
+    const key = `${evento.tipo_evento || ""}|${titleKey}|${dateStr}`;
+    groups.set(key, [...(groups.get(key) || []), evento]);
+  }
+
+  const result: any[] = [];
+  for (const group of groups.values()) {
+    const hasTimedEvent = group.some((evento) => Boolean(evento.hora_inicio));
+    const candidates = hasTimedEvent ? group.filter((evento) => Boolean(evento.hora_inicio)) : group;
+    const byStartTime = new Map<string, any[]>();
+
+    for (const evento of candidates) {
+      const timeKey = evento.hora_inicio || "dia-inteiro";
+      byStartTime.set(timeKey, [...(byStartTime.get(timeKey) || []), evento]);
+    }
+
+    for (const sameTimeGroup of byStartTime.values()) {
+      result.push(pickNewest(sameTimeGroup));
+    }
+  }
+
+  return result;
+}
+
+function getEventsForDate(eventos: any[], dateStr: string): any[] {
+  let eventsForDate = eventos.filter((evento) => occursOnDate(evento, dateStr));
+
+  const temCeia = eventsForDate.some((evento) => evento.tipo_evento === "ceia");
+  if (temCeia) {
+    eventsForDate = eventsForDate.filter((evento) => evento.tipo_evento !== "culto");
+  }
+
+  const temQuartaProposito = eventsForDate.some(
+    (evento) => evento.tipo_evento === "quarta_proposito" || evento.tipo_evento === "quarta_proposito_prestacao",
+  );
+  if (temQuartaProposito) {
+    eventsForDate = eventsForDate.filter((evento) => {
+      if (evento.tipo_evento === "culto" && normalizeKey(evento.titulo).includes("proposito")) return false;
+      return true;
+    });
+  }
+
+  return dedupeSameDayEvents(eventsForDate, dateStr);
+}
+
+function buildEvent(evento: any, dtstamp: string, occurrenceDate?: string): string[] {
   const lines: string[] = [];
-  const uid = `${evento.id}@gileade.church`;
+  const eventDate = occurrenceDate || evento.data_evento;
+  if (!eventDate) return [];
+
+  const occurrenceSuffix = occurrenceDate ? `-${formatDateOnly(occurrenceDate)}` : "";
+  const uid = `${evento.id}${occurrenceSuffix}@gileade.church`;
   const tipoLabel = tipoEventoLabels[evento.tipo_evento] || evento.tipo_evento || "";
   const summary = evento.titulo || tipoLabel || "Evento";
 
@@ -85,60 +196,20 @@ function buildEvent(evento: any, dtstamp: string): string[] {
 
   const TZID = "America/Sao_Paulo";
 
-  if (evento.recorrente) {
-    // Eventos recorrentes semanais
-    // Determina dia da semana: prioriza dia_semana; se ausente, deriva de data_evento
-    let diaSemana: number;
-    let anchorStr: string;
-
-    if (typeof evento.dia_semana === "number") {
-      diaSemana = evento.dia_semana;
-      // Calcula próxima/última ocorrência desse dia da semana a partir de hoje
-      const today = new Date();
-      const dayOfWeekToday = today.getUTCDay();
-      let diff = diaSemana - dayOfWeekToday;
-      if (diff > 0) diff -= 7;
-      const anchor = new Date(today);
-      anchor.setUTCDate(today.getUTCDate() + diff);
-      anchorStr = `${anchor.getUTCFullYear()}-${String(anchor.getUTCMonth() + 1).padStart(2, "0")}-${String(anchor.getUTCDate()).padStart(2, "0")}`;
-    } else if (evento.data_evento) {
-      // Recorrente sem dia_semana: usa data_evento como âncora e deriva o dia da semana
-      anchorStr = evento.data_evento;
-      const [yy, mm, dd] = evento.data_evento.split("-").map(Number);
-      const ref = new Date(Date.UTC(yy, mm - 1, dd));
-      diaSemana = ref.getUTCDay();
-    } else {
-      // Sem âncora confiável — pula este evento
-      return [];
+  if (evento.hora_inicio) {
+    const startTime = evento.hora_inicio;
+    const endTime = evento.hora_fim || evento.hora_inicio;
+    let endDate = occurrenceDate ? eventDate : (evento.data_fim || eventDate);
+    if (endDate === eventDate && endTime <= startTime) {
+      endDate = addDaysToDateString(eventDate, 1);
     }
 
-    if (evento.hora_inicio) {
-      lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(anchorStr, evento.hora_inicio)}`);
-      lines.push(
-        `DTEND;TZID=${TZID}:${formatDateTimeLocal(anchorStr, evento.hora_fim || evento.hora_inicio)}`
-      );
-    } else {
-      lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(anchorStr)}`);
-    }
-    lines.push(`RRULE:FREQ=WEEKLY;BYDAY=${RRULE_DAYS[diaSemana]}`);
-  } else if (evento.data_evento) {
-    if (evento.hora_inicio) {
-      lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(evento.data_evento, evento.hora_inicio)}`);
-      lines.push(
-        `DTEND;TZID=${TZID}:${formatDateTimeLocal(
-          evento.data_fim || evento.data_evento,
-          evento.hora_fim || evento.hora_inicio,
-        )}`,
-      );
-    } else {
-      lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(evento.data_evento)}`);
-      // Para all-day, DTEND deve ser dia seguinte
-      const end = evento.data_fim || evento.data_evento;
-      const endDate = new Date(end + "T00:00:00Z");
-      endDate.setUTCDate(endDate.getUTCDate() + 1);
-      const endStr = `${endDate.getUTCFullYear()}${String(endDate.getUTCMonth() + 1).padStart(2, "0")}${String(endDate.getUTCDate()).padStart(2, "0")}`;
-      lines.push(`DTEND;VALUE=DATE:${endStr}`);
-    }
+    lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(eventDate, startTime)}`);
+    lines.push(`DTEND;TZID=${TZID}:${formatDateTimeLocal(endDate, endTime)}`);
+  } else {
+    lines.push(`DTSTART;VALUE=DATE:${formatDateOnly(eventDate)}`);
+    const end = occurrenceDate ? eventDate : (evento.data_fim || eventDate);
+    lines.push(`DTEND;VALUE=DATE:${formatDateOnly(addDaysToDateString(end, 1))}`);
   }
 
   lines.push("END:VEVENT");
@@ -179,7 +250,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("agenda_igreja")
       .select(
-        "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, status, ativo, visibilidade, genero_alvo, necessita_inscricao",
+        "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, semana_mes, status, ativo, visibilidade, genero_alvo, necessita_inscricao, created_at",
       )
       .eq("ativo", true)
       .eq("status", "aprovado")
@@ -217,11 +288,35 @@ Deno.serve(async (req) => {
       "END:VTIMEZONE",
     ];
 
-    for (const ev of eventos || []) {
-      try {
-        lines.push(...buildEvent(ev, dtstamp));
-      } catch (e) {
-        console.error("Erro ao processar evento", ev.id, e);
+    const allEvents = eventos || [];
+    const singleDateEvents = new Map<string, any[]>();
+    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && evento.data_evento)) {
+      singleDateEvents.set(ev.data_evento, [...(singleDateEvents.get(ev.data_evento) || []), ev]);
+    }
+
+    for (const [dateStr, sameDayEvents] of singleDateEvents.entries()) {
+      for (const ev of dedupeSameDayEvents(sameDayEvents, dateStr)) {
+        try {
+          lines.push(...buildEvent(ev, dtstamp));
+        } catch (e) {
+          console.error("Erro ao processar evento", ev.id, e);
+        }
+      }
+    }
+
+    const feedStart = new Date();
+    feedStart.setUTCDate(feedStart.getUTCDate() - 90);
+    const feedEnd = new Date();
+    feedEnd.setUTCDate(feedEnd.getUTCDate() + 540);
+
+    for (let cursor = new Date(feedStart); cursor <= feedEnd; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const dateStr = dateToString(cursor);
+      for (const ev of getEventsForDate(allEvents, dateStr).filter(isWeeklyRecurring)) {
+        try {
+          lines.push(...buildEvent(ev, dtstamp, dateStr));
+        } catch (e) {
+          console.error("Erro ao processar evento recorrente", ev.id, e);
+        }
       }
     }
 
