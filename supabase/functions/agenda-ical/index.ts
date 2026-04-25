@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from("agenda_igreja")
       .select(
-        "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, status, ativo, visibilidade, genero_alvo, necessita_inscricao",
+        "id, titulo, descricao, tipo_evento, local, data_evento, data_fim, hora_inicio, hora_fim, recorrente, dia_semana, semana_mes, status, ativo, visibilidade, genero_alvo, necessita_inscricao, created_at",
       )
       .eq("ativo", true)
       .eq("status", "aprovado")
@@ -288,11 +288,35 @@ Deno.serve(async (req) => {
       "END:VTIMEZONE",
     ];
 
-    for (const ev of eventos || []) {
-      try {
-        lines.push(...buildEvent(ev, dtstamp));
-      } catch (e) {
-        console.error("Erro ao processar evento", ev.id, e);
+    const allEvents = eventos || [];
+    const singleDateEvents = new Map<string, any[]>();
+    for (const ev of allEvents.filter((evento) => !isWeeklyRecurring(evento) && evento.data_evento)) {
+      singleDateEvents.set(ev.data_evento, [...(singleDateEvents.get(ev.data_evento) || []), ev]);
+    }
+
+    for (const [dateStr, sameDayEvents] of singleDateEvents.entries()) {
+      for (const ev of dedupeSameDayEvents(sameDayEvents, dateStr)) {
+        try {
+          lines.push(...buildEvent(ev, dtstamp));
+        } catch (e) {
+          console.error("Erro ao processar evento", ev.id, e);
+        }
+      }
+    }
+
+    const feedStart = new Date();
+    feedStart.setUTCDate(feedStart.getUTCDate() - 90);
+    const feedEnd = new Date();
+    feedEnd.setUTCDate(feedEnd.getUTCDate() + 540);
+
+    for (let cursor = new Date(feedStart); cursor <= feedEnd; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const dateStr = dateToString(cursor);
+      for (const ev of getEventsForDate(allEvents, dateStr).filter(isWeeklyRecurring)) {
+        try {
+          lines.push(...buildEvent(ev, dtstamp, dateStr));
+        } catch (e) {
+          console.error("Erro ao processar evento recorrente", ev.id, e);
+        }
       }
     }
 
