@@ -225,8 +225,14 @@ Deno.serve(async (req) => {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("Erro no feed iCal:", message);
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === "string"
+          ? err
+          : JSON.stringify(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("Erro no feed iCal:", message, stack);
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
