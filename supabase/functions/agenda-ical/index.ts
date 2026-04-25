@@ -87,16 +87,30 @@ function buildEvent(evento: any, dtstamp: string): string[] {
 
   if (evento.recorrente) {
     // Eventos recorrentes semanais
-    // Usa data_evento como âncora (ou hoje retroagido para o dia da semana correto)
-    const diaSemana = typeof evento.dia_semana === "number" ? evento.dia_semana : 0;
-    const today = new Date();
-    // Encontra a próxima ocorrência do dia_semana (ou anterior se já passou hoje)
-    const dayOfWeekToday = today.getUTCDay();
-    let diff = diaSemana - dayOfWeekToday;
-    if (diff > 0) diff -= 7;
-    const anchor = new Date(today);
-    anchor.setUTCDate(today.getUTCDate() + diff);
-    const anchorStr = `${anchor.getUTCFullYear()}-${String(anchor.getUTCMonth() + 1).padStart(2, "0")}-${String(anchor.getUTCDate()).padStart(2, "0")}`;
+    // Determina dia da semana: prioriza dia_semana; se ausente, deriva de data_evento
+    let diaSemana: number;
+    let anchorStr: string;
+
+    if (typeof evento.dia_semana === "number") {
+      diaSemana = evento.dia_semana;
+      // Calcula próxima/última ocorrência desse dia da semana a partir de hoje
+      const today = new Date();
+      const dayOfWeekToday = today.getUTCDay();
+      let diff = diaSemana - dayOfWeekToday;
+      if (diff > 0) diff -= 7;
+      const anchor = new Date(today);
+      anchor.setUTCDate(today.getUTCDate() + diff);
+      anchorStr = `${anchor.getUTCFullYear()}-${String(anchor.getUTCMonth() + 1).padStart(2, "0")}-${String(anchor.getUTCDate()).padStart(2, "0")}`;
+    } else if (evento.data_evento) {
+      // Recorrente sem dia_semana: usa data_evento como âncora e deriva o dia da semana
+      anchorStr = evento.data_evento;
+      const [yy, mm, dd] = evento.data_evento.split("-").map(Number);
+      const ref = new Date(Date.UTC(yy, mm - 1, dd));
+      diaSemana = ref.getUTCDay();
+    } else {
+      // Sem âncora confiável — pula este evento
+      return [];
+    }
 
     if (evento.hora_inicio) {
       lines.push(`DTSTART;TZID=${TZID}:${formatDateTimeLocal(anchorStr, evento.hora_inicio)}`);
