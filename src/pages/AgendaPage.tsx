@@ -47,7 +47,7 @@ import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { InscricoesEventoDialog } from "@/components/agenda/InscricoesEventoDialog";
 import { InscricoesDashboard } from "@/components/agenda/InscricoesDashboard";
 import { CompartilharInscricaoDialog } from "@/components/agenda/CompartilharInscricaoDialog";
-import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
+import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
