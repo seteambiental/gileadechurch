@@ -757,40 +757,82 @@ const InscricaoEvento = () => {
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
-                      <Input
-                        id="telefone"
-                        value={telefoneContato}
-                        onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
-                        placeholder="(00) 00000-0000"
-                        required
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="telefone"
+                          type={telefoneRevealed ? "text" : "password"}
+                          value={telefoneRevealed ? telefoneContato : maskPhoneDisplay(telefoneContato)}
+                          onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
+                          onFocus={() => setTelefoneRevealed(true)}
+                          placeholder="(00) 00000-0000"
+                          required
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                        />
+                        {telefoneContato && (
+                          <button
+                            type="button"
+                            onClick={() => setTelefoneRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={telefoneRevealed ? "Ocultar telefone" : "Mostrar telefone"}
+                          >
+                            {telefoneRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
-                      <Input
-                        id="emergencia"
-                        value={telefoneEmergencia}
-                        onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
-                        placeholder="(00) 00000-0000"
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="emergencia"
+                          type={emergenciaRevealed ? "text" : "password"}
+                          value={emergenciaRevealed ? telefoneEmergencia : maskPhoneDisplay(telefoneEmergencia)}
+                          onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
+                          onFocus={() => setEmergenciaRevealed(true)}
+                          placeholder="(00) 00000-0000"
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                        />
+                        {telefoneEmergencia && (
+                          <button
+                            type="button"
+                            onClick={() => setEmergenciaRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={emergenciaRevealed ? "Ocultar telefone" : "Mostrar telefone"}
+                          >
+                            {emergenciaRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     )}
 
                     {showField("cpf") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
-                      <Input
-                        id="cpf"
-                        value={cpf}
-                        onChange={(e) => setCpf(formatCPF(e.target.value))}
-                        placeholder="000.000.000-00"
-                        className="h-10 md:h-14 text-base md:text-lg"
-                        maxLength={14}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="cpf"
+                          type={cpfRevealed ? "text" : "password"}
+                          value={cpfRevealed ? cpf : maskCpfDisplay(cpf)}
+                          onChange={(e) => setCpf(formatCPF(e.target.value))}
+                          onFocus={() => setCpfRevealed(true)}
+                          placeholder="000.000.000-00"
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                          maxLength={cpfRevealed ? 14 : undefined}
+                        />
+                        {cpf && (
+                          <button
+                            type="button"
+                            onClick={() => setCpfRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={cpfRevealed ? "Ocultar CPF" : "Mostrar CPF"}
+                          >
+                            {cpfRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     )}
 
