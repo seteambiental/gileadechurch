@@ -131,7 +131,19 @@ const HomepageConfigTab = () => {
         .in("tipo_evento", ["culto", "culto_jovens", "culto_teens"])
         .order("dia_semana", { ascending: true });
       if (error) throw error;
-      return data;
+      // Deduplica por dia_semana + hora_inicio (mantém o primeiro título)
+      // e descarta entradas sem dia_semana ou hora_inicio definidos.
+      const seen = new Set<string>();
+      const unique: typeof data = [];
+      for (const e of data || []) {
+        if (e.dia_semana === null || e.dia_semana === undefined) continue;
+        if (!e.hora_inicio) continue;
+        const key = `${e.dia_semana}-${e.hora_inicio}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(e);
+      }
+      return unique;
     },
   });
 
