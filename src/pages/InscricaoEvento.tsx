@@ -716,6 +716,12 @@ const InscricaoEvento = () => {
                       setNomeParticipante("");
                       setGenero("");
                       setTelefoneContato("");
+                      setCpf("");
+                      setTelefoneEmergencia("");
+                      setCpfRevealed(true);
+                      setTelefoneRevealed(true);
+                      setEmergenciaRevealed(true);
+                      setResponsavelTelRevealed(true);
                     }}
                   >
                     ← Voltar para busca
