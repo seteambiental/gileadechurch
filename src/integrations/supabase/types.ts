@@ -391,6 +391,7 @@ export type Database = {
           idade_maxima: number | null
           idade_minima: number | null
           limite_vagas: number | null
+          link_grupo_whatsapp: string | null
           local: string | null
           local_tipo: string
           motivo_rejeicao: string | null
@@ -434,6 +435,7 @@ export type Database = {
           idade_maxima?: number | null
           idade_minima?: number | null
           limite_vagas?: number | null
+          link_grupo_whatsapp?: string | null
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null
@@ -477,6 +479,7 @@ export type Database = {
           idade_maxima?: number | null
           idade_minima?: number | null
           limite_vagas?: number | null
+          link_grupo_whatsapp?: string | null
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null

@@ -263,10 +263,44 @@ export const InscricoesEventoDialog = ({
         .update({ status_pagamento: status })
         .eq("id", id);
       if (error) throw error;
+      return { id, status };
     },
-    onSuccess: () => {
+    onSuccess: async ({ id, status }) => {
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
       toast({ title: "Status atualizado!" });
+
+      // Ao confirmar, dispara mensagem de agradecimento + link do grupo de WhatsApp (se configurado)
+      if (status === "confirmado") {
+        try {
+          const { data: eventoFull } = await supabase
+            .from("agenda_igreja")
+            .select("titulo, data_evento, hora_inicio, local, link_grupo_whatsapp")
+            .eq("id", eventoId)
+            .maybeSingle();
+
+          await supabase.functions.invoke("enviar-whatsapp", {
+            body: {
+              action: "confirmacao_inscricao",
+              inscricaoId: id,
+              evento: {
+                titulo: eventoFull?.titulo ?? eventoTitulo,
+                data_evento: eventoFull?.data_evento ?? eventoData,
+                hora_inicio: eventoFull?.hora_inicio ?? null,
+                local: eventoFull?.local ?? eventoLocal,
+                link_grupo_whatsapp: eventoFull?.link_grupo_whatsapp ?? null,
+              },
+            },
+          });
+          toast({ title: "Confirmação enviada por WhatsApp!" });
+        } catch (err) {
+          console.error("Erro ao enviar confirmação por WhatsApp:", err);
+          toast({
+            variant: "destructive",
+            title: "Status atualizado, mas falha ao enviar WhatsApp",
+            description: (err as Error)?.message || "Verifique a configuração da Evolution API.",
+          });
+        }
+      }
     },
     onError: (error: Error) => {
       toast({ variant: "destructive", title: "Erro", description: error.message });
