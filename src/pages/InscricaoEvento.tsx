@@ -759,82 +759,79 @@ const InscricaoEvento = () => {
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
-                      <div className="relative">
+                      {telefoneLocked ? (
+                        <div className="relative">
+                          <Input
+                            id="telefone"
+                            value={maskPhoneDisplay(telefoneContato)}
+                            readOnly
+                            tabIndex={-1}
+                            className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                          />
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ) : (
                         <Input
                           id="telefone"
-                          type={telefoneRevealed ? "text" : "password"}
-                          value={telefoneRevealed ? telefoneContato : maskPhoneDisplay(telefoneContato)}
+                          value={telefoneContato}
                           onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
-                          onFocus={() => setTelefoneRevealed(true)}
                           placeholder="(00) 00000-0000"
                           required
-                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                          className="h-10 md:h-14 text-base md:text-lg"
                         />
-                        {telefoneContato && (
-                          <button
-                            type="button"
-                            onClick={() => setTelefoneRevealed((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={telefoneRevealed ? "Ocultar telefone" : "Mostrar telefone"}
-                          >
-                            {telefoneRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
-                      <div className="relative">
+                      {emergenciaLocked ? (
+                        <div className="relative">
+                          <Input
+                            id="emergencia"
+                            value={maskPhoneDisplay(telefoneEmergencia)}
+                            readOnly
+                            tabIndex={-1}
+                            className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                          />
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ) : (
                         <Input
                           id="emergencia"
-                          type={emergenciaRevealed ? "text" : "password"}
-                          value={emergenciaRevealed ? telefoneEmergencia : maskPhoneDisplay(telefoneEmergencia)}
+                          value={telefoneEmergencia}
                           onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
-                          onFocus={() => setEmergenciaRevealed(true)}
                           placeholder="(00) 00000-0000"
-                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                          className="h-10 md:h-14 text-base md:text-lg"
                         />
-                        {telefoneEmergencia && (
-                          <button
-                            type="button"
-                            onClick={() => setEmergenciaRevealed((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={emergenciaRevealed ? "Ocultar telefone" : "Mostrar telefone"}
-                          >
-                            {emergenciaRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
                     )}
 
                     {showField("cpf") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
-                      <div className="relative">
+                      {cpfLocked ? (
+                        <div className="relative">
+                          <Input
+                            id="cpf"
+                            value={maskCpfDisplay(cpf)}
+                            readOnly
+                            tabIndex={-1}
+                            className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                          />
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ) : (
                         <Input
                           id="cpf"
-                          type={cpfRevealed ? "text" : "password"}
-                          value={cpfRevealed ? cpf : maskCpfDisplay(cpf)}
+                          value={cpf}
                           onChange={(e) => setCpf(formatCPF(e.target.value))}
-                          onFocus={() => setCpfRevealed(true)}
                           placeholder="000.000.000-00"
-                          className="h-10 md:h-14 text-base md:text-lg pr-12"
-                          maxLength={cpfRevealed ? 14 : undefined}
+                          className="h-10 md:h-14 text-base md:text-lg"
+                          maxLength={14}
                         />
-                        {cpf && (
-                          <button
-                            type="button"
-                            onClick={() => setCpfRevealed((v) => !v)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            aria-label={cpfRevealed ? "Ocultar CPF" : "Mostrar CPF"}
-                          >
-                            {cpfRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
-                          </button>
-                        )}
-                      </div>
+                      )}
                     </div>
                     )}
 
