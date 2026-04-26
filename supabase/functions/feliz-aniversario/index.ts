@@ -11,6 +11,10 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl :
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
+// Logo oficial enviada como imagem em mensagens importantes
+const LOGO_GILEADE_URL =
+  'https://jwjmseeyjemfwgyizumk.supabase.co/storage/v1/object/public/logos/whatsapp/gileade-logo.jpeg';
+
 const versiculosAniversario = [
   { texto: "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal, para vos dar o fim que esperais.", referencia: "Jeremias 29:11" },
   { texto: "O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti e tenha misericórdia de ti.", referencia: "Números 6:24-25" },
