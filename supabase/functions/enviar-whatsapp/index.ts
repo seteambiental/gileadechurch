@@ -1038,6 +1038,7 @@ serve(async (req) => {
         destinatario_telefone: telefone,
         destinatario_nome: nome,
         conteudo: mensagem,
+        midia_url: LOGO_GILEADE_URL,
       });
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1058,6 +1059,7 @@ serve(async (req) => {
         destinatario_nome: nome,
         destinatario_member_id: memberId || null,
         conteudo: mensagem,
+        midia_url: LOGO_GILEADE_URL,
       });
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
