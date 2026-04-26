@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home, Eye, EyeOff } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -84,11 +84,12 @@ const InscricaoEvento = () => {
   const [tipoInscricao, setTipoInscricao] = useState("membro");
 
   // Privacy: when data is auto-filled from a found person, sensitive fields
-  // (CPF, phones) are visually masked until the user chooses to reveal/edit them.
-  const [cpfRevealed, setCpfRevealed] = useState(true);
-  const [telefoneRevealed, setTelefoneRevealed] = useState(true);
-  const [emergenciaRevealed, setEmergenciaRevealed] = useState(true);
-  const [responsavelTelRevealed, setResponsavelTelRevealed] = useState(true);
+  // (CPF, phones) are permanently masked in the public registration form.
+  // Real values are kept in state and submitted normally.
+  const [cpfLocked, setCpfLocked] = useState(false);
+  const [telefoneLocked, setTelefoneLocked] = useState(false);
+  const [emergenciaLocked, setEmergenciaLocked] = useState(false);
+  const [responsavelTelLocked, setResponsavelTelLocked] = useState(false);
 
   // Mask helpers — keep last digits visible, replace the rest with •
   const maskCpfDisplay = (value: string) => {
@@ -250,11 +251,11 @@ const InscricaoEvento = () => {
     if (person.tipo_pessoa === "member") {
       setMembroMinisterio("gileade");
     }
-    // Hide sensitive prefilled fields by default for privacy
-    setCpfRevealed(!person.cpf);
-    setTelefoneRevealed(!person.whatsapp);
-    setEmergenciaRevealed(true);
-    setResponsavelTelRevealed(true);
+    // Lock sensitive prefilled fields — public form must never show full values
+    setCpfLocked(!!person.cpf);
+    setTelefoneLocked(!!person.whatsapp);
+    setEmergenciaLocked(false);
+    setResponsavelTelLocked(false);
     setShowSearch(false);
     setSearchTerm("");
   };
@@ -302,10 +303,10 @@ const InscricaoEvento = () => {
   const handleNewPerson = () => {
     setSelectedPerson({ type: "novo" });
     setShowSearch(false);
-    setCpfRevealed(true);
-    setTelefoneRevealed(true);
-    setEmergenciaRevealed(true);
-    setResponsavelTelRevealed(true);
+    setCpfLocked(false);
+    setTelefoneLocked(false);
+    setEmergenciaLocked(false);
+    setResponsavelTelLocked(false);
   };
 
   // Mutation to create inscription
