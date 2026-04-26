@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -82,6 +82,30 @@ const InscricaoEvento = () => {
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
+
+  // Privacy: when data is auto-filled from a found person, sensitive fields
+  // (CPF, phones) are visually masked until the user chooses to reveal/edit them.
+  const [cpfRevealed, setCpfRevealed] = useState(true);
+  const [telefoneRevealed, setTelefoneRevealed] = useState(true);
+  const [emergenciaRevealed, setEmergenciaRevealed] = useState(true);
+  const [responsavelTelRevealed, setResponsavelTelRevealed] = useState(true);
+
+  // Mask helpers — keep last digits visible, replace the rest with •
+  const maskCpfDisplay = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 4) return value;
+    // Show first 3 digits, mask middle, show last 2: 123.•••.•••-45
+    const first = digits.slice(0, 3);
+    const last = digits.slice(-2);
+    return `${first}.•••.•••-${last}`;
+  };
+  const maskPhoneDisplay = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 4) return value;
+    const last = digits.slice(-4);
+    // (••) •••••-1234
+    return `(••) •••••-${last}`;
+  };
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
@@ -226,6 +250,11 @@ const InscricaoEvento = () => {
     if (person.tipo_pessoa === "member") {
       setMembroMinisterio("gileade");
     }
+    // Hide sensitive prefilled fields by default for privacy
+    setCpfRevealed(!person.cpf);
+    setTelefoneRevealed(!person.whatsapp);
+    setEmergenciaRevealed(true);
+    setResponsavelTelRevealed(true);
     setShowSearch(false);
     setSearchTerm("");
   };
@@ -252,6 +281,7 @@ const InscricaoEvento = () => {
       if (responsavel) {
         setNomeResponsavel((responsavel as any).full_name || "");
         setTelefoneResponsavel((responsavel as any).whatsapp ? formatPhone((responsavel as any).whatsapp) : "");
+        if ((responsavel as any).whatsapp) setResponsavelTelRevealed(false);
       }
     } catch {
       // silently fail — user can still fill manually
@@ -272,6 +302,10 @@ const InscricaoEvento = () => {
   const handleNewPerson = () => {
     setSelectedPerson({ type: "novo" });
     setShowSearch(false);
+    setCpfRevealed(true);
+    setTelefoneRevealed(true);
+    setEmergenciaRevealed(true);
+    setResponsavelTelRevealed(true);
   };
 
   // Mutation to create inscription
@@ -683,6 +717,12 @@ const InscricaoEvento = () => {
                       setNomeParticipante("");
                       setGenero("");
                       setTelefoneContato("");
+                      setCpf("");
+                      setTelefoneEmergencia("");
+                      setCpfRevealed(true);
+                      setTelefoneRevealed(true);
+                      setEmergenciaRevealed(true);
+                      setResponsavelTelRevealed(true);
                     }}
                   >
                     ← Voltar para busca
@@ -718,40 +758,82 @@ const InscricaoEvento = () => {
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
-                      <Input
-                        id="telefone"
-                        value={telefoneContato}
-                        onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
-                        placeholder="(00) 00000-0000"
-                        required
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="telefone"
+                          type={telefoneRevealed ? "text" : "password"}
+                          value={telefoneRevealed ? telefoneContato : maskPhoneDisplay(telefoneContato)}
+                          onChange={(e) => setTelefoneContato(formatPhone(e.target.value))}
+                          onFocus={() => setTelefoneRevealed(true)}
+                          placeholder="(00) 00000-0000"
+                          required
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                        />
+                        {telefoneContato && (
+                          <button
+                            type="button"
+                            onClick={() => setTelefoneRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={telefoneRevealed ? "Ocultar telefone" : "Mostrar telefone"}
+                          >
+                            {telefoneRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
-                      <Input
-                        id="emergencia"
-                        value={telefoneEmergencia}
-                        onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
-                        placeholder="(00) 00000-0000"
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="emergencia"
+                          type={emergenciaRevealed ? "text" : "password"}
+                          value={emergenciaRevealed ? telefoneEmergencia : maskPhoneDisplay(telefoneEmergencia)}
+                          onChange={(e) => setTelefoneEmergencia(formatPhone(e.target.value))}
+                          onFocus={() => setEmergenciaRevealed(true)}
+                          placeholder="(00) 00000-0000"
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                        />
+                        {telefoneEmergencia && (
+                          <button
+                            type="button"
+                            onClick={() => setEmergenciaRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={emergenciaRevealed ? "Ocultar telefone" : "Mostrar telefone"}
+                          >
+                            {emergenciaRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     )}
 
                     {showField("cpf") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="cpf" className="text-base md:text-lg">CPF</Label>
-                      <Input
-                        id="cpf"
-                        value={cpf}
-                        onChange={(e) => setCpf(formatCPF(e.target.value))}
-                        placeholder="000.000.000-00"
-                        className="h-10 md:h-14 text-base md:text-lg"
-                        maxLength={14}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="cpf"
+                          type={cpfRevealed ? "text" : "password"}
+                          value={cpfRevealed ? cpf : maskCpfDisplay(cpf)}
+                          onChange={(e) => setCpf(formatCPF(e.target.value))}
+                          onFocus={() => setCpfRevealed(true)}
+                          placeholder="000.000.000-00"
+                          className="h-10 md:h-14 text-base md:text-lg pr-12"
+                          maxLength={cpfRevealed ? 14 : undefined}
+                        />
+                        {cpf && (
+                          <button
+                            type="button"
+                            onClick={() => setCpfRevealed((v) => !v)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            aria-label={cpfRevealed ? "Ocultar CPF" : "Mostrar CPF"}
+                          >
+                            {cpfRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     )}
 
@@ -818,13 +900,27 @@ const InscricaoEvento = () => {
                         </div>
                         <div className="space-y-2 md:space-y-3">
                           <Label htmlFor="telResponsavel" className="text-base md:text-lg">Telefone do Responsável *</Label>
-                          <Input
-                            id="telResponsavel"
-                            value={telefoneResponsavel}
-                            onChange={(e) => setTelefoneResponsavel(formatPhone(e.target.value))}
-                            placeholder="(00) 00000-0000"
-                            className="h-10 md:h-14 text-base md:text-lg"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="telResponsavel"
+                              type={responsavelTelRevealed ? "text" : "password"}
+                              value={responsavelTelRevealed ? telefoneResponsavel : maskPhoneDisplay(telefoneResponsavel)}
+                              onChange={(e) => setTelefoneResponsavel(formatPhone(e.target.value))}
+                              onFocus={() => setResponsavelTelRevealed(true)}
+                              placeholder="(00) 00000-0000"
+                              className="h-10 md:h-14 text-base md:text-lg pr-12"
+                            />
+                            {telefoneResponsavel && (
+                              <button
+                                type="button"
+                                onClick={() => setResponsavelTelRevealed((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                aria-label={responsavelTelRevealed ? "Ocultar telefone" : "Mostrar telefone"}
+                              >
+                                {responsavelTelRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
