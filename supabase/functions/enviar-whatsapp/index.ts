@@ -12,6 +12,12 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl :
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
+// Logo oficial enviada como imagem nas mensagens importantes
+// (boas-vindas, inscrição recebida, confirmação de inscrição, cadastro aprovado, aniversário).
+// Mantida fora dos fluxos de massa (lembretes, vagas liberadas, escalas) para evitar spam.
+const LOGO_GILEADE_URL =
+  'https://jwjmseeyjemfwgyizumk.supabase.co/storage/v1/object/public/logos/whatsapp/gileade-logo.jpeg';
+
 // Pausa aleatória entre 5 e 15 segundos para envios em massa relacionados a
 // inscrições / cadastros / flyers / mensagens segmentadas, conforme política.
 function randomBulkDelayMs() {
