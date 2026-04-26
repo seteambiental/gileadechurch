@@ -281,6 +281,7 @@ const InscricaoEvento = () => {
       if (responsavel) {
         setNomeResponsavel((responsavel as any).full_name || "");
         setTelefoneResponsavel((responsavel as any).whatsapp ? formatPhone((responsavel as any).whatsapp) : "");
+        if ((responsavel as any).whatsapp) setResponsavelTelRevealed(false);
       }
     } catch {
       // silently fail — user can still fill manually
