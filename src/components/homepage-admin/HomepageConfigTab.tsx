@@ -164,6 +164,121 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // ===== Mensagens de Eventos =====
+  const { data: eventosAgenda } = useQuery({
+    queryKey: ["mensagens-eventos-agenda"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, necessita_inscricao")
+        .eq("ativo", true)
+        .order("data_evento", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const { data: eventosImpacto } = useQuery({
+    queryKey: ["mensagens-eventos-impacto"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_eventos")
+        .select("id, nome, data_inicio")
+        .order("data_inicio", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const eventosOptions = useMemo(() => {
+    const agenda = (eventosAgenda || []).map((e: any) => ({
+      key: `agenda:${e.id}`,
+      id: e.id,
+      tipo: "agenda" as const,
+      label: `📅 ${e.titulo}`,
+    }));
+    const impacto = (eventosImpacto || []).map((e: any) => ({
+      key: `impacto:${e.id}`,
+      id: e.id,
+      tipo: "impacto" as const,
+      label: `🎯 ${e.nome}`,
+    }));
+    return [...agenda, ...impacto];
+  }, [eventosAgenda, eventosImpacto]);
+
+  const eventoAtual = useMemo(
+    () => eventosOptions.find((e) => e.key === eventoSelecionado) || null,
+    [eventosOptions, eventoSelecionado],
+  );
+
+  const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
+    queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
+    enabled: !!eventoAtual,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensagens_evento_templates")
+        .select("id, mensagem")
+        .eq("evento_id", eventoAtual!.id)
+        .eq("evento_tipo", eventoAtual!.tipo)
+        .eq("tipo_mensagem", tipoMensagemSelecionada)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (!eventoAtual) {
+      setMensagemEvento("");
+      return;
+    }
+    setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
+  }, [eventoAtual, tipoMensagemSelecionada, templateAtual]);
+
+  const salvarMensagemEvento = useMutation({
+    mutationFn: async () => {
+      if (!eventoAtual) throw new Error("Selecione um evento");
+      const payload = {
+        evento_id: eventoAtual.id,
+        evento_tipo: eventoAtual.tipo,
+        tipo_mensagem: tipoMensagemSelecionada,
+        mensagem: mensagemEvento,
+      };
+      const { error } = await supabase
+        .from("mensagens_evento_templates")
+        .upsert(payload, { onConflict: "evento_id,evento_tipo,tipo_mensagem" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+      toast.success("Mensagem do evento salva com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao salvar mensagem: " + error.message);
+    },
+  });
+
+  const restaurarPadrao = useMutation({
+    mutationFn: async () => {
+      if (!eventoAtual) throw new Error("Selecione um evento");
+      const { error } = await supabase
+        .from("mensagens_evento_templates")
+        .delete()
+        .eq("evento_id", eventoAtual.id)
+        .eq("evento_tipo", eventoAtual.tipo)
+        .eq("tipo_mensagem", tipoMensagemSelecionada);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setMensagemEvento(TEMPLATES_PADRAO[tipoMensagemSelecionada]);
+      queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+      toast.success("Mensagem restaurada para o padrão");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao restaurar: " + error.message);
+    },
+  });
+
   if (loadingIgreja || loadingEventos || loadingHomepage) {
     return <div className="text-center py-8">Carregando...</div>;
   }
