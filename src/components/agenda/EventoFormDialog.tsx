@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign, CalendarIcon } from "lucide-react";
-import { Copy, MessageSquare } from "lucide-react";
+import { Copy, MessageSquare, Link as LinkIcon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
