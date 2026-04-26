@@ -1440,26 +1440,28 @@ export const EventoFormDialog = ({
                   Necessita inscrição antecipada
                 </Label>
               </div>
+            </div>
 
-              {formData.necessita_inscricao && (
-                <div className="space-y-1">
-                  <Label htmlFor="link_grupo_whatsapp" className="text-sm">
-                    Link do grupo de WhatsApp (opcional)
-                  </Label>
-                  <Input
-                    id="link_grupo_whatsapp"
-                    type="url"
-                    placeholder="https://chat.whatsapp.com/..."
-                    value={formData.link_grupo_whatsapp}
-                    onChange={(e) =>
-                      setFormData({ ...formData, link_grupo_whatsapp: e.target.value })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Este link será enviado por WhatsApp aos participantes quando o ADM marcar a inscrição como confirmada.
-                  </p>
-                </div>
-              )}
+            {/* Link de divulgação / grupo de WhatsApp (todos os eventos) */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+              <Label htmlFor="link_grupo_whatsapp" className="text-sm flex items-center gap-2">
+                <LinkIcon className="w-4 h-4" />
+                Link do evento ou grupo de WhatsApp (opcional)
+              </Label>
+              <Input
+                id="link_grupo_whatsapp"
+                type="url"
+                placeholder="https://chat.whatsapp.com/... ou https://forms.gle/..."
+                value={formData.link_grupo_whatsapp}
+                onChange={(e) =>
+                  setFormData({ ...formData, link_grupo_whatsapp: e.target.value })
+                }
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground">
+                Pode ser um link para grupo de WhatsApp, formulário externo ou página de informações.
+                Será enviado por WhatsApp e e-mail aos participantes quando o ADM confirmar a inscrição.
+              </p>
             </div>
 
             {/* Refeição */}
