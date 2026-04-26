@@ -1015,12 +1015,18 @@ serve(async (req) => {
 
     // ===== INSCRIÇÃO RECEBIDA (qualquer evento/módulo) =====
     if (action === 'inscricao_recebida') {
-      const { telefone, nome, tituloEvento } = body;
+      const { telefone, nome, tituloEvento, eventoId, eventoTipo } = body;
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
       const primeiroNome = String(nome).split(' ')[0];
-      const mensagem = MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
+      const customTemplate = await getCustomTemplate(
+        supabase,
+        eventoId,
+        (eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null),
+        'inscricao_recebida',
+      );
+      const mensagem = customTemplate || MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
       const r = await enfileirarComDedupe(supabase, {
         tipo: 'inscricao_recebida',
         destinatario_telefone: telefone,
