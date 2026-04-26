@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,15 +6,89 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2 } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
+
+type TipoMensagem =
+  | "confirmacao_inscricao"
+  | "inscricao_recebida"
+  | "lembrete_pagamento"
+  | "vaga_liberada";
+
+const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[] = [
+  { value: "confirmacao_inscricao", label: "Confirmação de inscrição", descricao: "Enviada quando o ADM confirma a inscrição" },
+  { value: "inscricao_recebida", label: "Inscrição recebida", descricao: "Enviada automaticamente ao se inscrever" },
+  { value: "lembrete_pagamento", label: "Lembrete de pagamento", descricao: "Enviada para quem está com pagamento pendente" },
+  { value: "vaga_liberada", label: "Vaga liberada (lista de espera)", descricao: "Enviada quando uma vaga é liberada" },
+];
+
+const TEMPLATES_PADRAO: Record<TipoMensagem, string> = {
+  confirmacao_inscricao: `✅ *INSCRIÇÃO CONFIRMADA!*
+
+Olá, {NOME}! 👋
+
+Sua inscrição para *{EVENTO}* foi recebida com sucesso!
+
+📅 *Data:* {DATA}
+📍 *Local:* {LOCAL}
+
+Em breve entraremos em contato com mais detalhes.
+
+Deus abençoe! 🙏
+
+_Igreja Gileade_ 💙`,
+  inscricao_recebida: `🙏 *Olá, {NOME}!*
+
+Somos da *Gileade Church*.
+
+Recebemos a sua inscrição para *{EVENTO}*. Lembre-se que para garantir a sua vaga, é preciso efetuar o pagamento do valor da inscrição.
+
+Dúvidas, por favor, chame nesse número! 💙
+
+_Igreja Gileade_`,
+  lembrete_pagamento: `⏰ *LEMBRETE DE PAGAMENTO*
+
+Olá, {NOME}! 👋
+
+Notamos que sua inscrição para *{EVENTO}* ainda está com pagamento pendente.
+
+📅 *Data:* {DATA}
+📍 *Local:* {LOCAL}
+
+Por favor, regularize seu pagamento para garantir sua vaga! 🙏
+
+_Igreja Gileade_ 💙`,
+  vaga_liberada: `🎉 *VAGA LIBERADA!*
+
+Olá, {NOME}! 👋
+
+Ótima notícia! Uma vaga foi liberada para *{EVENTO}* e você estava na lista de espera!
+
+✅ Sua inscrição foi automaticamente confirmada!
+
+Deus abençoe! 🙏
+
+_Igreja Gileade_ 💙`,
+};
 
 const HomepageConfigTab = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mensagemAniversario, setMensagemAniversario] = useState("");
   const [mensagemCarregada, setMensagemCarregada] = useState(false);
+
+  // Estado da seção "Mensagens de Eventos"
+  const [eventoSelecionado, setEventoSelecionado] = useState<string>("");
+  const [tipoMensagemSelecionada, setTipoMensagemSelecionada] = useState<TipoMensagem>("confirmacao_inscricao");
+  const [mensagemEvento, setMensagemEvento] = useState<string>("");
 
   const { data: homepageConfig, isLoading: loadingHomepage } = useQuery({
     queryKey: ["homepage-config-mensagem"],
