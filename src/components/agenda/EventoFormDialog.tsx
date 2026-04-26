@@ -1440,6 +1440,26 @@ export const EventoFormDialog = ({
                   Necessita inscrição antecipada
                 </Label>
               </div>
+
+              {formData.necessita_inscricao && (
+                <div className="space-y-1">
+                  <Label htmlFor="link_grupo_whatsapp" className="text-sm">
+                    Link do grupo de WhatsApp (opcional)
+                  </Label>
+                  <Input
+                    id="link_grupo_whatsapp"
+                    type="url"
+                    placeholder="https://chat.whatsapp.com/..."
+                    value={formData.link_grupo_whatsapp}
+                    onChange={(e) =>
+                      setFormData({ ...formData, link_grupo_whatsapp: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Este link será enviado por WhatsApp aos participantes quando o ADM marcar a inscrição como confirmada.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Refeição */}
