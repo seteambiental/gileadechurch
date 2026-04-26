@@ -11,6 +11,10 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl :
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
+// Logo oficial enviada como imagem em mensagens importantes
+const LOGO_GILEADE_URL =
+  'https://jwjmseeyjemfwgyizumk.supabase.co/storage/v1/object/public/logos/whatsapp/gileade-logo.jpeg';
+
 const versiculosAniversario = [
   { texto: "Porque eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz, e não de mal, para vos dar o fim que esperais.", referencia: "Jeremias 29:11" },
   { texto: "O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti e tenha misericórdia de ti.", referencia: "Números 6:24-25" },
@@ -61,8 +65,9 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
     console.warn("Falha ao verificar JID, tentando formato padrão:", err);
   }
 
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  console.log(`Enviando mensagem de aniversário para: ${jidFinal}`);
+  // Envia a logo da Igreja Gileade como imagem com a mensagem na legenda
+  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
+  console.log(`Enviando mensagem de aniversário (com logo) para: ${jidFinal}`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -72,7 +77,9 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
     },
     body: JSON.stringify({
       number: jidFinal,
-      text: mensagem,
+      mediatype: 'image',
+      media: LOGO_GILEADE_URL,
+      caption: mensagem,
     }),
   });
   

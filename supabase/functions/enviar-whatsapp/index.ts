@@ -12,6 +12,12 @@ const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl :
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
 const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
+// Logo oficial enviada como imagem nas mensagens importantes
+// (boas-vindas, inscrição recebida, confirmação de inscrição, cadastro aprovado, aniversário).
+// Mantida fora dos fluxos de massa (lembretes, vagas liberadas, escalas) para evitar spam.
+const LOGO_GILEADE_URL =
+  'https://jwjmseeyjemfwgyizumk.supabase.co/storage/v1/object/public/logos/whatsapp/gileade-logo.jpeg';
+
 // Pausa aleatória entre 5 e 15 segundos para envios em massa relacionados a
 // inscrições / cadastros / flyers / mensagens segmentadas, conforme política.
 function randomBulkDelayMs() {
@@ -227,7 +233,7 @@ serve(async (req) => {
 
       const mensagem = gerarMensagemBoasVindas(convertido.full_name, convertido.tipo_conversao);
       
-      await enviarMensagemEvolution(convertido.whatsapp, mensagem);
+      await enviarImagemEvolution(convertido.whatsapp, LOGO_GILEADE_URL, mensagem);
 
       await supabase.from('mensagens_whatsapp').insert({
         novo_convertido_id: convertidoId,
@@ -518,7 +524,7 @@ serve(async (req) => {
         ? `${customTemplate}${grupoWhatsappBlock}`
         : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
+      await enviarImagemEvolution(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -1032,6 +1038,7 @@ serve(async (req) => {
         destinatario_telefone: telefone,
         destinatario_nome: nome,
         conteudo: mensagem,
+        midia_url: LOGO_GILEADE_URL,
       });
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -1052,6 +1059,7 @@ serve(async (req) => {
         destinatario_nome: nome,
         destinatario_member_id: memberId || null,
         conteudo: mensagem,
+        midia_url: LOGO_GILEADE_URL,
       });
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
