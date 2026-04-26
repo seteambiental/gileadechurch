@@ -321,6 +321,7 @@ export const EventoFormDialog = ({
           vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
+          link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
         });
         const existingCampos = (evento as any).campos_formulario;
         setCamposFormulario(Array.isArray(existingCampos) ? existingCampos : [...ALL_CAMPOS_KEYS]);
@@ -369,6 +370,7 @@ export const EventoFormDialog = ({
           vagas_nao_membro: "",
           vagas_familia: "",
           vagas_equipe: "",
+          link_grupo_whatsapp: "",
         });
         setCamposFormulario([...ALL_CAMPOS_KEYS]);
         setAmbientesExtras([]);
