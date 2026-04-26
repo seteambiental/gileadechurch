@@ -898,27 +898,26 @@ const InscricaoEvento = () => {
                         </div>
                         <div className="space-y-2 md:space-y-3">
                           <Label htmlFor="telResponsavel" className="text-base md:text-lg">Telefone do Responsável *</Label>
-                          <div className="relative">
+                          {responsavelTelLocked ? (
+                            <div className="relative">
+                              <Input
+                                id="telResponsavel"
+                                value={maskPhoneDisplay(telefoneResponsavel)}
+                                readOnly
+                                tabIndex={-1}
+                                className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                              />
+                              <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            </div>
+                          ) : (
                             <Input
                               id="telResponsavel"
-                              type={responsavelTelRevealed ? "text" : "password"}
-                              value={responsavelTelRevealed ? telefoneResponsavel : maskPhoneDisplay(telefoneResponsavel)}
+                              value={telefoneResponsavel}
                               onChange={(e) => setTelefoneResponsavel(formatPhone(e.target.value))}
-                              onFocus={() => setResponsavelTelRevealed(true)}
                               placeholder="(00) 00000-0000"
-                              className="h-10 md:h-14 text-base md:text-lg pr-12"
+                              className="h-10 md:h-14 text-base md:text-lg"
                             />
-                            {telefoneResponsavel && (
-                              <button
-                                type="button"
-                                onClick={() => setResponsavelTelRevealed((v) => !v)}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                                aria-label={responsavelTelRevealed ? "Ocultar telefone" : "Mostrar telefone"}
-                              >
-                                {responsavelTelRevealed ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
-                              </button>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     )}
