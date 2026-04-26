@@ -250,6 +250,11 @@ const InscricaoEvento = () => {
     if (person.tipo_pessoa === "member") {
       setMembroMinisterio("gileade");
     }
+    // Hide sensitive prefilled fields by default for privacy
+    setCpfRevealed(!person.cpf);
+    setTelefoneRevealed(!person.whatsapp);
+    setEmergenciaRevealed(true);
+    setResponsavelTelRevealed(true);
     setShowSearch(false);
     setSearchTerm("");
   };
@@ -296,6 +301,10 @@ const InscricaoEvento = () => {
   const handleNewPerson = () => {
     setSelectedPerson({ type: "novo" });
     setShowSearch(false);
+    setCpfRevealed(true);
+    setTelefoneRevealed(true);
+    setEmergenciaRevealed(true);
+    setResponsavelTelRevealed(true);
   };
 
   // Mutation to create inscription
