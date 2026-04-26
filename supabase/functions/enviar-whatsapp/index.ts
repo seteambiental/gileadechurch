@@ -431,6 +431,17 @@ serve(async (req) => {
         throw new Error('Telefone não cadastrado na inscrição');
       }
 
+      // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
+      let linkGrupoWhatsapp: string | null = evento?.link_grupo_whatsapp || null;
+      if (!linkGrupoWhatsapp && inscricao.evento_id) {
+        const { data: eventoDb } = await supabase
+          .from('agenda_igreja')
+          .select('link_grupo_whatsapp')
+          .eq('id', inscricao.evento_id)
+          .maybeSingle();
+        linkGrupoWhatsapp = eventoDb?.link_grupo_whatsapp || null;
+      }
+
       const primeiroNome = inscricao.nome_participante.split(' ')[0];
       const dataFormatada = evento?.data_evento 
         ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
@@ -464,7 +475,11 @@ serve(async (req) => {
         observacoesEspeciais += `\n💊 Medicamento: ${inscricao.descricao_medicamento}`;
       }
 
-      const mensagem = `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+      const grupoWhatsappBlock = linkGrupoWhatsapp
+        ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
+        : '';
+
+      const mensagem = `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
