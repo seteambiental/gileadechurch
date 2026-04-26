@@ -28,6 +28,35 @@ const MENSAGEM_INSCRICAO_RECEBIDA = (primeiroNome: string, tituloEvento?: string
 const MENSAGEM_CADASTRO_APROVADO = (primeiroNome: string) =>
   `🎉 *Olá, ${primeiroNome}!*\n\nSomos da *Gileade Church*.\n\nSeja bem-vindo(a) à família Gileade! Estamos felizes por receber o seu cadastro de membro.\n\nLembre-se: você é muito especial para nós. 💙\n\n_Igreja Gileade_`;
 
+// Busca um template personalizado configurado em Configurações Gerais.
+// Retorna a string da mensagem ou null se não existir/erro.
+async function getCustomTemplate(
+  supabaseClient: any,
+  eventoId: string | null | undefined,
+  eventoTipo: 'agenda' | 'impacto' | null | undefined,
+  tipoMensagem: 'confirmacao_inscricao' | 'inscricao_recebida' | 'lembrete_pagamento' | 'vaga_liberada',
+): Promise<string | null> {
+  if (!eventoId) return null;
+  try {
+    const query = supabaseClient
+      .from('mensagens_evento_templates')
+      .select('mensagem, evento_tipo')
+      .eq('evento_id', eventoId)
+      .eq('tipo_mensagem', tipoMensagem);
+    const { data, error } = eventoTipo
+      ? await query.eq('evento_tipo', eventoTipo).maybeSingle()
+      : await query.limit(1).maybeSingle();
+    if (error) {
+      console.warn('Erro ao buscar template personalizado:', error.message);
+      return null;
+    }
+    return data?.mensagem || null;
+  } catch (e) {
+    console.warn('Falha ao buscar template personalizado:', e);
+    return null;
+  }
+}
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
@@ -479,7 +508,15 @@ serve(async (req) => {
         ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
         : '';
 
-      const mensagem = `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+      const customTemplate = await getCustomTemplate(
+        supabase,
+        inscricao.evento_id,
+        'agenda',
+        'confirmacao_inscricao',
+      );
+      const mensagem = customTemplate
+        ? `${customTemplate}${grupoWhatsappBlock}`
+        : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -517,7 +554,14 @@ serve(async (req) => {
           })
         : '';
 
-      const mensagem = `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+      const customTemplate = await getCustomTemplate(
+        supabase,
+        inscricao.evento_id,
+        'agenda',
+        'vaga_liberada',
+      );
+      const mensagem = customTemplate
+        || `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -555,7 +599,14 @@ serve(async (req) => {
           })
         : '';
 
-      const mensagem = `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
+      const customTemplate = await getCustomTemplate(
+        supabase,
+        inscricao.evento_id,
+        'agenda',
+        'lembrete_pagamento',
+      );
+      const mensagem = customTemplate
+        || `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -964,12 +1015,18 @@ serve(async (req) => {
 
     // ===== INSCRIÇÃO RECEBIDA (qualquer evento/módulo) =====
     if (action === 'inscricao_recebida') {
-      const { telefone, nome, tituloEvento } = body;
+      const { telefone, nome, tituloEvento, eventoId, eventoTipo } = body;
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
       const primeiroNome = String(nome).split(' ')[0];
-      const mensagem = MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
+      const customTemplate = await getCustomTemplate(
+        supabase,
+        eventoId,
+        (eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null),
+        'inscricao_recebida',
+      );
+      const mensagem = customTemplate || MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
       const r = await enfileirarComDedupe(supabase, {
         tipo: 'inscricao_recebida',
         destinatario_telefone: telefone,
