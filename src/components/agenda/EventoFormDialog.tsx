@@ -673,6 +673,9 @@ export const EventoFormDialog = ({
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
         necessita_inscricao: formData.necessita_inscricao,
+        link_grupo_whatsapp: formData.necessita_inscricao && formData.link_grupo_whatsapp
+          ? formData.link_grupo_whatsapp.trim()
+          : null,
         ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
         campos_formulario: formData.necessita_inscricao ? camposFormulario : null,
       };
