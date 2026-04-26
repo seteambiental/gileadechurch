@@ -720,10 +720,10 @@ const InscricaoEvento = () => {
                       setTelefoneContato("");
                       setCpf("");
                       setTelefoneEmergencia("");
-                      setCpfRevealed(true);
-                      setTelefoneRevealed(true);
-                      setEmergenciaRevealed(true);
-                      setResponsavelTelRevealed(true);
+                      setCpfLocked(false);
+                      setTelefoneLocked(false);
+                      setEmergenciaLocked(false);
+                      setResponsavelTelLocked(false);
                     }}
                   >
                     ← Voltar para busca
