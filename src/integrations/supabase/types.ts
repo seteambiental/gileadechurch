@@ -4982,6 +4982,36 @@ export type Database = {
           },
         ]
       }
+      mensagens_evento_templates: {
+        Row: {
+          created_at: string
+          evento_id: string
+          evento_tipo: string
+          id: string
+          mensagem: string
+          tipo_mensagem: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          evento_tipo: string
+          id?: string
+          mensagem: string
+          tipo_mensagem: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          evento_tipo?: string
+          id?: string
+          mensagem?: string
+          tipo_mensagem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mensagens_whatsapp: {
         Row: {
           conteudo: string
