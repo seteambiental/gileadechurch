@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home } from "lucide-react";
+import { Loader2, Calendar, Clock, MapPin, Check, Maximize2, Minimize2, Home, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -82,6 +82,30 @@ const InscricaoEvento = () => {
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
+
+  // Privacy: when data is auto-filled from a found person, sensitive fields
+  // (CPF, phones) are visually masked until the user chooses to reveal/edit them.
+  const [cpfRevealed, setCpfRevealed] = useState(true);
+  const [telefoneRevealed, setTelefoneRevealed] = useState(true);
+  const [emergenciaRevealed, setEmergenciaRevealed] = useState(true);
+  const [responsavelTelRevealed, setResponsavelTelRevealed] = useState(true);
+
+  // Mask helpers — keep last digits visible, replace the rest with •
+  const maskCpfDisplay = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 4) return value;
+    // Show first 3 digits, mask middle, show last 2: 123.•••.•••-45
+    const first = digits.slice(0, 3);
+    const last = digits.slice(-2);
+    return `${first}.•••.•••-${last}`;
+  };
+  const maskPhoneDisplay = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length < 4) return value;
+    const last = digits.slice(-4);
+    // (••) •••••-1234
+    return `(••) •••••-${last}`;
+  };
 
   // Toggle browser fullscreen
   const toggleFullscreen = () => {
