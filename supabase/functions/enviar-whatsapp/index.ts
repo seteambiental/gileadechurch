@@ -233,7 +233,7 @@ serve(async (req) => {
 
       const mensagem = gerarMensagemBoasVindas(convertido.full_name, convertido.tipo_conversao);
       
-      await enviarMensagemEvolution(convertido.whatsapp, mensagem);
+      await enviarImagemEvolution(convertido.whatsapp, LOGO_GILEADE_URL, mensagem);
 
       await supabase.from('mensagens_whatsapp').insert({
         novo_convertido_id: convertidoId,
@@ -524,7 +524,7 @@ serve(async (req) => {
         ? `${customTemplate}${grupoWhatsappBlock}`
         : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
+      await enviarImagemEvolution(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
