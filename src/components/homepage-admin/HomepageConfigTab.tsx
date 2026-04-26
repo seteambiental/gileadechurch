@@ -463,6 +463,124 @@ const HomepageConfigTab = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mensagens de Eventos (WhatsApp) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Mensagens de Eventos (WhatsApp)
+          </CardTitle>
+          <CardDescription>
+            Edite as mensagens enviadas automaticamente aos participantes para cada evento.
+            <br />
+            Se nenhuma mensagem personalizada for definida, será usada a mensagem padrão do sistema.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Evento</Label>
+              <Select value={eventoSelecionado} onValueChange={setEventoSelecionado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um evento..." />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {eventosOptions.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      Nenhum evento encontrado
+                    </div>
+                  ) : (
+                    eventosOptions.map((e) => (
+                      <SelectItem key={e.key} value={e.key}>
+                        {e.label}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de mensagem</Label>
+              <Select
+                value={tipoMensagemSelecionada}
+                onValueChange={(v) => setTipoMensagemSelecionada(v as TipoMensagem)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIPOS_MENSAGEM.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {TIPOS_MENSAGEM.find((t) => t.value === tipoMensagemSelecionada)?.descricao}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="mensagem-evento">Mensagem</Label>
+              {templateAtual && (
+                <Badge variant="secondary" className="text-xs">
+                  Personalizada
+                </Badge>
+              )}
+            </div>
+            <Textarea
+              id="mensagem-evento"
+              value={mensagemEvento}
+              onChange={(e) => setMensagemEvento(e.target.value)}
+              placeholder={
+                eventoAtual
+                  ? "Digite a mensagem personalizada..."
+                  : "Selecione um evento para editar a mensagem"
+              }
+              disabled={!eventoAtual || loadingTemplate}
+              rows={14}
+              className="font-mono text-sm"
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <p className="text-xs text-muted-foreground">
+              Use *texto* para <strong>negrito</strong> e _texto_ para <em>itálico</em> no WhatsApp
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => restaurarPadrao.mutate()}
+                disabled={!eventoAtual || !templateAtual || restaurarPadrao.isPending}
+              >
+                {restaurarPadrao.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                )}
+                Restaurar padrão
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => salvarMensagemEvento.mutate()}
+                disabled={!eventoAtual || !mensagemEvento.trim() || salvarMensagemEvento.isPending}
+              >
+                {salvarMensagemEvento.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                Salvar Mensagem
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
