@@ -28,6 +28,35 @@ const MENSAGEM_INSCRICAO_RECEBIDA = (primeiroNome: string, tituloEvento?: string
 const MENSAGEM_CADASTRO_APROVADO = (primeiroNome: string) =>
   `🎉 *Olá, ${primeiroNome}!*\n\nSomos da *Gileade Church*.\n\nSeja bem-vindo(a) à família Gileade! Estamos felizes por receber o seu cadastro de membro.\n\nLembre-se: você é muito especial para nós. 💙\n\n_Igreja Gileade_`;
 
+// Busca um template personalizado configurado em Configurações Gerais.
+// Retorna a string da mensagem ou null se não existir/erro.
+async function getCustomTemplate(
+  supabaseClient: any,
+  eventoId: string | null | undefined,
+  eventoTipo: 'agenda' | 'impacto' | null | undefined,
+  tipoMensagem: 'confirmacao_inscricao' | 'inscricao_recebida' | 'lembrete_pagamento' | 'vaga_liberada',
+): Promise<string | null> {
+  if (!eventoId) return null;
+  try {
+    const query = supabaseClient
+      .from('mensagens_evento_templates')
+      .select('mensagem, evento_tipo')
+      .eq('evento_id', eventoId)
+      .eq('tipo_mensagem', tipoMensagem);
+    const { data, error } = eventoTipo
+      ? await query.eq('evento_tipo', eventoTipo).maybeSingle()
+      : await query.limit(1).maybeSingle();
+    if (error) {
+      console.warn('Erro ao buscar template personalizado:', error.message);
+      return null;
+    }
+    return data?.mensagem || null;
+  } catch (e) {
+    console.warn('Falha ao buscar template personalizado:', e);
+    return null;
+  }
+}
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
