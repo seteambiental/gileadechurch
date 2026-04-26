@@ -65,8 +65,9 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
     console.warn("Falha ao verificar JID, tentando formato padrão:", err);
   }
 
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  console.log(`Enviando mensagem de aniversário para: ${jidFinal}`);
+  // Envia a logo da Igreja Gileade como imagem com a mensagem na legenda
+  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
+  console.log(`Enviando mensagem de aniversário (com logo) para: ${jidFinal}`);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -76,7 +77,9 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
     },
     body: JSON.stringify({
       number: jidFinal,
-      text: mensagem,
+      mediatype: 'image',
+      media: LOGO_GILEADE_URL,
+      caption: mensagem,
     }),
   });
   
