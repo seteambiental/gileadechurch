@@ -184,7 +184,7 @@ const HomepageConfigTab = () => {
         .from("agenda_igreja")
         .select("id, titulo, data_evento, necessita_inscricao")
         .eq("ativo", true)
-        .order("data_evento", { ascending: false });
+        .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
     },
@@ -196,26 +196,46 @@ const HomepageConfigTab = () => {
       const { data, error } = await supabase
         .from("impacto_eventos")
         .select("id, nome, data_inicio")
-        .order("data_inicio", { ascending: false });
+        .order("data_inicio", { ascending: true });
       if (error) throw error;
       return data || [];
     },
   });
 
   const eventosOptions = useMemo(() => {
+    const fmtData = (d: string | null | undefined) => {
+      if (!d) return "";
+      const [y, m, day] = String(d).split("T")[0].split("-");
+      if (!y || !m || !day) return "";
+      return `${day}/${m}/${y.slice(2)}`;
+    };
     const agenda = (eventosAgenda || []).map((e: any) => ({
       key: `agenda:${e.id}`,
       id: e.id,
       tipo: "agenda" as const,
       label: `📅 ${e.titulo}`,
+      titulo: e.titulo,
+      data: e.data_evento as string | null,
+      dataLabel: fmtData(e.data_evento),
     }));
     const impacto = (eventosImpacto || []).map((e: any) => ({
       key: `impacto:${e.id}`,
       id: e.id,
       tipo: "impacto" as const,
       label: `🎯 ${e.nome}`,
+      titulo: e.nome,
+      data: e.data_inicio as string | null,
+      dataLabel: fmtData(e.data_inicio),
     }));
-    return [...agenda, ...impacto];
+    const all = [...agenda, ...impacto];
+    // Ordem cronológica ascendente; sem data vai pro fim
+    all.sort((a, b) => {
+      if (!a.data && !b.data) return 0;
+      if (!a.data) return 1;
+      if (!b.data) return -1;
+      return a.data.localeCompare(b.data);
+    });
+    return all;
   }, [eventosAgenda, eventosImpacto]);
 
   const eventoAtual = useMemo(
@@ -505,7 +525,14 @@ const HomepageConfigTab = () => {
                   ) : (
                     eventosOptions.map((e) => (
                       <SelectItem key={e.key} value={e.key}>
-                        {e.label}
+                        <span className="flex items-center justify-between gap-3 w-full">
+                          <span className="truncate">{e.label}</span>
+                          {e.dataLabel && (
+                            <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                              {e.dataLabel}
+                            </span>
+                          )}
+                        </span>
                       </SelectItem>
                     ))
                   )}
