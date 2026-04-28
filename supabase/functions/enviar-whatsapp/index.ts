@@ -34,6 +34,16 @@ const MENSAGEM_INSCRICAO_RECEBIDA = (primeiroNome: string, tituloEvento?: string
 const MENSAGEM_CADASTRO_APROVADO = (primeiroNome: string) =>
   `🎉 *Olá, ${primeiroNome}!*\n\nSomos da *Gileade Church*.\n\nSeja bem-vindo(a) à família Gileade! Estamos felizes por receber o seu cadastro de membro.\n\nLembre-se: você é muito especial para nós. 💙\n\n_Igreja Gileade_`;
 
+// Telefone(s) que recebem notificação interna de novas inscrições.
+// Vanderlei Aparecido Pedro – administrador responsável.
+const ADMIN_NOTIF_INSCRICAO_TELEFONES = ['41991735186'];
+
+const MENSAGEM_ADMIN_NOVA_INSCRICAO = (
+  nomeInscrito: string,
+  tituloEvento?: string | null,
+) =>
+  `🆕 *Nova inscrição recebida*\n\n👤 ${nomeInscrito}${tituloEvento ? `\n📌 ${tituloEvento}` : ''}\n\n_Sistema Gileade_`;
+
 // Busca um template personalizado configurado em Configurações Gerais.
 // Retorna a string da mensagem ou null se não existir/erro.
 async function getCustomTemplate(
@@ -1040,6 +1050,27 @@ serve(async (req) => {
         conteudo: mensagem,
         midia_url: LOGO_GILEADE_URL,
       });
+
+      // Notifica administrador(es) sobre a nova inscrição (texto curto, sem mídia).
+      const msgAdmin = MENSAGEM_ADMIN_NOVA_INSCRICAO(String(nome), tituloEvento);
+      for (const adminTel of ADMIN_NOTIF_INSCRICAO_TELEFONES) {
+        try {
+          await enfileirarComDedupe(
+            supabase,
+            {
+              tipo: 'admin_nova_inscricao',
+              destinatario_telefone: adminTel,
+              destinatario_nome: 'Admin',
+              conteudo: msgAdmin,
+              evento_id: eventoId || null,
+            },
+            1, // janela curta de dedupe (1h) — evita duplicar mas permite novas inscrições
+          );
+        } catch (e) {
+          console.warn('Falha ao enfileirar notificação admin:', e);
+        }
+      }
+
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
