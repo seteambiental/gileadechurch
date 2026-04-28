@@ -432,6 +432,7 @@ const InscricaoEvento = () => {
               data_evento: evento?.data_evento,
               hora_inicio: evento?.hora_inicio,
               local: evento?.local,
+              link_grupo_whatsapp: (evento as any)?.link_grupo_whatsapp || null,
             },
           },
         });
