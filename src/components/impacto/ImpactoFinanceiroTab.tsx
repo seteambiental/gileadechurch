@@ -554,12 +554,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   };
 
   const handleExportReceitasExcel = async () => {
-    if (!inscricoes.length) return;
-    await exportGenericToExcel(inscricoes, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas", pendingRowStyle);
+    if (!inscricoesFiltradas.length) return;
+    await exportGenericToExcel(inscricoesFiltradas, getExportColumnsReceitas(), `Financeiro_${eventoNomeFinanceiro}`, "Receitas", pendingRowStyle);
   };
 
   const handleExportReceitasPDF = () => {
-    if (!inscricoes.length) return;
+    if (!inscricoesFiltradas.length) return;
 
     const doc = new jsPDF({ orientation: "landscape" });
 
@@ -608,7 +608,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     // Build table data using same columns as screen
     const exportCols = getExportColumnsReceitas();
     const tableHeaders = exportCols.map((c) => c.header);
-    const tableData = inscricoes.map((row) =>
+    const tableData = inscricoesFiltradas.map((row) =>
       exportCols.map((col) => {
         const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
         if (col.type === 'currency') return formatCurrency(Number(value) || 0);
@@ -620,7 +620,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     // Total row
     const totalsRow = exportCols.map((col) => {
       if (!col.type) return "";
-      const sum = inscricoes.reduce((s, row) => {
+      const sum = inscricoesFiltradas.reduce((s, row) => {
         const value = typeof col.accessor === "function" ? col.accessor(row) : row[col.accessor as string];
         return s + (Number(value) || 0);
       }, 0);
