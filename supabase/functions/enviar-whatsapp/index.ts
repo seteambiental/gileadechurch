@@ -1050,6 +1050,27 @@ serve(async (req) => {
         conteudo: mensagem,
         midia_url: LOGO_GILEADE_URL,
       });
+
+      // Notifica administrador(es) sobre a nova inscrição (texto curto, sem mídia).
+      const msgAdmin = MENSAGEM_ADMIN_NOVA_INSCRICAO(String(nome), tituloEvento);
+      for (const adminTel of ADMIN_NOTIF_INSCRICAO_TELEFONES) {
+        try {
+          await enfileirarComDedupe(
+            supabase,
+            {
+              tipo: 'admin_nova_inscricao',
+              destinatario_telefone: adminTel,
+              destinatario_nome: 'Admin',
+              conteudo: msgAdmin,
+              evento_id: eventoId || null,
+            },
+            1, // janela curta de dedupe (1h) — evita duplicar mas permite novas inscrições
+          );
+        } catch (e) {
+          console.warn('Falha ao enfileirar notificação admin:', e);
+        }
+      }
+
       return new Response(JSON.stringify({ success: true, ...r }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
