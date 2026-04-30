@@ -171,6 +171,8 @@ const NovasInscricoesTab = () => {
           telefone: inscricao.telefone_contato,
           nome: inscricao.nome_participante,
           tituloEvento: inscricao.evento?.titulo || null,
+          eventoId: inscricao.evento_id,
+          eventoTipo: "agenda",
         });
       } catch (waErr) {
         console.warn("[novasInscricoes] disparo whatsapp falhou:", waErr);
@@ -296,6 +298,8 @@ const NovasInscricoesTab = () => {
             telefone: inscricao.telefone_contato,
             nome: inscricao.nome_participante,
             tituloEvento: inscricao.evento?.titulo || null,
+            eventoId: inscricao.evento_id,
+            eventoTipo: "agenda",
           });
         } catch (waErr) {
           console.warn("[novasInscricoes/lote] disparo whatsapp falhou:", waErr);

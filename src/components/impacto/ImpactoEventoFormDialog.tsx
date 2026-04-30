@@ -82,6 +82,7 @@ const formSchema = z.object({
   tem_custo: z.boolean().optional(),
   valores_por_tipo: z.record(z.string(), z.string()).optional(),
   prefixo_referencia: z.string().optional(),
+  link_grupo_whatsapp: z.string().optional(),
   campos_formulario: z.array(z.string()).optional(),
 });
 
@@ -121,6 +122,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       tem_custo: false,
       valores_por_tipo: {},
       prefixo_referencia: "",
+      link_grupo_whatsapp: "",
       campos_formulario: [...ALL_CAMPOS_KEYS],
     },
   });
@@ -140,6 +142,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: evento.tem_custo || false,
         valores_por_tipo: evento.valores_por_tipo || {},
         prefixo_referencia: evento.prefixo_referencia || "",
+        link_grupo_whatsapp: evento.link_grupo_whatsapp || "",
         campos_formulario: evento.campos_formulario || [...ALL_CAMPOS_KEYS],
       });
     } else if (open && !evento) {
@@ -156,6 +159,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: false,
         valores_por_tipo: {},
         prefixo_referencia: "",
+        link_grupo_whatsapp: "",
         campos_formulario: [...ALL_CAMPOS_KEYS],
       });
     }
@@ -176,6 +180,7 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         tem_custo: values.tem_custo || false,
         valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
         prefixo_referencia: values.prefixo_referencia || null,
+        link_grupo_whatsapp: values.link_grupo_whatsapp?.trim() || null,
         campos_formulario: values.campos_formulario || ALL_CAMPOS_KEYS,
       };
 
@@ -399,6 +404,20 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
                   <FormLabel>Descrição</FormLabel>
                   <FormControl>
                     <Textarea placeholder="Descrição do evento..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="link_grupo_whatsapp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link do Grupo de WhatsApp</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://chat.whatsapp.com/..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

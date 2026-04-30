@@ -124,6 +124,8 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           telefone: manualPhone,
           nome: nomeNorm,
           tituloEvento: eventoTitulo,
+          eventoId,
+          eventoTipo: "impacto",
         });
       } else {
         if (!selectedMember) throw new Error("Selecione um membro");
@@ -162,6 +164,8 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           telefone: selectedMember.whatsapp,
           nome: selectedMember.full_name,
           tituloEvento: eventoTitulo,
+          eventoId,
+          eventoTipo: "impacto",
         });
       }
     },
