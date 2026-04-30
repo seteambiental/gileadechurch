@@ -439,7 +439,76 @@ const NovasInscricoesTab = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
+        <>
+          <div className="space-y-3 md:hidden">
+            {filtradas.map((inscricao) => (
+              <Card key={inscricao.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10 shrink-0">
+                      {inscricao.member?.photo_url ? (
+                        <AvatarImage src={inscricao.member.photo_url} alt={inscricao.nome_participante} />
+                      ) : null}
+                      <AvatarFallback className="text-xs">{(inscricao.nome_participante || "?")[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div>
+                        <div className="font-medium leading-tight text-foreground">{inscricao.nome_participante}</div>
+                        {inscricao.telefone_contato && (
+                          <div className="text-xs text-muted-foreground mt-1">{inscricao.telefone_contato}</div>
+                        )}
+                      </div>
+                      <div className="text-sm leading-snug">
+                        <div className="font-medium">{inscricao.evento?.titulo || "—"}</div>
+                        {inscricao.evento?.data_evento && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {format(parseLocalDate(inscricao.evento.data_evento), "dd/MM/yyyy", { locale: ptBR })}
+                            {inscricao.evento.data_fim && inscricao.evento.data_fim !== inscricao.evento.data_evento
+                              ? ` → ${format(parseLocalDate(inscricao.evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}`
+                              : ""}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <Badge variant="outline">
+                          {TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || "membro"] || inscricao.tipo_inscricao}
+                        </Badge>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => approveMutation.mutate(inscricao.id)}
+                            disabled={approvingIds.has(inscricao.id)}
+                            title="Aprovar inscrição"
+                            aria-label="Aprovar inscrição"
+                          >
+                            {approvingIds.has(inscricao.id) ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setRejectingId(inscricao.id)}
+                            title="Rejeitar inscrição"
+                            aria-label="Rejeitar inscrição"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card className="hidden md:block overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
