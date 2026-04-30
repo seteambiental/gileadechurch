@@ -8,6 +8,8 @@ export async function dispararMensagemInscricaoRecebida(params: {
   telefone?: string | null;
   nome?: string | null;
   tituloEvento?: string | null;
+  eventoId?: string | null;
+  eventoTipo?: "agenda" | "impacto" | null;
 }) {
   try {
     const tel = (params.telefone || "").replace(/\D/g, "");
@@ -19,6 +21,8 @@ export async function dispararMensagemInscricaoRecebida(params: {
         telefone: tel,
         nome,
         tituloEvento: params.tituloEvento || null,
+        eventoId: params.eventoId || null,
+        eventoTipo: params.eventoTipo || null,
       },
     });
   } catch (err) {
