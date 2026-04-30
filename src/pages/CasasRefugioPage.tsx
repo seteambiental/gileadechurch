@@ -120,6 +120,74 @@ const CasasRefugioPage = () => {
     },
   });
 
+  // Total de membros cadastrados (não excluídos)
+  const { data: totalMembros = 0 } = useQuery({
+    queryKey: ["total-membros-ativos"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("members")
+        .select("id", { count: "exact", head: true })
+        .neq("excluido", true);
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const [exportingSemCR, setExportingSemCR] = useState(false);
+
+  const handleExportSemCR = async () => {
+    try {
+      setExportingSemCR(true);
+      const { data, error } = await supabase
+        .from("members")
+        .select("full_name, address, neighborhood, city, state, cep, whatsapp, birth_date")
+        .is("casa_refugio_id", null)
+        .neq("excluido", true)
+        .order("full_name");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.info("Todos os membros já estão vinculados a uma Casa Refúgio.");
+        return;
+      }
+      const today = new Date();
+      const rows = data.map((m: any) => {
+        const enderecoPartes = [m.address, m.neighborhood, m.city, m.state, m.cep].filter(Boolean);
+        let idade: number | string = "";
+        if (m.birth_date) {
+          try {
+            idade = differenceInYears(today, parseLocalDate(m.birth_date));
+          } catch {
+            idade = "";
+          }
+        }
+        return {
+          full_name: m.full_name || "",
+          endereco: enderecoPartes.join(", "),
+          whatsapp: m.whatsapp || "",
+          idade,
+        };
+      });
+      const columns: ExportColumn[] = [
+        { header: "Nome", accessor: "full_name" },
+        { header: "Endereço Completo", accessor: "endereco" },
+        { header: "WhatsApp", accessor: "whatsapp" },
+        { header: "Idade", accessor: "idade" },
+      ];
+      await exportGenericToExcel(
+        rows,
+        columns,
+        `membros-sem-casa-refugio-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        "Sem Casa Refúgio"
+      );
+      toast.success(`Relatório gerado com ${rows.length} membro(s).`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao gerar relatório: " + (e?.message || "desconhecido"));
+    } finally {
+      setExportingSemCR(false);
+    }
+  };
+
   // Helper para obter o nome do supervisor de uma casa
   const getSupervisorName = (casa: CasaRefugioExtended) => {
     return casa.supervisor?.full_name || casa.supervisores || null;
