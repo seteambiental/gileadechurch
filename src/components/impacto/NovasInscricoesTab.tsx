@@ -477,7 +477,7 @@ const NovasInscricoesTab = () => {
                           <Button
                             size="icon"
                             variant="outline"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            className="text-primary hover:text-primary hover:bg-primary/10"
                             onClick={() => approveMutation.mutate(inscricao.id)}
                             disabled={approvingIds.has(inscricao.id)}
                             title="Aprovar inscrição"
@@ -566,7 +566,7 @@ const NovasInscricoesTab = () => {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                        className="text-primary hover:text-primary hover:bg-primary/10"
                         onClick={() => approveMutation.mutate(inscricao.id)}
                         disabled={approvingIds.has(inscricao.id)}
                         title="Aprovar inscrição"
