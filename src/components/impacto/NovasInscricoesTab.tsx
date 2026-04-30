@@ -136,26 +136,11 @@ const NovasInscricoesTab = () => {
         }
       }
 
-      // Create a mirror record in impacto_inscricoes so the referência trigger fires
-      const { error: insertError } = await supabase
-        .from("impacto_inscricoes")
-        .insert({
-          evento_id: impactoEventoId,
-          nome: inscricao.nome_participante,
-          telefone: inscricao.telefone_contato,
-          telefone_emergencia: inscricao.telefone_emergencia || null,
-          nome_responsavel: inscricao.nome_responsavel || null,
-          telefone_responsavel: inscricao.telefone_responsavel || null,
-          tipo_inscricao: inscricao.tipo_inscricao || "membro",
-          genero: generoResolvido,
-          valor_inscricao: valorInscricao,
-          status_pagamento: "pendente",
-          member_id: inscricao.member_id || null,
-          aprovado: true,
-        });
-      if (insertError) throw insertError;
+      // The mirror record in impacto_inscricoes will be created automatically
+      // by the sync_inscricao_evento_to_impacto trigger when we mark aprovado=true.
+      // Manually inserting here causes duplicate key violations.
 
-      // Mark the original public record as approved
+      // Mark the original public record as approved (trigger handles the mirror)
       const { error } = await supabase
         .from("inscricoes_eventos")
         .update({
@@ -164,6 +149,23 @@ const NovasInscricoesTab = () => {
         })
         .eq("id", id);
       if (error) throw error;
+
+      // Best-effort: enrich the mirror record with extra fields the trigger doesn't set
+      try {
+        await supabase
+          .from("impacto_inscricoes")
+          .update({
+            genero: generoResolvido,
+            valor_inscricao: valorInscricao,
+            telefone_emergencia: inscricao.telefone_emergencia || null,
+            nome_responsavel: inscricao.nome_responsavel || null,
+            telefone_responsavel: inscricao.telefone_responsavel || null,
+          })
+          .eq("evento_id", impactoEventoId)
+          .eq("member_id", inscricao.member_id || "00000000-0000-0000-0000-000000000000");
+      } catch (e) {
+        console.warn("[novasInscricoes] enrich mirror falhou:", e);
+      }
 
       // Best-effort whatsapp
       try {
@@ -265,21 +267,10 @@ const NovasInscricoesTab = () => {
           }
         }
 
-        const { error: insertError } = await supabase.from("impacto_inscricoes").insert({
-          evento_id: impactoEventoId,
-          nome: inscricao.nome_participante,
-          telefone: inscricao.telefone_contato,
-          telefone_emergencia: inscricao.telefone_emergencia || null,
-          nome_responsavel: inscricao.nome_responsavel || null,
-          telefone_responsavel: inscricao.telefone_responsavel || null,
-          tipo_inscricao: inscricao.tipo_inscricao || "membro",
-          genero: generoResolvido,
-          valor_inscricao: valorInscricao,
-          status_pagamento: "pendente",
-          member_id: inscricao.member_id || null,
-          aprovado: true,
-        });
-        if (insertError) throw insertError;
+        // Mirror is created by the trigger; just persist context for post-update enrichment
+        (inscricao as any).__impactoEventoId = impactoEventoId;
+        (inscricao as any).__generoResolvido = generoResolvido;
+        (inscricao as any).__valorInscricao = valorInscricao;
       }
 
       const { error } = await supabase
@@ -290,6 +281,27 @@ const NovasInscricoesTab = () => {
         })
         .in("id", ids);
       if (error) throw error;
+
+      // Enrich mirror records (best-effort)
+      for (const inscricao of toApprove) {
+        const impactoEventoId = (inscricao as any).__impactoEventoId;
+        if (!impactoEventoId) continue;
+        try {
+          await supabase
+            .from("impacto_inscricoes")
+            .update({
+              genero: (inscricao as any).__generoResolvido,
+              valor_inscricao: (inscricao as any).__valorInscricao,
+              telefone_emergencia: inscricao.telefone_emergencia || null,
+              nome_responsavel: inscricao.nome_responsavel || null,
+              telefone_responsavel: inscricao.telefone_responsavel || null,
+            })
+            .eq("evento_id", impactoEventoId)
+            .eq("member_id", inscricao.member_id || "00000000-0000-0000-0000-000000000000");
+        } catch (e) {
+          console.warn("[novasInscricoes/lote] enrich mirror falhou:", e);
+        }
+      }
 
       // Best-effort whatsapp para cada inscrição aprovada em lote
       for (const inscricao of toApprove) {
