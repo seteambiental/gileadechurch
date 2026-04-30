@@ -509,15 +509,7 @@ serve(async (req) => {
       }
 
       // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
-      let linkGrupoWhatsapp: string | null = evento?.link_grupo_whatsapp || null;
-      if (!linkGrupoWhatsapp && inscricao.evento_id) {
-        const { data: eventoDb } = await supabase
-          .from('agenda_igreja')
-          .select('link_grupo_whatsapp')
-          .eq('id', inscricao.evento_id)
-          .maybeSingle();
-        linkGrupoWhatsapp = eventoDb?.link_grupo_whatsapp || null;
-      }
+      const linkGrupoWhatsapp = evento?.link_grupo_whatsapp || await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda');
 
       const primeiroNome = inscricao.nome_participante.split(' ')[0];
       const dataFormatada = evento?.data_evento 
@@ -1068,13 +1060,20 @@ serve(async (req) => {
         throw new Error('Telefone e nome são obrigatórios');
       }
       const primeiroNome = String(nome).split(' ')[0];
+      const resolvedEventoTipo = eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null;
       const customTemplate = await getCustomTemplate(
         supabase,
         eventoId,
-        (eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null),
+        resolvedEventoTipo,
         'inscricao_recebida',
       );
-      const mensagem = customTemplate || MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento);
+      const linkGrupoWhatsapp = await getLinkGrupoWhatsapp(supabase, eventoId, resolvedEventoTipo);
+      const grupoWhatsappBlock = linkGrupoWhatsapp
+        ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
+        : '';
+      const mensagem = customTemplate
+        ? `${customTemplate}${grupoWhatsappBlock}`
+        : `${MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento)}${grupoWhatsappBlock}`;
       const r = await enfileirarComDedupe(supabase, {
         tipo: 'inscricao_recebida',
         destinatario_telefone: telefone,
