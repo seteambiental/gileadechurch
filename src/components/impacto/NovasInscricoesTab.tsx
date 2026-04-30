@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -71,6 +71,12 @@ const NovasInscricoesTab = () => {
       return (data || []) as any[];
     },
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      queryClient.setQueryData(["inscricoes-eventos-pending-count"], novasInscricoes.length);
+    }
+  }, [isLoading, novasInscricoes.length, queryClient]);
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -191,6 +197,7 @@ const NovasInscricoesTab = () => {
       });
       toast.success("Inscrição aprovada!");
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes-financeiro"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
@@ -321,6 +328,7 @@ const NovasInscricoesTab = () => {
     onSuccess: () => {
       toast.success("Todas as inscrições foram aprovadas!");
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes-financeiro"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
@@ -341,6 +349,7 @@ const NovasInscricoesTab = () => {
       toast.success("Inscrição rejeitada e removida.");
       setRejectingId(null);
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
     },
     onError: () => toast.error("Erro ao rejeitar inscrição."),
   });
