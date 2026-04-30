@@ -509,7 +509,7 @@ const NovasInscricoesTab = () => {
           </div>
 
           <Card className="hidden md:block overflow-hidden">
-          <Table>
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
@@ -591,8 +591,9 @@ const NovasInscricoesTab = () => {
                 </TableRow>
               ))}
             </TableBody>
-          </Table>
-        </Card>
+            </Table>
+          </Card>
+        </>
       )}
 
       <AlertDialog open={!!rejectingId} onOpenChange={(o) => !o && setRejectingId(null)}>
