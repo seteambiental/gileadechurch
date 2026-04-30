@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart, Sparkles, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchInput } from "@/components/ui/search-input";
@@ -21,6 +21,10 @@ import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialo
 import { EncontrosReportDialog } from "@/components/casas-refugio/EncontrosReportDialog";
 import { CrExpressTab } from "@/components/casas-refugio/CrExpressTab";
 import { includesNormalized } from "@/lib/text-utils";
+import { exportGenericToExcel, ExportColumn } from "@/lib/export";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
+import { toast } from "sonner";
 interface CasaRefugio {
   id: string;
   name: string;
@@ -115,6 +119,74 @@ const CasasRefugioPage = () => {
       return data || [];
     },
   });
+
+  // Total de membros cadastrados (não excluídos)
+  const { data: totalMembros = 0 } = useQuery({
+    queryKey: ["total-membros-ativos"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("members")
+        .select("id", { count: "exact", head: true })
+        .neq("excluido", true);
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+
+  const [exportingSemCR, setExportingSemCR] = useState(false);
+
+  const handleExportSemCR = async () => {
+    try {
+      setExportingSemCR(true);
+      const { data, error } = await supabase
+        .from("members")
+        .select("full_name, address, neighborhood, city, state, cep, whatsapp, birth_date")
+        .is("casa_refugio_id", null)
+        .neq("excluido", true)
+        .order("full_name");
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        toast.info("Todos os membros já estão vinculados a uma Casa Refúgio.");
+        return;
+      }
+      const today = new Date();
+      const rows = data.map((m: any) => {
+        const enderecoPartes = [m.address, m.neighborhood, m.city, m.state, m.cep].filter(Boolean);
+        let idade: number | string = "";
+        if (m.birth_date) {
+          try {
+            idade = differenceInYears(today, parseLocalDate(m.birth_date));
+          } catch {
+            idade = "";
+          }
+        }
+        return {
+          full_name: m.full_name || "",
+          endereco: enderecoPartes.join(", "),
+          whatsapp: m.whatsapp || "",
+          idade,
+        };
+      });
+      const columns: ExportColumn[] = [
+        { header: "Nome", accessor: "full_name" },
+        { header: "Endereço Completo", accessor: "endereco" },
+        { header: "WhatsApp", accessor: "whatsapp" },
+        { header: "Idade", accessor: "idade" },
+      ];
+      await exportGenericToExcel(
+        rows,
+        columns,
+        `membros-sem-casa-refugio-${new Date().toISOString().slice(0, 10)}.xlsx`,
+        "Sem Casa Refúgio"
+      );
+      toast.success(`Relatório gerado com ${rows.length} membro(s).`);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao gerar relatório: " + (e?.message || "desconhecido"));
+    } finally {
+      setExportingSemCR(false);
+    }
+  };
 
   // Helper para obter o nome do supervisor de uma casa
   const getSupervisorName = (casa: CasaRefugioExtended) => {
@@ -278,8 +350,12 @@ const CasasRefugioPage = () => {
           const filteredCondominios = new Set(filteredCasas.map(c => c.condominio).filter(Boolean));
           const filteredSupervisores = new Set(filteredCasas.map(c => getSupervisorName(c)).filter(Boolean));
           const filteredMembros = membrosPorCasa.filter(m => filteredIds.has(m.casa_refugio_id)).length;
+          const totalEmCR = membrosPorCasa.length;
+          const percentualEmCR = totalMembros > 0 ? (totalEmCR / totalMembros) * 100 : 0;
+          const semCR = Math.max(totalMembros - totalEmCR, 0);
           return (
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <p className="text-2xl font-bold text-foreground">{filteredCasas.length}</p>
                 <p className="text-xs text-muted-foreground">Casas</p>
@@ -296,7 +372,30 @@ const CasasRefugioPage = () => {
                 <p className="text-2xl font-bold text-foreground">{filteredMembros}</p>
                 <p className="text-xs text-muted-foreground">Membros</p>
               </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-primary">{percentualEmCR.toFixed(1)}%</p>
+                <p className="text-xs text-muted-foreground">
+                  Em CR ({totalEmCR}/{totalMembros})
+                </p>
+              </div>
             </div>
+            <div className="flex justify-end mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportSemCR}
+                disabled={exportingSemCR}
+                className="gap-2"
+              >
+                {exportingSemCR ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4" />
+                )}
+                Membros sem CR ({semCR})
+              </Button>
+            </div>
+            </>
           );
         })()}
 
