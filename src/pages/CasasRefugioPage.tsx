@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Home, Filter, X, Calendar, Users, FileBarChart, Sparkles, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchInput } from "@/components/ui/search-input";
@@ -21,6 +21,10 @@ import { EncontroFormDialog } from "@/components/casas-refugio/EncontroFormDialo
 import { EncontrosReportDialog } from "@/components/casas-refugio/EncontrosReportDialog";
 import { CrExpressTab } from "@/components/casas-refugio/CrExpressTab";
 import { includesNormalized } from "@/lib/text-utils";
+import { exportGenericToExcel, ExportColumn } from "@/lib/export";
+import { differenceInYears } from "date-fns";
+import { parseLocalDate } from "@/lib/date-utils";
+import { toast } from "sonner";
 interface CasaRefugio {
   id: string;
   name: string;
