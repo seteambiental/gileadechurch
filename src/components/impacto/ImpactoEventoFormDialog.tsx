@@ -412,6 +412,20 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
 
             <FormField
               control={form.control}
+              name="link_grupo_whatsapp"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link do Grupo de WhatsApp</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://chat.whatsapp.com/..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
               name="tipos_inscricao"
               render={({ field }) => (
                 <FormItem>
