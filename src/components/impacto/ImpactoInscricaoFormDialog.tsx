@@ -90,7 +90,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_eventos")
-        .select("titulo, tipos_inscricao, tem_custo, valor_inscricao, valores_por_tipo")
+        .select("titulo, tipos_inscricao, tem_custo, valor_inscricao, valores_por_tipo, link_grupo_whatsapp")
         .eq("id", eventoId)
         .single();
       if (error) throw error;
