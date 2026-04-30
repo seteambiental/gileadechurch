@@ -350,8 +350,12 @@ const CasasRefugioPage = () => {
           const filteredCondominios = new Set(filteredCasas.map(c => c.condominio).filter(Boolean));
           const filteredSupervisores = new Set(filteredCasas.map(c => getSupervisorName(c)).filter(Boolean));
           const filteredMembros = membrosPorCasa.filter(m => filteredIds.has(m.casa_refugio_id)).length;
+          const totalEmCR = membrosPorCasa.length;
+          const percentualEmCR = totalMembros > 0 ? (totalEmCR / totalMembros) * 100 : 0;
+          const semCR = Math.max(totalMembros - totalEmCR, 0);
           return (
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <p className="text-2xl font-bold text-foreground">{filteredCasas.length}</p>
                 <p className="text-xs text-muted-foreground">Casas</p>
@@ -368,7 +372,30 @@ const CasasRefugioPage = () => {
                 <p className="text-2xl font-bold text-foreground">{filteredMembros}</p>
                 <p className="text-xs text-muted-foreground">Membros</p>
               </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-primary">{percentualEmCR.toFixed(1)}%</p>
+                <p className="text-xs text-muted-foreground">
+                  Em CR ({totalEmCR}/{totalMembros})
+                </p>
+              </div>
             </div>
+            <div className="flex justify-end mb-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportSemCR}
+                disabled={exportingSemCR}
+                className="gap-2"
+              >
+                {exportingSemCR ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <FileDown className="w-4 h-4" />
+                )}
+                Membros sem CR ({semCR})
+              </Button>
+            </div>
+            </>
           );
         })()}
 
