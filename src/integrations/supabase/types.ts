@@ -3028,6 +3028,7 @@ export type Database = {
           finalizado_por: string | null
           id: string
           limite_vagas: number | null
+          link_grupo_whatsapp: string | null
           local: string | null
           prefixo_referencia: string | null
           tem_custo: boolean | null
@@ -3050,6 +3051,7 @@ export type Database = {
           finalizado_por?: string | null
           id?: string
           limite_vagas?: number | null
+          link_grupo_whatsapp?: string | null
           local?: string | null
           prefixo_referencia?: string | null
           tem_custo?: boolean | null
@@ -3072,6 +3074,7 @@ export type Database = {
           finalizado_por?: string | null
           id?: string
           limite_vagas?: number | null
+          link_grupo_whatsapp?: string | null
           local?: string | null
           prefixo_referencia?: string | null
           tem_custo?: boolean | null
