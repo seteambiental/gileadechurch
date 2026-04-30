@@ -38,6 +38,14 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   equipe: "Equipe",
 };
 
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return String((error as { message?: unknown }).message || "Erro desconhecido");
+  }
+  return "Tente novamente ou verifique a inscrição.";
+};
+
 const NovasInscricoesTab = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -203,13 +211,14 @@ const NovasInscricoesTab = () => {
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     },
-    onError: (_, id) => {
+    onError: (error, id) => {
+      console.error("[novasInscricoes] erro ao aprovar inscrição:", error);
       setApprovingIds((prev) => {
         const s = new Set(prev);
         s.delete(id);
         return s;
       });
-      toast.error("Erro ao aprovar inscrição.");
+      toast.error("Erro ao aprovar inscrição.", { description: getErrorMessage(error) });
     },
   });
 
@@ -334,7 +343,10 @@ const NovasInscricoesTab = () => {
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     },
-    onError: () => toast.error("Erro ao aprovar inscrições."),
+    onError: (error) => {
+      console.error("[novasInscricoes/lote] erro ao aprovar inscrições:", error);
+      toast.error("Erro ao aprovar inscrições.", { description: getErrorMessage(error) });
+    },
   });
 
   const rejectMutation = useMutation({
