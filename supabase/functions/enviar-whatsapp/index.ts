@@ -562,14 +562,8 @@ serve(async (req) => {
       // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
       const linkGrupoWhatsapp = evento?.link_grupo_whatsapp || await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda');
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
       
       const horaFormatada = evento?.hora_inicio ? ` às ${evento.hora_inicio.substring(0, 5)}` : '';
       
@@ -606,7 +600,16 @@ serve(async (req) => {
         'confirmacao_inscricao',
       );
       const mensagem = customTemplate
-        ? `${customTemplate}${grupoWhatsappBlock}`
+        ? `${preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            hora: horaFormatada.trim(),
+            local: evento?.local,
+            formaPagamento: formaPagamentoLabel,
+            preferencia: belicheLabel,
+            responsavel: inscricao.nome_responsavel,
+          })}${grupoWhatsappBlock}`
         : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarImagemEvolution(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
