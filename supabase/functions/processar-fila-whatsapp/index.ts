@@ -50,7 +50,7 @@ async function enviarTextoEvolution(telefone: string, mensagem: string) {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
     body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
+      number: phoneFormatted,
       text: mensagem,
     }),
   });
@@ -70,7 +70,7 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
     body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
+      number: phoneFormatted,
       mediatype: "image",
       media: imageUrl,
       caption: caption || "",
