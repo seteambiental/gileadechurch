@@ -56,7 +56,8 @@ async function enviarTextoEvolution(telefone: string, mensagem: string) {
   });
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(result?.message || result?.error || `HTTP ${resp.status}`);
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result?.message || result?.error || `HTTP ${resp.status}: ${detail}`);
   }
   return result;
 }
