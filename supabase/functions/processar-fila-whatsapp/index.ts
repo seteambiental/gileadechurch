@@ -135,6 +135,22 @@ async function prepararConteudoFila(supabase: any, item: any) {
   });
 }
 
+// Garantia final: nenhum placeholder crítico pode escapar para o WhatsApp.
+// Se {NOME}/{NOME_COMPLETO}/{EVENTO} continuarem após o preenchimento, lança erro
+// para que o item caia em retry/descartado em vez de ser enviado "vazio".
+const PLACEHOLDERS_CRITICOS = ["NOME", "NOME_COMPLETO", "EVENTO"];
+export function validarPlaceholdersResolvidos(texto: string) {
+  const restantes = PLACEHOLDERS_CRITICOS.filter((chave) =>
+    new RegExp(`\\{\\s*${chave}\\s*\\}`, "i").test(texto)
+  );
+  if (restantes.length > 0) {
+    throw new Error(
+      `Placeholders não substituídos: ${restantes.map((c) => `{${c}}`).join(", ")}`,
+    );
+  }
+}
+export { preencherTemplate, prepararConteudoFila };
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
