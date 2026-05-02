@@ -1113,7 +1113,7 @@ serve(async (req) => {
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
-      const primeiroNome = String(nome).split(' ')[0];
+      const primeiroNome = primeiroNomeDe(String(nome));
       const resolvedEventoTipo = eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null;
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -1126,7 +1126,10 @@ serve(async (req) => {
         ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
         : '';
       const mensagem = customTemplate
-        ? `${customTemplate}${grupoWhatsappBlock}`
+        ? `${preencherTemplate(customTemplate, {
+            nomeCompleto: String(nome),
+            evento: tituloEvento,
+          })}${grupoWhatsappBlock}`
         : `${MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento)}${grupoWhatsappBlock}`;
       const r = await enfileirarComDedupe(supabase, {
         tipo: 'inscricao_recebida',
