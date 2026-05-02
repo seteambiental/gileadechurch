@@ -156,6 +156,20 @@ function preencherTemplate(
   }, template);
 }
 
+// Garantia final: nenhum placeholder crítico pode escapar para o WhatsApp.
+const PLACEHOLDERS_CRITICOS = ['NOME', 'NOME_COMPLETO', 'EVENTO'];
+function validarPlaceholdersResolvidos(texto: string) {
+  const restantes = PLACEHOLDERS_CRITICOS.filter((chave) =>
+    new RegExp(`\\{\\s*${chave}\\s*\\}`, 'i').test(texto)
+  );
+  if (restantes.length > 0) {
+    throw new Error(
+      `Placeholders não substituídos: ${restantes.map((c) => `{${c}}`).join(', ')}`,
+    );
+  }
+}
+export { preencherTemplate, validarPlaceholdersResolvidos, primeiroNomeDe };
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
@@ -173,6 +187,7 @@ const versiculosReconciliacao = [
 ];
 
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
+  validarPlaceholdersResolvidos(mensagem);
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
@@ -204,6 +219,7 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
 }
 
 async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
+  if (caption) validarPlaceholdersResolvidos(caption);
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   
