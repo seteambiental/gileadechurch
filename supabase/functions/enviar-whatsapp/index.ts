@@ -639,14 +639,8 @@ serve(async (req) => {
         throw new Error('Telefone não cadastrado');
       }
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
 
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -655,7 +649,13 @@ serve(async (req) => {
         'vaga_liberada',
       );
       const mensagem = customTemplate
-        || `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+        ? preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            local: evento?.local,
+          })
+        : `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -684,14 +684,8 @@ serve(async (req) => {
         throw new Error('Telefone não cadastrado');
       }
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
 
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -700,7 +694,13 @@ serve(async (req) => {
         'lembrete_pagamento',
       );
       const mensagem = customTemplate
-        || `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
+        ? preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            local: evento?.local,
+          })
+        : `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
