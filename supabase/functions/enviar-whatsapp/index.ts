@@ -105,6 +105,57 @@ async function getLinkGrupoWhatsapp(
   return null;
 }
 
+function primeiroNomeDe(nome?: string | null) {
+  return (nome || '').trim().split(/\s+/)[0] || '';
+}
+
+function formatarDataPt(data?: string | null) {
+  if (!data) return '';
+  try {
+    return new Date(data).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  } catch {
+    return data;
+  }
+}
+
+function preencherTemplate(
+  template: string,
+  vars: {
+    nomeCompleto?: string | null;
+    nome?: string | null;
+    evento?: string | null;
+    data?: string | null;
+    hora?: string | null;
+    local?: string | null;
+    formaPagamento?: string | null;
+    preferencia?: string | null;
+    responsavel?: string | null;
+  },
+) {
+  const nomeCompleto = (vars.nomeCompleto || vars.nome || '').trim();
+  const primeiroNome = primeiroNomeDe(nomeCompleto);
+  const valores: Record<string, string> = {
+    NOME_COMPLETO: nomeCompleto,
+    NOME: primeiroNome || nomeCompleto,
+    EVENTO: vars.evento || 'o evento',
+    DATA: vars.data || '',
+    HORA: vars.hora || '',
+    LOCAL: vars.local || 'A confirmar',
+    FORMA_PAGAMENTO: vars.formaPagamento || '',
+    PAGAMENTO: vars.formaPagamento || '',
+    PREFERENCIA: vars.preferencia || '',
+    RESPONSAVEL: vars.responsavel || '',
+  };
+
+  return Object.entries(valores).reduce((texto, [chave, valor]) => {
+    return texto.replace(new RegExp(`\\{\\s*${chave}\\s*\\}`, 'gi'), valor);
+  }, template);
+}
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
