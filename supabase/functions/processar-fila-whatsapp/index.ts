@@ -231,6 +231,15 @@ Deno.serve(async (req) => {
       try {
         const conteudoFinal = await prepararConteudoFila(supabase, item);
         validarPlaceholdersResolvidos(conteudoFinal);
+        const conteudoOriginal = String(item.conteudo || "");
+        const houveSubstituicao = conteudoOriginal !== conteudoFinal;
+        console.log(
+          `[fila ${item.id}] tipo=${item.tipo} para=${item.destinatario_telefone} (${item.destinatario_nome || "sem nome"})\n` +
+          `  evento_id=${item.evento_id || "—"} midia=${item.midia_url ? "sim" : "não"} tentativa=${tentativaAtual}\n` +
+          `  ORIGINAL (${conteudoOriginal.length} chars): ${JSON.stringify(conteudoOriginal).slice(0, 600)}\n` +
+          `  FINAL    (${conteudoFinal.length} chars): ${JSON.stringify(conteudoFinal).slice(0, 600)}\n` +
+          `  substituiu_placeholders=${houveSubstituicao}`
+        );
         if (item.midia_url) {
           await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
         } else {
