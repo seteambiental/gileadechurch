@@ -172,7 +172,7 @@ Deno.serve(async (req) => {
 
       try {
         if (item.midia_url) {
-          await enviarImagemEvolution(item.destinatario_telefone, item.midia_url, item.conteudo);
+          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, item.conteudo);
         } else {
           await enviarTextoEvolution(item.destinatario_telefone, item.conteudo);
         }
