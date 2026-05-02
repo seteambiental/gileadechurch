@@ -94,6 +94,47 @@ async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, 
   }
 }
 
+function primeiroNomeDe(nome?: string | null) {
+  return (nome || "").trim().split(/\s+/)[0] || "";
+}
+
+function preencherTemplate(template: string, vars: { nome?: string | null; evento?: string | null }) {
+  const nomeCompleto = (vars.nome || "").trim();
+  const primeiroNome = primeiroNomeDe(nomeCompleto);
+  const valores: Record<string, string> = {
+    NOME_COMPLETO: nomeCompleto,
+    NOME: primeiroNome || nomeCompleto,
+    EVENTO: vars.evento || "o evento",
+  };
+
+  return Object.entries(valores).reduce((texto, [chave, valor]) => {
+    return texto.replace(new RegExp(`\\{\\s*${chave}\\s*\\}`, "gi"), valor);
+  }, template);
+}
+
+async function buscarTituloEvento(supabase: any, eventoId?: string | null) {
+  if (!eventoId) return null;
+  for (const tabela of ["agenda_igreja", "impacto_eventos"]) {
+    const { data, error } = await supabase
+      .from(tabela)
+      .select("titulo")
+      .eq("id", eventoId)
+      .maybeSingle();
+    if (!error && data?.titulo) return data.titulo as string;
+  }
+  return null;
+}
+
+async function prepararConteudoFila(supabase: any, item: any) {
+  const conteudo = String(item.conteudo || "");
+  if (!/\{\s*(NOME|NOME_COMPLETO|EVENTO)\s*\}/i.test(conteudo)) return conteudo;
+  const tituloEvento = await buscarTituloEvento(supabase, item.evento_id);
+  return preencherTemplate(conteudo, {
+    nome: item.destinatario_nome,
+    evento: tituloEvento,
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -172,10 +213,11 @@ Deno.serve(async (req) => {
       const tentativaAtual = (item.tentativas || 0) + 1;
 
       try {
+        const conteudoFinal = await prepararConteudoFila(supabase, item);
         if (item.midia_url) {
-          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, item.conteudo);
+          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
         } else {
-          await enviarTextoEvolution(item.destinatario_telefone, item.conteudo);
+          await enviarTextoEvolution(item.destinatario_telefone, conteudoFinal);
         }
 
         // Sucesso: marca enviado e registra em comunicacao_envios
@@ -186,6 +228,7 @@ Deno.serve(async (req) => {
             tentativas: tentativaAtual,
             enviado_em: new Date().toISOString(),
             ultimo_erro: null,
+            conteudo: conteudoFinal,
           })
           .eq("id", item.id);
 
@@ -195,7 +238,7 @@ Deno.serve(async (req) => {
           destinatario_telefone: item.destinatario_telefone,
           destinatario_nome: item.destinatario_nome,
           destinatario_member_id: item.destinatario_member_id,
-          conteudo: item.conteudo,
+          conteudo: conteudoFinal,
           midia_url: item.midia_url,
           evento_id: item.evento_id,
           iniciado_por: item.iniciado_por,
