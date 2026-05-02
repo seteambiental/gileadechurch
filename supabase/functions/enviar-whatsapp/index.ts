@@ -228,10 +228,21 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
   console.log('Resposta Evolution imagem:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || result.error || 'Erro ao enviar imagem');
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result.message || result.error || `Erro ao enviar imagem: ${detail}`);
   }
   
   return result;
+}
+
+async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
+  try {
+    return await enviarImagemEvolution(telefone, imageUrl, caption);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
+    return await enviarMensagemEvolution(telefone, caption);
+  }
 }
 
 function gerarMensagemBoasVindas(nome: string, tipoConversao: string) {
