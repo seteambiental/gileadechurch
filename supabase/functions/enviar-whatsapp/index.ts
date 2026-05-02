@@ -1149,6 +1149,7 @@ serve(async (req) => {
         destinatario_nome: nome,
         conteudo: mensagem,
         midia_url: LOGO_GILEADE_URL,
+        evento_id: eventoId || null,
       });
 
       // Notifica administrador(es) sobre a nova inscrição (texto curto, sem mídia).
