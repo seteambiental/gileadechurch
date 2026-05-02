@@ -105,6 +105,57 @@ async function getLinkGrupoWhatsapp(
   return null;
 }
 
+function primeiroNomeDe(nome?: string | null) {
+  return (nome || '').trim().split(/\s+/)[0] || '';
+}
+
+function formatarDataPt(data?: string | null) {
+  if (!data) return '';
+  try {
+    return new Date(data).toLocaleDateString('pt-BR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    });
+  } catch {
+    return data;
+  }
+}
+
+function preencherTemplate(
+  template: string,
+  vars: {
+    nomeCompleto?: string | null;
+    nome?: string | null;
+    evento?: string | null;
+    data?: string | null;
+    hora?: string | null;
+    local?: string | null;
+    formaPagamento?: string | null;
+    preferencia?: string | null;
+    responsavel?: string | null;
+  },
+) {
+  const nomeCompleto = (vars.nomeCompleto || vars.nome || '').trim();
+  const primeiroNome = primeiroNomeDe(nomeCompleto);
+  const valores: Record<string, string> = {
+    NOME_COMPLETO: nomeCompleto,
+    NOME: primeiroNome || nomeCompleto,
+    EVENTO: vars.evento || 'o evento',
+    DATA: vars.data || '',
+    HORA: vars.hora || '',
+    LOCAL: vars.local || 'A confirmar',
+    FORMA_PAGAMENTO: vars.formaPagamento || '',
+    PAGAMENTO: vars.formaPagamento || '',
+    PREFERENCIA: vars.preferencia || '',
+    RESPONSAVEL: vars.responsavel || '',
+  };
+
+  return Object.entries(valores).reduce((texto, [chave, valor]) => {
+    return texto.replace(new RegExp(`\\{\\s*${chave}\\s*\\}`, 'gi'), valor);
+  }, template);
+}
+
 const versiculosBoasVindas = [
   { texto: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", referencia: "João 3:16" },
   { texto: "Vinde a mim, todos os que estais cansados e oprimidos, e eu vos aliviarei.", referencia: "Mateus 11:28" },
@@ -145,7 +196,8 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result.message || result.error || `Erro ao enviar mensagem: ${detail}`);
   }
   
   return result;
@@ -177,10 +229,21 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
   console.log('Resposta Evolution imagem:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || result.error || 'Erro ao enviar imagem');
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result.message || result.error || `Erro ao enviar imagem: ${detail}`);
   }
   
   return result;
+}
+
+async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
+  try {
+    return await enviarImagemEvolution(telefone, imageUrl, caption);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
+    return await enviarMensagemEvolution(telefone, caption);
+  }
 }
 
 function gerarMensagemBoasVindas(nome: string, tipoConversao: string) {
@@ -275,7 +338,7 @@ serve(async (req) => {
 
       const mensagem = gerarMensagemBoasVindas(convertido.full_name, convertido.tipo_conversao);
       
-      await enviarImagemEvolution(convertido.whatsapp, LOGO_GILEADE_URL, mensagem);
+      await enviarImagemComFallbackTexto(convertido.whatsapp, LOGO_GILEADE_URL, mensagem);
 
       await supabase.from('mensagens_whatsapp').insert({
         novo_convertido_id: convertidoId,
@@ -511,14 +574,8 @@ serve(async (req) => {
       // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
       const linkGrupoWhatsapp = evento?.link_grupo_whatsapp || await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda');
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
       
       const horaFormatada = evento?.hora_inicio ? ` às ${evento.hora_inicio.substring(0, 5)}` : '';
       
@@ -555,10 +612,19 @@ serve(async (req) => {
         'confirmacao_inscricao',
       );
       const mensagem = customTemplate
-        ? `${customTemplate}${grupoWhatsappBlock}`
+        ? `${preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            hora: horaFormatada.trim(),
+            local: evento?.local,
+            formaPagamento: formaPagamentoLabel,
+            preferencia: belicheLabel,
+            responsavel: inscricao.nome_responsavel,
+          })}${grupoWhatsappBlock}`
         : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarImagemEvolution(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
+      await enviarImagemComFallbackTexto(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
 
       return new Response(JSON.stringify({ 
         success: true, 
@@ -585,14 +651,8 @@ serve(async (req) => {
         throw new Error('Telefone não cadastrado');
       }
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
 
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -601,7 +661,13 @@ serve(async (req) => {
         'vaga_liberada',
       );
       const mensagem = customTemplate
-        || `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+        ? preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            local: evento?.local,
+          })
+        : `🎉 *VAGA LIBERADA!*\n\nOlá, ${primeiroNome}! 👋\n\nÓtima notícia! Uma vaga foi liberada para *${evento?.titulo || 'o evento'}* e você estava na lista de espera!\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n✅ Sua inscrição foi automaticamente confirmada!\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -630,14 +696,8 @@ serve(async (req) => {
         throw new Error('Telefone não cadastrado');
       }
 
-      const primeiroNome = inscricao.nome_participante.split(' ')[0];
-      const dataFormatada = evento?.data_evento 
-        ? new Date(evento.data_evento).toLocaleDateString('pt-BR', { 
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long' 
-          })
-        : '';
+      const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
+      const dataFormatada = formatarDataPt(evento?.data_evento);
 
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -646,7 +706,13 @@ serve(async (req) => {
         'lembrete_pagamento',
       );
       const mensagem = customTemplate
-        || `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
+        ? preencherTemplate(customTemplate, {
+            nomeCompleto: inscricao.nome_participante,
+            evento: evento?.titulo,
+            data: dataFormatada,
+            local: evento?.local,
+          })
+        : `⏰ *LEMBRETE DE PAGAMENTO*\n\nOlá, ${primeiroNome}! 👋\n\nNotamos que sua inscrição para *${evento?.titulo || 'o evento'}* ainda está com pagamento pendente.\n\n📅 *Data:* ${dataFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\nPor favor, regularize seu pagamento para garantir sua vaga! 🙏\n\nQualquer dúvida, estamos à disposição.\n\n_Igreja Gileade_ 💙`;
       
       await enviarMensagemEvolution(inscricao.telefone_contato, mensagem);
 
@@ -1059,7 +1125,7 @@ serve(async (req) => {
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
-      const primeiroNome = String(nome).split(' ')[0];
+      const primeiroNome = primeiroNomeDe(String(nome));
       const resolvedEventoTipo = eventoTipo === 'impacto' ? 'impacto' : eventoTipo === 'agenda' ? 'agenda' : null;
       const customTemplate = await getCustomTemplate(
         supabase,
@@ -1072,7 +1138,10 @@ serve(async (req) => {
         ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
         : '';
       const mensagem = customTemplate
-        ? `${customTemplate}${grupoWhatsappBlock}`
+        ? `${preencherTemplate(customTemplate, {
+            nomeCompleto: String(nome),
+            evento: tituloEvento,
+          })}${grupoWhatsappBlock}`
         : `${MENSAGEM_INSCRICAO_RECEBIDA(primeiroNome, tituloEvento)}${grupoWhatsappBlock}`;
       const r = await enfileirarComDedupe(supabase, {
         tipo: 'inscricao_recebida',
@@ -1080,6 +1149,7 @@ serve(async (req) => {
         destinatario_nome: nome,
         conteudo: mensagem,
         midia_url: LOGO_GILEADE_URL,
+        evento_id: eventoId || null,
       });
 
       // Notifica administrador(es) sobre a nova inscrição (texto curto, sem mídia).

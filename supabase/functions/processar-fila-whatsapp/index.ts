@@ -56,7 +56,8 @@ async function enviarTextoEvolution(telefone: string, mensagem: string) {
   });
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(result?.message || result?.error || `HTTP ${resp.status}`);
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result?.message || result?.error || `HTTP ${resp.status}: ${detail}`);
   }
   return result;
 }
@@ -77,9 +78,20 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
   });
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(result?.message || result?.error || `HTTP ${resp.status}`);
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result?.message || result?.error || `HTTP ${resp.status}: ${detail}`);
   }
   return result;
+}
+
+async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
+  try {
+    return await enviarImagemEvolution(telefone, imageUrl, caption);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
+    return await enviarTextoEvolution(telefone, caption);
+  }
 }
 
 Deno.serve(async (req) => {
@@ -161,7 +173,7 @@ Deno.serve(async (req) => {
 
       try {
         if (item.midia_url) {
-          await enviarImagemEvolution(item.destinatario_telefone, item.midia_url, item.conteudo);
+          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, item.conteudo);
         } else {
           await enviarTextoEvolution(item.destinatario_telefone, item.conteudo);
         }
