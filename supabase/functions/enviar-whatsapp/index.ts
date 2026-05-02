@@ -187,7 +187,7 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
       'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
+      number: phoneFormatted,
       text: mensagem,
     }),
   });
@@ -218,7 +218,7 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
       'apikey': EVOLUTION_API_KEY || '',
     },
     body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
+      number: phoneFormatted,
       mediatype: 'image',
       media: imageUrl,
       caption: caption || '',
