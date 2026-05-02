@@ -213,10 +213,11 @@ Deno.serve(async (req) => {
       const tentativaAtual = (item.tentativas || 0) + 1;
 
       try {
+        const conteudoFinal = await prepararConteudoFila(supabase, item);
         if (item.midia_url) {
-          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, item.conteudo);
+          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
         } else {
-          await enviarTextoEvolution(item.destinatario_telefone, item.conteudo);
+          await enviarTextoEvolution(item.destinatario_telefone, conteudoFinal);
         }
 
         // Sucesso: marca enviado e registra em comunicacao_envios
@@ -227,6 +228,7 @@ Deno.serve(async (req) => {
             tentativas: tentativaAtual,
             enviado_em: new Date().toISOString(),
             ultimo_erro: null,
+            conteudo: conteudoFinal,
           })
           .eq("id", item.id);
 
@@ -236,7 +238,7 @@ Deno.serve(async (req) => {
           destinatario_telefone: item.destinatario_telefone,
           destinatario_nome: item.destinatario_nome,
           destinatario_member_id: item.destinatario_member_id,
-          conteudo: item.conteudo,
+          conteudo: conteudoFinal,
           midia_url: item.midia_url,
           evento_id: item.evento_id,
           iniciado_por: item.iniciado_por,
