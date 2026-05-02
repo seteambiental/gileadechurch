@@ -230,6 +230,7 @@ Deno.serve(async (req) => {
 
       try {
         const conteudoFinal = await prepararConteudoFila(supabase, item);
+        validarPlaceholdersResolvidos(conteudoFinal);
         if (item.midia_url) {
           await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
         } else {
