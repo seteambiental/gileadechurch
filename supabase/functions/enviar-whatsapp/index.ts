@@ -196,7 +196,8 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
   
   if (!response.ok) {
-    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
+    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result.message || result.error || `Erro ao enviar mensagem: ${detail}`);
   }
   
   return result;
