@@ -380,6 +380,90 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // Lista de mensagens recorrentes ao contato de emergência configuradas
+  const { data: emergList = [] } = useQuery({
+    queryKey: ["emerg-cfg-list"],
+    queryFn: async () => {
+      const { data: cfgs, error } = await supabase
+        .from("evento_emergencia_config")
+        .select("*")
+        .eq("ativo", true)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      const list = cfgs || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.evento_id)));
+      if (ids.length === 0) return [] as any[];
+      const [{ data: ag }, { data: im }] = await Promise.all([
+        supabase.from("agenda_igreja").select("id, titulo, data_evento").in("id", ids),
+        supabase.from("impacto_eventos").select("id, nome, data_inicio").in("id", ids),
+      ]);
+      const map = new Map<string, { titulo: string; data: string | null }>();
+      (ag || []).forEach((e: any) =>
+        map.set(`agenda:${e.id}`, { titulo: e.titulo, data: e.data_evento }),
+      );
+      (im || []).forEach((e: any) =>
+        map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
+      );
+      return list.map((c: any) => {
+        const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
+        return { ...c, evento_titulo: meta?.titulo || "(evento removido)", evento_data: meta?.data || null };
+      });
+    },
+  });
+
+  const excluirEmergCfg = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("evento_emergencia_config")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Configuração removida");
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-list"] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover"),
+  });
+
+  const formatRecorrencia = (c: any) => {
+    if (!c.enviar_recorrente) return "Recorrência desativada";
+    const hora = (c.recorrencia_hora || "08:00").slice(0, 5);
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    if (c.recorrencia_tipo === "dia") {
+      const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
+      return `Diário${d ? ` (${d})` : ""} • ${hora}`;
+    }
+    if (c.recorrencia_tipo === "semana") {
+      const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
+      return `Semanal${d ? ` — ${d}` : ""} • ${hora}`;
+    }
+    if (c.recorrencia_tipo === "mes") {
+      const m = (c.recorrencia_meses || []).map((i: number) => meses[i - 1]).join(", ");
+      const ord = c.recorrencia_semana_ordinal
+        ? `${c.recorrencia_semana_ordinal} ${dias[c.recorrencia_dia_semana ?? 0] || ""}`
+        : "";
+      return `Mensal${m ? ` — ${m}` : ""}${ord ? ` (${ord})` : ""} • ${hora}`;
+    }
+    return `A cada ${c.frequencia_dias || 7} dias • ${hora}`;
+  };
+
+  const handleEditEmergCfg = (c: any) => {
+    setTipoMensagemSelecionada("contato_emergencia");
+    setEventoSelecionado(`${c.evento_tipo}:${c.evento_id}`);
+    if (typeof window !== "undefined") {
+      setTimeout(
+        () =>
+          document
+            .getElementById("mensagens-eventos-card")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  };
+
   const restaurarPadrao = useMutation({
     mutationFn: async () => {
       if (!eventoAtual) throw new Error("Selecione um evento");
