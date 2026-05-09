@@ -1010,6 +1010,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           eventoNome={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
         />
       )}
+
+      {selectedEventoId && (
+        <EnvioEmergenciaDialog
+          open={emergenciaOpen}
+          onOpenChange={setEmergenciaOpen}
+          eventoId={selectedEventoId}
+          eventoTipo={selectedEventoSource === "agenda" ? "agenda" : "impacto"}
+          eventoTitulo={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
+        />
+      )}
     </div>
   );
 };
