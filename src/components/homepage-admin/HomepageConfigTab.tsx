@@ -1017,6 +1017,76 @@ const HomepageConfigTab = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Lista de mensagens recorrentes ao Contato de Emergência configuradas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-amber-600" />
+            Mensagens recorrentes — Contato de Emergência
+          </CardTitle>
+          <CardDescription>
+            Eventos com mensagem ao contato de emergência configurada.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {emergList.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhuma mensagem configurada ainda.
+            </p>
+          ) : (
+            <div className="divide-y border rounded-md">
+              {emergList.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {c.evento_titulo}
+                      <Badge variant="outline" className="ml-2 text-[10px] uppercase">
+                        {c.evento_tipo}
+                      </Badge>
+                      {!c.enviar_recorrente && (
+                        <Badge variant="secondary" className="ml-2 text-[10px]">
+                          inativa
+                        </Badge>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatRecorrencia(c)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditEmergCfg(c)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Remover configuração de "${c.evento_titulo}"?`)) {
+                          excluirEmergCfg.mutate(c.id);
+                        }
+                      }}
+                      disabled={excluirEmergCfg.isPending}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
