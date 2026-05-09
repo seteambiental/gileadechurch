@@ -25,6 +25,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import EmergenciaConfigCard from "@/components/configuracoes/EmergenciaConfigCard";
 
 interface StatusResponse {
   provider: string;
@@ -561,6 +562,8 @@ export default function WhatsappConfiguracaoPage() {
             )}
           </CardContent>
         </Card>
+
+        <EmergenciaConfigCard />
       </div>
     </div>
   );

@@ -27,10 +27,12 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive, DollarSign } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import FinalizarEventoDialog from "./FinalizarEventoDialog";
+import EnvioEmergenciaDialog from "./EnvioEmergenciaDialog";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -82,6 +84,8 @@ const ALL_COLUMNS = [
   { key: "valor_pago", label: "Valor Pago" },
   { key: "a_pagar", label: "A Pagar" },
   { key: "status", label: "Status" },
+  { key: "contato_emergencia", label: "Contato Emergência" },
+  { key: "telefone_emergencia", label: "Tel. Emergência" },
 ] as const;
 
 type ColumnKey = typeof ALL_COLUMNS[number]["key"];
@@ -109,6 +113,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
+  const [emergenciaOpen, setEmergenciaOpen] = useState(false);
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
   }, [eventoSelecionado]);
@@ -286,7 +291,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     if (!searchNome.trim()) return all;
     const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     return all.filter((i: any) =>
-      (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
+      (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q) ||
+      (i.nome_responsavel || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q) ||
+      (i.telefone_emergencia || "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
     );
   }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo]);
 
@@ -602,6 +609,11 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         return getValorAPagar(row);
       }},
       status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+      contato_emergencia: { header: "Contato Emergência", accessor: (row: any) => row.nome_responsavel || "—" },
+      telefone_emergencia: { header: "Tel. Emergência", accessor: (row: any) => {
+        const t = row.telefone_emergencia || row.telefone_responsavel;
+        return t ? formatPhone(t) : "—";
+      }},
     };
     return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((c) => allCols[c.key]);
   };
@@ -723,6 +735,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
             </Button>
           )}
           {selectedEventoId && inscricoes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setEmergenciaOpen(true)}>
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              WhatsApp Emergência
+            </Button>
+          )}
+          {selectedEventoId && inscricoes.length > 0 && (
             <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
               <Archive className="w-4 h-4 mr-2" />
               Finalizar Evento
@@ -799,6 +817,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
                   {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
                   {isCol("status") && <TableHead>Status</TableHead>}
+                  {isCol("contato_emergencia") && <TableHead>Contato Emergência</TableHead>}
+                  {isCol("telefone_emergencia") && <TableHead>Tel. Emergência</TableHead>}
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -912,6 +932,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                           </TableCell>
                         )}
                         {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
+                        {isCol("contato_emergencia") && (
+                          <TableCell className="text-sm">{inscricao.nome_responsavel || "—"}</TableCell>
+                        )}
+                        {isCol("telefone_emergencia") && (
+                          <TableCell className="text-sm">
+                            {(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
+                              ? formatPhone(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
+                              : "—"}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
@@ -978,6 +1008,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           onOpenChange={setFinalizarOpen}
           eventoId={selectedEventoId}
           eventoNome={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
+        />
+      )}
+
+      {selectedEventoId && (
+        <EnvioEmergenciaDialog
+          open={emergenciaOpen}
+          onOpenChange={setEmergenciaOpen}
+          eventoId={selectedEventoId}
+          eventoTipo={selectedEventoSource === "agenda" ? "agenda" : "impacto"}
+          eventoTitulo={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
         />
       )}
     </div>
