@@ -926,6 +926,16 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                           </TableCell>
                         )}
                         {isCol("status") && <TableCell>{getStatusBadge(inscricao.status_pagamento)}</TableCell>}
+                        {isCol("contato_emergencia") && (
+                          <TableCell className="text-sm">{inscricao.nome_responsavel || "—"}</TableCell>
+                        )}
+                        {isCol("telefone_emergencia") && (
+                          <TableCell className="text-sm">
+                            {(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
+                              ? formatPhone(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
+                              : "—"}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
