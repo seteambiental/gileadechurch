@@ -528,6 +528,14 @@ const HomepageConfigTab = () => {
       (im || []).forEach((e: any) =>
         map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
       );
+      map.set("culto:11111111-1111-1111-1111-111111111111", {
+        titulo: "Cultos de Celebração (Domingos)",
+        data: null,
+      });
+      map.set("culto:22222222-2222-2222-2222-222222222222", {
+        titulo: "Quarta com Propósito",
+        data: null,
+      });
       return list.map((c: any) => {
         const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
         return { ...c, evento_titulo: meta?.titulo || "(evento removido)", evento_data: meta?.data || null };
