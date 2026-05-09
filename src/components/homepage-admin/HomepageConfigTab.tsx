@@ -24,7 +24,9 @@ type TipoMensagem =
   | "inscricao_recebida"
   | "lembrete_pagamento"
   | "vaga_liberada"
-  | "contato_emergencia";
+  | "contato_emergencia"
+  | "aviso_importante"
+  | "lembrete_evento";
 
 const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[] = [
   { value: "confirmacao_inscricao", label: "Confirmação de inscrição", descricao: "Enviada quando o ADM confirma a inscrição" },
@@ -32,6 +34,8 @@ const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[
   { value: "lembrete_pagamento", label: "Lembrete de pagamento", descricao: "Enviada para quem está com pagamento pendente" },
   { value: "vaga_liberada", label: "Vaga liberada (lista de espera)", descricao: "Enviada quando uma vaga é liberada" },
   { value: "contato_emergencia", label: "Contato de Emergência", descricao: "Mensagem recorrente enviada ao contato de emergência do participante" },
+  { value: "aviso_importante", label: "Aviso importante", descricao: "Comunicado relevante enviado a participantes/membros" },
+  { value: "lembrete_evento", label: "Lembrete do evento", descricao: "Lembra do evento ou programação na data próxima" },
 ];
 
 const TEMPLATES_PADRAO: Record<TipoMensagem, string> = {
@@ -86,6 +90,23 @@ _Igreja Gileade_ 💙`,
 Lembrete: {NOME} estará no evento *{EVENTO}* em {DATA_EVENTO}. Qualquer urgência, contaremos com seu apoio como contato de emergência.
 
 _Igreja Gileade_`,
+  aviso_importante: `📢 *AVISO IMPORTANTE*
+
+Olá, {NOME}! 👋
+
+Sobre *{EVENTO}*: leia este aviso com atenção.
+
+_Igreja Gileade_ 💙`,
+  lembrete_evento: `📅 *LEMBRETE — {EVENTO}*
+
+Olá, {NOME}! 👋
+
+Não esqueça: *{EVENTO}* acontece em {DATA_EVENTO}.
+📍 *Local:* {LOCAL}
+
+Te esperamos! 🙏
+
+_Igreja Gileade_ 💙`,
 };
 
 const HomepageConfigTab = () => {
@@ -272,7 +293,9 @@ const HomepageConfigTab = () => {
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar configuração"),
   });
 
-  const isTipoAtivoParaCategoria = (categoria: "agenda" | "impacto", tipo: TipoMensagem) => {
+  type CategoriaEvento = "agenda_sem_inscricao" | "agenda_com_inscricao" | "impacto";
+
+  const isTipoAtivoParaCategoria = (categoria: CategoriaEvento, tipo: TipoMensagem) => {
     const row = (categoriaTipos || []).find(
       (r: any) => r.categoria_evento === categoria && r.tipo_mensagem === tipo,
     );
@@ -290,6 +313,7 @@ const HomepageConfigTab = () => {
       key: `agenda:${e.id}`,
       id: e.id,
       tipo: "agenda" as const,
+      categoria: (e.necessita_inscricao ? "agenda_com_inscricao" : "agenda_sem_inscricao") as CategoriaEvento,
       label: `📅 ${e.titulo}`,
       titulo: e.titulo,
       data: e.data_evento as string | null,
@@ -299,6 +323,7 @@ const HomepageConfigTab = () => {
       key: `impacto:${e.id}`,
       id: e.id,
       tipo: "impacto" as const,
+      categoria: "impacto" as CategoriaEvento,
       label: `🎯 ${e.nome}`,
       titulo: e.nome,
       data: e.data_inicio as string | null,
@@ -324,7 +349,7 @@ const HomepageConfigTab = () => {
   const tiposDisponiveis = useMemo(() => {
     if (!eventoAtual) return TIPOS_MENSAGEM;
     return TIPOS_MENSAGEM.filter((t) =>
-      isTipoAtivoParaCategoria(eventoAtual.tipo as any, t.value),
+      isTipoAtivoParaCategoria(eventoAtual.categoria, t.value),
     );
   }, [eventoAtual, categoriaTipos]);
 
