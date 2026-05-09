@@ -22,13 +22,15 @@ type TipoMensagem =
   | "confirmacao_inscricao"
   | "inscricao_recebida"
   | "lembrete_pagamento"
-  | "vaga_liberada";
+  | "vaga_liberada"
+  | "contato_emergencia";
 
 const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[] = [
   { value: "confirmacao_inscricao", label: "Confirmação de inscrição", descricao: "Enviada quando o ADM confirma a inscrição" },
   { value: "inscricao_recebida", label: "Inscrição recebida", descricao: "Enviada automaticamente ao se inscrever" },
   { value: "lembrete_pagamento", label: "Lembrete de pagamento", descricao: "Enviada para quem está com pagamento pendente" },
   { value: "vaga_liberada", label: "Vaga liberada (lista de espera)", descricao: "Enviada quando uma vaga é liberada" },
+  { value: "contato_emergencia", label: "Contato de Emergência", descricao: "Mensagem recorrente enviada ao contato de emergência do participante" },
 ];
 
 const TEMPLATES_PADRAO: Record<TipoMensagem, string> = {
