@@ -2606,6 +2606,12 @@ export type Database = {
           id: string
           mensagem_inicial: string
           mensagem_recorrente: string
+          recorrencia_dia_semana: number | null
+          recorrencia_dias_semana: number[]
+          recorrencia_hora: string
+          recorrencia_meses: number[]
+          recorrencia_semana_ordinal: string | null
+          recorrencia_tipo: string
           updated_at: string
         }
         Insert: {
@@ -2619,6 +2625,12 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          recorrencia_dia_semana?: number | null
+          recorrencia_dias_semana?: number[]
+          recorrencia_hora?: string
+          recorrencia_meses?: number[]
+          recorrencia_semana_ordinal?: string | null
+          recorrencia_tipo?: string
           updated_at?: string
         }
         Update: {
@@ -2632,6 +2644,12 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          recorrencia_dia_semana?: number | null
+          recorrencia_dias_semana?: number[]
+          recorrencia_hora?: string
+          recorrencia_meses?: number[]
+          recorrencia_semana_ordinal?: string | null
+          recorrencia_tipo?: string
           updated_at?: string
         }
         Relationships: []

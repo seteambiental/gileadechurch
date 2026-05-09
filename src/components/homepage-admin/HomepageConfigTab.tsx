@@ -22,13 +22,15 @@ type TipoMensagem =
   | "confirmacao_inscricao"
   | "inscricao_recebida"
   | "lembrete_pagamento"
-  | "vaga_liberada";
+  | "vaga_liberada"
+  | "contato_emergencia";
 
 const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[] = [
   { value: "confirmacao_inscricao", label: "Confirmação de inscrição", descricao: "Enviada quando o ADM confirma a inscrição" },
   { value: "inscricao_recebida", label: "Inscrição recebida", descricao: "Enviada automaticamente ao se inscrever" },
   { value: "lembrete_pagamento", label: "Lembrete de pagamento", descricao: "Enviada para quem está com pagamento pendente" },
   { value: "vaga_liberada", label: "Vaga liberada (lista de espera)", descricao: "Enviada quando uma vaga é liberada" },
+  { value: "contato_emergencia", label: "Contato de Emergência", descricao: "Mensagem recorrente enviada ao contato de emergência do participante" },
 ];
 
 const TEMPLATES_PADRAO: Record<TipoMensagem, string> = {
@@ -78,6 +80,11 @@ Olá, {NOME}! 👋
 Deus abençoe! 🙏
 
 _Igreja Gileade_ 💙`,
+  contato_emergencia: `🙏 Olá, {NOME_EMERGENCIA}!
+
+Lembrete: {NOME} estará no evento *{EVENTO}* em {DATA_EVENTO}. Qualquer urgência, contaremos com seu apoio como contato de emergência.
+
+_Igreja Gileade_`,
 };
 
 const HomepageConfigTab = () => {
@@ -91,6 +98,27 @@ const HomepageConfigTab = () => {
   const [buscaEvento, setBuscaEvento] = useState<string>("");
   const [tipoMensagemSelecionada, setTipoMensagemSelecionada] = useState<TipoMensagem>("confirmacao_inscricao");
   const [mensagemEvento, setMensagemEvento] = useState<string>("");
+
+  // Estado para configuração de recorrência (somente quando tipo = contato_emergencia)
+  type RecCfg = {
+    recorrencia_tipo: "dia" | "semana" | "mes";
+    recorrencia_dias_semana: number[];
+    recorrencia_meses: number[];
+    recorrencia_semana_ordinal: "primeiro" | "segundo" | "terceiro" | "quarto" | "ultimo" | "";
+    recorrencia_dia_semana: number | null;
+    recorrencia_hora: string;
+    enviar_recorrente: boolean;
+  };
+  const REC_DEFAULT: RecCfg = {
+    recorrencia_tipo: "semana",
+    recorrencia_dias_semana: [],
+    recorrencia_meses: [],
+    recorrencia_semana_ordinal: "",
+    recorrencia_dia_semana: null,
+    recorrencia_hora: "08:00",
+    enviar_recorrente: true,
+  };
+  const [recCfg, setRecCfg] = useState<RecCfg>(REC_DEFAULT);
 
   const { data: homepageConfig, isLoading: loadingHomepage } = useQuery({
     queryKey: ["homepage-config-mensagem"],
@@ -251,7 +279,7 @@ const HomepageConfigTab = () => {
 
   const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
     queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
-    enabled: !!eventoAtual,
+    enabled: !!eventoAtual && tipoMensagemSelecionada !== "contato_emergencia",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("mensagens_evento_templates")
@@ -265,17 +293,72 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // Configuração de emergência (mensagem + recorrência) — para tipo contato_emergencia
+  const { data: emergCfg, isFetching: loadingEmerg } = useQuery({
+    queryKey: ["emerg-cfg-homepage", eventoAtual?.id, eventoAtual?.tipo],
+    enabled: !!eventoAtual && tipoMensagemSelecionada === "contato_emergencia",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_emergencia_config")
+        .select("*")
+        .eq("evento_id", eventoAtual!.id)
+        .eq("evento_tipo", eventoAtual!.tipo)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   useEffect(() => {
     if (!eventoAtual) {
       setMensagemEvento("");
       return;
     }
-    setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
-  }, [eventoAtual, tipoMensagemSelecionada, templateAtual]);
+    if (tipoMensagemSelecionada === "contato_emergencia") {
+      setMensagemEvento(
+        emergCfg?.mensagem_recorrente?.trim()
+          ? emergCfg.mensagem_recorrente
+          : TEMPLATES_PADRAO.contato_emergencia,
+      );
+      setRecCfg({
+        recorrencia_tipo: (emergCfg?.recorrencia_tipo as any) || "semana",
+        recorrencia_dias_semana: emergCfg?.recorrencia_dias_semana || [],
+        recorrencia_meses: emergCfg?.recorrencia_meses || [],
+        recorrencia_semana_ordinal: (emergCfg?.recorrencia_semana_ordinal as any) || "",
+        recorrencia_dia_semana:
+          emergCfg?.recorrencia_dia_semana ?? null,
+        recorrencia_hora: (emergCfg?.recorrencia_hora || "08:00").slice(0, 5),
+        enviar_recorrente: emergCfg?.enviar_recorrente ?? true,
+      });
+    } else {
+      setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
+    }
+  }, [eventoAtual, tipoMensagemSelecionada, templateAtual, emergCfg]);
 
   const salvarMensagemEvento = useMutation({
     mutationFn: async () => {
       if (!eventoAtual) throw new Error("Selecione um evento");
+      if (tipoMensagemSelecionada === "contato_emergencia") {
+        const payload = {
+          evento_id: eventoAtual.id,
+          evento_tipo: eventoAtual.tipo,
+          mensagem_inicial: emergCfg?.mensagem_inicial || "",
+          mensagem_recorrente: mensagemEvento,
+          enviar_recorrente: recCfg.enviar_recorrente,
+          frequencia_dias: emergCfg?.frequencia_dias ?? 7,
+          recorrencia_tipo: recCfg.recorrencia_tipo,
+          recorrencia_dias_semana: recCfg.recorrencia_dias_semana,
+          recorrencia_meses: recCfg.recorrencia_meses,
+          recorrencia_semana_ordinal: recCfg.recorrencia_semana_ordinal || null,
+          recorrencia_dia_semana: recCfg.recorrencia_dia_semana,
+          recorrencia_hora: recCfg.recorrencia_hora,
+        };
+        const { error } = await supabase
+          .from("evento_emergencia_config")
+          .upsert(payload, { onConflict: "evento_id,evento_tipo" });
+        if (error) throw error;
+        return;
+      }
       const payload = {
         evento_id: eventoAtual.id,
         evento_tipo: eventoAtual.tipo,
@@ -289,6 +372,7 @@ const HomepageConfigTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
       toast.success("Mensagem do evento salva com sucesso!");
     },
     onError: (error: any) => {
@@ -604,11 +688,211 @@ const HomepageConfigTab = () => {
                   ? "Digite a mensagem personalizada..."
                   : "Selecione um evento para editar a mensagem"
               }
-              disabled={!eventoAtual || loadingTemplate}
+              disabled={!eventoAtual || loadingTemplate || loadingEmerg}
               rows={14}
               className="font-mono text-sm"
             />
+            {tipoMensagemSelecionada === "contato_emergencia" && (
+              <p className="text-xs text-muted-foreground">
+                Placeholders disponíveis: <code>{"{NOME}"}</code>, <code>{"{NOME_COMPLETO}"}</code>,{" "}
+                <code>{"{NOME_EMERGENCIA}"}</code>, <code>{"{EVENTO}"}</code>, <code>{"{DATA_EVENTO}"}</code>.
+              </p>
+            )}
           </div>
+
+          {tipoMensagemSelecionada === "contato_emergencia" && eventoAtual && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Frequência de envio</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define quando a mensagem recorrente será disparada até o evento.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={recCfg.enviar_recorrente}
+                    onChange={(e) =>
+                      setRecCfg({ ...recCfg, enviar_recorrente: e.target.checked })
+                    }
+                  />
+                  Ativar recorrência
+                </label>
+              </div>
+
+              {recCfg.enviar_recorrente && (
+                <>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Enviar a cada</Label>
+                      <Select
+                        value={recCfg.recorrencia_tipo}
+                        onValueChange={(v) =>
+                          setRecCfg({ ...recCfg, recorrencia_tipo: v as any })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dia">Dia</SelectItem>
+                          <SelectItem value="semana">Semana</SelectItem>
+                          <SelectItem value="mes">Mês</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Hora aproximada de envio</Label>
+                      <Input
+                        type="time"
+                        value={recCfg.recorrencia_hora}
+                        onChange={(e) =>
+                          setRecCfg({ ...recCfg, recorrencia_hora: e.target.value })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        O envio ocorre após esse horário (margem de alguns minutos).
+                      </p>
+                    </div>
+                  </div>
+
+                  {(recCfg.recorrencia_tipo === "dia" ||
+                    recCfg.recorrencia_tipo === "semana") && (
+                    <div className="space-y-2">
+                      <Label>
+                        {recCfg.recorrencia_tipo === "dia"
+                          ? "Dias da semana em que pode disparar"
+                          : "Dia(s) da semana"}
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(
+                          (lbl, idx) => {
+                            const ativo = recCfg.recorrencia_dias_semana.includes(idx);
+                            return (
+                              <button
+                                type="button"
+                                key={lbl}
+                                onClick={() => {
+                                  const set = new Set(recCfg.recorrencia_dias_semana);
+                                  ativo ? set.delete(idx) : set.add(idx);
+                                  setRecCfg({
+                                    ...recCfg,
+                                    recorrencia_dias_semana: Array.from(set).sort(),
+                                  });
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm border transition ${
+                                  ativo
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-background hover:bg-muted"
+                                }`}
+                              >
+                                {lbl}
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {recCfg.recorrencia_tipo === "mes" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Meses em que deve enviar</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Jan","Fev","Mar","Abr","Mai","Jun",
+                            "Jul","Ago","Set","Out","Nov","Dez",
+                          ].map((lbl, idx) => {
+                            const m = idx + 1;
+                            const ativo = recCfg.recorrencia_meses.includes(m);
+                            return (
+                              <button
+                                type="button"
+                                key={lbl}
+                                onClick={() => {
+                                  const set = new Set(recCfg.recorrencia_meses);
+                                  ativo ? set.delete(m) : set.add(m);
+                                  setRecCfg({
+                                    ...recCfg,
+                                    recorrencia_meses: Array.from(set).sort(
+                                      (a, b) => a - b,
+                                    ),
+                                  });
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm border transition ${
+                                  ativo
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-background hover:bg-muted"
+                                }`}
+                              >
+                                {lbl}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Ordinal no mês</Label>
+                          <Select
+                            value={recCfg.recorrencia_semana_ordinal || ""}
+                            onValueChange={(v) =>
+                              setRecCfg({
+                                ...recCfg,
+                                recorrencia_semana_ordinal: v as any,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Ex: Primeiro" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="primeiro">Primeiro</SelectItem>
+                              <SelectItem value="segundo">Segundo</SelectItem>
+                              <SelectItem value="terceiro">Terceiro</SelectItem>
+                              <SelectItem value="quarto">Quarto</SelectItem>
+                              <SelectItem value="ultimo">Último</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Dia da semana</Label>
+                          <Select
+                            value={
+                              recCfg.recorrencia_dia_semana !== null
+                                ? String(recCfg.recorrencia_dia_semana)
+                                : ""
+                            }
+                            onValueChange={(v) =>
+                              setRecCfg({
+                                ...recCfg,
+                                recorrencia_dia_semana: v === "" ? null : Number(v),
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Ex: Segunda" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">Domingo</SelectItem>
+                              <SelectItem value="1">Segunda-feira</SelectItem>
+                              <SelectItem value="2">Terça-feira</SelectItem>
+                              <SelectItem value="3">Quarta-feira</SelectItem>
+                              <SelectItem value="4">Quinta-feira</SelectItem>
+                              <SelectItem value="5">Sexta-feira</SelectItem>
+                              <SelectItem value="6">Sábado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <p className="text-xs text-muted-foreground">
@@ -619,7 +903,12 @@ const HomepageConfigTab = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => restaurarPadrao.mutate()}
-                disabled={!eventoAtual || !templateAtual || restaurarPadrao.isPending}
+                disabled={
+                  !eventoAtual ||
+                  tipoMensagemSelecionada === "contato_emergencia" ||
+                  !templateAtual ||
+                  restaurarPadrao.isPending
+                }
               >
                 {restaurarPadrao.isPending ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
