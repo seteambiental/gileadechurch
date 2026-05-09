@@ -1076,6 +1076,65 @@ const HomepageConfigTab = () => {
         </CardContent>
       </Card>
 
+      {/* Tipos de mensagem habilitados por categoria de evento */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ListChecks className="w-5 h-5" />
+            Tipos de mensagem por categoria de evento
+          </CardTitle>
+          <CardDescription>
+            Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
+            Os tipos desabilitados não aparecerão no seletor acima.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            {(["agenda", "impacto"] as const).map((cat) => (
+              <div key={cat} className="border rounded-md p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  {cat === "agenda" ? (
+                    <Calendar className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Target className="w-4 h-4 text-primary" />
+                  )}
+                  <h4 className="text-sm font-semibold">
+                    {cat === "agenda" ? "Eventos da Agenda" : "Eventos Impacto (com inscrição)"}
+                  </h4>
+                </div>
+                <div className="space-y-2">
+                  {TIPOS_MENSAGEM.map((t) => {
+                    const ativo = isTipoAtivoParaCategoria(cat, t.value);
+                    return (
+                      <div
+                        key={`${cat}-${t.value}`}
+                        className="flex items-start justify-between gap-3 py-1"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{t.label}</p>
+                          <p className="text-xs text-muted-foreground">{t.descricao}</p>
+                        </div>
+                        <Switch
+                          checked={ativo}
+                          disabled={toggleCategoriaTipo.isPending}
+                          onCheckedChange={(checked) =>
+                            toggleCategoriaTipo.mutate({
+                              categoria: cat,
+                              tipo: t.value,
+                              ativo: checked,
+                            })
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Lista de mensagens recorrentes ao Contato de Emergência configuradas */}
       <Card>
         <CardHeader>
