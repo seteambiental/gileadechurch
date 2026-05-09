@@ -293,7 +293,7 @@ const HomepageConfigTab = () => {
     onError: (e: any) => toast.error(e?.message || "Erro ao salvar configuração"),
   });
 
-  type CategoriaEvento = "agenda_sem_inscricao" | "agenda_com_inscricao" | "impacto";
+  type CategoriaEvento = "agenda_sem_inscricao" | "agenda_com_inscricao" | "impacto" | "culto";
 
   const isTipoAtivoParaCategoria = (categoria: CategoriaEvento, tipo: TipoMensagem) => {
     const row = (categoriaTipos || []).find(
@@ -329,7 +329,29 @@ const HomepageConfigTab = () => {
       data: e.data_inicio as string | null,
       dataLabel: fmtData(e.data_inicio),
     }));
-    const all = [...agenda, ...impacto];
+    const cultos = [
+      {
+        key: "culto:11111111-1111-1111-1111-111111111111",
+        id: "11111111-1111-1111-1111-111111111111",
+        tipo: "culto" as const,
+        categoria: "culto" as CategoriaEvento,
+        label: "⛪ Cultos de Celebração (Domingos)",
+        titulo: "Cultos de Celebração",
+        data: null as string | null,
+        dataLabel: "Recorrente — Domingos",
+      },
+      {
+        key: "culto:22222222-2222-2222-2222-222222222222",
+        id: "22222222-2222-2222-2222-222222222222",
+        tipo: "culto" as const,
+        categoria: "culto" as CategoriaEvento,
+        label: "⛪ Quarta com Propósito",
+        titulo: "Quarta com Propósito",
+        data: null as string | null,
+        dataLabel: "Recorrente — Quartas",
+      },
+    ];
+    const all = [...cultos, ...agenda, ...impacto];
     // Ordem cronológica ascendente; sem data vai pro fim
     all.sort((a, b) => {
       if (!a.data && !b.data) return 0;
@@ -506,6 +528,14 @@ const HomepageConfigTab = () => {
       (im || []).forEach((e: any) =>
         map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
       );
+      map.set("culto:11111111-1111-1111-1111-111111111111", {
+        titulo: "Cultos de Celebração (Domingos)",
+        data: null,
+      });
+      map.set("culto:22222222-2222-2222-2222-222222222222", {
+        titulo: "Quarta com Propósito",
+        data: null,
+      });
       return list.map((c: any) => {
         const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
         return { ...c, evento_titulo: meta?.titulo || "(evento removido)", evento_data: meta?.data || null };
@@ -1203,11 +1233,12 @@ const HomepageConfigTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {([
               { key: "agenda_sem_inscricao", label: "Agenda — sem inscrição", icon: Calendar },
               { key: "agenda_com_inscricao", label: "Agenda — com inscrição", icon: Calendar },
               { key: "impacto", label: "Eventos Impacto", icon: Target },
+              { key: "culto", label: "Cultos (Domingo / Quarta)", icon: Calendar },
             ] as const).map(({ key: cat, label, icon: Icon }) => (
               <div key={cat} className="border rounded-md p-4 space-y-3">
                 <div className="flex items-center gap-2">
