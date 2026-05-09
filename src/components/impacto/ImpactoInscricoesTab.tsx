@@ -811,6 +811,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
                   {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
                   {isCol("status") && <TableHead>Status</TableHead>}
+                  {isCol("contato_emergencia") && <TableHead>Contato Emergência</TableHead>}
+                  {isCol("telefone_emergencia") && <TableHead>Tel. Emergência</TableHead>}
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
