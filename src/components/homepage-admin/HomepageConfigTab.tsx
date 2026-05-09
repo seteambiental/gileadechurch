@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
@@ -236,6 +237,41 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // Configuração de quais tipos de mensagem estão habilitados por categoria de evento
+  const { data: categoriaTipos } = useQuery({
+    queryKey: ["categoria-mensagem-config"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categoria_mensagem_config" as any)
+        .select("categoria_evento, tipo_mensagem, ativo");
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const toggleCategoriaTipo = useMutation({
+    mutationFn: async (vars: { categoria: "agenda" | "impacto"; tipo: TipoMensagem; ativo: boolean }) => {
+      const { error } = await supabase
+        .from("categoria_mensagem_config" as any)
+        .upsert(
+          { categoria_evento: vars.categoria, tipo_mensagem: vars.tipo, ativo: vars.ativo },
+          { onConflict: "categoria_evento,tipo_mensagem" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categoria-mensagem-config"] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar configuração"),
+  });
+
+  const isTipoAtivoParaCategoria = (categoria: "agenda" | "impacto", tipo: TipoMensagem) => {
+    const row = (categoriaTipos || []).find(
+      (r: any) => r.categoria_evento === categoria && r.tipo_mensagem === tipo,
+    );
+    return row ? !!row.ativo : false;
+  };
+
   const eventosOptions = useMemo(() => {
     const fmtData = (d: string | null | undefined) => {
       if (!d) return "";
@@ -276,6 +312,23 @@ const HomepageConfigTab = () => {
     () => eventosOptions.find((e) => e.key === eventoSelecionado) || null,
     [eventosOptions, eventoSelecionado],
   );
+
+  // Tipos disponíveis para o evento selecionado (com base em categoria_mensagem_config)
+  const tiposDisponiveis = useMemo(() => {
+    if (!eventoAtual) return TIPOS_MENSAGEM;
+    return TIPOS_MENSAGEM.filter((t) =>
+      isTipoAtivoParaCategoria(eventoAtual.tipo as any, t.value),
+    );
+  }, [eventoAtual, categoriaTipos]);
+
+  // Se o tipo selecionado deixar de estar disponível, ajusta para o primeiro disponível
+  useEffect(() => {
+    if (!eventoAtual) return;
+    if (tiposDisponiveis.length === 0) return;
+    if (!tiposDisponiveis.some((t) => t.value === tipoMensagemSelecionada)) {
+      setTipoMensagemSelecionada(tiposDisponiveis[0].value);
+    }
+  }, [eventoAtual, tiposDisponiveis, tipoMensagemSelecionada]);
 
   const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
     queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
@@ -741,7 +794,7 @@ const HomepageConfigTab = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIPOS_MENSAGEM.map((t) => (
+                  {(tiposDisponiveis.length > 0 ? tiposDisponiveis : TIPOS_MENSAGEM).map((t) => (
                     <SelectItem key={t.value} value={t.value}>
                       {t.label}
                     </SelectItem>
@@ -750,6 +803,11 @@ const HomepageConfigTab = () => {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {TIPOS_MENSAGEM.find((t) => t.value === tipoMensagemSelecionada)?.descricao}
+                {eventoAtual && tiposDisponiveis.length === 0 && (
+                  <span className="block text-amber-600 mt-1">
+                    Nenhum tipo de mensagem habilitado para esta categoria. Configure abaixo.
+                  </span>
+                )}
               </p>
             </div>
           </div>
@@ -1014,6 +1072,65 @@ const HomepageConfigTab = () => {
                 Salvar Mensagem
               </Button>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tipos de mensagem habilitados por categoria de evento */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ListChecks className="w-5 h-5" />
+            Tipos de mensagem por categoria de evento
+          </CardTitle>
+          <CardDescription>
+            Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
+            Os tipos desabilitados não aparecerão no seletor acima.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            {(["agenda", "impacto"] as const).map((cat) => (
+              <div key={cat} className="border rounded-md p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  {cat === "agenda" ? (
+                    <Calendar className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Target className="w-4 h-4 text-primary" />
+                  )}
+                  <h4 className="text-sm font-semibold">
+                    {cat === "agenda" ? "Eventos da Agenda" : "Eventos Impacto (com inscrição)"}
+                  </h4>
+                </div>
+                <div className="space-y-2">
+                  {TIPOS_MENSAGEM.map((t) => {
+                    const ativo = isTipoAtivoParaCategoria(cat, t.value);
+                    return (
+                      <div
+                        key={`${cat}-${t.value}`}
+                        className="flex items-start justify-between gap-3 py-1"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{t.label}</p>
+                          <p className="text-xs text-muted-foreground">{t.descricao}</p>
+                        </div>
+                        <Switch
+                          checked={ativo}
+                          disabled={toggleCategoriaTipo.isPending}
+                          onCheckedChange={(checked) =>
+                            toggleCategoriaTipo.mutate({
+                              categoria: cat,
+                              tipo: t.value,
+                              ativo: checked,
+                            })
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
