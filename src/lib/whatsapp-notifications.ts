@@ -31,6 +31,29 @@ export async function dispararMensagemInscricaoRecebida(params: {
 }
 
 /**
+ * Dispara a mensagem inicial para o contato de emergência de uma inscrição.
+ * Best-effort: falhas não interrompem o fluxo principal.
+ */
+export async function dispararMensagemEmergenciaInicial(params: {
+  eventoId: string;
+  eventoTipo: "impacto" | "agenda";
+  inscricaoId: string;
+}) {
+  try {
+    await supabase.functions.invoke("enviar-emergencia-evento", {
+      body: {
+        tipo: "inicial",
+        eventoId: params.eventoId,
+        eventoTipo: params.eventoTipo,
+        inscricaoId: params.inscricaoId,
+      },
+    });
+  } catch (err) {
+    console.warn("[whatsapp] falha ao enviar emergencia_inicial:", err);
+  }
+}
+
+/**
  * Envia (best-effort) a mensagem "CADASTRO APROVADO" para o novo membro.
  */
 export async function dispararMensagemCadastroAprovado(params: {
