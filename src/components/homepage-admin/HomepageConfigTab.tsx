@@ -1074,7 +1074,7 @@ const HomepageConfigTab = () => {
                 onClick={() => restaurarPadrao.mutate()}
                 disabled={
                   !eventoAtual ||
-                  tipoMensagemSelecionada === "contato_emergencia" ||
+                  usaRecorrencia ||
                   !templateAtual ||
                   restaurarPadrao.isPending
                 }
@@ -1167,10 +1167,10 @@ const HomepageConfigTab = () => {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-amber-600" />
-            Mensagens recorrentes — Contato de Emergência
+            Mensagens recorrentes
           </CardTitle>
           <CardDescription>
-            Eventos com mensagem ao contato de emergência configurada.
+            Eventos com mensagens configuradas para envio recorrente (lembretes, contato de emergência, etc.).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1190,6 +1190,11 @@ const HomepageConfigTab = () => {
                       {c.evento_titulo}
                       <Badge variant="outline" className="ml-2 text-[10px] uppercase">
                         {c.evento_tipo}
+                      </Badge>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        {TIPOS_MENSAGEM.find((t) => t.value === c.tipo_mensagem)?.label
+                          || c.tipo_mensagem
+                          || "contato_emergencia"}
                       </Badge>
                       {!c.enviar_recorrente && (
                         <Badge variant="secondary" className="ml-2 text-[10px]">
