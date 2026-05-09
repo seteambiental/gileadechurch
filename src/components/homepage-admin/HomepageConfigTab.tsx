@@ -1108,6 +1108,8 @@ const HomepageConfigTab = () => {
                       </div>
                     </>
                   )}
+                  </>
+                  )}
                 </>
               )}
             </div>
