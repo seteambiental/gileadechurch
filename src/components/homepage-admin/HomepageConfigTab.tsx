@@ -80,6 +80,11 @@ Olá, {NOME}! 👋
 Deus abençoe! 🙏
 
 _Igreja Gileade_ 💙`,
+  contato_emergencia: `🙏 Olá, {NOME_EMERGENCIA}!
+
+Lembrete: {NOME} estará no evento *{EVENTO}* em {DATA_EVENTO}. Qualquer urgência, contaremos com seu apoio como contato de emergência.
+
+_Igreja Gileade_`,
 };
 
 const HomepageConfigTab = () => {
