@@ -1225,11 +1225,12 @@ const HomepageConfigTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {([
               { key: "agenda_sem_inscricao", label: "Agenda — sem inscrição", icon: Calendar },
               { key: "agenda_com_inscricao", label: "Agenda — com inscrição", icon: Calendar },
               { key: "impacto", label: "Eventos Impacto", icon: Target },
+              { key: "culto", label: "Cultos (Domingo / Quarta)", icon: Calendar },
             ] as const).map(({ key: cat, label, icon: Icon }) => (
               <div key={cat} className="border rounded-md p-4 space-y-3">
                 <div className="flex items-center gap-2">
