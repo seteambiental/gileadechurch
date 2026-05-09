@@ -846,7 +846,7 @@ const HomepageConfigTab = () => {
               rows={14}
               className="font-mono text-sm"
             />
-            {tipoMensagemSelecionada === "contato_emergencia" && (
+            {usaRecorrencia && (
               <p className="text-xs text-muted-foreground">
                 Placeholders disponíveis: <code>{"{NOME}"}</code>, <code>{"{NOME_COMPLETO}"}</code>,{" "}
                 <code>{"{NOME_EMERGENCIA}"}</code>, <code>{"{EVENTO}"}</code>, <code>{"{DATA_EVENTO}"}</code>.
@@ -854,7 +854,22 @@ const HomepageConfigTab = () => {
             )}
           </div>
 
-          {tipoMensagemSelecionada === "contato_emergencia" && eventoAtual && (
+          {eventoAtual && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm font-semibold">Configurar como envio recorrente</Label>
+                <p className="text-xs text-muted-foreground">
+                  Quando ativo, esta mensagem é enviada automaticamente em uma frequência definida até o evento.
+                </p>
+              </div>
+              <Switch
+                checked={usaRecorrencia}
+                onCheckedChange={(v) => setUsaRecorrencia(!!v)}
+              />
+            </div>
+          )}
+
+          {usaRecorrencia && eventoAtual && (
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
