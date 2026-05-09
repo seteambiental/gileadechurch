@@ -102,6 +102,8 @@ const HomepageConfigTab = () => {
 
   // Estado para configuração de recorrência (somente quando tipo = contato_emergencia)
   type RecCfg = {
+    modo_envio: "recorrente" | "unico";
+    data_envio_unico: string | null; // ISO datetime-local "YYYY-MM-DDTHH:mm"
     recorrencia_tipo: "dia" | "semana" | "mes";
     recorrencia_dias_semana: number[];
     recorrencia_meses: number[];
@@ -111,6 +113,8 @@ const HomepageConfigTab = () => {
     enviar_recorrente: boolean;
   };
   const REC_DEFAULT: RecCfg = {
+    modo_envio: "recorrente",
+    data_envio_unico: null,
     recorrencia_tipo: "semana",
     recorrencia_dias_semana: [],
     recorrencia_meses: [],
