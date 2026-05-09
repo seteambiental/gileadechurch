@@ -99,6 +99,27 @@ const HomepageConfigTab = () => {
   const [tipoMensagemSelecionada, setTipoMensagemSelecionada] = useState<TipoMensagem>("confirmacao_inscricao");
   const [mensagemEvento, setMensagemEvento] = useState<string>("");
 
+  // Estado para configuração de recorrência (somente quando tipo = contato_emergencia)
+  type RecCfg = {
+    recorrencia_tipo: "dia" | "semana" | "mes";
+    recorrencia_dias_semana: number[];
+    recorrencia_meses: number[];
+    recorrencia_semana_ordinal: "primeiro" | "segundo" | "terceiro" | "quarto" | "ultimo" | "";
+    recorrencia_dia_semana: number | null;
+    recorrencia_hora: string;
+    enviar_recorrente: boolean;
+  };
+  const REC_DEFAULT: RecCfg = {
+    recorrencia_tipo: "semana",
+    recorrencia_dias_semana: [],
+    recorrencia_meses: [],
+    recorrencia_semana_ordinal: "",
+    recorrencia_dia_semana: null,
+    recorrencia_hora: "08:00",
+    enviar_recorrente: true,
+  };
+  const [recCfg, setRecCfg] = useState<RecCfg>(REC_DEFAULT);
+
   const { data: homepageConfig, isLoading: loadingHomepage } = useQuery({
     queryKey: ["homepage-config-mensagem"],
     queryFn: async () => {
@@ -258,7 +279,7 @@ const HomepageConfigTab = () => {
 
   const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
     queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
-    enabled: !!eventoAtual,
+    enabled: !!eventoAtual && tipoMensagemSelecionada !== "contato_emergencia",
     queryFn: async () => {
       const { data, error } = await supabase
         .from("mensagens_evento_templates")
@@ -272,17 +293,72 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // Configuração de emergência (mensagem + recorrência) — para tipo contato_emergencia
+  const { data: emergCfg, isFetching: loadingEmerg } = useQuery({
+    queryKey: ["emerg-cfg-homepage", eventoAtual?.id, eventoAtual?.tipo],
+    enabled: !!eventoAtual && tipoMensagemSelecionada === "contato_emergencia",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("evento_emergencia_config")
+        .select("*")
+        .eq("evento_id", eventoAtual!.id)
+        .eq("evento_tipo", eventoAtual!.tipo)
+        .maybeSingle();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
   useEffect(() => {
     if (!eventoAtual) {
       setMensagemEvento("");
       return;
     }
-    setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
-  }, [eventoAtual, tipoMensagemSelecionada, templateAtual]);
+    if (tipoMensagemSelecionada === "contato_emergencia") {
+      setMensagemEvento(
+        emergCfg?.mensagem_recorrente?.trim()
+          ? emergCfg.mensagem_recorrente
+          : TEMPLATES_PADRAO.contato_emergencia,
+      );
+      setRecCfg({
+        recorrencia_tipo: (emergCfg?.recorrencia_tipo as any) || "semana",
+        recorrencia_dias_semana: emergCfg?.recorrencia_dias_semana || [],
+        recorrencia_meses: emergCfg?.recorrencia_meses || [],
+        recorrencia_semana_ordinal: (emergCfg?.recorrencia_semana_ordinal as any) || "",
+        recorrencia_dia_semana:
+          emergCfg?.recorrencia_dia_semana ?? null,
+        recorrencia_hora: (emergCfg?.recorrencia_hora || "08:00").slice(0, 5),
+        enviar_recorrente: emergCfg?.enviar_recorrente ?? true,
+      });
+    } else {
+      setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
+    }
+  }, [eventoAtual, tipoMensagemSelecionada, templateAtual, emergCfg]);
 
   const salvarMensagemEvento = useMutation({
     mutationFn: async () => {
       if (!eventoAtual) throw new Error("Selecione um evento");
+      if (tipoMensagemSelecionada === "contato_emergencia") {
+        const payload = {
+          evento_id: eventoAtual.id,
+          evento_tipo: eventoAtual.tipo,
+          mensagem_inicial: emergCfg?.mensagem_inicial || "",
+          mensagem_recorrente: mensagemEvento,
+          enviar_recorrente: recCfg.enviar_recorrente,
+          frequencia_dias: emergCfg?.frequencia_dias ?? 7,
+          recorrencia_tipo: recCfg.recorrencia_tipo,
+          recorrencia_dias_semana: recCfg.recorrencia_dias_semana,
+          recorrencia_meses: recCfg.recorrencia_meses,
+          recorrencia_semana_ordinal: recCfg.recorrencia_semana_ordinal || null,
+          recorrencia_dia_semana: recCfg.recorrencia_dia_semana,
+          recorrencia_hora: recCfg.recorrencia_hora,
+        };
+        const { error } = await supabase
+          .from("evento_emergencia_config")
+          .upsert(payload, { onConflict: "evento_id,evento_tipo" });
+        if (error) throw error;
+        return;
+      }
       const payload = {
         evento_id: eventoAtual.id,
         evento_tipo: eventoAtual.tipo,
@@ -296,6 +372,7 @@ const HomepageConfigTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
       toast.success("Mensagem do evento salva com sucesso!");
     },
     onError: (error: any) => {
