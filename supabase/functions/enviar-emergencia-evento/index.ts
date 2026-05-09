@@ -151,6 +151,8 @@ serve(async (req) => {
     const eventoTipo = (body.eventoTipo as string) || "impacto";
     const inscricaoId = (body.inscricaoId as string) || null;
     const mensagemOverride = (body.mensagemOverride as string) || null;
+    const destinatarioTipo =
+      (body.destinatarioTipo as "principal" | "emergencia") || "emergencia";
 
     if (!eventoId || !tipo) {
       return new Response(
@@ -208,22 +210,27 @@ serve(async (req) => {
 
     for (let i = 0; i < inscricoes.length; i++) {
       const insc = inscricoes[i] as any;
-      const tel = (insc.telefone_emergencia || insc.telefone_responsavel || "")
-        .toString()
-        .replace(/\D/g, "");
+      const telRaw =
+        destinatarioTipo === "principal"
+          ? insc.telefone || ""
+          : insc.telefone_emergencia || insc.telefone_responsavel || "";
+      const tel = telRaw.toString().replace(/\D/g, "");
       if (!tel || tel.length < 10) {
         falhas++;
         await supabase.from("emergencia_envios_log").insert({
           inscricao_id: insc.id,
           evento_id: eventoId,
           evento_tipo: eventoTipo,
-          tipo_envio: tipo,
+          tipo_envio: `${tipo}:${destinatarioTipo}`,
           telefone_destino: tel || "",
           nome_contato_emergencia: insc.nome_responsavel,
           nome_participante: insc.nome,
           mensagem_enviada: "",
           status: "falhou",
-          erro: "Telefone de emergência ausente ou inválido",
+          erro:
+            destinatarioTipo === "principal"
+              ? "Telefone do participante ausente ou inválido"
+              : "Telefone de emergência ausente ou inválido",
         });
         continue;
       }
@@ -246,7 +253,7 @@ serve(async (req) => {
           inscricao_id: insc.id,
           evento_id: eventoId,
           evento_tipo: eventoTipo,
-          tipo_envio: tipo,
+          tipo_envio: `${tipo}:${destinatarioTipo}`,
           telefone_destino: tel,
           nome_contato_emergencia: insc.nome_responsavel,
           nome_participante: insc.nome,
@@ -261,7 +268,7 @@ serve(async (req) => {
           inscricao_id: insc.id,
           evento_id: eventoId,
           evento_tipo: eventoTipo,
-          tipo_envio: tipo,
+          tipo_envio: `${tipo}:${destinatarioTipo}`,
           telefone_destino: tel,
           nome_contato_emergencia: insc.nome_responsavel,
           nome_participante: insc.nome,
