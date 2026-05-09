@@ -1,0 +1,2 @@
+ALTER TABLE public.evento_emergencia_config DROP CONSTRAINT IF EXISTS evento_emergencia_config_evento_tipo_check;
+ALTER TABLE public.evento_emergencia_config ADD CONSTRAINT evento_emergencia_config_evento_tipo_check CHECK (evento_tipo = ANY (ARRAY['impacto'::text, 'agenda'::text, 'culto'::text]));
