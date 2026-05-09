@@ -102,6 +102,8 @@ const HomepageConfigTab = () => {
 
   // Estado para configuração de recorrência (somente quando tipo = contato_emergencia)
   type RecCfg = {
+    modo_envio: "recorrente" | "unico";
+    data_envio_unico: string | null; // ISO datetime-local "YYYY-MM-DDTHH:mm"
     recorrencia_tipo: "dia" | "semana" | "mes";
     recorrencia_dias_semana: number[];
     recorrencia_meses: number[];
@@ -111,6 +113,8 @@ const HomepageConfigTab = () => {
     enviar_recorrente: boolean;
   };
   const REC_DEFAULT: RecCfg = {
+    modo_envio: "recorrente",
+    data_envio_unico: null,
     recorrencia_tipo: "semana",
     recorrencia_dias_semana: [],
     recorrencia_meses: [],
@@ -383,6 +387,10 @@ const HomepageConfigTab = () => {
           : TEMPLATES_PADRAO[tipoMensagemSelecionada] || TEMPLATES_PADRAO.contato_emergencia,
       );
       setRecCfg({
+        modo_envio: ((emergCfg?.modo_envio as any) === "unico" ? "unico" : "recorrente"),
+        data_envio_unico: emergCfg?.data_envio_unico
+          ? String(emergCfg.data_envio_unico).slice(0, 16)
+          : null,
         recorrencia_tipo: (emergCfg?.recorrencia_tipo as any) || "semana",
         recorrencia_dias_semana: emergCfg?.recorrencia_dias_semana || [],
         recorrencia_meses: emergCfg?.recorrencia_meses || [],
@@ -409,6 +417,11 @@ const HomepageConfigTab = () => {
           mensagem_recorrente: mensagemEvento,
           enviar_recorrente: recCfg.enviar_recorrente,
           frequencia_dias: emergCfg?.frequencia_dias ?? 7,
+          modo_envio: recCfg.modo_envio,
+          data_envio_unico:
+            recCfg.modo_envio === "unico" && recCfg.data_envio_unico
+              ? new Date(recCfg.data_envio_unico).toISOString()
+              : null,
           recorrencia_tipo: recCfg.recorrencia_tipo,
           recorrencia_dias_semana: recCfg.recorrencia_dias_semana,
           recorrencia_meses: recCfg.recorrencia_meses,
@@ -492,7 +505,17 @@ const HomepageConfigTab = () => {
   });
 
   const formatRecorrencia = (c: any) => {
-    if (!c.enviar_recorrente) return "Recorrência desativada";
+    if (!c.enviar_recorrente) return "Envio desativado";
+    if (c.modo_envio === "unico") {
+      if (!c.data_envio_unico) return "Único — data não definida";
+      const d = new Date(c.data_envio_unico);
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(2);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mi = String(d.getMinutes()).padStart(2, "0");
+      return `Único — ${dd}/${mm}/${yy} às ${hh}:${mi}`;
+    }
     const hora = (c.recorrencia_hora || "08:00").slice(0, 5);
     const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
@@ -873,9 +896,9 @@ const HomepageConfigTab = () => {
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-semibold">Frequência de envio</Label>
+                  <Label className="text-sm font-semibold">Configuração de envio</Label>
                   <p className="text-xs text-muted-foreground">
-                    Define quando a mensagem recorrente será disparada até o evento.
+                    Defina se a mensagem será enviada de forma recorrente ou em uma data única.
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -886,12 +909,49 @@ const HomepageConfigTab = () => {
                       setRecCfg({ ...recCfg, enviar_recorrente: e.target.checked })
                     }
                   />
-                  Ativar recorrência
+                  Ativar envio
                 </label>
               </div>
 
               {recCfg.enviar_recorrente && (
                 <>
+                  <div className="flex flex-wrap gap-2">
+                    {(["recorrente", "unico"] as const).map((m) => (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() => setRecCfg({ ...recCfg, modo_envio: m })}
+                        className={`px-3 py-1.5 rounded-md text-sm border transition ${
+                          recCfg.modo_envio === m
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {m === "recorrente" ? "Recorrente" : "Único"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {recCfg.modo_envio === "unico" && (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Data e hora do envio</Label>
+                        <Input
+                          type="datetime-local"
+                          value={recCfg.data_envio_unico || ""}
+                          onChange={(e) =>
+                            setRecCfg({ ...recCfg, data_envio_unico: e.target.value || null })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          A mensagem será disparada após esse horário.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {recCfg.modo_envio === "recorrente" && (
+                  <>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Enviar a cada</Label>
@@ -1057,6 +1117,8 @@ const HomepageConfigTab = () => {
                         </div>
                       </div>
                     </>
+                  )}
+                  </>
                   )}
                 </>
               )}
