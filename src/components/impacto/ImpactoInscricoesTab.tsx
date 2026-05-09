@@ -735,6 +735,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
             </Button>
           )}
           {selectedEventoId && inscricoes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setEmergenciaOpen(true)}>
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              WhatsApp Emergência
+            </Button>
+          )}
+          {selectedEventoId && inscricoes.length > 0 && (
             <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setFinalizarOpen(true)}>
               <Archive className="w-4 h-4 mr-2" />
               Finalizar Evento
