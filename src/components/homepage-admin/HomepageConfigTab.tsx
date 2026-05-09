@@ -505,7 +505,17 @@ const HomepageConfigTab = () => {
   });
 
   const formatRecorrencia = (c: any) => {
-    if (!c.enviar_recorrente) return "Recorrência desativada";
+    if (!c.enviar_recorrente) return "Envio desativado";
+    if (c.modo_envio === "unico") {
+      if (!c.data_envio_unico) return "Único — data não definida";
+      const d = new Date(c.data_envio_unico);
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yy = String(d.getFullYear()).slice(2);
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mi = String(d.getMinutes()).padStart(2, "0");
+      return `Único — ${dd}/${mm}/${yy} às ${hh}:${mi}`;
+    }
     const hora = (c.recorrencia_hora || "08:00").slice(0, 5);
     const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
