@@ -272,23 +272,6 @@ const HomepageConfigTab = () => {
     return row ? !!row.ativo : false;
   };
 
-  // Tipos disponíveis para o evento selecionado
-  const tiposDisponiveis = useMemo(() => {
-    if (!eventoAtual) return TIPOS_MENSAGEM;
-    return TIPOS_MENSAGEM.filter((t) =>
-      isTipoAtivoParaCategoria(eventoAtual.tipo as any, t.value),
-    );
-  }, [eventoAtual, categoriaTipos]);
-
-  // Se o tipo selecionado deixar de estar disponível, ajusta para o primeiro disponível
-  useEffect(() => {
-    if (!eventoAtual) return;
-    if (tiposDisponiveis.length === 0) return;
-    if (!tiposDisponiveis.some((t) => t.value === tipoMensagemSelecionada)) {
-      setTipoMensagemSelecionada(tiposDisponiveis[0].value);
-    }
-  }, [eventoAtual, tiposDisponiveis, tipoMensagemSelecionada]);
-
   const eventosOptions = useMemo(() => {
     const fmtData = (d: string | null | undefined) => {
       if (!d) return "";
