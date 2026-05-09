@@ -671,7 +671,7 @@ const HomepageConfigTab = () => {
       </Card>
 
       {/* Mensagens de Eventos (WhatsApp) */}
-      <Card>
+      <Card id="mensagens-eventos-card">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
