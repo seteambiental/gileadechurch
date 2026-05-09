@@ -278,7 +278,7 @@ const HomepageConfigTab = () => {
   });
 
   const toggleCategoriaTipo = useMutation({
-    mutationFn: async (vars: { categoria: "agenda" | "impacto"; tipo: TipoMensagem; ativo: boolean }) => {
+    mutationFn: async (vars: { categoria: CategoriaEvento; tipo: TipoMensagem; ativo: boolean }) => {
       const { error } = await supabase
         .from("categoria_mensagem_config" as any)
         .upsert(
@@ -1203,18 +1203,16 @@ const HomepageConfigTab = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {(["agenda", "impacto"] as const).map((cat) => (
+          <div className="grid gap-4 md:grid-cols-3">
+            {([
+              { key: "agenda_sem_inscricao", label: "Agenda — sem inscrição", icon: Calendar },
+              { key: "agenda_com_inscricao", label: "Agenda — com inscrição", icon: Calendar },
+              { key: "impacto", label: "Eventos Impacto", icon: Target },
+            ] as const).map(({ key: cat, label, icon: Icon }) => (
               <div key={cat} className="border rounded-md p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  {cat === "agenda" ? (
-                    <Calendar className="w-4 h-4 text-primary" />
-                  ) : (
-                    <Target className="w-4 h-4 text-primary" />
-                  )}
-                  <h4 className="text-sm font-semibold">
-                    {cat === "agenda" ? "Eventos da Agenda" : "Eventos Impacto (com inscrição)"}
-                  </h4>
+                  <Icon className="w-4 h-4 text-primary" />
+                  <h4 className="text-sm font-semibold">{label}</h4>
                 </div>
                 <div className="space-y-2">
                   {TIPOS_MENSAGEM.map((t) => {
