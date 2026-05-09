@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -15,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
@@ -235,6 +236,58 @@ const HomepageConfigTab = () => {
       return data || [];
     },
   });
+
+  // Configuração de quais tipos de mensagem estão habilitados por categoria de evento
+  const { data: categoriaTipos } = useQuery({
+    queryKey: ["categoria-mensagem-config"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("categoria_mensagem_config" as any)
+        .select("categoria_evento, tipo_mensagem, ativo");
+      if (error) throw error;
+      return (data as any[]) || [];
+    },
+  });
+
+  const toggleCategoriaTipo = useMutation({
+    mutationFn: async (vars: { categoria: "agenda" | "impacto"; tipo: TipoMensagem; ativo: boolean }) => {
+      const { error } = await supabase
+        .from("categoria_mensagem_config" as any)
+        .upsert(
+          { categoria_evento: vars.categoria, tipo_mensagem: vars.tipo, ativo: vars.ativo },
+          { onConflict: "categoria_evento,tipo_mensagem" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categoria-mensagem-config"] });
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar configuração"),
+  });
+
+  const isTipoAtivoParaCategoria = (categoria: "agenda" | "impacto", tipo: TipoMensagem) => {
+    const row = (categoriaTipos || []).find(
+      (r: any) => r.categoria_evento === categoria && r.tipo_mensagem === tipo,
+    );
+    return row ? !!row.ativo : false;
+  };
+
+  // Tipos disponíveis para o evento selecionado
+  const tiposDisponiveis = useMemo(() => {
+    if (!eventoAtual) return TIPOS_MENSAGEM;
+    return TIPOS_MENSAGEM.filter((t) =>
+      isTipoAtivoParaCategoria(eventoAtual.tipo as any, t.value),
+    );
+  }, [eventoAtual, categoriaTipos]);
+
+  // Se o tipo selecionado deixar de estar disponível, ajusta para o primeiro disponível
+  useEffect(() => {
+    if (!eventoAtual) return;
+    if (tiposDisponiveis.length === 0) return;
+    if (!tiposDisponiveis.some((t) => t.value === tipoMensagemSelecionada)) {
+      setTipoMensagemSelecionada(tiposDisponiveis[0].value);
+    }
+  }, [eventoAtual, tiposDisponiveis, tipoMensagemSelecionada]);
 
   const eventosOptions = useMemo(() => {
     const fmtData = (d: string | null | undefined) => {
@@ -741,7 +794,7 @@ const HomepageConfigTab = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {TIPOS_MENSAGEM.map((t) => (
+                  {(tiposDisponiveis.length > 0 ? tiposDisponiveis : TIPOS_MENSAGEM).map((t) => (
                     <SelectItem key={t.value} value={t.value}>
                       {t.label}
                     </SelectItem>
@@ -750,6 +803,11 @@ const HomepageConfigTab = () => {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {TIPOS_MENSAGEM.find((t) => t.value === tipoMensagemSelecionada)?.descricao}
+                {eventoAtual && tiposDisponiveis.length === 0 && (
+                  <span className="block text-amber-600 mt-1">
+                    Nenhum tipo de mensagem habilitado para esta categoria. Configure abaixo.
+                  </span>
+                )}
               </p>
             </div>
           </div>
