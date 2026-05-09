@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
@@ -380,6 +380,90 @@ const HomepageConfigTab = () => {
     },
   });
 
+  // Lista de mensagens recorrentes ao contato de emergência configuradas
+  const { data: emergList = [] } = useQuery({
+    queryKey: ["emerg-cfg-list"],
+    queryFn: async () => {
+      const { data: cfgs, error } = await supabase
+        .from("evento_emergencia_config")
+        .select("*")
+        .eq("ativo", true)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      const list = cfgs || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.evento_id)));
+      if (ids.length === 0) return [] as any[];
+      const [{ data: ag }, { data: im }] = await Promise.all([
+        supabase.from("agenda_igreja").select("id, titulo, data_evento").in("id", ids),
+        supabase.from("impacto_eventos").select("id, nome, data_inicio").in("id", ids),
+      ]);
+      const map = new Map<string, { titulo: string; data: string | null }>();
+      (ag || []).forEach((e: any) =>
+        map.set(`agenda:${e.id}`, { titulo: e.titulo, data: e.data_evento }),
+      );
+      (im || []).forEach((e: any) =>
+        map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
+      );
+      return list.map((c: any) => {
+        const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
+        return { ...c, evento_titulo: meta?.titulo || "(evento removido)", evento_data: meta?.data || null };
+      });
+    },
+  });
+
+  const excluirEmergCfg = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("evento_emergencia_config")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Configuração removida");
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-list"] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover"),
+  });
+
+  const formatRecorrencia = (c: any) => {
+    if (!c.enviar_recorrente) return "Recorrência desativada";
+    const hora = (c.recorrencia_hora || "08:00").slice(0, 5);
+    const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    if (c.recorrencia_tipo === "dia") {
+      const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
+      return `Diário${d ? ` (${d})` : ""} • ${hora}`;
+    }
+    if (c.recorrencia_tipo === "semana") {
+      const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
+      return `Semanal${d ? ` — ${d}` : ""} • ${hora}`;
+    }
+    if (c.recorrencia_tipo === "mes") {
+      const m = (c.recorrencia_meses || []).map((i: number) => meses[i - 1]).join(", ");
+      const ord = c.recorrencia_semana_ordinal
+        ? `${c.recorrencia_semana_ordinal} ${dias[c.recorrencia_dia_semana ?? 0] || ""}`
+        : "";
+      return `Mensal${m ? ` — ${m}` : ""}${ord ? ` (${ord})` : ""} • ${hora}`;
+    }
+    return `A cada ${c.frequencia_dias || 7} dias • ${hora}`;
+  };
+
+  const handleEditEmergCfg = (c: any) => {
+    setTipoMensagemSelecionada("contato_emergencia");
+    setEventoSelecionado(`${c.evento_tipo}:${c.evento_id}`);
+    if (typeof window !== "undefined") {
+      setTimeout(
+        () =>
+          document
+            .getElementById("mensagens-eventos-card")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  };
+
   const restaurarPadrao = useMutation({
     mutationFn: async () => {
       if (!eventoAtual) throw new Error("Selecione um evento");
@@ -587,7 +671,7 @@ const HomepageConfigTab = () => {
       </Card>
 
       {/* Mensagens de Eventos (WhatsApp) */}
-      <Card>
+      <Card id="mensagens-eventos-card">
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
@@ -931,6 +1015,76 @@ const HomepageConfigTab = () => {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Lista de mensagens recorrentes ao Contato de Emergência configuradas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-amber-600" />
+            Mensagens recorrentes — Contato de Emergência
+          </CardTitle>
+          <CardDescription>
+            Eventos com mensagem ao contato de emergência configurada.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {emergList.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhuma mensagem configurada ainda.
+            </p>
+          ) : (
+            <div className="divide-y border rounded-md">
+              {emergList.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {c.evento_titulo}
+                      <Badge variant="outline" className="ml-2 text-[10px] uppercase">
+                        {c.evento_tipo}
+                      </Badge>
+                      {!c.enviar_recorrente && (
+                        <Badge variant="secondary" className="ml-2 text-[10px]">
+                          inativa
+                        </Badge>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatRecorrencia(c)}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditEmergCfg(c)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Remover configuração de "${c.evento_titulo}"?`)) {
+                          excluirEmergCfg.mutate(c.id);
+                        }
+                      }}
+                      disabled={excluirEmergCfg.isPending}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
