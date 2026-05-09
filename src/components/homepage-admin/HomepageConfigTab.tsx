@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
