@@ -121,6 +121,9 @@ const HomepageConfigTab = () => {
   };
   const [recCfg, setRecCfg] = useState<RecCfg>(REC_DEFAULT);
 
+  // Indica se a mensagem do evento/tipo selecionado deve ser tratada como recorrente
+  const [usaRecorrencia, setUsaRecorrencia] = useState<boolean>(false);
+
   const { data: homepageConfig, isLoading: loadingHomepage } = useQuery({
     queryKey: ["homepage-config-mensagem"],
     queryFn: async () => {
@@ -330,9 +333,14 @@ const HomepageConfigTab = () => {
     }
   }, [eventoAtual, tiposDisponiveis, tipoMensagemSelecionada]);
 
+  // Default da recorrência ao trocar tipo: liga para Contato de Emergência, desliga para os demais
+  useEffect(() => {
+    setUsaRecorrencia(tipoMensagemSelecionada === "contato_emergencia");
+  }, [tipoMensagemSelecionada, eventoSelecionado]);
+
   const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
     queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
-    enabled: !!eventoAtual && tipoMensagemSelecionada !== "contato_emergencia",
+    enabled: !!eventoAtual && !usaRecorrencia,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("mensagens_evento_templates")
@@ -346,16 +354,17 @@ const HomepageConfigTab = () => {
     },
   });
 
-  // Configuração de emergência (mensagem + recorrência) — para tipo contato_emergencia
+  // Configuração de mensagem recorrente para o evento/tipo selecionado
   const { data: emergCfg, isFetching: loadingEmerg } = useQuery({
-    queryKey: ["emerg-cfg-homepage", eventoAtual?.id, eventoAtual?.tipo],
-    enabled: !!eventoAtual && tipoMensagemSelecionada === "contato_emergencia",
+    queryKey: ["emerg-cfg-homepage", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
+    enabled: !!eventoAtual && usaRecorrencia,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_emergencia_config")
         .select("*")
         .eq("evento_id", eventoAtual!.id)
         .eq("evento_tipo", eventoAtual!.tipo)
+        .eq("tipo_mensagem", tipoMensagemSelecionada)
         .maybeSingle();
       if (error) throw error;
       return data as any;
@@ -367,11 +376,11 @@ const HomepageConfigTab = () => {
       setMensagemEvento("");
       return;
     }
-    if (tipoMensagemSelecionada === "contato_emergencia") {
+    if (usaRecorrencia) {
       setMensagemEvento(
         emergCfg?.mensagem_recorrente?.trim()
           ? emergCfg.mensagem_recorrente
-          : TEMPLATES_PADRAO.contato_emergencia,
+          : TEMPLATES_PADRAO[tipoMensagemSelecionada] || TEMPLATES_PADRAO.contato_emergencia,
       );
       setRecCfg({
         recorrencia_tipo: (emergCfg?.recorrencia_tipo as any) || "semana",
@@ -386,15 +395,16 @@ const HomepageConfigTab = () => {
     } else {
       setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
     }
-  }, [eventoAtual, tipoMensagemSelecionada, templateAtual, emergCfg]);
+  }, [eventoAtual, tipoMensagemSelecionada, templateAtual, emergCfg, usaRecorrencia]);
 
   const salvarMensagemEvento = useMutation({
     mutationFn: async () => {
       if (!eventoAtual) throw new Error("Selecione um evento");
-      if (tipoMensagemSelecionada === "contato_emergencia") {
+      if (usaRecorrencia) {
         const payload = {
           evento_id: eventoAtual.id,
           evento_tipo: eventoAtual.tipo,
+          tipo_mensagem: tipoMensagemSelecionada,
           mensagem_inicial: emergCfg?.mensagem_inicial || "",
           mensagem_recorrente: mensagemEvento,
           enviar_recorrente: recCfg.enviar_recorrente,
@@ -408,7 +418,7 @@ const HomepageConfigTab = () => {
         };
         const { error } = await supabase
           .from("evento_emergencia_config")
-          .upsert(payload, { onConflict: "evento_id,evento_tipo" });
+          .upsert(payload, { onConflict: "evento_id,evento_tipo,tipo_mensagem" });
         if (error) throw error;
         return;
       }
@@ -426,6 +436,7 @@ const HomepageConfigTab = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
       queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-cfg-list"] });
       toast.success("Mensagem do evento salva com sucesso!");
     },
     onError: (error: any) => {
@@ -504,8 +515,9 @@ const HomepageConfigTab = () => {
   };
 
   const handleEditEmergCfg = (c: any) => {
-    setTipoMensagemSelecionada("contato_emergencia");
+    setTipoMensagemSelecionada((c.tipo_mensagem as TipoMensagem) || "contato_emergencia");
     setEventoSelecionado(`${c.evento_tipo}:${c.evento_id}`);
+    setUsaRecorrencia(true);
     if (typeof window !== "undefined") {
       setTimeout(
         () =>
@@ -834,7 +846,7 @@ const HomepageConfigTab = () => {
               rows={14}
               className="font-mono text-sm"
             />
-            {tipoMensagemSelecionada === "contato_emergencia" && (
+            {usaRecorrencia && (
               <p className="text-xs text-muted-foreground">
                 Placeholders disponíveis: <code>{"{NOME}"}</code>, <code>{"{NOME_COMPLETO}"}</code>,{" "}
                 <code>{"{NOME_EMERGENCIA}"}</code>, <code>{"{EVENTO}"}</code>, <code>{"{DATA_EVENTO}"}</code>.
@@ -842,7 +854,22 @@ const HomepageConfigTab = () => {
             )}
           </div>
 
-          {tipoMensagemSelecionada === "contato_emergencia" && eventoAtual && (
+          {eventoAtual && (
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <Label className="text-sm font-semibold">Configurar como envio recorrente</Label>
+                <p className="text-xs text-muted-foreground">
+                  Quando ativo, esta mensagem é enviada automaticamente em uma frequência definida até o evento.
+                </p>
+              </div>
+              <Switch
+                checked={usaRecorrencia}
+                onCheckedChange={(v) => setUsaRecorrencia(!!v)}
+              />
+            </div>
+          )}
+
+          {usaRecorrencia && eventoAtual && (
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1047,7 +1074,7 @@ const HomepageConfigTab = () => {
                 onClick={() => restaurarPadrao.mutate()}
                 disabled={
                   !eventoAtual ||
-                  tipoMensagemSelecionada === "contato_emergencia" ||
+                  usaRecorrencia ||
                   !templateAtual ||
                   restaurarPadrao.isPending
                 }
@@ -1140,10 +1167,10 @@ const HomepageConfigTab = () => {
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <ShieldAlert className="w-5 h-5 text-amber-600" />
-            Mensagens recorrentes — Contato de Emergência
+            Mensagens recorrentes
           </CardTitle>
           <CardDescription>
-            Eventos com mensagem ao contato de emergência configurada.
+            Eventos com mensagens configuradas para envio recorrente (lembretes, contato de emergência, etc.).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1163,6 +1190,11 @@ const HomepageConfigTab = () => {
                       {c.evento_titulo}
                       <Badge variant="outline" className="ml-2 text-[10px] uppercase">
                         {c.evento_tipo}
+                      </Badge>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        {TIPOS_MENSAGEM.find((t) => t.value === c.tipo_mensagem)?.label
+                          || c.tipo_mensagem
+                          || "contato_emergencia"}
                       </Badge>
                       {!c.enviar_recorrente && (
                         <Badge variant="secondary" className="ml-2 text-[10px]">
