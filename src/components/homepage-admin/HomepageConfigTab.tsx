@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
@@ -180,10 +181,12 @@ const HomepageConfigTab = () => {
   const { data: eventosAgenda } = useQuery({
     queryKey: ["mensagens-eventos-agenda"],
     queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("agenda_igreja")
         .select("id, titulo, data_evento, necessita_inscricao")
         .eq("ativo", true)
+        .gte("data_evento", today)
         .order("data_evento", { ascending: true });
       if (error) throw error;
       return data || [];
@@ -193,9 +196,11 @@ const HomepageConfigTab = () => {
   const { data: eventosImpacto } = useQuery({
     queryKey: ["mensagens-eventos-impacto"],
     queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from("impacto_eventos")
         .select("id, nome, data_inicio")
+        .gte("data_inicio", today)
         .order("data_inicio", { ascending: true });
       if (error) throw error;
       return data || [];
