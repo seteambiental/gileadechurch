@@ -110,7 +110,7 @@ async function buscarInscricoes(
   let q = supabase
     .from("impacto_inscricoes")
     .select(
-      "id, nome, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado",
+      "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado",
     )
     .eq("evento_id", eventoId);
   if (inscricaoId) q = q.eq("id", inscricaoId);
