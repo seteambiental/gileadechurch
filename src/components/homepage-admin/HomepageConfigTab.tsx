@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 
 type TipoMensagem =
@@ -163,6 +163,7 @@ const HomepageConfigTab = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mensagemAniversario, setMensagemAniversario] = useState("");
+  const [tiposCategoriaExpandido, setTiposCategoriaExpandido] = useState(false);
   const [mensagemCarregada, setMensagemCarregada] = useState(false);
 
   // Estado da seção "Mensagens de Eventos"
@@ -1272,16 +1273,40 @@ const HomepageConfigTab = () => {
 
       {/* Tipos de mensagem habilitados por categoria de evento */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <ListChecks className="w-5 h-5" />
-            Tipos de mensagem por categoria de evento
-          </CardTitle>
-          <CardDescription>
-            Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
-            Os tipos desabilitados não aparecerão no seletor acima.
-          </CardDescription>
+        <CardHeader
+          className="cursor-pointer select-none"
+          onClick={() => setTiposCategoriaExpandido((v) => !v)}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListChecks className="w-5 h-5" />
+                Tipos de mensagem por categoria de evento
+              </CardTitle>
+              <CardDescription>
+                Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
+                Os tipos desabilitados não aparecerão no seletor acima.
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setTiposCategoriaExpandido((v) => !v);
+              }}
+              aria-label={tiposCategoriaExpandido ? "Recolher" : "Expandir"}
+            >
+              {tiposCategoriaExpandido ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
+        {tiposCategoriaExpandido && (
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {([
@@ -1326,6 +1351,7 @@ const HomepageConfigTab = () => {
             ))}
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* Lista de mensagens recorrentes ao Contato de Emergência configuradas */}
