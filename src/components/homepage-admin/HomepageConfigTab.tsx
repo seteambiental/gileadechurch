@@ -886,9 +886,9 @@ const HomepageConfigTab = () => {
             <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-semibold">Frequência de envio</Label>
+                  <Label className="text-sm font-semibold">Configuração de envio</Label>
                   <p className="text-xs text-muted-foreground">
-                    Define quando a mensagem recorrente será disparada até o evento.
+                    Defina se a mensagem será enviada de forma recorrente ou em uma data única.
                   </p>
                 </div>
                 <label className="flex items-center gap-2 text-sm">
@@ -899,12 +899,49 @@ const HomepageConfigTab = () => {
                       setRecCfg({ ...recCfg, enviar_recorrente: e.target.checked })
                     }
                   />
-                  Ativar recorrência
+                  Ativar envio
                 </label>
               </div>
 
               {recCfg.enviar_recorrente && (
                 <>
+                  <div className="flex flex-wrap gap-2">
+                    {(["recorrente", "unico"] as const).map((m) => (
+                      <button
+                        type="button"
+                        key={m}
+                        onClick={() => setRecCfg({ ...recCfg, modo_envio: m })}
+                        className={`px-3 py-1.5 rounded-md text-sm border transition ${
+                          recCfg.modo_envio === m
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background hover:bg-muted"
+                        }`}
+                      >
+                        {m === "recorrente" ? "Recorrente" : "Único"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {recCfg.modo_envio === "unico" && (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Data e hora do envio</Label>
+                        <Input
+                          type="datetime-local"
+                          value={recCfg.data_envio_unico || ""}
+                          onChange={(e) =>
+                            setRecCfg({ ...recCfg, data_envio_unico: e.target.value || null })
+                          }
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          A mensagem será disparada após esse horário.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {recCfg.modo_envio === "recorrente" && (
+                  <>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="space-y-2">
                       <Label>Enviar a cada</Label>
