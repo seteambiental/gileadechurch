@@ -1273,16 +1273,40 @@ const HomepageConfigTab = () => {
 
       {/* Tipos de mensagem habilitados por categoria de evento */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <ListChecks className="w-5 h-5" />
-            Tipos de mensagem por categoria de evento
-          </CardTitle>
-          <CardDescription>
-            Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
-            Os tipos desabilitados não aparecerão no seletor acima.
-          </CardDescription>
+        <CardHeader
+          className="cursor-pointer select-none"
+          onClick={() => setTiposCategoriaExpandido((v) => !v)}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListChecks className="w-5 h-5" />
+                Tipos de mensagem por categoria de evento
+              </CardTitle>
+              <CardDescription>
+                Habilite quais tipos de mensagem podem ser configurados para cada categoria de evento.
+                Os tipos desabilitados não aparecerão no seletor acima.
+              </CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setTiposCategoriaExpandido((v) => !v);
+              }}
+              aria-label={tiposCategoriaExpandido ? "Recolher" : "Expandir"}
+            >
+              {tiposCategoriaExpandido ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
         </CardHeader>
+        {tiposCategoriaExpandido && (
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {([
@@ -1327,6 +1351,7 @@ const HomepageConfigTab = () => {
             ))}
           </div>
         </CardContent>
+        )}
       </Card>
 
       {/* Lista de mensagens recorrentes ao Contato de Emergência configuradas */}
