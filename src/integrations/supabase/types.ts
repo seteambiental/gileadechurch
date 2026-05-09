@@ -2625,6 +2625,7 @@ export type Database = {
         Row: {
           ativo: boolean
           created_at: string
+          data_envio_unico: string | null
           data_inicio_recorrencia: string | null
           enviar_recorrente: boolean
           evento_id: string
@@ -2633,6 +2634,7 @@ export type Database = {
           id: string
           mensagem_inicial: string
           mensagem_recorrente: string
+          modo_envio: string
           recorrencia_dia_semana: number | null
           recorrencia_dias_semana: number[]
           recorrencia_hora: string
@@ -2645,6 +2647,7 @@ export type Database = {
         Insert: {
           ativo?: boolean
           created_at?: string
+          data_envio_unico?: string | null
           data_inicio_recorrencia?: string | null
           enviar_recorrente?: boolean
           evento_id: string
@@ -2653,6 +2656,7 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          modo_envio?: string
           recorrencia_dia_semana?: number | null
           recorrencia_dias_semana?: number[]
           recorrencia_hora?: string
@@ -2665,6 +2669,7 @@ export type Database = {
         Update: {
           ativo?: boolean
           created_at?: string
+          data_envio_unico?: string | null
           data_inicio_recorrencia?: string | null
           enviar_recorrente?: boolean
           evento_id?: string
@@ -2673,6 +2678,7 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          modo_envio?: string
           recorrencia_dia_semana?: number | null
           recorrencia_dias_semana?: number[]
           recorrencia_hora?: string
