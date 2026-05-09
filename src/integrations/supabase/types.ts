@@ -2639,6 +2639,7 @@ export type Database = {
           recorrencia_meses: number[]
           recorrencia_semana_ordinal: string | null
           recorrencia_tipo: string
+          tipo_mensagem: string
           updated_at: string
         }
         Insert: {
@@ -2658,6 +2659,7 @@ export type Database = {
           recorrencia_meses?: number[]
           recorrencia_semana_ordinal?: string | null
           recorrencia_tipo?: string
+          tipo_mensagem?: string
           updated_at?: string
         }
         Update: {
@@ -2677,6 +2679,7 @@ export type Database = {
           recorrencia_meses?: number[]
           recorrencia_semana_ordinal?: string | null
           recorrencia_tipo?: string
+          tipo_mensagem?: string
           updated_at?: string
         }
         Relationships: []
