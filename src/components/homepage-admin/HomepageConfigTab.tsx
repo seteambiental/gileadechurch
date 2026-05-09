@@ -26,7 +26,12 @@ type TipoMensagem =
   | "vaga_liberada"
   | "contato_emergencia"
   | "aviso_importante"
-  | "lembrete_evento";
+  | "lembrete_evento"
+  | "culto_batismo"
+  | "apresentacao_criancas"
+  | "ceia_senhor"
+  | "prestacao_contas"
+  | "evento_especial";
 
 const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[] = [
   { value: "confirmacao_inscricao", label: "Confirmação de inscrição", descricao: "Enviada quando o ADM confirma a inscrição" },
@@ -36,6 +41,11 @@ const TIPOS_MENSAGEM: { value: TipoMensagem; label: string; descricao: string }[
   { value: "contato_emergencia", label: "Contato de Emergência", descricao: "Mensagem recorrente enviada ao contato de emergência do participante" },
   { value: "aviso_importante", label: "Aviso importante", descricao: "Comunicado relevante enviado a participantes/membros" },
   { value: "lembrete_evento", label: "Lembrete do evento", descricao: "Lembra do evento ou programação na data próxima" },
+  { value: "culto_batismo", label: "Culto de Batismo", descricao: "Comunica que haverá culto de batismo" },
+  { value: "apresentacao_criancas", label: "Apresentação de Crianças", descricao: "Comunica apresentação de crianças no culto" },
+  { value: "ceia_senhor", label: "Ceia do Senhor", descricao: "Lembrete sobre a Ceia do Senhor" },
+  { value: "prestacao_contas", label: "Prestação de Contas", descricao: "Comunica prestação de contas no culto" },
+  { value: "evento_especial", label: "Evento Especial", descricao: "Anuncia evento especial durante o culto" },
 ];
 
 const TEMPLATES_PADRAO: Record<TipoMensagem, string> = {
@@ -105,6 +115,46 @@ Não esqueça: *{EVENTO}* acontece em {DATA_EVENTO}.
 📍 *Local:* {LOCAL}
 
 Te esperamos! 🙏
+
+_Igreja Gileade_ 💙`,
+  culto_batismo: `💧 *CULTO DE BATISMO*
+
+Olá, {NOME}! 👋
+
+Neste *{EVENTO}* teremos um momento muito especial: o *Culto de Batismo*.
+Venha celebrar conosco essa decisão de fé! 🙏
+
+_Igreja Gileade_ 💙`,
+  apresentacao_criancas: `👶 *APRESENTAÇÃO DE CRIANÇAS*
+
+Olá, {NOME}! 👋
+
+Neste *{EVENTO}* teremos a *Apresentação de Crianças* à comunidade.
+Participe desse momento de bênção e gratidão! 🙏
+
+_Igreja Gileade_ 💙`,
+  ceia_senhor: `🍞🍷 *CEIA DO SENHOR*
+
+Olá, {NOME}! 👋
+
+Neste *{EVENTO}* celebraremos juntos a *Ceia do Senhor*.
+Prepare seu coração para esse momento sagrado. 🙏
+
+_Igreja Gileade_ 💙`,
+  prestacao_contas: `📊 *PRESTAÇÃO DE CONTAS*
+
+Olá, {NOME}! 👋
+
+Neste *{EVENTO}* faremos a *Prestação de Contas* da nossa igreja.
+Sua presença é importante! 🙏
+
+_Igreja Gileade_ 💙`,
+  evento_especial: `✨ *EVENTO ESPECIAL*
+
+Olá, {NOME}! 👋
+
+Neste *{EVENTO}* teremos uma programação especial preparada com muito carinho.
+Venha viver esse momento conosco! 🙏
 
 _Igreja Gileade_ 💙`,
 };
