@@ -177,6 +177,32 @@ export default function EnvioEmergenciaDialog({
 
           {destino === "um" && (
             <div className="space-y-2">
+              {inscricaoId ? (() => {
+                const sel = (filtradas as any[]).find((x: any) => x.id === inscricaoId)
+                  || ({} as any);
+                const tel = telefoneDe(sel);
+                return (
+                  <div className="flex items-center justify-between gap-3 border rounded-md p-3 bg-primary/5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{sel.nome || "Participante selecionado"}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {contatoTipo === "emergencia"
+                          ? `${sel.nome_responsavel || "—"} • ${tel ? formatPhone(tel) : "sem telefone"}`
+                          : tel ? formatPhone(tel) : "sem telefone"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setInscricaoId(null as any); setBusca(""); }}
+                    >
+                      Trocar
+                    </Button>
+                  </div>
+                );
+              })() : (
+              <>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -198,7 +224,7 @@ export default function EnvioEmergenciaDialog({
                         key={i.id}
                         type="button"
                         disabled={!valid}
-                        onClick={() => setInscricaoId(i.id)}
+                        onClick={() => { setInscricaoId(i.id); setBusca(""); }}
                         className={`w-full text-left p-2 border-b last:border-b-0 hover:bg-muted/60 disabled:opacity-50 disabled:cursor-not-allowed ${inscricaoId === i.id ? "bg-primary/10" : ""}`}
                       >
                         <p className="text-sm font-medium">{i.nome}</p>
@@ -212,6 +238,8 @@ export default function EnvioEmergenciaDialog({
                   })
                 )}
               </div>
+              </>
+              )}
             </div>
           )}
 
