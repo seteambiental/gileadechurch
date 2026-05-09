@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
-import { Send, Loader2, Search, ShieldAlert } from "lucide-react";
+import { Send, Loader2, Search, MessageCircle } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
 
 interface Props {
@@ -33,6 +33,7 @@ export default function EnvioEmergenciaDialog({
   eventoTitulo,
 }: Props) {
   const [destino, setDestino] = useState<"todos" | "um">("todos");
+  const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
   const [inscricaoId, setInscricaoId] = useState<string>("");
   const [busca, setBusca] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -61,7 +62,7 @@ export default function EnvioEmergenciaDialog({
     queryFn: async () => {
       const { data } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone_emergencia, telefone_responsavel, nome_responsavel")
+        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel")
         .eq("evento_id", eventoId)
         .neq("status_pagamento", "cancelado")
         .order("nome");
@@ -80,8 +81,13 @@ export default function EnvioEmergenciaDialog({
     );
   }, [inscricoes, busca]);
 
+  const telefoneDe = (i: any) =>
+    contatoTipo === "principal"
+      ? i.telefone || ""
+      : i.telefone_emergencia || i.telefone_responsavel || "";
+
   const totalComTelefone = inscricoes.filter(
-    (i: any) => (i.telefone_emergencia || i.telefone_responsavel || "").replace(/\D/g, "").length >= 10,
+    (i: any) => (telefoneDe(i) || "").replace(/\D/g, "").length >= 10,
   ).length;
 
   const handleEnviar = async () => {
@@ -104,6 +110,7 @@ export default function EnvioEmergenciaDialog({
             eventoTipo,
             inscricaoId: destino === "um" ? inscricaoId : null,
             mensagemOverride: mensagem,
+            destinatarioTipo: contatoTipo,
           },
         },
       );
@@ -126,13 +133,34 @@ export default function EnvioEmergenciaDialog({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" style={{ width: "calc(100vw - 1.5rem)" }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-amber-600" />
-            Enviar para Contato de Emergência
+            <MessageCircle className="w-5 h-5 text-emerald-600" />
+            Enviar WhatsApp
           </DialogTitle>
           <p className="text-xs text-muted-foreground">{eventoTitulo}</p>
         </DialogHeader>
 
         <div className="space-y-4">
+          <div>
+            <Label>Enviar para</Label>
+            <RadioGroup
+              value={contatoTipo}
+              onValueChange={(v: any) => {
+                setContatoTipo(v);
+                setInscricaoId("");
+              }}
+              className="mt-2 space-y-2"
+            >
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="principal" id="c-principal" />
+                <span>Contato principal do participante</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="emergencia" id="c-emerg" />
+                <span>Contato de emergência</span>
+              </label>
+            </RadioGroup>
+          </div>
+
           <div>
             <Label>Destinatários</Label>
             <RadioGroup value={destino} onValueChange={(v: any) => setDestino(v)} className="mt-2 space-y-2">
@@ -163,7 +191,7 @@ export default function EnvioEmergenciaDialog({
                   <p className="text-sm text-muted-foreground p-3 text-center">Nenhum resultado</p>
                 ) : (
                   filtradas.map((i: any) => {
-                    const tel = i.telefone_emergencia || i.telefone_responsavel;
+                    const tel = telefoneDe(i);
                     const valid = (tel || "").replace(/\D/g, "").length >= 10;
                     return (
                       <button
@@ -175,7 +203,9 @@ export default function EnvioEmergenciaDialog({
                       >
                         <p className="text-sm font-medium">{i.nome}</p>
                         <p className="text-xs text-muted-foreground">
-                          {i.nome_responsavel || "—"} • {tel ? formatPhone(tel) : "sem telefone"}
+                          {contatoTipo === "emergencia"
+                            ? `${i.nome_responsavel || "—"} • ${tel ? formatPhone(tel) : "sem telefone"}`
+                            : tel ? formatPhone(tel) : "sem telefone"}
                         </p>
                       </button>
                     );
