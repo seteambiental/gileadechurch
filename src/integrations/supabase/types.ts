@@ -2132,6 +2132,54 @@ export type Database = {
           },
         ]
       }
+      emergencia_envios_log: {
+        Row: {
+          enviado_em: string
+          enviado_por: string | null
+          erro: string | null
+          evento_id: string
+          evento_tipo: string
+          id: string
+          inscricao_id: string | null
+          mensagem_enviada: string
+          nome_contato_emergencia: string | null
+          nome_participante: string | null
+          status: string
+          telefone_destino: string
+          tipo_envio: string
+        }
+        Insert: {
+          enviado_em?: string
+          enviado_por?: string | null
+          erro?: string | null
+          evento_id: string
+          evento_tipo: string
+          id?: string
+          inscricao_id?: string | null
+          mensagem_enviada: string
+          nome_contato_emergencia?: string | null
+          nome_participante?: string | null
+          status?: string
+          telefone_destino: string
+          tipo_envio: string
+        }
+        Update: {
+          enviado_em?: string
+          enviado_por?: string | null
+          erro?: string | null
+          evento_id?: string
+          evento_tipo?: string
+          id?: string
+          inscricao_id?: string | null
+          mensagem_enviada?: string
+          nome_contato_emergencia?: string | null
+          nome_participante?: string | null
+          status?: string
+          telefone_destino?: string
+          tipo_envio?: string
+        }
+        Relationships: []
+      }
       encontro_presencas: {
         Row: {
           confidence: number | null
@@ -2545,6 +2593,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      evento_emergencia_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_inicio_recorrencia: string | null
+          enviar_recorrente: boolean
+          evento_id: string
+          evento_tipo: string
+          frequencia_dias: number
+          id: string
+          mensagem_inicial: string
+          mensagem_recorrente: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio_recorrencia?: string | null
+          enviar_recorrente?: boolean
+          evento_id: string
+          evento_tipo: string
+          frequencia_dias?: number
+          id?: string
+          mensagem_inicial?: string
+          mensagem_recorrente?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio_recorrencia?: string | null
+          enviar_recorrente?: boolean
+          evento_id?: string
+          evento_tipo?: string
+          frequencia_dias?: number
+          id?: string
+          mensagem_inicial?: string
+          mensagem_recorrente?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       homepage_avisos: {
         Row: {
