@@ -688,11 +688,211 @@ const HomepageConfigTab = () => {
                   ? "Digite a mensagem personalizada..."
                   : "Selecione um evento para editar a mensagem"
               }
-              disabled={!eventoAtual || loadingTemplate}
+              disabled={!eventoAtual || loadingTemplate || loadingEmerg}
               rows={14}
               className="font-mono text-sm"
             />
+            {tipoMensagemSelecionada === "contato_emergencia" && (
+              <p className="text-xs text-muted-foreground">
+                Placeholders disponíveis: <code>{"{NOME}"}</code>, <code>{"{NOME_COMPLETO}"}</code>,{" "}
+                <code>{"{NOME_EMERGENCIA}"}</code>, <code>{"{EVENTO}"}</code>, <code>{"{DATA_EVENTO}"}</code>.
+              </p>
+            )}
           </div>
+
+          {tipoMensagemSelecionada === "contato_emergencia" && eventoAtual && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Frequência de envio</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define quando a mensagem recorrente será disparada até o evento.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={recCfg.enviar_recorrente}
+                    onChange={(e) =>
+                      setRecCfg({ ...recCfg, enviar_recorrente: e.target.checked })
+                    }
+                  />
+                  Ativar recorrência
+                </label>
+              </div>
+
+              {recCfg.enviar_recorrente && (
+                <>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Enviar a cada</Label>
+                      <Select
+                        value={recCfg.recorrencia_tipo}
+                        onValueChange={(v) =>
+                          setRecCfg({ ...recCfg, recorrencia_tipo: v as any })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="dia">Dia</SelectItem>
+                          <SelectItem value="semana">Semana</SelectItem>
+                          <SelectItem value="mes">Mês</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Hora aproximada de envio</Label>
+                      <Input
+                        type="time"
+                        value={recCfg.recorrencia_hora}
+                        onChange={(e) =>
+                          setRecCfg({ ...recCfg, recorrencia_hora: e.target.value })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        O envio ocorre após esse horário (margem de alguns minutos).
+                      </p>
+                    </div>
+                  </div>
+
+                  {(recCfg.recorrencia_tipo === "dia" ||
+                    recCfg.recorrencia_tipo === "semana") && (
+                    <div className="space-y-2">
+                      <Label>
+                        {recCfg.recorrencia_tipo === "dia"
+                          ? "Dias da semana em que pode disparar"
+                          : "Dia(s) da semana"}
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map(
+                          (lbl, idx) => {
+                            const ativo = recCfg.recorrencia_dias_semana.includes(idx);
+                            return (
+                              <button
+                                type="button"
+                                key={lbl}
+                                onClick={() => {
+                                  const set = new Set(recCfg.recorrencia_dias_semana);
+                                  ativo ? set.delete(idx) : set.add(idx);
+                                  setRecCfg({
+                                    ...recCfg,
+                                    recorrencia_dias_semana: Array.from(set).sort(),
+                                  });
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm border transition ${
+                                  ativo
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-background hover:bg-muted"
+                                }`}
+                              >
+                                {lbl}
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {recCfg.recorrencia_tipo === "mes" && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Meses em que deve enviar</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            "Jan","Fev","Mar","Abr","Mai","Jun",
+                            "Jul","Ago","Set","Out","Nov","Dez",
+                          ].map((lbl, idx) => {
+                            const m = idx + 1;
+                            const ativo = recCfg.recorrencia_meses.includes(m);
+                            return (
+                              <button
+                                type="button"
+                                key={lbl}
+                                onClick={() => {
+                                  const set = new Set(recCfg.recorrencia_meses);
+                                  ativo ? set.delete(m) : set.add(m);
+                                  setRecCfg({
+                                    ...recCfg,
+                                    recorrencia_meses: Array.from(set).sort(
+                                      (a, b) => a - b,
+                                    ),
+                                  });
+                                }}
+                                className={`px-3 py-1 rounded-md text-sm border transition ${
+                                  ativo
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-background hover:bg-muted"
+                                }`}
+                              >
+                                {lbl}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Ordinal no mês</Label>
+                          <Select
+                            value={recCfg.recorrencia_semana_ordinal || ""}
+                            onValueChange={(v) =>
+                              setRecCfg({
+                                ...recCfg,
+                                recorrencia_semana_ordinal: v as any,
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Ex: Primeiro" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="primeiro">Primeiro</SelectItem>
+                              <SelectItem value="segundo">Segundo</SelectItem>
+                              <SelectItem value="terceiro">Terceiro</SelectItem>
+                              <SelectItem value="quarto">Quarto</SelectItem>
+                              <SelectItem value="ultimo">Último</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Dia da semana</Label>
+                          <Select
+                            value={
+                              recCfg.recorrencia_dia_semana !== null
+                                ? String(recCfg.recorrencia_dia_semana)
+                                : ""
+                            }
+                            onValueChange={(v) =>
+                              setRecCfg({
+                                ...recCfg,
+                                recorrencia_dia_semana: v === "" ? null : Number(v),
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Ex: Segunda" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">Domingo</SelectItem>
+                              <SelectItem value="1">Segunda-feira</SelectItem>
+                              <SelectItem value="2">Terça-feira</SelectItem>
+                              <SelectItem value="3">Quarta-feira</SelectItem>
+                              <SelectItem value="4">Quinta-feira</SelectItem>
+                              <SelectItem value="5">Sexta-feira</SelectItem>
+                              <SelectItem value="6">Sábado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <p className="text-xs text-muted-foreground">
