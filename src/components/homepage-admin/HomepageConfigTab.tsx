@@ -387,6 +387,10 @@ const HomepageConfigTab = () => {
           : TEMPLATES_PADRAO[tipoMensagemSelecionada] || TEMPLATES_PADRAO.contato_emergencia,
       );
       setRecCfg({
+        modo_envio: ((emergCfg?.modo_envio as any) === "unico" ? "unico" : "recorrente"),
+        data_envio_unico: emergCfg?.data_envio_unico
+          ? String(emergCfg.data_envio_unico).slice(0, 16)
+          : null,
         recorrencia_tipo: (emergCfg?.recorrencia_tipo as any) || "semana",
         recorrencia_dias_semana: emergCfg?.recorrencia_dias_semana || [],
         recorrencia_meses: emergCfg?.recorrencia_meses || [],
@@ -413,6 +417,11 @@ const HomepageConfigTab = () => {
           mensagem_recorrente: mensagemEvento,
           enviar_recorrente: recCfg.enviar_recorrente,
           frequencia_dias: emergCfg?.frequencia_dias ?? 7,
+          modo_envio: recCfg.modo_envio,
+          data_envio_unico:
+            recCfg.modo_envio === "unico" && recCfg.data_envio_unico
+              ? new Date(recCfg.data_envio_unico).toISOString()
+              : null,
           recorrencia_tipo: recCfg.recorrencia_tipo,
           recorrencia_dias_semana: recCfg.recorrencia_dias_semana,
           recorrencia_meses: recCfg.recorrencia_meses,
