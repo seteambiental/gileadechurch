@@ -1470,6 +1470,33 @@ export type Database = {
           },
         ]
       }
+      categoria_mensagem_config: {
+        Row: {
+          ativo: boolean
+          categoria_evento: string
+          created_at: string
+          id: string
+          tipo_mensagem: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          categoria_evento: string
+          created_at?: string
+          id?: string
+          tipo_mensagem: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          categoria_evento?: string
+          created_at?: string
+          id?: string
+          tipo_mensagem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comunicacao_envios: {
         Row: {
           conteudo: string | null
