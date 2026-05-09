@@ -88,6 +88,7 @@ const HomepageConfigTab = () => {
 
   // Estado da seção "Mensagens de Eventos"
   const [eventoSelecionado, setEventoSelecionado] = useState<string>("");
+  const [buscaEvento, setBuscaEvento] = useState<string>("");
   const [tipoMensagemSelecionada, setTipoMensagemSelecionada] = useState<TipoMensagem>("confirmacao_inscricao");
   const [mensagemEvento, setMensagemEvento] = useState<string>("");
 
@@ -518,17 +519,35 @@ const HomepageConfigTab = () => {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Evento</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar evento..."
+                  className="pl-9"
+                  value={buscaEvento}
+                  onChange={(e) => setBuscaEvento(e.target.value)}
+                />
+              </div>
               <Select value={eventoSelecionado} onValueChange={setEventoSelecionado}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um evento..." />
                 </SelectTrigger>
                 <SelectContent className="max-h-[300px]">
-                  {eventosOptions.length === 0 ? (
-                    <div className="p-2 text-sm text-muted-foreground text-center">
-                      Nenhum evento encontrado
-                    </div>
-                  ) : (
-                    eventosOptions.map((e) => (
+                  {(() => {
+                    const q = buscaEvento.trim().toLowerCase();
+                    const list = q
+                      ? eventosOptions.filter((e) =>
+                          (e.titulo || "").toLowerCase().includes(q),
+                        )
+                      : eventosOptions;
+                    if (list.length === 0) {
+                      return (
+                        <div className="p-2 text-sm text-muted-foreground text-center">
+                          Nenhum evento encontrado
+                        </div>
+                      );
+                    }
+                    return list.map((e) => (
                       <SelectItem key={e.key} value={e.key}>
                         <span className="flex items-center justify-between gap-3 w-full">
                           <span className="truncate">{e.label}</span>
@@ -539,8 +558,8 @@ const HomepageConfigTab = () => {
                           )}
                         </span>
                       </SelectItem>
-                    ))
-                  )}
+                    ));
+                  })()}
                 </SelectContent>
               </Select>
             </div>
