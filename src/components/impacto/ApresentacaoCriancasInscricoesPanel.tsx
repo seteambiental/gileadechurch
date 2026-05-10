@@ -408,9 +408,8 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
         onOpenChange={(o) => !o && setDeletingId(null)}
         title="Excluir inscrição?"
         description="Esta ação não pode ser desfeita."
-        confirmText={deleting ? "Excluindo..." : "Excluir"}
+        confirmLabel={deleting ? "Excluindo..." : "Excluir"}
         onConfirm={handleDelete}
-        variant="destructive"
       />
     </div>
   );
