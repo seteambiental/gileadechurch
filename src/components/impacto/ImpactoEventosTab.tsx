@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -6,7 +7,8 @@ import { parseLocalDate } from "@/lib/date-utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, CalendarDays } from "lucide-react";
+import { Users, DollarSign, CalendarDays, RefreshCw } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface ImpactoEventosTabProps {
   onGoToInscricoes?: (eventoId: string) => void;
@@ -14,6 +16,76 @@ interface ImpactoEventosTabProps {
 }
 
 const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEventosTabProps) => {
+  const queryClient = useQueryClient();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncTelefones = async () => {
+    setSyncing(true);
+    try {
+      const { data: members, error: mErr } = await supabase
+        .from("members")
+        .select("id, phone, email")
+        .not("phone", "is", null);
+      if (mErr) throw mErr;
+
+      let updatedImpacto = 0;
+      let updatedInscricoes = 0;
+
+      for (const m of members || []) {
+        if (!m.phone) continue;
+
+        const { data: impactoRows } = await supabase
+          .from("impacto_inscricoes")
+          .select("id, telefone, email")
+          .eq("member_id", m.id);
+
+        for (const row of impactoRows || []) {
+          const updates: Record<string, any> = {};
+          if (row.telefone !== m.phone) updates.telefone = m.phone;
+          if (m.email && row.email !== m.email) updates.email = m.email;
+          if (Object.keys(updates).length > 0) {
+            const { error } = await supabase
+              .from("impacto_inscricoes")
+              .update(updates)
+              .eq("id", row.id);
+            if (!error) updatedImpacto++;
+          }
+        }
+
+        const { data: inscRows } = await supabase
+          .from("inscricoes_eventos")
+          .select("id, telefone_contato")
+          .eq("member_id", m.id);
+
+        for (const row of inscRows || []) {
+          if (row.telefone_contato !== m.phone) {
+            const { error } = await supabase
+              .from("inscricoes_eventos")
+              .update({ telefone_contato: m.phone })
+              .eq("id", row.id);
+            if (!error) updatedInscricoes++;
+          }
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
+      await queryClient.invalidateQueries({ queryKey: ["agenda-eventos-inscricao"] });
+
+      toast({
+        title: "Telefones atualizados",
+        description: `${updatedImpacto} inscrições do Impacto e ${updatedInscricoes} inscrições de eventos sincronizadas.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Erro ao sincronizar",
+        description: err.message || "Falha ao atualizar telefones.",
+        variant: "destructive",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const { data: eventosAgenda = [], isLoading } = useQuery({
     queryKey: ["agenda-eventos-inscricao"],
     queryFn: async () => {
@@ -107,7 +179,19 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-heading font-bold">Eventos com Inscrição</h2>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <h2 className="text-xl font-heading font-bold">Eventos com Inscrição</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSyncTelefones}
+          disabled={syncing}
+          className="gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Sincronizando..." : "Atualizar telefones"}
+        </Button>
+      </div>
       {eventosAgenda.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
