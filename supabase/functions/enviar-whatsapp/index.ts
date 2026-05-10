@@ -77,6 +77,7 @@ async function getLinkGrupoWhatsapp(
   supabaseClient: any,
   eventoId: string | null | undefined,
   eventoTipo: 'agenda' | 'impacto' | null | undefined,
+  tipoInscricao?: string | null,
 ): Promise<string | null> {
   if (!eventoId) return null;
 
@@ -86,16 +87,33 @@ async function getLinkGrupoWhatsapp(
       ? ['agenda_igreja', 'impacto_eventos']
       : ['agenda_igreja', 'impacto_eventos'];
 
+  // Mapeia o tipo de inscrição para o campo específico do grupo
+  const tipoNorm = (tipoInscricao || '').toLowerCase().trim();
+  let campoEspecifico: string | null = null;
+  if (tipoNorm === 'equipe') {
+    campoEspecifico = 'link_grupo_whatsapp_equipe';
+  } else if (tipoNorm === 'ministrador' || tipoNorm === 'ministradores') {
+    campoEspecifico = 'link_grupo_whatsapp_ministradores';
+  } else if (tipoNorm === 'membro' || tipoNorm === 'nao_membro' || tipoNorm === 'familia') {
+    campoEspecifico = 'link_grupo_whatsapp_participantes';
+  }
+
   for (const table of sources) {
     try {
       const { data, error } = await supabaseClient
         .from(table)
-        .select('link_grupo_whatsapp')
+        .select('link_grupo_whatsapp, link_grupo_whatsapp_participantes, link_grupo_whatsapp_equipe, link_grupo_whatsapp_ministradores')
         .eq('id', eventoId)
         .maybeSingle();
 
-      if (!error && data?.link_grupo_whatsapp) {
-        return data.link_grupo_whatsapp;
+      if (!error && data) {
+        // Prioriza o link específico do tipo, com fallback para o link geral
+        if (campoEspecifico && data[campoEspecifico]) {
+          return data[campoEspecifico];
+        }
+        if (data.link_grupo_whatsapp) {
+          return data.link_grupo_whatsapp;
+        }
       }
     } catch (e) {
       console.warn(`Falha ao buscar link do grupo em ${table}:`, e);
