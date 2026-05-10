@@ -413,6 +413,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             tituloEvento: (evento as any)?.titulo || null,
             eventoId,
             eventoTipo: "impacto",
+            tipoInscricao: payload.tipo_inscricao,
           });
         }
       }
