@@ -442,8 +442,9 @@ export const EventoFormDialog = ({
     setIsGeneratingFlyer(true);
     try {
       // Gerar link de inscrição
+      const inscricaoPath = formData.tipo_evento === "apresentacao_criancas" ? "inscricao/apresentacao" : "inscricao";
       const linkInscricao = evento?.id 
-        ? `${window.location.origin}/inscricao/${evento.id}`
+        ? `${window.location.origin}/${inscricaoPath}/${evento.id}`
         : undefined;
 
       const { data, error } = await supabase.functions.invoke('gerar-flyer', {
