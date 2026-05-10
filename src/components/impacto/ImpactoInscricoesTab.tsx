@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import ImpactoInscricaoFormDialog from "./ImpactoInscricaoFormDialog";
 import FinalizarEventoDialog from "./FinalizarEventoDialog";
 import EnvioEmergenciaDialog from "./EnvioEmergenciaDialog";
+import ApresentacaoCriancasInscricoesPanel from "./ApresentacaoCriancasInscricoesPanel";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -140,7 +141,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       const [agendaRes, finalizadosRes] = await Promise.all([
         supabase
           .from("agenda_igreja")
-          .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, tem_custo, valores_por_tipo")
+          .select("id, titulo, data_evento, data_fim, local, limite_vagas, ativo, tem_custo, valores_por_tipo, tipo_evento")
           .eq("necessita_inscricao", true)
           .eq("recorrente", false)
           .order("data_evento", { ascending: false }),
@@ -660,6 +661,18 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         return <Badge variant="secondary">Pendente</Badge>;
     }
   };
+
+  // Apresentação de Crianças usa tabela e fluxo dedicados
+  const selectedAgendaEvent = agendaEventos?.find((e: any) => e.id === selectedEventoId);
+  if (selectedAgendaEvent && (selectedAgendaEvent as any).tipo_evento === "apresentacao_criancas") {
+    return (
+      <ApresentacaoCriancasInscricoesPanel
+        eventos={eventos}
+        selectedEventoId={selectedEventoId}
+        onEventoChange={(id) => { setSelectedEventoId(id); setSearchNome(""); setSelectedIds([]); }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
