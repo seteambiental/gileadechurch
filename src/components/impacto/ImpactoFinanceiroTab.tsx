@@ -1028,6 +1028,16 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
           }}
         />
       )}
+
+      {selectedEventoId && (
+        <EnvioEmergenciaDialog
+          open={emergenciaOpen}
+          onOpenChange={setEmergenciaOpen}
+          eventoId={selectedEventoId}
+          eventoTipo={(impactoEventos || []).some((e) => e.id === selectedEventoId) ? "impacto" : "agenda"}
+          eventoTitulo={selectedEvento?.titulo || ""}
+        />
+      )}
     </div>
   );
 };
