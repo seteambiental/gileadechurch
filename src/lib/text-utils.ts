@@ -19,6 +19,56 @@ export const includesNormalized = (text: string, search: string): boolean => {
 };
 
 /**
+ * Distância de Levenshtein entre duas strings (já normalizadas).
+ */
+const levenshtein = (a: string, b: string): number => {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  const prev = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    let curr = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      const next = Math.min(curr + 1, prev[j] + 1, prev[j - 1] + cost);
+      prev[j - 1] = curr;
+      curr = next;
+    }
+    prev[b.length] = curr;
+  }
+  return prev[b.length];
+};
+
+/**
+ * Busca tolerante a erros de digitação: aceita substring exata (após
+ * normalização) OU correspondência fuzzy por token, com tolerância
+ * proporcional ao tamanho do termo (~1 erro a cada 4 chars).
+ */
+export const fuzzyMatch = (text: string, search: string): boolean => {
+  const t = normalizeText(text);
+  const q = normalizeText(search).trim();
+  if (!q) return true;
+  if (t.includes(q)) return true;
+  const queryTokens = q.split(/\s+/).filter(Boolean);
+  const textTokens = t.split(/\s+/).filter(Boolean);
+  return queryTokens.every((qt) => {
+    if (qt.length < 3) return textTokens.some((tt) => tt.startsWith(qt));
+    const tolerance = Math.max(1, Math.floor(qt.length / 4));
+    return textTokens.some((tt) => {
+      if (tt.includes(qt)) return true;
+      // janela do mesmo tamanho do token de busca
+      const len = qt.length;
+      if (tt.length < len) return levenshtein(tt, qt) <= tolerance;
+      for (let i = 0; i + len <= tt.length; i++) {
+        if (levenshtein(tt.slice(i, i + len), qt) <= tolerance) return true;
+      }
+      return false;
+    });
+  });
+};
+
+/**
  * Converte texto para Title Case (primeira letra de cada palavra em maiúsculo)
  * Exemplo: "JOÃO DA SILVA" -> "João da Silva"
  */
