@@ -1514,6 +1514,68 @@ export const EventoFormDialog = ({
               </p>
             </div>
 
+            {/* Links por tipo de inscrição (impacto / qualquer evento com inscrição) */}
+            {formData.necessita_inscricao && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div>
+                  <Label className="text-sm flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4" />
+                    Links por tipo de inscrição (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Cada inscrito recebe automaticamente o link correspondente ao seu tipo. Caso vazio, será usado o link geral acima.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_participantes" className="text-xs">
+                      Participantes (Membros e Não Membros)
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_participantes"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_participantes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_participantes: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_equipe" className="text-xs">
+                      Equipe / Apoio
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_equipe"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_equipe}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_equipe: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_ministradores" className="text-xs">
+                      Ministradores
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_ministradores"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_ministradores}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_ministradores: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Refeição */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
               <div className="flex items-center gap-2">
