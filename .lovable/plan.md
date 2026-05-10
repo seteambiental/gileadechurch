@@ -1,133 +1,72 @@
-## Mensagens automáticas para Contato de Emergência
+## Objetivo
 
-Criar uma rotina completa para envio de mensagens via WhatsApp aos **contatos de emergência** dos participantes de eventos (Impacto e Agenda com inscrição), com configuração por evento, envios automáticos recorrentes, envio manual e novas colunas/filtros nos relatórios.
+Quando o evento criado for do tipo **Apresentação de Crianças**, o sistema deve gerar um link de inscrição específico, voltado para o cadastro **dos pais da criança a ser apresentada**. Os pais que ainda não são membros poderão se cadastrar (e ao seu cônjuge), e esses cadastros entrarão como **solicitação de cadastro pendente de aprovação**, mas já ficam disponíveis na lista suspensa para concluir a inscrição da apresentação.
 
----
+## Fluxo proposto
 
-### 1. Banco de dados (migration)
-
-Nova tabela `evento_emergencia_config` (1 registro por evento):
-- `evento_id` (uuid, único) — referência ao evento (Impacto ou Agenda)
-- `evento_tipo` (text: `impacto` | `agenda`)
-- `mensagem_inicial` (text) — enviada na confirmação da inscrição
-- `mensagem_recorrente` (text) — enviada periodicamente
-- `enviar_recorrente` (bool) — liga/desliga
-- `frequencia_dias` (int) — intervalo entre envios (ex: 7)
-- `data_inicio_recorrencia` (date) — quando começar os envios automáticos
-- `ativo` (bool, default true)
-- RLS: leitura/escrita por admin, pastor_geral, pastor_auxiliar e líderes de ministério
-
-Nova tabela `emergencia_envios_log`:
-- `inscricao_id`, `evento_id`, `evento_tipo`
-- `tipo_envio` (`inicial` | `recorrente` | `manual`)
-- `telefone_destino`, `nome_contato_emergencia`, `nome_participante`
-- `mensagem_enviada` (text)
-- `status` (`enviado` | `falhou`), `erro` (text nullable)
-- `enviado_em` (timestamp)
-- `enviado_por` (uuid → members, nullable para automático)
-- RLS: leitura por admin/pastores; escrita via edge function (service role)
-
-Os campos de contato de emergência já existem em `impacto_inscricoes` e `inscricoes_eventos` (`telefone_emergencia`, `nome_responsavel`/`nome_emergencia`). Vou usar os existentes.
-
----
-
-### 2. Painel de Configurações — nova aba "Contato de Emergência"
-
-Localização: `WhatsappConfiguracaoPage.tsx` (ou criar nova subpágina dentro de Configurações).
-
-UI:
-- Select de evento (lista eventos futuros e em andamento de `impacto_eventos` + `agenda_igreja` com inscrição aberta)
-- Textarea **Mensagem inicial** (com placeholders: `{NOME}`, `{NOME_COMPLETO}`, `{EVENTO}`, `{NOME_EMERGENCIA}`, `{DATA_EVENTO}`)
-- Switch **Enviar mensagens recorrentes**
-- Textarea **Mensagem recorrente**
-- Input numérico **Frequência (dias)**
-- Date picker **Início da recorrência**
-- Botão Salvar (upsert por evento_id)
-- Lista os eventos já configurados abaixo, com edit/delete
-
----
-
-### 3. Edge Functions
-
-**`enviar-emergencia-evento`** (nova):
-- Body: `{ tipo: 'inicial'|'manual', inscricaoId?, eventoId, eventoTipo, mensagemOverride? }`
-- Busca inscrição, telefone de emergência, monta mensagem (substitui placeholders), enfileira via `whatsapp-queue` ou envia direto via `enviar-whatsapp`, registra em `emergencia_envios_log`.
-- Para `manual` sem `inscricaoId`: envia para TODAS as inscrições aprovadas/pagas do evento, respeitando delay aleatório 15-30s entre cada uma (memória anti-SPAM).
-
-**`processar-emergencia-recorrente`** (nova, agendada via pg_cron diário às 9h):
-- Itera sobre `evento_emergencia_config` com `enviar_recorrente = true` e `ativo = true`.
-- Filtra eventos cuja data ainda não passou.
-- Verifica se hoje cai no intervalo configurado (último envio + frequência_dias).
-- Para cada inscrição confirmada, dispara mensagem recorrente respeitando delay.
-- Atualiza log.
-
-**Ganchos de "envio inicial"**:
-- Em `ImpactoInscricoesTab` (aprovação) e `JiuJitsuInscricoesTab` ao confirmar/aprovar inscrição → chamar `enviar-emergencia-evento` com `tipo: 'inicial'` (best-effort, igual `dispararMensagemInscricaoRecebida`).
-- Adicionar helper em `src/lib/whatsapp-notifications.ts`: `dispararMensagemEmergenciaInicial`.
-
----
-
-### 4. Aba de Inscrições — Botão de envio manual
-
-Em `ImpactoInscricoesTab.tsx` (e equivalente Agenda):
-- Novo botão no header: **"Enviar p/ Contato Emergência"** (ícone Phone + WhatsApp).
-- Abre dialog `EnvioEmergenciaDialog`:
-  - Radio: **Todos os participantes** | **Selecionar participante**
-  - Se "Selecionar": `MemberSearchSelect`-like baseado nas inscrições do evento (mostra nome + nome_emergencia + telefone_emergencia)
-  - Preview da mensagem (preenchida com placeholders do primeiro participante)
-  - Aviso: "Envios serão espaçados em 15-30s para evitar bloqueio."
-  - Botão **Enviar**
-- Mostra contador de envios realizados após processamento.
-
----
-
-### 5. Relatórios — nova coluna
-
-Em `ImpactoInscricoesTab` (relatório), `EventosFinalizadosTab`, `ImpactoFinanceiroTab`:
-- Adicionar colunas: **Contato Emergência (nome)** e **Telefone Emergência**.
-- Incluir nas exportações Excel (`ExportButton`).
-- Adicionar `ColumnFilterPopover` por nome do contato e busca (`SearchInput` já filtra nome do participante; estender para também buscar `telefone_emergencia` e `nome_emergencia`).
-
----
-
-### 6. Cron job
-
-Inserir via `supabase--insert`:
-```sql
-select cron.schedule(
-  'emergencia-recorrente-diaria',
-  '0 12 * * *', -- 09:00 BRT
-  $$ select net.http_post(
-       url:='https://jwjmseeyjemfwgyizumk.supabase.co/functions/v1/processar-emergencia-recorrente',
-       headers:='{"Content-Type":"application/json","apikey":"<anon>"}'::jsonb,
-       body:='{}'::jsonb
-     ); $$
-);
+```text
+Admin cria evento "Apresentação de Crianças"
+        │
+        ▼
+Sistema gera link público /inscricao/apresentacao/:eventoId
+(além do botão "Compartilhar" já existente)
+        │
+        ▼
+Pretendente abre o link
+        │
+        ├── Seleciona PAI na lista suspensa (membros + solicitações já feitas)
+        │       └── Se não encontrar: clicar em "Cadastrar novo"
+        │              ├── Pergunta: "É membro da Igreja Gileade?" (Sim / Não)
+        │              ├── Preenche cadastro completo (mesma estrutura de MemberRequestForm)
+        │              ├── Opção "Adicionar cônjuge" → abre 2º cadastro com endereço/CR/condomínio compartilhados
+        │              └── Salva como solicitação (status pendente) e já fica disponível na lista
+        │
+        ├── Seleciona MÃE (mesma lógica)
+        │
+        ├── Dados da CRIANÇA a ser apresentada (nome, data nasc., gênero)
+        │
+        └── Confirma inscrição da apresentação
 ```
 
----
+## Mudanças no código
 
-### Arquivos criados
+### 1. `src/components/agenda/EventoFormDialog.tsx`
+- Quando `tipo_evento === 'apresentacao_criancas'`:
+  - Marcar evento como tendo formulário de inscrição habilitado.
+  - Mostrar bloco extra na ficha do evento com link público `/inscricao/apresentacao/:id`, botão **Copiar link** e botão **Compartilhar** (igual ao `CompartilharInscricaoDialog` existente, mas apontando para a rota nova).
 
-- `supabase/migrations/<timestamp>_emergencia_contato.sql`
-- `supabase/functions/enviar-emergencia-evento/index.ts`
-- `supabase/functions/processar-emergencia-recorrente/index.ts`
-- `src/components/configuracoes/EmergenciaConfigTab.tsx`
-- `src/components/impacto/EnvioEmergenciaDialog.tsx`
+### 2. Nova página `src/pages/InscricaoApresentacaoCriancas.tsx`
+- Rota pública: `/inscricao/apresentacao/:eventoId` (registrada antes das rotas dinâmicas em `App.tsx`).
+- Estrutura de formulário com 3 blocos: **Pai**, **Mãe**, **Criança**.
+- Cada bloco de pai/mãe usa um componente reutilizável `<ResponsavelSelect />`:
+  - Combo com busca em `members_safe` + em `member_requests` aprovadas e pendentes (apenas `nome`, `id`).
+  - Botão "Não encontrei → Cadastrar novo" abre dialog inline.
+- Submit cria registro em `inscricoes_eventos` (ou tabela específica `apresentacao_criancas_inscricoes` — ver decisão técnica) referenciando `pai_id`, `mae_id` (member ou request) e dados da criança.
 
-### Arquivos editados
+### 3. Cadastro inline do responsável (novo componente)
+- `src/components/inscricao-apresentacao/CadastroResponsavelDialog.tsx`
+- Reaproveita validações/máscaras de `MemberRequestForm.tsx`.
+- Etapas:
+  1. Pergunta inicial: "É membro da Igreja Gileade?" (sim/não).
+  2. Formulário completo de membro (nome, CPF, data nasc., gênero, WhatsApp, endereço, CR/condomínio, foto, etc.).
+  3. Switch **"Adicionar cônjuge"** → abre segundo formulário pré-preenchendo endereço, CR/condomínio, telefone alternativo do casal.
+- Ao salvar:
+  - Chama edge function `criar-solicitacao-membro` (já existe) para gravar como `member_requests` com status `pendente`.
+  - Retorna `id` da solicitação para ser usado imediatamente como `pai_id`/`mae_id` na inscrição da apresentação.
 
-- `src/lib/whatsapp-notifications.ts` (helper)
-- `src/components/impacto/ImpactoInscricoesTab.tsx` (botão + colunas + filtros + gancho aprovação)
-- `src/components/impacto/EventosFinalizadosTab.tsx` (colunas)
-- `src/components/impacto/ImpactoFinanceiroTab.tsx` (colunas)
-- `src/pages/WhatsappConfiguracaoPage.tsx` (nova aba "Contato Emergência")
+### 4. Backend
+- **Não cria nova tabela** se possível: usar `inscricoes_eventos` com colunas existentes + JSONB `dados_extras` para guardar `pai_id`, `mae_id`, `crianca_nome`, `crianca_data_nasc`, `crianca_genero`. Se preferirem rastreabilidade dedicada, criar `apresentacao_criancas_inscricoes` (perguntar antes — ver dúvidas).
+- Edge function `criar-solicitacao-membro` precisa aceitar parâmetro opcional `conjuge: {...}` para gravar duas solicitações vinculadas (campo `solicitacao_vinculada_id`).
+- Lista suspensa do responsável usa view/RPC pública (`members_safe` + `member_requests` filtradas) — criar RPC `buscar_responsaveis_publico(termo text)` com `security definer` para evitar expor dados sensíveis.
 
----
+### 5. `src/App.tsx`
+- Registrar rota `/inscricao/apresentacao/:eventoId` antes de rotas dinâmicas.
 
-### Observações
+## Pontos a confirmar antes da implementação
 
-- Eventos encerrados (`data_evento < hoje` para Agenda; `data_fim < hoje` para Impacto) NUNCA recebem envios automáticos nem manuais — bloqueado em UI e na edge function.
-- Todos os envios respeitam o **delay aleatório 15-30s** já estabelecido na memória do projeto.
-- Substituição de placeholders reusa o utilitário `preencherTemplate` já existente em `enviar-whatsapp` (estendido com `{NOME_EMERGENCIA}`).
-- Logs detalhados (conteúdo original × final) seguem o padrão recém-implementado em `processar-fila-whatsapp`.
+1. **Persistência da inscrição da apresentação**: usar a tabela genérica `inscricoes_eventos` com campos extras em JSONB, ou criar tabela dedicada `apresentacao_criancas_inscricoes`?
+2. **Aprovação do cadastro pendente**: o cadastro recém-criado deve aparecer na lista suspensa **imediatamente** (mesmo pendente) ou só depois da aprovação? O texto sugere "imediatamente" — confirmar.
+3. **Cadastro do cônjuge**: deve ser obrigatório ou opcional? Se a pessoa marcar "casada", o sistema obriga preencher o cônjuge?
+4. **Foto**: o cadastro público hoje exige foto. Para esse fluxo expresso vamos manter a foto obrigatória ou deixar opcional (já que o casal pode estar fazendo no celular sem fotos prontas)?
+
+Após confirmar esses pontos, parto para a implementação.
