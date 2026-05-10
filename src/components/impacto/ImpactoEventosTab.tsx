@@ -30,6 +30,8 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
 
       let updatedImpacto = 0;
       let updatedInscricoes = 0;
+      let updatedJiu = 0;
+      let updatedCasais = 0;
 
       for (const m of members || []) {
         if (!m.whatsapp) continue;
@@ -66,6 +68,53 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
             if (!error) updatedInscricoes++;
           }
         }
+
+        const { data: jiuRows } = await supabase
+          .from("jiujitsu_inscricoes")
+          .select("id, telefone, whatsapp, email")
+          .eq("member_id", m.id);
+
+        for (const row of jiuRows || []) {
+          const updates: Record<string, any> = {};
+          if (row.telefone !== m.whatsapp) updates.telefone = m.whatsapp;
+          if (row.whatsapp !== m.whatsapp) updates.whatsapp = m.whatsapp;
+          if (m.email && row.email !== m.email) updates.email = m.email;
+          if (Object.keys(updates).length > 0) {
+            const { error } = await supabase
+              .from("jiujitsu_inscricoes")
+              .update(updates)
+              .eq("id", row.id);
+            if (!error) updatedJiu++;
+          }
+        }
+
+        const { data: casaisM } = await supabase
+          .from("casais_inscritos")
+          .select("id, whatsapp_masculino")
+          .eq("membro_masculino_id", m.id);
+        for (const row of casaisM || []) {
+          if (row.whatsapp_masculino !== m.whatsapp) {
+            const { error } = await supabase
+              .from("casais_inscritos")
+              .update({ whatsapp_masculino: m.whatsapp })
+              .eq("id", row.id);
+            if (!error) updatedCasais++;
+          }
+        }
+
+        const { data: casaisF } = await supabase
+          .from("casais_inscritos")
+          .select("id, whatsapp_feminino")
+          .eq("membro_feminino_id", m.id);
+        for (const row of casaisF || []) {
+          if (row.whatsapp_feminino !== m.whatsapp) {
+            const { error } = await supabase
+              .from("casais_inscritos")
+              .update({ whatsapp_feminino: m.whatsapp })
+              .eq("id", row.id);
+            if (!error) updatedCasais++;
+          }
+        }
       }
 
       await queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
@@ -73,7 +122,7 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
 
       toast({
         title: "Telefones atualizados",
-        description: `${updatedImpacto} inscrições do Impacto e ${updatedInscricoes} inscrições de eventos sincronizadas.`,
+        description: `Sincronizados: ${updatedInscricoes} eventos, ${updatedImpacto} Impacto, ${updatedJiu} Jiu-Jitsu, ${updatedCasais} Casais.`,
       });
     } catch (err: any) {
       toast({
