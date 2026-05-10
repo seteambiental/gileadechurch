@@ -499,29 +499,31 @@ const InscricaoApresentacaoCriancas = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>Não cadastrar como responsável</AlertDialogCancel>
+            <AlertDialogCancel>Não vincular</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (!askConjugeRole) return;
-                // Assign conjuge to the OPPOSITE role of the originally registered parent
-                // but allow user choice via two buttons below
-                setPai(askConjugeRole.parentTarget === "pai" ? askConjugeRole.parentSel : askConjugeRole.conjuge);
-                setMae(askConjugeRole.parentTarget === "mae" ? askConjugeRole.parentSel : askConjugeRole.conjuge);
+                setPai(askConjugeRole.conjuge);
+                if (askConjugeRole.parentTarget === "pai") {
+                  // moves the originally registered parent to mãe slot
+                  setMae(askConjugeRole.parentSel);
+                }
                 setAskConjugeRole(null);
               }}
             >
-              {askConjugeRole?.parentTarget === "pai" ? "É a mãe" : "É o pai"}
+              É o pai
             </AlertDialogAction>
             <AlertDialogAction
               onClick={() => {
                 if (!askConjugeRole) return;
-                // Same role as the parent registered (overrides the original)
-                if (askConjugeRole.parentTarget === "pai") setPai(askConjugeRole.conjuge);
-                else setMae(askConjugeRole.conjuge);
+                setMae(askConjugeRole.conjuge);
+                if (askConjugeRole.parentTarget === "mae") {
+                  setPai(askConjugeRole.parentSel);
+                }
                 setAskConjugeRole(null);
               }}
             >
-              {askConjugeRole?.parentTarget === "pai" ? "É outro pai" : "É outra mãe"}
+              É a mãe
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
