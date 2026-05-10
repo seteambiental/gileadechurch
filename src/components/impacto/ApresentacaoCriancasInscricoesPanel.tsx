@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -10,8 +10,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MessageCircle, Users } from "lucide-react";
+import { Loader2, MessageCircle, Users, Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
 
 interface EventoOption {
@@ -43,9 +46,69 @@ interface RowData {
 }
 
 const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEventoChange }: Props) => {
+  const queryClient = useQueryClient();
   const [msgOpen, setMsgOpen] = useState(false);
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [editingRow, setEditingRow] = useState<RowData | null>(null);
+  const [editForm, setEditForm] = useState({ crianca_nome: "", crianca_data_nascimento: "", crianca_genero: "", observacoes: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    if (editingRow) {
+      setEditForm({
+        crianca_nome: editingRow.crianca_nome || "",
+        crianca_data_nascimento: editingRow.crianca_data_nascimento || "",
+        crianca_genero: editingRow.crianca_genero || "",
+        observacoes: editingRow.observacoes || "",
+      });
+    }
+  }, [editingRow]);
+
+  const handleSaveEdit = async () => {
+    if (!editingRow) return;
+    if (!editForm.crianca_nome.trim()) {
+      toast.error("Nome da criança é obrigatório.");
+      return;
+    }
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("apresentacao_criancas_inscricoes")
+      .update({
+        crianca_nome: editForm.crianca_nome.trim(),
+        crianca_data_nascimento: editForm.crianca_data_nascimento || null,
+        crianca_genero: editForm.crianca_genero || null,
+        observacoes: editForm.observacoes.trim() || null,
+      })
+      .eq("id", editingRow.id);
+    setSavingEdit(false);
+    if (error) {
+      toast.error("Erro ao salvar: " + error.message);
+      return;
+    }
+    toast.success("Inscrição atualizada!");
+    setEditingRow(null);
+    queryClient.invalidateQueries({ queryKey: ["apresentacao-criancas-inscricoes", selectedEventoId] });
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    setDeleting(true);
+    const { error } = await supabase
+      .from("apresentacao_criancas_inscricoes")
+      .delete()
+      .eq("id", deletingId);
+    setDeleting(false);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+      return;
+    }
+    toast.success("Inscrição removida!");
+    setDeletingId(null);
+    queryClient.invalidateQueries({ queryKey: ["apresentacao-criancas-inscricoes", selectedEventoId] });
+  };
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["apresentacao-criancas-inscricoes", selectedEventoId],
@@ -216,6 +279,7 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
                   <TableHead>Pai</TableHead>
                   <TableHead>Mãe</TableHead>
                   <TableHead>Observações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,6 +304,16 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
                       ) : "—"}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{r.observacoes || "—"}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => setEditingRow(r)} title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setDeletingId(r.id)} title="Excluir" className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -270,6 +344,74 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Edit dialog */}
+      <Dialog open={!!editingRow} onOpenChange={(o) => !o && setEditingRow(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar inscrição</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="edit_nome">Nome da criança *</Label>
+              <Input
+                id="edit_nome"
+                value={editForm.crianca_nome}
+                onChange={(e) => setEditForm({ ...editForm, crianca_nome: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="edit_nasc">Data de nascimento</Label>
+                <Input
+                  id="edit_nasc"
+                  type="date"
+                  value={editForm.crianca_data_nascimento}
+                  onChange={(e) => setEditForm({ ...editForm, crianca_data_nascimento: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_genero">Gênero</Label>
+                <select
+                  id="edit_genero"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={editForm.crianca_genero}
+                  onChange={(e) => setEditForm({ ...editForm, crianca_genero: e.target.value })}
+                >
+                  <option value="">—</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="feminino">Feminino</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="edit_obs">Observações</Label>
+              <Textarea
+                id="edit_obs"
+                rows={3}
+                value={editForm.observacoes}
+                onChange={(e) => setEditForm({ ...editForm, observacoes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingRow(null)} disabled={savingEdit}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Salvando...</> : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deletingId}
+        onOpenChange={(o) => !o && setDeletingId(null)}
+        title="Excluir inscrição?"
+        description="Esta ação não pode ser desfeita."
+        confirmText={deleting ? "Excluindo..." : "Excluir"}
+        onConfirm={handleDelete}
+        variant="destructive"
+      />
     </div>
   );
 };
