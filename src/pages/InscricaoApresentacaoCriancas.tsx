@@ -253,7 +253,7 @@ const InscricaoApresentacaoCriancas = () => {
         crianca_genero: criancaGenero || null,
         observacoes: observacoes.trim() || null,
       };
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("apresentacao_criancas_inscricoes")
         .insert(payload);
       if (error) throw error;
