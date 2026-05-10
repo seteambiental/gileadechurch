@@ -686,6 +686,9 @@ export const EventoFormDialog = ({
         link_grupo_whatsapp: formData.link_grupo_whatsapp?.trim()
           ? formData.link_grupo_whatsapp.trim()
           : null,
+        link_grupo_whatsapp_participantes: formData.link_grupo_whatsapp_participantes?.trim() || null,
+        link_grupo_whatsapp_equipe: formData.link_grupo_whatsapp_equipe?.trim() || null,
+        link_grupo_whatsapp_ministradores: formData.link_grupo_whatsapp_ministradores?.trim() || null,
         ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
         campos_formulario: formData.necessita_inscricao ? camposFormulario : null,
       };
