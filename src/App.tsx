@@ -19,6 +19,7 @@ import CondominioDetalhes from "./pages/CondominioDetalhes";
 import ConsolidacaoPage from "./pages/ConsolidacaoPage";
 import AgendaPage from "./pages/AgendaPage";
 import InscricaoEvento from "./pages/InscricaoEvento";
+import InscricaoApresentacaoCriancas from "./pages/InscricaoApresentacaoCriancas";
 import InscricaoCasais from "./pages/InscricaoCasais";
 import KidsPage from "./pages/KidsPage";
 import KidsCheckinPage from "./pages/KidsCheckinPage";
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/kids/scan/:token" element={<KidsCheckinScanPage />} />
             <Route path="/ministerio/acao-social" element={<AcaoSocialPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
+            <Route path="/inscricao/apresentacao/:eventoId" element={<InscricaoApresentacaoCriancas />} />
             <Route path="/inscricao/:eventoId" element={<InscricaoEvento />} />
             <Route path="/inscricao-casais" element={<InscricaoCasais />} />
             <Route path="/inscricao-jiujitsu" element={<InscricaoJiuJitsu />} />

@@ -81,6 +81,7 @@ type FormData = z.infer<typeof formSchema>;
 interface MemberRequestFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onCreated?: (info: { requestId: string; fullName: string; conjugeRequestId?: string | null; conjugeFullName?: string | null }) => void;
 }
 
 // Função para formatar data digitada (DD/MM/AAAA)
@@ -110,7 +111,7 @@ interface FilhoData {
   photoPreview: string | null;
 }
 
-export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps) => {
+export const MemberRequestForm = ({ open, onOpenChange, onCreated }: MemberRequestFormProps) => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
   const [verified, setVerified] = useState(false);
@@ -317,9 +318,18 @@ export const MemberRequestForm = ({ open, onOpenChange }: MemberRequestFormProps
 
       if (createError) throw createError;
       if (!created?.success) throw new Error("Não foi possível criar a solicitação.");
+      return created;
     },
-    onSuccess: () => {
+    onSuccess: (created: any) => {
       setSubmitted(true);
+      if (onCreated && created?.id) {
+        onCreated({
+          requestId: created.id,
+          fullName: form.getValues("full_name"),
+          conjugeRequestId: created.conjuge_id ?? null,
+          conjugeFullName: conjuge?.nome_completo ?? null,
+        });
+      }
     },
     onError: (error) => {
       toast({
