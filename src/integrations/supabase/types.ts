@@ -621,6 +621,110 @@ export type Database = {
           },
         ]
       }
+      apresentacao_criancas_inscricoes: {
+        Row: {
+          created_at: string
+          crianca_cpf: string | null
+          crianca_data_nascimento: string | null
+          crianca_genero: string | null
+          crianca_nome: string
+          evento_id: string
+          id: string
+          mae_member_id: string | null
+          mae_nome: string | null
+          mae_request_id: string | null
+          observacoes: string | null
+          pai_member_id: string | null
+          pai_nome: string | null
+          pai_request_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crianca_cpf?: string | null
+          crianca_data_nascimento?: string | null
+          crianca_genero?: string | null
+          crianca_nome: string
+          evento_id: string
+          id?: string
+          mae_member_id?: string | null
+          mae_nome?: string | null
+          mae_request_id?: string | null
+          observacoes?: string | null
+          pai_member_id?: string | null
+          pai_nome?: string | null
+          pai_request_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crianca_cpf?: string | null
+          crianca_data_nascimento?: string | null
+          crianca_genero?: string | null
+          crianca_nome?: string
+          evento_id?: string
+          id?: string
+          mae_member_id?: string | null
+          mae_nome?: string | null
+          mae_request_id?: string | null
+          observacoes?: string | null
+          pai_member_id?: string | null
+          pai_nome?: string | null
+          pai_request_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_mae_member_id_fkey"
+            columns: ["mae_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_mae_member_id_fkey"
+            columns: ["mae_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_mae_request_id_fkey"
+            columns: ["mae_request_id"]
+            isOneToOne: false
+            referencedRelation: "member_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_pai_member_id_fkey"
+            columns: ["pai_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_pai_member_id_fkey"
+            columns: ["pai_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_inscricoes_pai_request_id_fkey"
+            columns: ["pai_request_id"]
+            isOneToOne: false
+            referencedRelation: "member_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidaturas_ministerio: {
         Row: {
           created_at: string
