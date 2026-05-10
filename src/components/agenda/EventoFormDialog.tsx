@@ -213,6 +213,9 @@ export const EventoFormDialog = ({
     vagas_familia: "",
     vagas_equipe: "",
     link_grupo_whatsapp: "",
+    link_grupo_whatsapp_participantes: "",
+    link_grupo_whatsapp_equipe: "",
+    link_grupo_whatsapp_ministradores: "",
   });
   const CAMPOS_FORMULARIO_OPTIONS = [
     { key: "nome", label: "Nome completo" },
@@ -322,6 +325,9 @@ export const EventoFormDialog = ({
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
           link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
+          link_grupo_whatsapp_participantes: (evento as any).link_grupo_whatsapp_participantes || "",
+          link_grupo_whatsapp_equipe: (evento as any).link_grupo_whatsapp_equipe || "",
+          link_grupo_whatsapp_ministradores: (evento as any).link_grupo_whatsapp_ministradores || "",
         });
         const existingCampos = (evento as any).campos_formulario;
         setCamposFormulario(Array.isArray(existingCampos) ? existingCampos : [...ALL_CAMPOS_KEYS]);
@@ -371,6 +377,9 @@ export const EventoFormDialog = ({
           vagas_familia: "",
           vagas_equipe: "",
           link_grupo_whatsapp: "",
+          link_grupo_whatsapp_participantes: "",
+          link_grupo_whatsapp_equipe: "",
+          link_grupo_whatsapp_ministradores: "",
         });
         setCamposFormulario([...ALL_CAMPOS_KEYS]);
         setAmbientesExtras([]);
@@ -677,6 +686,9 @@ export const EventoFormDialog = ({
         link_grupo_whatsapp: formData.link_grupo_whatsapp?.trim()
           ? formData.link_grupo_whatsapp.trim()
           : null,
+        link_grupo_whatsapp_participantes: formData.link_grupo_whatsapp_participantes?.trim() || null,
+        link_grupo_whatsapp_equipe: formData.link_grupo_whatsapp_equipe?.trim() || null,
+        link_grupo_whatsapp_ministradores: formData.link_grupo_whatsapp_ministradores?.trim() || null,
         ...(approvalMode ? { status: "pendente", solicitante_id: solicitanteId } : {}),
         campos_formulario: formData.necessita_inscricao ? camposFormulario : null,
       };
@@ -1501,6 +1513,68 @@ export const EventoFormDialog = ({
                 Será enviado por WhatsApp e e-mail aos participantes quando o ADM confirmar a inscrição.
               </p>
             </div>
+
+            {/* Links por tipo de inscrição (impacto / qualquer evento com inscrição) */}
+            {formData.necessita_inscricao && (
+              <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+                <div>
+                  <Label className="text-sm flex items-center gap-2">
+                    <LinkIcon className="w-4 h-4" />
+                    Links por tipo de inscrição (opcional)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Cada inscrito recebe automaticamente o link correspondente ao seu tipo. Caso vazio, será usado o link geral acima.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_participantes" className="text-xs">
+                      Participantes (Membros e Não Membros)
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_participantes"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_participantes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_participantes: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_equipe" className="text-xs">
+                      Equipe / Apoio
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_equipe"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_equipe}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_equipe: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="link_grupo_whatsapp_ministradores" className="text-xs">
+                      Ministradores
+                    </Label>
+                    <Input
+                      id="link_grupo_whatsapp_ministradores"
+                      type="url"
+                      placeholder="https://chat.whatsapp.com/..."
+                      value={formData.link_grupo_whatsapp_ministradores}
+                      onChange={(e) =>
+                        setFormData({ ...formData, link_grupo_whatsapp_ministradores: e.target.value })
+                      }
+                      maxLength={500}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Refeição */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
