@@ -158,7 +158,7 @@ export const InscricoesEventoDialog = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("tem_custo, valor_custo, valores_por_tipo")
+        .select("tem_custo, valor_custo, valores_por_tipo, tipo_evento")
         .eq("id", eventoId)
         .single();
       if (error) throw error;
@@ -166,6 +166,10 @@ export const InscricoesEventoDialog = ({
     },
     enabled: open && !!eventoId,
   });
+
+  const inscricaoPath = eventoConfig?.tipo_evento === "apresentacao_criancas"
+    ? `/inscricao/apresentacao/${eventoId}`
+    : `/inscricao/${eventoId}`;
 
   // Fetch member casa_refugio data for all member_ids
   const memberIds = inscricoes.filter(i => i.member_id).map(i => i.member_id!);
@@ -608,7 +612,7 @@ export const InscricoesEventoDialog = ({
             <Button 
               variant="default" 
               size="sm" 
-              onClick={() => window.open(`/inscricao/${eventoId}`, '_blank')}
+              onClick={() => window.open(inscricaoPath, '_blank')}
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Nova Inscrição
@@ -745,7 +749,7 @@ export const InscricoesEventoDialog = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => window.open(`/inscricao/${eventoId}?edit=${inscricao.id}`, '_blank')}
+                            onClick={() => window.open(`${inscricaoPath}?edit=${inscricao.id}`, '_blank')}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>

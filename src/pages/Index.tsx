@@ -182,7 +182,7 @@ const Index = () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, flyer_url, data_evento, data_fim, limite_vagas, visibilidade")
+        .select("id, titulo, tipo_evento, flyer_url, data_evento, data_fim, limite_vagas, visibilidade")
         .eq("ativo", true)
         .eq("recorrente", false)
         .eq("visibilidade", "publico")
@@ -626,7 +626,7 @@ const Index = () => {
                     {eventosComFlyer.map((evento, index) => (
                       <Link
                         key={evento.id}
-                        to={`/inscricao/${evento.id}`}
+                        to={evento.tipo_evento === "apresentacao_criancas" ? `/inscricao/apresentacao/${evento.id}` : `/inscricao/${evento.id}`}
                         className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
                         style={{ animationDelay: `${index * 100}ms` }}
                       >

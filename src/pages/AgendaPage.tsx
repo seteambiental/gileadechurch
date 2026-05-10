@@ -118,6 +118,7 @@ const AgendaPage = () => {
     id: string; 
     titulo: string; 
     data_evento: string;
+    tipo_evento?: string;
     hora_inicio?: string | null;
     local?: string | null;
     flyer_url?: string | null;
@@ -431,7 +432,7 @@ const AgendaPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(`/inscricao/${evento.id}`, '_blank')}
+                              onClick={() => window.open(evento.tipo_evento === "apresentacao_criancas" ? `/inscricao/apresentacao/${evento.id}` : `/inscricao/${evento.id}`, '_blank')}
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
                               Inscrição
@@ -457,6 +458,7 @@ const AgendaPage = () => {
                               id: evento.id,
                               titulo: evento.titulo,
                               data_evento: evento.data_evento,
+                              tipo_evento: evento.tipo_evento,
                               hora_inicio: evento.hora_inicio,
                               local: evento.local,
                               flyer_url: evento.flyer_url,

@@ -20,6 +20,7 @@ interface CompartilharInscricaoDialogProps {
     id: string;
     titulo: string;
     data_evento: string;
+    tipo_evento?: string;
     hora_inicio?: string | null;
     local?: string | null;
     flyer_url?: string | null;
@@ -36,8 +37,11 @@ export const CompartilharInscricaoDialog = ({
   const [copied, setCopied] = useState(false);
 
   const baseUrl = window.location.origin;
-  const linkInscricao = `${baseUrl}/inscricao/${evento.id}`;
-  const linkTotem = `${baseUrl}/inscricao/${evento.id}?fullscreen=true`;
+  const pathInscricao = evento.tipo_evento === "apresentacao_criancas"
+    ? `/inscricao/apresentacao/${evento.id}`
+    : `/inscricao/${evento.id}`;
+  const linkInscricao = `${baseUrl}${pathInscricao}`;
+  const linkTotem = `${baseUrl}${pathInscricao}?fullscreen=true`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(linkInscricao).then(() => {
