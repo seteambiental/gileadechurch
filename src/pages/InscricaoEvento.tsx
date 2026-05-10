@@ -143,6 +143,12 @@ const InscricaoEvento = () => {
     enabled: !!eventoId,
   });
 
+  useEffect(() => {
+    if (evento?.tipo_evento === "apresentacao_criancas" && eventoId) {
+      window.location.replace(`/inscricao/apresentacao/${eventoId}${window.location.search}`);
+    }
+  }, [evento?.tipo_evento, eventoId]);
+
   // Fetch inscriptions count per tipo: impacto_inscricoes + pending inscricoes_eventos
   const { data: inscricoesPorTipo = {} as Record<string, number> } = useQuery({
     queryKey: ["inscricoes-count-por-tipo", eventoId],
