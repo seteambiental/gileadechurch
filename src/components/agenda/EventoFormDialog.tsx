@@ -135,7 +135,6 @@ const TIPOS_EVENTO = [
 ];
 
 const TIPOS_COMPROMISSO = [
-  { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
   { value: "aulas", label: "Aulas" },
   { value: "casamento", label: "Casamento" },
   { value: "churrasco", label: "Churrasco" },
@@ -641,12 +640,12 @@ export const EventoFormDialog = ({
         tipo_evento: formData.tipo_evento,
         genero_alvo: formData.genero_alvo,
         cor: formData.cor,
-        recorrente: formData.recorrente,
-        tipo_recorrencia: formData.recorrente 
+        recorrente: formData.tipo_evento === "apresentacao_criancas" ? false : formData.recorrente,
+        tipo_recorrencia: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente 
           ? (formData.data_fim ? "semanal" : formData.tipo_recorrencia || null) 
           : null,
-        dia_semana: formData.recorrente && formData.dia_semana ? parseInt(formData.dia_semana) : null,
-        semana_mes: formData.recorrente && !formData.data_fim && formData.semana_mes ? parseInt(formData.semana_mes) : null,
+        dia_semana: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente && formData.dia_semana ? parseInt(formData.dia_semana) : null,
+        semana_mes: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente && !formData.data_fim && formData.semana_mes ? parseInt(formData.semana_mes) : null,
         observacoes: formData.observacoes || null,
         flyer_url: flyerUrl,
         idade_minima: formData.idade_minima ? parseInt(formData.idade_minima) : null,
