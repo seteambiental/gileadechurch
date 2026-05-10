@@ -24,15 +24,15 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
     try {
       const { data: members, error: mErr } = await supabase
         .from("members")
-        .select("id, phone, email")
-        .not("phone", "is", null);
+        .select("id, whatsapp, email")
+        .not("whatsapp", "is", null);
       if (mErr) throw mErr;
 
       let updatedImpacto = 0;
       let updatedInscricoes = 0;
 
       for (const m of members || []) {
-        if (!m.phone) continue;
+        if (!m.whatsapp) continue;
 
         const { data: impactoRows } = await supabase
           .from("impacto_inscricoes")
@@ -41,7 +41,7 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
 
         for (const row of impactoRows || []) {
           const updates: Record<string, any> = {};
-          if (row.telefone !== m.phone) updates.telefone = m.phone;
+          if (row.telefone !== m.whatsapp) updates.telefone = m.whatsapp;
           if (m.email && row.email !== m.email) updates.email = m.email;
           if (Object.keys(updates).length > 0) {
             const { error } = await supabase
@@ -58,10 +58,10 @@ const ImpactoEventosTab = ({ onGoToInscricoes, onGoToFinanceiro }: ImpactoEvento
           .eq("member_id", m.id);
 
         for (const row of inscRows || []) {
-          if (row.telefone_contato !== m.phone) {
+          if (row.telefone_contato !== m.whatsapp) {
             const { error } = await supabase
               .from("inscricoes_eventos")
-              .update({ telefone_contato: m.phone })
+              .update({ telefone_contato: m.whatsapp })
               .eq("id", row.id);
             if (!error) updatedInscricoes++;
           }
