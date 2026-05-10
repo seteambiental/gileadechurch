@@ -662,6 +662,18 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     }
   };
 
+  // Apresentação de Crianças usa tabela e fluxo dedicados
+  const selectedAgendaEvent = agendaEventos?.find((e: any) => e.id === selectedEventoId);
+  if (selectedAgendaEvent && (selectedAgendaEvent as any).tipo_evento === "apresentacao_criancas") {
+    return (
+      <ApresentacaoCriancasInscricoesPanel
+        eventos={eventos}
+        selectedEventoId={selectedEventoId}
+        onEventoChange={(id) => { setSelectedEventoId(id); setSearchNome(""); setSelectedIds([]); }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
