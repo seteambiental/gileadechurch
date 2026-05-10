@@ -38,13 +38,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
 import { DateInput } from "@/components/ui/date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ImpactoDespesasTab from "./ImpactoDespesasTab";
 import FinalizarEventoDialog from "./FinalizarEventoDialog";
+import EnvioEmergenciaDialog from "./EnvioEmergenciaDialog";
 import { exportGenericToExcel, exportGenericToPDF, savePDF } from "@/lib/export";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -71,6 +72,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [dataPrevisaoInput, setDataPrevisaoInput] = useState("");
   const [dataPrevisao, setDataPrevisao] = useState("");
   const [finalizarOpen, setFinalizarOpen] = useState(false);
+  const [emergenciaOpen, setEmergenciaOpen] = useState(false);
 
   const handleAplicarPrevisao = useCallback(() => {
     setDataPrevisao(dataPrevisaoInput);
@@ -733,6 +735,12 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
             <Button variant="outline" size="sm" onClick={() => navigate(`/ministerio/impacto?tab=inscricoes-impacto&evento=${selectedEventoId}`)}>
               <ClipboardList className="w-4 h-4 mr-2" />
               Inscrições
+            </Button>
+          )}
+          {selectedEventoId && inscricoes.length > 0 && (
+            <Button variant="outline" size="sm" onClick={() => setEmergenciaOpen(true)}>
+              <ShieldAlert className="w-4 h-4 mr-2" />
+              WhatsApp
             </Button>
           )}
           {selectedEventoId && inscricoes.length > 0 && (
