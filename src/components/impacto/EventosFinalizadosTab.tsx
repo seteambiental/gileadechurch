@@ -62,6 +62,7 @@ const TIPOS_LABELS: Record<string, string> = {
   nao_membro: "Não membro",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
+  ministrador: "Ministrador",
 };
 
 const CATEGORIAS_DESPESA = [
