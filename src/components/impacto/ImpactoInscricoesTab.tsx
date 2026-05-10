@@ -35,6 +35,7 @@ import FinalizarEventoDialog from "./FinalizarEventoDialog";
 import EnvioEmergenciaDialog from "./EnvioEmergenciaDialog";
 import ApresentacaoCriancasInscricoesPanel from "./ApresentacaoCriancasInscricoesPanel";
 import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
+import { fuzzyMatch } from "@/lib/text-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Popover,
@@ -291,12 +292,19 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     }
 
     if (!searchNome.trim()) return all;
-    const q = searchNome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return all.filter((i: any) =>
-      (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q) ||
-      (i.nome_responsavel || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q) ||
-      (i.telefone_emergencia || "").replace(/\D/g, "").includes(q.replace(/\D/g, ""))
-    );
+    const q = searchNome.trim();
+    const digits = q.replace(/\D/g, "");
+    return all.filter((i: any) => {
+      const nome = i.nome || i.member?.full_name || "";
+      const responsavel = i.nome_responsavel || "";
+      if (fuzzyMatch(nome, q)) return true;
+      if (responsavel && fuzzyMatch(responsavel, q)) return true;
+      if (digits) {
+        const tel = (i.telefone || i.telefone_emergencia || i.member?.whatsapp || "").replace(/\D/g, "");
+        if (tel.includes(digits)) return true;
+      }
+      return false;
+    });
   }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo]);
 
   // Keep selected IDs in sync with currently visible inscrições
