@@ -121,6 +121,7 @@ const CORES = [
 ];
 
 const TIPOS_EVENTO = [
+  { value: "apresentacao_criancas", label: "Apresentação de Crianças" },
   { value: "batismo", label: "Batismo" },
   { value: "casa_refugio", label: "Casa Refúgio" },
   { value: "conferencia", label: "Conferência" },
