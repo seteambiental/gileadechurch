@@ -178,6 +178,7 @@ serve(async (req) => {
 
     // Create separate member_requests for each dependent
     // Cônjuge
+    let conjugeRequestId: string | null = null;
     if (conjuge && conjuge.nome_completo) {
       const conjugePayload = {
         full_name: conjuge.nome_completo.trim(),
@@ -198,12 +199,16 @@ serve(async (req) => {
         tipo_dependente: "conjuge",
       };
 
-      const { error: conjError } = await supabaseAdmin
+      const { data: conjData, error: conjError } = await supabaseAdmin
         .from("member_requests")
-        .insert(conjugePayload);
+        .insert(conjugePayload)
+        .select("id")
+        .single();
 
       if (conjError) {
         console.error("Error creating conjuge request:", conjError);
+      } else if (conjData) {
+        conjugeRequestId = conjData.id;
       }
     }
 
@@ -279,7 +284,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true, id: data.id }), {
+    return new Response(JSON.stringify({ success: true, id: data.id, conjuge_id: conjugeRequestId }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
