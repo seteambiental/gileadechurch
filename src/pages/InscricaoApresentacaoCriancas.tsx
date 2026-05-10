@@ -15,6 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2, Calendar, Clock, MapPin, Check, Home, UserPlus, Search, Baby } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -155,6 +166,7 @@ const InscricaoApresentacaoCriancas = () => {
   const [termoPai, setTermoPai] = useState("");
   const [termoMae, setTermoMae] = useState("");
   const [criancaNome, setCriancaNome] = useState("");
+  const [criancaCpf, setCriancaCpf] = useState("");
   const [criancaData, setCriancaData] = useState("");
   const [criancaGenero, setCriancaGenero] = useState("");
   const [observacoes, setObservacoes] = useState("");
@@ -165,6 +177,13 @@ const InscricaoApresentacaoCriancas = () => {
   const [pendingAutoSelect, setPendingAutoSelect] = useState<{
     target: "pai" | "mae";
     info: { requestId: string; fullName: string; conjugeRequestId?: string | null; conjugeFullName?: string | null };
+  } | null>(null);
+
+  // When a conjuge was created together with a parent, ask which role (pai/mae) to assign
+  const [askConjugeRole, setAskConjugeRole] = useState<{
+    parentTarget: "pai" | "mae";
+    parentSel: Selecionado;
+    conjuge: Selecionado;
   } | null>(null);
 
   const { data: evento, isLoading: loadingEvento } = useQuery({
@@ -211,28 +230,23 @@ const InscricaoApresentacaoCriancas = () => {
       full_name: info.fullName,
       tipo: "request",
     };
-    if (target === "pai") {
-      setPai(sel);
-      // If a conjuge was created and "mae" is empty, auto-fill it
-      if (info.conjugeRequestId && info.conjugeFullName && !mae) {
-        setMae({
+    if (target === "pai") setPai(sel);
+    else setMae(sel);
+
+    // Se um cônjuge foi criado junto, pergunta se ele é o pai ou a mãe
+    if (info.conjugeRequestId && info.conjugeFullName) {
+      setAskConjugeRole({
+        parentTarget: target,
+        parentSel: sel,
+        conjuge: {
           id: info.conjugeRequestId,
           full_name: info.conjugeFullName,
           tipo: "request",
-        });
-      }
-    } else {
-      setMae(sel);
-      if (info.conjugeRequestId && info.conjugeFullName && !pai) {
-        setPai({
-          id: info.conjugeRequestId,
-          full_name: info.conjugeFullName,
-          tipo: "request",
-        });
-      }
+        },
+      });
     }
     setPendingAutoSelect(null);
-  }, [cadastroAberto, pendingAutoSelect, mae, pai]);
+  }, [cadastroAberto, pendingAutoSelect]);
 
   const enviarMutation = useMutation({
     mutationFn: async () => {
@@ -249,6 +263,7 @@ const InscricaoApresentacaoCriancas = () => {
         mae_request_id: mae?.tipo === "request" ? mae.id : null,
         mae_nome: mae?.full_name ?? null,
         crianca_nome: criancaNome.trim(),
+        crianca_cpf: criancaCpf.replace(/\D/g, "") || null,
         crianca_data_nascimento: criancaData || null,
         crianca_genero: criancaGenero || null,
         observacoes: observacoes.trim() || null,
@@ -401,6 +416,14 @@ const InscricaoApresentacaoCriancas = () => {
                   placeholder="Nome da criança a ser apresentada"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>CPF da criança</Label>
+                <MaskedInput
+                  mask="cpf"
+                  value={criancaCpf}
+                  onChange={setCriancaCpf}
+                />
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label>Data de nascimento</Label>
@@ -460,6 +483,49 @@ const InscricaoApresentacaoCriancas = () => {
           }
         }}
       />
+
+      <AlertDialog
+        open={!!askConjugeRole}
+        onOpenChange={(open) => {
+          if (!open) setAskConjugeRole(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quem é o cônjuge cadastrado?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você cadastrou também <strong>{askConjugeRole?.conjuge.full_name}</strong>.
+              Esta pessoa é o <strong>pai</strong> ou a <strong>mãe</strong> da criança a ser apresentada?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>Não cadastrar como responsável</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!askConjugeRole) return;
+                // Assign conjuge to the OPPOSITE role of the originally registered parent
+                // but allow user choice via two buttons below
+                setPai(askConjugeRole.parentTarget === "pai" ? askConjugeRole.parentSel : askConjugeRole.conjuge);
+                setMae(askConjugeRole.parentTarget === "mae" ? askConjugeRole.parentSel : askConjugeRole.conjuge);
+                setAskConjugeRole(null);
+              }}
+            >
+              {askConjugeRole?.parentTarget === "pai" ? "É a mãe" : "É o pai"}
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                if (!askConjugeRole) return;
+                // Same role as the parent registered (overrides the original)
+                if (askConjugeRole.parentTarget === "pai") setPai(askConjugeRole.conjuge);
+                else setMae(askConjugeRole.conjuge);
+                setAskConjugeRole(null);
+              }}
+            >
+              {askConjugeRole?.parentTarget === "pai" ? "É outro pai" : "É outra mãe"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
