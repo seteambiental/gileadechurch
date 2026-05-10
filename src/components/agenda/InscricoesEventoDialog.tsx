@@ -612,7 +612,7 @@ export const InscricoesEventoDialog = ({
             <Button 
               variant="default" 
               size="sm" 
-              onClick={() => window.open(`/inscricao/${eventoId}`, '_blank')}
+              onClick={() => window.open(inscricaoPath, '_blank')}
             >
               <UserPlus className="w-4 h-4 mr-2" />
               Nova Inscrição
@@ -749,7 +749,7 @@ export const InscricoesEventoDialog = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => window.open(`/inscricao/${eventoId}?edit=${inscricao.id}`, '_blank')}
+                            onClick={() => window.open(`${inscricaoPath}?edit=${inscricao.id}`, '_blank')}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
