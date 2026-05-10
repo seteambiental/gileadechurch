@@ -183,7 +183,7 @@ const InscricaoApresentacaoCriancas = () => {
 
   const buscarResponsaveis = async (termo: string): Promise<Responsavel[]> => {
     if (termo.trim().length < 2) return [];
-    const { data, error } = await supabase.rpc("buscar_responsaveis_publico", { termo });
+    const { data, error } = await (supabase as any).rpc("buscar_responsaveis_publico", { termo });
     if (error) {
       console.error(error);
       return [];
