@@ -1159,7 +1159,7 @@ serve(async (req) => {
 
     // ===== INSCRIÇÃO RECEBIDA (qualquer evento/módulo) =====
     if (action === 'inscricao_recebida') {
-      const { telefone, nome, tituloEvento, eventoId, eventoTipo } = body;
+      const { telefone, nome, tituloEvento, eventoId, eventoTipo, tipoInscricao } = body;
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
@@ -1171,7 +1171,7 @@ serve(async (req) => {
         resolvedEventoTipo,
         'inscricao_recebida',
       );
-      const linkGrupoWhatsapp = await getLinkGrupoWhatsapp(supabase, eventoId, resolvedEventoTipo);
+      const linkGrupoWhatsapp = await getLinkGrupoWhatsapp(supabase, eventoId, resolvedEventoTipo, tipoInscricao);
       const grupoWhatsappBlock = linkGrupoWhatsapp
         ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
         : '';
