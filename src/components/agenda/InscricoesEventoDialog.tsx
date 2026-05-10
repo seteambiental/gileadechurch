@@ -158,7 +158,7 @@ export const InscricoesEventoDialog = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("tem_custo, valor_custo, valores_por_tipo")
+        .select("tem_custo, valor_custo, valores_por_tipo, tipo_evento")
         .eq("id", eventoId)
         .single();
       if (error) throw error;
@@ -166,6 +166,10 @@ export const InscricoesEventoDialog = ({
     },
     enabled: open && !!eventoId,
   });
+
+  const inscricaoPath = eventoConfig?.tipo_evento === "apresentacao_criancas"
+    ? `/inscricao/apresentacao/${eventoId}`
+    : `/inscricao/${eventoId}`;
 
   // Fetch member casa_refugio data for all member_ids
   const memberIds = inscricoes.filter(i => i.member_id).map(i => i.member_id!);
