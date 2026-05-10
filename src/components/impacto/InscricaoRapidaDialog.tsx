@@ -341,6 +341,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                 <SelectItem value="nao_membro">Não Membro</SelectItem>
                 <SelectItem value="familia">Líderes e Anfitriões</SelectItem>
                 <SelectItem value="equipe">Equipe (Apoio/Serviço)</SelectItem>
+                <SelectItem value="ministrador">Ministrador</SelectItem>
               </SelectContent>
             </Select>
           </div>
