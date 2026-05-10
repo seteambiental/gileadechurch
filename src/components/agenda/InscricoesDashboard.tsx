@@ -39,7 +39,7 @@ interface UnifiedInscricao {
   lista_espera: boolean;
   valor_inscricao: number;
   valor_pago: number;
-  source: "agenda" | "impacto";
+  source: "agenda" | "impacto" | "apresentacao";
 }
 
 interface Evento {
@@ -115,6 +115,18 @@ export const InscricoesDashboard = () => {
       const { data, error } = await supabase
         .from("impacto_inscricoes")
         .select("id, evento_id, forma_pagamento, status_pagamento, nome, telefone, valor_inscricao, valor_pago, aprovado");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Fetch apresentação de crianças inscriptions (separate dedicated table)
+  const { data: inscricoesApresentacao = [], isLoading: loadingApresentacao } = useQuery({
+    queryKey: ["all-inscricoes-apresentacao"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("apresentacao_criancas_inscricoes")
+        .select("id, evento_id, crianca_nome, pai_nome, mae_nome, pai_member_id, mae_member_id");
       if (error) throw error;
       return data || [];
     },
@@ -212,8 +224,25 @@ export const InscricoesDashboard = () => {
       }
     });
 
+    // Add apresentação de crianças inscriptions
+    inscricoesApresentacao.forEach((i: any) => {
+      const pais = [i.pai_nome, i.mae_nome].filter(Boolean).join(" e ");
+      result.push({
+        id: i.id,
+        evento_id: i.evento_id,
+        forma_pagamento: null,
+        status_pagamento: "confirmado",
+        nome: pais ? `${i.crianca_nome} (Pais: ${pais})` : i.crianca_nome,
+        telefone: "",
+        lista_espera: false,
+        valor_inscricao: 0,
+        valor_pago: 0,
+        source: "apresentacao",
+      });
+    });
+
     return result;
-  }, [inscricoesAgenda, inscricoesImpacto]);
+  }, [inscricoesAgenda, inscricoesImpacto, inscricoesApresentacao]);
 
   // Filter by selected event — empty means no data shown
   const inscricoesFiltradas = selectedEvento && selectedEvento !== ""
@@ -257,7 +286,7 @@ export const InscricoesDashboard = () => {
     });
   };
 
-  const isLoading = loadingAgenda || loadingImpacto || loadingImpactoEventos || loadingEventos;
+  const isLoading = loadingAgenda || loadingImpacto || loadingImpactoEventos || loadingEventos || loadingApresentacao;
 
   if (isLoading) {
     return (
