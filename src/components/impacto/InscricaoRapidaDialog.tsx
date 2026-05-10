@@ -126,6 +126,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           tituloEvento: eventoTitulo,
           eventoId,
           eventoTipo: "impacto",
+          tipoInscricao,
         });
       } else {
         if (!selectedMember) throw new Error("Selecione um membro");
@@ -166,6 +167,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           tituloEvento: eventoTitulo,
           eventoId,
           eventoTipo: "impacto",
+          tipoInscricao,
         });
       }
     },
