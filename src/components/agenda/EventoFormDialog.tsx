@@ -213,6 +213,9 @@ export const EventoFormDialog = ({
     vagas_familia: "",
     vagas_equipe: "",
     link_grupo_whatsapp: "",
+    link_grupo_whatsapp_participantes: "",
+    link_grupo_whatsapp_equipe: "",
+    link_grupo_whatsapp_ministradores: "",
   });
   const CAMPOS_FORMULARIO_OPTIONS = [
     { key: "nome", label: "Nome completo" },
