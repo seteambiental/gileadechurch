@@ -36,6 +36,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   nao_membro: "Não membro",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
+  ministrador: "Ministrador",
 };
 
 const getErrorMessage = (error: unknown) => {
@@ -189,6 +190,7 @@ const NovasInscricoesTab = () => {
           tituloEvento: inscricao.evento?.titulo || null,
           eventoId: inscricao.evento_id,
           eventoTipo: "agenda",
+          tipoInscricao: inscricao.tipo_inscricao,
         });
       } catch (waErr) {
         console.warn("[novasInscricoes] disparo whatsapp falhou:", waErr);
@@ -328,6 +330,7 @@ const NovasInscricoesTab = () => {
             tituloEvento: inscricao.evento?.titulo || null,
             eventoId: inscricao.evento_id,
             eventoTipo: "agenda",
+            tipoInscricao: inscricao.tipo_inscricao,
           });
         } catch (waErr) {
           console.warn("[novasInscricoes/lote] disparo whatsapp falhou:", waErr);

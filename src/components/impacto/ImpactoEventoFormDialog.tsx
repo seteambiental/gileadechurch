@@ -37,6 +37,7 @@ const TIPOS_INSCRICAO = [
   { value: "nao_membro", label: "Não membro" },
   { value: "familia", label: "Família" },
   { value: "equipe", label: "Equipe (apoio/serviço)" },
+  { value: "ministrador", label: "Ministrador" },
 ];
 
 const CAMPOS_FORMULARIO_OPTIONS = [
@@ -83,6 +84,9 @@ const formSchema = z.object({
   valores_por_tipo: z.record(z.string(), z.string()).optional(),
   prefixo_referencia: z.string().optional(),
   link_grupo_whatsapp: z.string().optional(),
+  link_grupo_whatsapp_participantes: z.string().optional(),
+  link_grupo_whatsapp_equipe: z.string().optional(),
+  link_grupo_whatsapp_ministradores: z.string().optional(),
   campos_formulario: z.array(z.string()).optional(),
 });
 
@@ -118,11 +122,14 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
       descricao: "",
       valor_inscricao: "",
       limite_vagas: "",
-      tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
+      tipos_inscricao: ["membro", "nao_membro", "familia", "equipe", "ministrador"],
       tem_custo: false,
       valores_por_tipo: {},
       prefixo_referencia: "",
       link_grupo_whatsapp: "",
+      link_grupo_whatsapp_participantes: "",
+      link_grupo_whatsapp_equipe: "",
+      link_grupo_whatsapp_ministradores: "",
       campos_formulario: [...ALL_CAMPOS_KEYS],
     },
   });
@@ -138,11 +145,14 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: evento.descricao || "",
         valor_inscricao: evento.valor_inscricao?.toString() || "",
         limite_vagas: evento.limite_vagas?.toString() || "",
-        tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia", "equipe"],
+        tipos_inscricao: evento.tipos_inscricao || ["membro", "nao_membro", "familia", "equipe", "ministrador"],
         tem_custo: evento.tem_custo || false,
         valores_por_tipo: evento.valores_por_tipo || {},
         prefixo_referencia: evento.prefixo_referencia || "",
         link_grupo_whatsapp: evento.link_grupo_whatsapp || "",
+        link_grupo_whatsapp_participantes: evento.link_grupo_whatsapp_participantes || "",
+        link_grupo_whatsapp_equipe: evento.link_grupo_whatsapp_equipe || "",
+        link_grupo_whatsapp_ministradores: evento.link_grupo_whatsapp_ministradores || "",
         campos_formulario: evento.campos_formulario || [...ALL_CAMPOS_KEYS],
       });
     } else if (open && !evento) {
@@ -155,11 +165,14 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         descricao: "",
         valor_inscricao: "",
         limite_vagas: "",
-        tipos_inscricao: ["membro", "nao_membro", "familia", "equipe"],
+        tipos_inscricao: ["membro", "nao_membro", "familia", "equipe", "ministrador"],
         tem_custo: false,
         valores_por_tipo: {},
         prefixo_referencia: "",
         link_grupo_whatsapp: "",
+        link_grupo_whatsapp_participantes: "",
+        link_grupo_whatsapp_equipe: "",
+        link_grupo_whatsapp_ministradores: "",
         campos_formulario: [...ALL_CAMPOS_KEYS],
       });
     }
@@ -181,6 +194,9 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
         valores_por_tipo: values.tem_custo ? (values.valores_por_tipo || {}) : {},
         prefixo_referencia: values.prefixo_referencia || null,
         link_grupo_whatsapp: values.link_grupo_whatsapp?.trim() || null,
+        link_grupo_whatsapp_participantes: values.link_grupo_whatsapp_participantes?.trim() || null,
+        link_grupo_whatsapp_equipe: values.link_grupo_whatsapp_equipe?.trim() || null,
+        link_grupo_whatsapp_ministradores: values.link_grupo_whatsapp_ministradores?.trim() || null,
         campos_formulario: values.campos_formulario || ALL_CAMPOS_KEYS,
       };
 
@@ -415,14 +431,63 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
               name="link_grupo_whatsapp"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Link do Grupo de WhatsApp</FormLabel>
+                  <FormLabel>Link do Grupo de WhatsApp (geral / fallback)</FormLabel>
                   <FormControl>
                     <Input placeholder="https://chat.whatsapp.com/..." {...field} />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">
+                    Usado quando não houver link específico para o tipo de inscrição abaixo.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+              <p className="text-sm font-medium">Links por tipo de inscrição</p>
+              <p className="text-xs text-muted-foreground">
+                Cada inscrito recebe automaticamente o link do grupo correspondente ao seu tipo de inscrição.
+              </p>
+              <FormField
+                control={form.control}
+                name="link_grupo_whatsapp_participantes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Participantes (Membros e Não Membros)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://chat.whatsapp.com/..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="link_grupo_whatsapp_equipe"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Equipe / Apoio</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://chat.whatsapp.com/..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="link_grupo_whatsapp_ministradores"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Ministradores</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://chat.whatsapp.com/..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

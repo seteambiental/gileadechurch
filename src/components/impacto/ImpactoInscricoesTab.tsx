@@ -69,6 +69,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   nao_membro: "Não membro",
   familia: "Família",
   equipe: "Equipe (apoio/serviço)",
+  ministrador: "Ministrador",
 };
 
 // All available column keys (used for both table and export)
@@ -109,7 +110,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
   const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
-  const TIPO_OPTIONS = ["Membro", "Não membro", "Família", "Líderes e Anfitriões", "Equipe (apoio/serviço)", "—"];
+  const TIPO_OPTIONS = ["Membro", "Não membro", "Família", "Líderes e Anfitriões", "Equipe (apoio/serviço)", "Ministrador", "—"];
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);

@@ -77,6 +77,7 @@ async function getLinkGrupoWhatsapp(
   supabaseClient: any,
   eventoId: string | null | undefined,
   eventoTipo: 'agenda' | 'impacto' | null | undefined,
+  tipoInscricao?: string | null,
 ): Promise<string | null> {
   if (!eventoId) return null;
 
@@ -86,16 +87,33 @@ async function getLinkGrupoWhatsapp(
       ? ['agenda_igreja', 'impacto_eventos']
       : ['agenda_igreja', 'impacto_eventos'];
 
+  // Mapeia o tipo de inscrição para o campo específico do grupo
+  const tipoNorm = (tipoInscricao || '').toLowerCase().trim();
+  let campoEspecifico: string | null = null;
+  if (tipoNorm === 'equipe') {
+    campoEspecifico = 'link_grupo_whatsapp_equipe';
+  } else if (tipoNorm === 'ministrador' || tipoNorm === 'ministradores') {
+    campoEspecifico = 'link_grupo_whatsapp_ministradores';
+  } else if (tipoNorm === 'membro' || tipoNorm === 'nao_membro' || tipoNorm === 'familia') {
+    campoEspecifico = 'link_grupo_whatsapp_participantes';
+  }
+
   for (const table of sources) {
     try {
       const { data, error } = await supabaseClient
         .from(table)
-        .select('link_grupo_whatsapp')
+        .select('link_grupo_whatsapp, link_grupo_whatsapp_participantes, link_grupo_whatsapp_equipe, link_grupo_whatsapp_ministradores')
         .eq('id', eventoId)
         .maybeSingle();
 
-      if (!error && data?.link_grupo_whatsapp) {
-        return data.link_grupo_whatsapp;
+      if (!error && data) {
+        // Prioriza o link específico do tipo, com fallback para o link geral
+        if (campoEspecifico && data[campoEspecifico]) {
+          return data[campoEspecifico];
+        }
+        if (data.link_grupo_whatsapp) {
+          return data.link_grupo_whatsapp;
+        }
       }
     } catch (e) {
       console.warn(`Falha ao buscar link do grupo em ${table}:`, e);
@@ -588,7 +606,11 @@ serve(async (req) => {
       }
 
       // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
-      const linkGrupoWhatsapp = evento?.link_grupo_whatsapp || await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda');
+      // Respeita o tipo de inscrição para escolher o grupo correto (Participantes / Equipe / Ministradores)
+      const linkGrupoWhatsapp =
+        await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda', inscricao.tipo_inscricao)
+        || evento?.link_grupo_whatsapp
+        || null;
 
       const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
       const dataFormatada = formatarDataPt(evento?.data_evento);
@@ -1137,7 +1159,7 @@ serve(async (req) => {
 
     // ===== INSCRIÇÃO RECEBIDA (qualquer evento/módulo) =====
     if (action === 'inscricao_recebida') {
-      const { telefone, nome, tituloEvento, eventoId, eventoTipo } = body;
+      const { telefone, nome, tituloEvento, eventoId, eventoTipo, tipoInscricao } = body;
       if (!telefone || !nome) {
         throw new Error('Telefone e nome são obrigatórios');
       }
@@ -1149,7 +1171,7 @@ serve(async (req) => {
         resolvedEventoTipo,
         'inscricao_recebida',
       );
-      const linkGrupoWhatsapp = await getLinkGrupoWhatsapp(supabase, eventoId, resolvedEventoTipo);
+      const linkGrupoWhatsapp = await getLinkGrupoWhatsapp(supabase, eventoId, resolvedEventoTipo, tipoInscricao);
       const grupoWhatsappBlock = linkGrupoWhatsapp
         ? `\n\n💬 *Entre no nosso grupo do WhatsApp para receber todas as informações:*\n${linkGrupoWhatsapp}`
         : '';

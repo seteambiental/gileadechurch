@@ -392,6 +392,9 @@ export type Database = {
           idade_minima: number | null
           limite_vagas: number | null
           link_grupo_whatsapp: string | null
+          link_grupo_whatsapp_equipe: string | null
+          link_grupo_whatsapp_ministradores: string | null
+          link_grupo_whatsapp_participantes: string | null
           local: string | null
           local_tipo: string
           motivo_rejeicao: string | null
@@ -436,6 +439,9 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           link_grupo_whatsapp?: string | null
+          link_grupo_whatsapp_equipe?: string | null
+          link_grupo_whatsapp_ministradores?: string | null
+          link_grupo_whatsapp_participantes?: string | null
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null
@@ -480,6 +486,9 @@ export type Database = {
           idade_minima?: number | null
           limite_vagas?: number | null
           link_grupo_whatsapp?: string | null
+          link_grupo_whatsapp_equipe?: string | null
+          link_grupo_whatsapp_ministradores?: string | null
+          link_grupo_whatsapp_participantes?: string | null
           local?: string | null
           local_tipo?: string
           motivo_rejeicao?: string | null
@@ -3173,6 +3182,9 @@ export type Database = {
           id: string
           limite_vagas: number | null
           link_grupo_whatsapp: string | null
+          link_grupo_whatsapp_equipe: string | null
+          link_grupo_whatsapp_ministradores: string | null
+          link_grupo_whatsapp_participantes: string | null
           local: string | null
           prefixo_referencia: string | null
           tem_custo: boolean | null
@@ -3196,6 +3208,9 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           link_grupo_whatsapp?: string | null
+          link_grupo_whatsapp_equipe?: string | null
+          link_grupo_whatsapp_ministradores?: string | null
+          link_grupo_whatsapp_participantes?: string | null
           local?: string | null
           prefixo_referencia?: string | null
           tem_custo?: boolean | null
@@ -3219,6 +3234,9 @@ export type Database = {
           id?: string
           limite_vagas?: number | null
           link_grupo_whatsapp?: string | null
+          link_grupo_whatsapp_equipe?: string | null
+          link_grupo_whatsapp_ministradores?: string | null
+          link_grupo_whatsapp_participantes?: string | null
           local?: string | null
           prefixo_referencia?: string | null
           tem_custo?: boolean | null
