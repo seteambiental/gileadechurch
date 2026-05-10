@@ -325,6 +325,9 @@ export const EventoFormDialog = ({
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
           link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
+          link_grupo_whatsapp_participantes: (evento as any).link_grupo_whatsapp_participantes || "",
+          link_grupo_whatsapp_equipe: (evento as any).link_grupo_whatsapp_equipe || "",
+          link_grupo_whatsapp_ministradores: (evento as any).link_grupo_whatsapp_ministradores || "",
         });
         const existingCampos = (evento as any).campos_formulario;
         setCamposFormulario(Array.isArray(existingCampos) ? existingCampos : [...ALL_CAMPOS_KEYS]);
@@ -374,6 +377,9 @@ export const EventoFormDialog = ({
           vagas_familia: "",
           vagas_equipe: "",
           link_grupo_whatsapp: "",
+          link_grupo_whatsapp_participantes: "",
+          link_grupo_whatsapp_equipe: "",
+          link_grupo_whatsapp_ministradores: "",
         });
         setCamposFormulario([...ALL_CAMPOS_KEYS]);
         setAmbientesExtras([]);
