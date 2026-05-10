@@ -168,7 +168,7 @@ const AgendaPage = () => {
   // Tipos que são compromissos (não devem aparecer como cards de eventos)
   const TIPOS_COMPROMISSO = [
     "culto", "ceia", "conexao_lider", "quarta_proposito",
-    "quarta_proposito_prestacao", "cursos", "aulas", "apresentacao_criancas",
+    "quarta_proposito_prestacao", "cursos", "aulas",
     "casamento", "confraternizacao", "churrasco", "outros",
   ];
 
