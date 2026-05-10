@@ -606,7 +606,11 @@ serve(async (req) => {
       }
 
       // Buscar link do grupo de WhatsApp configurado no evento (caso não tenha sido enviado no body)
-      const linkGrupoWhatsapp = evento?.link_grupo_whatsapp || await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda');
+      // Respeita o tipo de inscrição para escolher o grupo correto (Participantes / Equipe / Ministradores)
+      const linkGrupoWhatsapp =
+        await getLinkGrupoWhatsapp(supabase, inscricao.evento_id, 'agenda', inscricao.tipo_inscricao)
+        || evento?.link_grupo_whatsapp
+        || null;
 
       const primeiroNome = primeiroNomeDe(inscricao.nome_participante);
       const dataFormatada = formatarDataPt(evento?.data_evento);
