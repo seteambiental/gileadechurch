@@ -6867,6 +6867,15 @@ export type Database = {
       }
     }
     Functions: {
+      buscar_responsaveis_publico: {
+        Args: { termo: string }
+        Returns: {
+          full_name: string
+          id: string
+          origem: string
+          status: string
+        }[]
+      }
       can_access_kids_data: { Args: never; Returns: boolean }
       can_manage_casa_refugio: { Args: { casa_id: string }; Returns: boolean }
       can_manage_member_requests: { Args: never; Returns: boolean }
