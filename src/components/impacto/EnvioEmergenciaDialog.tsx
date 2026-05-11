@@ -77,11 +77,16 @@ export default function EnvioEmergenciaDialog({
     }
   }, [open, eventoId, eventoTipo]);
 
-  // Lista de eventos disponíveis como origem (impacto + agenda ativos)
+  // Lista de eventos disponíveis como origem (apenas eventos com inscrições)
   const { data: eventosOrigem = [] } = useQuery({
     queryKey: ["envio-eventos-origem"],
     queryFn: async () => {
-      const [{ data: imp }, { data: ag }] = await Promise.all([
+      const [
+        { data: imp },
+        { data: ag },
+        { data: impInscritos },
+        { data: agInscritos },
+      ] = await Promise.all([
         supabase
           .from("impacto_eventos")
           .select("id, titulo, data_inicio")
@@ -93,19 +98,35 @@ export default function EnvioEmergenciaDialog({
           .eq("ativo", true)
           .order("data_evento", { ascending: false })
           .limit(100),
+        supabase
+          .from("impacto_inscricoes")
+          .select("evento_id")
+          .neq("status_pagamento", "cancelado"),
+        supabase
+          .from("inscricoes_eventos")
+          .select("evento_id")
+          .neq("status_pagamento", "cancelado"),
       ]);
-      const a = (imp || []).map((e: any) => ({
-        id: e.id,
-        tipo: "impacto" as const,
-        titulo: e.titulo,
-        data: e.data_inicio,
-      }));
-      const b = (ag || []).map((e: any) => ({
-        id: e.id,
-        tipo: "agenda" as const,
-        titulo: e.titulo,
-        data: e.data_evento,
-      }));
+
+      const impComInscritos = new Set((impInscritos || []).map((i: any) => i.evento_id));
+      const agComInscritos = new Set((agInscritos || []).map((i: any) => i.evento_id));
+
+      const a = (imp || [])
+        .filter((e: any) => impComInscritos.has(e.id))
+        .map((e: any) => ({
+          id: e.id,
+          tipo: "impacto" as const,
+          titulo: e.titulo,
+          data: e.data_inicio,
+        }));
+      const b = (ag || [])
+        .filter((e: any) => agComInscritos.has(e.id))
+        .map((e: any) => ({
+          id: e.id,
+          tipo: "agenda" as const,
+          titulo: e.titulo,
+          data: e.data_evento,
+        }));
       return [...a, ...b];
     },
     enabled: open,
