@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ArrowLeft, MessageSquare, Search, Filter, RefreshCw, CheckCircle2, XCircle, Clock, ListOrdered, History, RotateCcw, Play } from "lucide-react";
+import { ArrowLeft, MessageSquare, Search, Filter, RefreshCw, CheckCircle2, XCircle, Clock, ListOrdered, History, RotateCcw, Play, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserAccess } from "@/hooks/useUserAccess";
@@ -229,6 +229,9 @@ const ComunicacaoAuditoriaPage = () => {
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => navigate("/app")}>
+              <Home className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
               <MessageSquare className="h-6 w-6 text-primary" />
