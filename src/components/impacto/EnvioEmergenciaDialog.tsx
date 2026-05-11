@@ -45,6 +45,7 @@ interface Props {
   eventoId: string;
   eventoTipo: "impacto" | "agenda";
   eventoTitulo: string;
+  mensagemInicial?: string;
 }
 
 export default function EnvioEmergenciaDialog({
@@ -53,6 +54,7 @@ export default function EnvioEmergenciaDialog({
   eventoId,
   eventoTipo,
   eventoTitulo,
+  mensagemInicial,
 }: Props) {
   const [destino, setDestino] = useState<"todos" | "um">("todos");
   const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
@@ -61,6 +63,7 @@ export default function EnvioEmergenciaDialog({
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [templateSel, setTemplateSel] = useState<string>("");
+  const [tiposFiltro, setTiposFiltro] = useState<string[]>([]);
 
   const { data: cfg } = useQuery({
     queryKey: ["emerg-cfg-dialog", eventoId, eventoTipo],
@@ -94,12 +97,17 @@ export default function EnvioEmergenciaDialog({
     if (open && cfg && !mensagem) setMensagem(cfg.mensagem_inicial || "");
   }, [cfg, open]);
 
+  // Pré-preenche a mensagem ao abrir com modelo escolhido
+  useMemo(() => {
+    if (open && mensagemInicial) setMensagem(mensagemInicial);
+  }, [open, mensagemInicial]);
+
   const { data: inscricoes = [] } = useQuery({
     queryKey: ["emerg-dialog-inscricoes", eventoId],
     queryFn: async () => {
       const { data } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel")
+        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao")
         .eq("evento_id", eventoId)
         .neq("status_pagamento", "cancelado")
         .order("nome");
@@ -108,22 +116,27 @@ export default function EnvioEmergenciaDialog({
     enabled: open && !!eventoId,
   });
 
+  const inscricoesFiltradas = useMemo(() => {
+    if (tiposFiltro.length === 0) return inscricoes;
+    return (inscricoes as any[]).filter((i) => tiposFiltro.includes(i.tipo_inscricao));
+  }, [inscricoes, tiposFiltro]);
+
   const filtradas = useMemo(() => {
-    if (!busca) return inscricoes;
+    if (!busca) return inscricoesFiltradas;
     const q = busca.toLowerCase();
-    return inscricoes.filter(
+    return (inscricoesFiltradas as any[]).filter(
       (i: any) =>
         i.nome?.toLowerCase().includes(q) ||
         i.nome_responsavel?.toLowerCase().includes(q),
     );
-  }, [inscricoes, busca]);
+  }, [inscricoesFiltradas, busca]);
 
   const telefoneDe = (i: any) =>
     contatoTipo === "principal"
       ? i.telefone || ""
       : i.telefone_emergencia || i.telefone_responsavel || "";
 
-  const totalComTelefone = inscricoes.filter(
+  const totalComTelefone = (inscricoesFiltradas as any[]).filter(
     (i: any) => (telefoneDe(i) || "").replace(/\D/g, "").length >= 10,
   ).length;
 
@@ -148,6 +161,8 @@ export default function EnvioEmergenciaDialog({
             inscricaoId: destino === "um" ? inscricaoId : null,
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
+            tipoInscricaoFiltro:
+              destino === "todos" && tiposFiltro.length > 0 ? tiposFiltro : null,
           },
         },
       );
@@ -212,6 +227,47 @@ export default function EnvioEmergenciaDialog({
               </label>
             </RadioGroup>
           </div>
+
+          {destino === "todos" && (
+            <div>
+              <Label>Filtrar por tipo de inscrição (opcional)</Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {[
+                  { v: "membro", l: "Membros" },
+                  { v: "nao_membro", l: "Não membros" },
+                  { v: "equipe", l: "Equipe de serviço" },
+                  { v: "familia", l: "Família" },
+                ].map((opt) => {
+                  const ativo = tiposFiltro.includes(opt.v);
+                  return (
+                    <button
+                      key={opt.v}
+                      type="button"
+                      onClick={() =>
+                        setTiposFiltro((prev) =>
+                          prev.includes(opt.v)
+                            ? prev.filter((x) => x !== opt.v)
+                            : [...prev, opt.v],
+                        )
+                      }
+                      className={`px-3 py-1 rounded-full border text-xs ${ativo ? "bg-primary text-primary-foreground border-primary" : "bg-muted/40 hover:bg-muted"}`}
+                    >
+                      {opt.l}
+                    </button>
+                  );
+                })}
+                {tiposFiltro.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setTiposFiltro([])}
+                    className="text-xs text-muted-foreground underline ml-1"
+                  >
+                    limpar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {destino === "um" && (
             <div className="space-y-2">

@@ -18,6 +18,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { Send } from "lucide-react";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 
 type TipoMensagem =
   | "confirmacao_inscricao"
@@ -164,6 +166,13 @@ const HomepageConfigTab = () => {
   const queryClient = useQueryClient();
   const [mensagemAniversario, setMensagemAniversario] = useState("");
   const [tiposCategoriaExpandido, setTiposCategoriaExpandido] = useState(false);
+  const [envioDialog, setEnvioDialog] = useState<{
+    open: boolean;
+    eventoId: string;
+    eventoTipo: "impacto" | "agenda";
+    eventoTitulo: string;
+    mensagem: string;
+  } | null>(null);
   const [mensagemCarregada, setMensagemCarregada] = useState(false);
 
   // Estado da seção "Mensagens de Eventos"
@@ -548,6 +557,7 @@ const HomepageConfigTab = () => {
       queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
       queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
       queryClient.invalidateQueries({ queryKey: ["emerg-cfg-list"] });
+      queryClient.invalidateQueries({ queryKey: ["mensagens-templates-list"] });
       toast.success("Mensagem do evento salva com sucesso!");
     },
     onError: (error: any) => {
@@ -609,6 +619,71 @@ const HomepageConfigTab = () => {
     },
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });
+
+  // Lista de mensagens NÃO recorrentes salvas (mensagens_evento_templates)
+  const { data: templatesList = [] } = useQuery({
+    queryKey: ["mensagens-templates-list"],
+    queryFn: async () => {
+      const { data: tpls, error } = await supabase
+        .from("mensagens_evento_templates")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      const list = tpls || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.evento_id)));
+      if (ids.length === 0) return [] as any[];
+      const [{ data: ag }, { data: im }] = await Promise.all([
+        supabase.from("agenda_igreja").select("id, titulo, data_evento").in("id", ids),
+        supabase.from("impacto_eventos").select("id, nome, data_inicio").in("id", ids),
+      ]);
+      const map = new Map<string, { titulo: string; data: string | null }>();
+      (ag || []).forEach((e: any) =>
+        map.set(`agenda:${e.id}`, { titulo: e.titulo, data: e.data_evento }),
+      );
+      (im || []).forEach((e: any) =>
+        map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
+      );
+      return list.map((c: any) => {
+        const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
+        return {
+          ...c,
+          evento_titulo: meta?.titulo || "(evento removido)",
+          evento_data: meta?.data || null,
+        };
+      });
+    },
+  });
+
+  const excluirTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("mensagens_evento_templates")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Modelo removido");
+      queryClient.invalidateQueries({ queryKey: ["mensagens-templates-list"] });
+      queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover"),
+  });
+
+  const handleEditTemplate = (c: any) => {
+    setTipoMensagemSelecionada(c.tipo_mensagem as TipoMensagem);
+    setEventoSelecionado(`${c.evento_tipo}:${c.evento_id}`);
+    setUsaRecorrencia(false);
+    if (typeof window !== "undefined") {
+      setTimeout(
+        () =>
+          document
+            .getElementById("mensagens-eventos-card")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  };
 
   const formatRecorrencia = (c: any) => {
     if (!c.enviar_recorrente) return "Envio desativado";
@@ -1428,6 +1503,107 @@ const HomepageConfigTab = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Lista de mensagens NÃO recorrentes salvas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            Mensagens não recorrentes salvas
+          </CardTitle>
+          <CardDescription>
+            Modelos prontos para envio manual no evento. Use "Enviar agora"
+            para disparar a mensagem para um contato específico, todos os
+            participantes ou filtrando por tipo de inscrição.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {templatesList.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhum modelo salvo ainda.
+            </p>
+          ) : (
+            <div className="divide-y border rounded-md">
+              {templatesList.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {c.evento_titulo}
+                      <Badge variant="outline" className="ml-2 text-[10px] uppercase">
+                        {c.evento_tipo}
+                      </Badge>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        {TIPOS_MENSAGEM.find((t) => t.value === c.tipo_mensagem)?.label
+                          || c.tipo_mensagem}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {c.mensagem?.slice(0, 140)}
+                      {(c.mensagem?.length || 0) > 140 ? "…" : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() =>
+                        setEnvioDialog({
+                          open: true,
+                          eventoId: c.evento_id,
+                          eventoTipo: c.evento_tipo,
+                          eventoTitulo: c.evento_titulo,
+                          mensagem: c.mensagem || "",
+                        })
+                      }
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1.5" />
+                      Enviar agora
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditTemplate(c)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Remover modelo de "${c.evento_titulo}"?`)) {
+                          excluirTemplate.mutate(c.id);
+                        }
+                      }}
+                      disabled={excluirTemplate.isPending}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {envioDialog && (
+        <EnvioEmergenciaDialog
+          open={envioDialog.open}
+          onOpenChange={(o) =>
+            setEnvioDialog((prev) => (prev ? { ...prev, open: o } : prev))
+          }
+          eventoId={envioDialog.eventoId}
+          eventoTipo={envioDialog.eventoTipo}
+          eventoTitulo={envioDialog.eventoTitulo}
+          mensagemInicial={envioDialog.mensagem}
+        />
+      )}
     </div>
   );
 };
