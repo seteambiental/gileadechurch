@@ -16,6 +16,28 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, Search, MessageCircle } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const TIPO_LABELS: Record<string, string> = {
+  confirmacao_inscricao: "Confirmação de inscrição",
+  inscricao_recebida: "Inscrição recebida",
+  lembrete_pagamento: "Lembrete de pagamento",
+  vaga_liberada: "Vaga liberada",
+  contato_emergencia: "Contato de emergência",
+  aviso_importante: "Aviso importante",
+  lembrete_evento: "Lembrete do evento",
+  culto_batismo: "Culto de Batismo",
+  apresentacao_criancas: "Apresentação de Crianças",
+  ceia_senhor: "Ceia do Senhor",
+  prestacao_contas: "Prestação de Contas",
+  evento_especial: "Evento Especial",
+};
 
 interface Props {
   open: boolean;
@@ -38,6 +60,7 @@ export default function EnvioEmergenciaDialog({
   const [busca, setBusca] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [templateSel, setTemplateSel] = useState<string>("");
 
   const { data: cfg } = useQuery({
     queryKey: ["emerg-cfg-dialog", eventoId, eventoTipo],
@@ -49,6 +72,20 @@ export default function EnvioEmergenciaDialog({
         .eq("evento_tipo", eventoTipo)
         .maybeSingle();
       return data;
+    },
+    enabled: open && !!eventoId,
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["mensagens-templates", eventoId, eventoTipo],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("mensagens_evento_templates")
+        .select("tipo_mensagem, mensagem")
+        .eq("evento_id", eventoId)
+        .eq("evento_tipo", eventoTipo)
+        .neq("tipo_mensagem", "contato_emergencia");
+      return data || [];
     },
     enabled: open && !!eventoId,
   });
@@ -121,6 +158,7 @@ export default function EnvioEmergenciaDialog({
       onOpenChange(false);
       setMensagem("");
       setInscricaoId("");
+      setTemplateSel("");
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
     } finally {
@@ -245,6 +283,27 @@ export default function EnvioEmergenciaDialog({
 
           <div>
             <Label>Mensagem</Label>
+            {templates.length > 0 && (
+              <Select
+                value={templateSel}
+                onValueChange={(v) => {
+                  setTemplateSel(v);
+                  const t = (templates as any[]).find((x) => x.tipo_mensagem === v);
+                  if (t) setMensagem(t.mensagem || "");
+                }}
+              >
+                <SelectTrigger className="mb-2">
+                  <SelectValue placeholder="Usar modelo salvo (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(templates as any[]).map((t) => (
+                    <SelectItem key={t.tipo_mensagem} value={t.tipo_mensagem}>
+                      {TIPO_LABELS[t.tipo_mensagem] || t.tipo_mensagem}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Textarea
               rows={8}
               value={mensagem}
