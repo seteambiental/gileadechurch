@@ -106,15 +106,19 @@ async function buscarInscricoes(
   supabase: any,
   eventoId: string,
   inscricaoId?: string | null,
+  tipoInscricaoFiltro?: string[] | null,
 ) {
   let q = supabase
     .from("impacto_inscricoes")
     .select(
-      "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado",
+      "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado, tipo_inscricao",
     )
     .eq("evento_id", eventoId);
   if (inscricaoId) q = q.eq("id", inscricaoId);
   else q = q.neq("status_pagamento", "cancelado");
+  if (!inscricaoId && tipoInscricaoFiltro && tipoInscricaoFiltro.length > 0) {
+    q = q.in("tipo_inscricao", tipoInscricaoFiltro);
+  }
   const { data, error } = await q;
   if (error) throw error;
   return data || [];
@@ -153,6 +157,9 @@ serve(async (req) => {
     const mensagemOverride = (body.mensagemOverride as string) || null;
     const destinatarioTipo =
       (body.destinatarioTipo as "principal" | "emergencia") || "emergencia";
+    const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
+      ? (body.tipoInscricaoFiltro as string[])
+      : null;
 
     if (!eventoId || !tipo) {
       return new Response(
@@ -202,7 +209,12 @@ serve(async (req) => {
       );
     }
 
-    const inscricoes = await buscarInscricoes(supabase, eventoId, inscricaoId);
+    const inscricoes = await buscarInscricoes(
+      supabase,
+      eventoId,
+      inscricaoId,
+      tipoInscricaoFiltro,
+    );
     const dataEventoFmt = formatarDataPt(evento.data_inicio);
     let enviados = 0;
     let falhas = 0;
