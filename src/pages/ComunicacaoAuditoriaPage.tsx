@@ -41,6 +41,10 @@ const TIPO_LABELS: Record<string, string> = {
   manual: "Manual",
   individual: "Individual",
   massa: "Em Massa",
+  emergencia_inicial: "Emergência (inicial)",
+  emergencia_manual: "Emergência (manual)",
+  emergencia_recorrente: "Emergência (recorrente)",
+  admin_nova_inscricao: "Admin · Nova Inscrição",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {

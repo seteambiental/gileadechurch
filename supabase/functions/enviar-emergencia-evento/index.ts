@@ -232,6 +232,20 @@ serve(async (req) => {
               ? "Telefone do participante ausente ou inválido"
               : "Telefone de emergência ausente ou inválido",
         });
+        await supabase.from("comunicacao_envios").insert({
+          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          segmento: destinatarioTipo,
+          destinatario_telefone: tel || "",
+          destinatario_nome:
+            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
+          conteudo: "",
+          status: "erro",
+          erro_mensagem:
+            destinatarioTipo === "principal"
+              ? "Telefone do participante ausente ou inválido"
+              : "Telefone de emergência ausente ou inválido",
+          evento_id: eventoId,
+        });
         continue;
       }
 
@@ -260,6 +274,16 @@ serve(async (req) => {
           mensagem_enviada: mensagemFinal,
           status: "enviado",
         });
+        await supabase.from("comunicacao_envios").insert({
+          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          segmento: destinatarioTipo,
+          destinatario_telefone: tel,
+          destinatario_nome:
+            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
+          conteudo: mensagemFinal,
+          status: "enviado",
+          evento_id: eventoId,
+        });
       } catch (err) {
         falhas++;
         const msg = err instanceof Error ? err.message : String(err);
@@ -275,6 +299,17 @@ serve(async (req) => {
           mensagem_enviada: mensagemFinal,
           status: "falhou",
           erro: msg,
+        });
+        await supabase.from("comunicacao_envios").insert({
+          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          segmento: destinatarioTipo,
+          destinatario_telefone: tel,
+          destinatario_nome:
+            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
+          conteudo: mensagemFinal,
+          status: "erro",
+          erro_mensagem: msg,
+          evento_id: eventoId,
         });
       }
 
