@@ -167,6 +167,15 @@ serve(async (req) => {
             mensagem_enviada: final,
             status: "enviado",
           });
+          await supabase.from("comunicacao_envios").insert({
+            tipo: "emergencia_recorrente",
+            segmento: "emergencia",
+            destinatario_telefone: tel,
+            destinatario_nome: insc.nome_responsavel,
+            conteudo: final,
+            status: "enviado",
+            evento_id: cfg.evento_id,
+          });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           await supabase.from("emergencia_envios_log").insert({
@@ -180,6 +189,16 @@ serve(async (req) => {
             mensagem_enviada: final,
             status: "falhou",
             erro: msg,
+          });
+          await supabase.from("comunicacao_envios").insert({
+            tipo: "emergencia_recorrente",
+            segmento: "emergencia",
+            destinatario_telefone: tel,
+            destinatario_nome: insc.nome_responsavel,
+            conteudo: final,
+            status: "erro",
+            erro_mensagem: msg,
+            evento_id: cfg.evento_id,
           });
         }
         if (i < list.length - 1) await delayBulk();
