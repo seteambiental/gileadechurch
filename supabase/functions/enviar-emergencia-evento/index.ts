@@ -232,6 +232,20 @@ serve(async (req) => {
               ? "Telefone do participante ausente ou inválido"
               : "Telefone de emergência ausente ou inválido",
         });
+        await supabase.from("comunicacao_envios").insert({
+          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          segmento: destinatarioTipo,
+          destinatario_telefone: tel || "",
+          destinatario_nome:
+            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
+          conteudo: "",
+          status: "erro",
+          erro_mensagem:
+            destinatarioTipo === "principal"
+              ? "Telefone do participante ausente ou inválido"
+              : "Telefone de emergência ausente ou inválido",
+          evento_id: eventoId,
+        });
         continue;
       }
 
