@@ -160,6 +160,12 @@ serve(async (req) => {
     const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
       ? (body.tipoInscricaoFiltro as string[])
       : null;
+    // Origem dos inscritos pode ser diferente do evento da mensagem
+    // (ex.: PRE-IMPACTO usa lista do IMPACTO principal)
+    const inscritosEventoId =
+      (body.inscritosEventoId as string) || eventoId;
+    const inscritosEventoTipo =
+      (body.inscritosEventoTipo as string) || eventoTipo;
 
     if (!eventoId || !tipo) {
       return new Response(
@@ -211,7 +217,7 @@ serve(async (req) => {
 
     const inscricoes = await buscarInscricoes(
       supabase,
-      eventoId,
+      inscritosEventoId,
       inscricaoId,
       tipoInscricaoFiltro,
     );
