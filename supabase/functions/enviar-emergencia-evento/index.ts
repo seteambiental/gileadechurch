@@ -160,6 +160,9 @@ serve(async (req) => {
     const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
       ? (body.tipoInscricaoFiltro as string[])
       : null;
+    // Tipo da mensagem para auditoria (vindo do template selecionado).
+    // Se não vier, mantém comportamento antigo (emergencia_inicial/manual).
+    const tipoMensagemAudit = (body.tipoMensagem as string) || null;
     // Origem dos inscritos pode ser diferente do evento da mensagem
     // (ex.: PRE-IMPACTO usa lista do IMPACTO principal)
     const inscritosEventoId =
@@ -251,7 +254,9 @@ serve(async (req) => {
               : "Telefone de emergência ausente ou inválido",
         });
         await supabase.from("comunicacao_envios").insert({
-          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          tipo:
+            tipoMensagemAudit ||
+            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
           segmento: destinatarioTipo,
           destinatario_telefone: tel || "",
           destinatario_nome:
@@ -293,7 +298,9 @@ serve(async (req) => {
           status: "enviado",
         });
         await supabase.from("comunicacao_envios").insert({
-          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          tipo:
+            tipoMensagemAudit ||
+            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
           segmento: destinatarioTipo,
           destinatario_telefone: tel,
           destinatario_nome:
@@ -319,7 +326,9 @@ serve(async (req) => {
           erro: msg,
         });
         await supabase.from("comunicacao_envios").insert({
-          tipo: tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual",
+          tipo:
+            tipoMensagemAudit ||
+            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
           segmento: destinatarioTipo,
           destinatario_telefone: tel,
           destinatario_nome:

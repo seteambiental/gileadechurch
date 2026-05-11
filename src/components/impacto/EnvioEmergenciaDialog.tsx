@@ -230,6 +230,11 @@ export default function EnvioEmergenciaDialog({
             inscricaoId: destino === "um" ? inscricaoId : null,
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
+            tipoMensagem:
+              templateSel ||
+              (contatoTipo === "emergencia"
+                ? "contato_emergencia"
+                : "aviso_importante"),
             tipoInscricaoFiltro:
               destino === "todos" && tiposFiltro.length > 0 ? tiposFiltro : null,
           },
