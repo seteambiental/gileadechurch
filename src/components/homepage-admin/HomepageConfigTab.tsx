@@ -619,6 +619,71 @@ const HomepageConfigTab = () => {
     onError: (e: any) => toast.error(e.message || "Erro ao remover"),
   });
 
+  // Lista de mensagens NÃO recorrentes salvas (mensagens_evento_templates)
+  const { data: templatesList = [] } = useQuery({
+    queryKey: ["mensagens-templates-list"],
+    queryFn: async () => {
+      const { data: tpls, error } = await supabase
+        .from("mensagens_evento_templates")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      const list = tpls || [];
+      const ids = Array.from(new Set(list.map((c: any) => c.evento_id)));
+      if (ids.length === 0) return [] as any[];
+      const [{ data: ag }, { data: im }] = await Promise.all([
+        supabase.from("agenda_igreja").select("id, titulo, data_evento").in("id", ids),
+        supabase.from("impacto_eventos").select("id, nome, data_inicio").in("id", ids),
+      ]);
+      const map = new Map<string, { titulo: string; data: string | null }>();
+      (ag || []).forEach((e: any) =>
+        map.set(`agenda:${e.id}`, { titulo: e.titulo, data: e.data_evento }),
+      );
+      (im || []).forEach((e: any) =>
+        map.set(`impacto:${e.id}`, { titulo: e.nome, data: e.data_inicio }),
+      );
+      return list.map((c: any) => {
+        const meta = map.get(`${c.evento_tipo}:${c.evento_id}`);
+        return {
+          ...c,
+          evento_titulo: meta?.titulo || "(evento removido)",
+          evento_data: meta?.data || null,
+        };
+      });
+    },
+  });
+
+  const excluirTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("mensagens_evento_templates")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Modelo removido");
+      queryClient.invalidateQueries({ queryKey: ["mensagens-templates-list"] });
+      queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
+    },
+    onError: (e: any) => toast.error(e.message || "Erro ao remover"),
+  });
+
+  const handleEditTemplate = (c: any) => {
+    setTipoMensagemSelecionada(c.tipo_mensagem as TipoMensagem);
+    setEventoSelecionado(`${c.evento_tipo}:${c.evento_id}`);
+    setUsaRecorrencia(false);
+    if (typeof window !== "undefined") {
+      setTimeout(
+        () =>
+          document
+            .getElementById("mensagens-eventos-card")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        50,
+      );
+    }
+  };
+
   const formatRecorrencia = (c: any) => {
     if (!c.enviar_recorrente) return "Envio desativado";
     if (c.modo_envio === "unico") {
