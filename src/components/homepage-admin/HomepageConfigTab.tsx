@@ -18,6 +18,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { Send } from "lucide-react";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 
 type TipoMensagem =
   | "confirmacao_inscricao"
