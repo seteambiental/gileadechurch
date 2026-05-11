@@ -64,6 +64,52 @@ export default function EnvioEmergenciaDialog({
   const [enviando, setEnviando] = useState(false);
   const [templateSel, setTemplateSel] = useState<string>("");
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([]);
+  // Evento de origem dos inscritos (pode diferir do evento da mensagem)
+  const [inscritosEventoId, setInscritosEventoId] = useState<string>(eventoId);
+  const [inscritosEventoTipo, setInscritosEventoTipo] =
+    useState<"impacto" | "agenda">(eventoTipo);
+
+  // Reset quando reabre com outro evento base
+  useMemo(() => {
+    if (open) {
+      setInscritosEventoId(eventoId);
+      setInscritosEventoTipo(eventoTipo);
+    }
+  }, [open, eventoId, eventoTipo]);
+
+  // Lista de eventos disponíveis como origem (impacto + agenda ativos)
+  const { data: eventosOrigem = [] } = useQuery({
+    queryKey: ["envio-eventos-origem"],
+    queryFn: async () => {
+      const [{ data: imp }, { data: ag }] = await Promise.all([
+        supabase
+          .from("impacto_eventos")
+          .select("id, titulo, data_inicio")
+          .eq("ativo", true)
+          .order("data_inicio", { ascending: false }),
+        supabase
+          .from("agenda_igreja")
+          .select("id, titulo, data_evento")
+          .eq("ativo", true)
+          .order("data_evento", { ascending: false })
+          .limit(100),
+      ]);
+      const a = (imp || []).map((e: any) => ({
+        id: e.id,
+        tipo: "impacto" as const,
+        titulo: e.titulo,
+        data: e.data_inicio,
+      }));
+      const b = (ag || []).map((e: any) => ({
+        id: e.id,
+        tipo: "agenda" as const,
+        titulo: e.titulo,
+        data: e.data_evento,
+      }));
+      return [...a, ...b];
+    },
+    enabled: open,
+  });
 
   const { data: cfg } = useQuery({
     queryKey: ["emerg-cfg-dialog", eventoId, eventoTipo],
@@ -103,17 +149,17 @@ export default function EnvioEmergenciaDialog({
   }, [open, mensagemInicial]);
 
   const { data: inscricoes = [] } = useQuery({
-    queryKey: ["emerg-dialog-inscricoes", eventoId],
+    queryKey: ["emerg-dialog-inscricoes", inscritosEventoId],
     queryFn: async () => {
       const { data } = await supabase
         .from("impacto_inscricoes")
         .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao")
-        .eq("evento_id", eventoId)
+        .eq("evento_id", inscritosEventoId)
         .neq("status_pagamento", "cancelado")
         .order("nome");
       return data || [];
     },
-    enabled: open && !!eventoId,
+    enabled: open && !!inscritosEventoId,
   });
 
   const inscricoesFiltradas = useMemo(() => {
@@ -158,6 +204,8 @@ export default function EnvioEmergenciaDialog({
             tipo: "manual",
             eventoId,
             eventoTipo,
+            inscritosEventoId,
+            inscritosEventoTipo,
             inscricaoId: destino === "um" ? inscricaoId : null,
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
@@ -193,6 +241,34 @@ export default function EnvioEmergenciaDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          <div>
+            <Label>Origem dos inscritos</Label>
+            <Select
+              value={`${inscritosEventoTipo}:${inscritosEventoId}`}
+              onValueChange={(v) => {
+                const [t, id] = v.split(":");
+                setInscritosEventoTipo(t as any);
+                setInscritosEventoId(id);
+                setInscricaoId("");
+                setBusca("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o evento dos participantes" />
+              </SelectTrigger>
+              <SelectContent>
+                {(eventosOrigem as any[]).map((e) => (
+                  <SelectItem key={`${e.tipo}:${e.id}`} value={`${e.tipo}:${e.id}`}>
+                    {e.titulo} {e.data ? `(${e.data.split("-").reverse().join("/")})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Para PRE-eventos, selecione o evento principal (ex.: PRE IMPACTO FEMININO → Impacto Feminino).
+            </p>
+          </div>
+
           <div>
             <Label>Enviar para</Label>
             <RadioGroup
@@ -235,8 +311,8 @@ export default function EnvioEmergenciaDialog({
                 {[
                   { v: "membro", l: "Membros" },
                   { v: "nao_membro", l: "Não membros" },
-                  { v: "equipe", l: "Equipe de serviço" },
-                  { v: "familia", l: "Família" },
+                  { v: "equipe", l: "Equipe/Apoio" },
+                  { v: "ministrador", l: "Ministradores" },
                 ].map((opt) => {
                   const ativo = tiposFiltro.includes(opt.v);
                   return (
