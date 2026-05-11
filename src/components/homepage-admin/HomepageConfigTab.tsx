@@ -557,6 +557,7 @@ const HomepageConfigTab = () => {
       queryClient.invalidateQueries({ queryKey: ["mensagem-evento-template"] });
       queryClient.invalidateQueries({ queryKey: ["emerg-cfg-homepage"] });
       queryClient.invalidateQueries({ queryKey: ["emerg-cfg-list"] });
+      queryClient.invalidateQueries({ queryKey: ["mensagens-templates-list"] });
       toast.success("Mensagem do evento salva com sucesso!");
     },
     onError: (error: any) => {
