@@ -1503,6 +1503,107 @@ const HomepageConfigTab = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Lista de mensagens NÃO recorrentes salvas */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
+            Mensagens não recorrentes salvas
+          </CardTitle>
+          <CardDescription>
+            Modelos prontos para envio manual no evento. Use "Enviar agora"
+            para disparar a mensagem para um contato específico, todos os
+            participantes ou filtrando por tipo de inscrição.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {templatesList.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhum modelo salvo ainda.
+            </p>
+          ) : (
+            <div className="divide-y border rounded-md">
+              {templatesList.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {c.evento_titulo}
+                      <Badge variant="outline" className="ml-2 text-[10px] uppercase">
+                        {c.evento_tipo}
+                      </Badge>
+                      <Badge variant="secondary" className="ml-2 text-[10px]">
+                        {TIPOS_MENSAGEM.find((t) => t.value === c.tipo_mensagem)?.label
+                          || c.tipo_mensagem}
+                      </Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {c.mensagem?.slice(0, 140)}
+                      {(c.mensagem?.length || 0) > 140 ? "…" : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() =>
+                        setEnvioDialog({
+                          open: true,
+                          eventoId: c.evento_id,
+                          eventoTipo: c.evento_tipo,
+                          eventoTitulo: c.evento_titulo,
+                          mensagem: c.mensagem || "",
+                        })
+                      }
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1.5" />
+                      Enviar agora
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditTemplate(c)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => {
+                        if (confirm(`Remover modelo de "${c.evento_titulo}"?`)) {
+                          excluirTemplate.mutate(c.id);
+                        }
+                      }}
+                      disabled={excluirTemplate.isPending}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                      Excluir
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {envioDialog && (
+        <EnvioEmergenciaDialog
+          open={envioDialog.open}
+          onOpenChange={(o) =>
+            setEnvioDialog((prev) => (prev ? { ...prev, open: o } : prev))
+          }
+          eventoId={envioDialog.eventoId}
+          eventoTipo={envioDialog.eventoTipo}
+          eventoTitulo={envioDialog.eventoTitulo}
+          mensagemInicial={envioDialog.mensagem}
+        />
+      )}
     </div>
   );
 };
