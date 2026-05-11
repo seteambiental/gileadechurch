@@ -1,0 +1,2 @@
+ALTER TABLE public.mensagens_evento_templates DROP CONSTRAINT IF EXISTS mensagens_evento_templates_tipo_mensagem_check;
+ALTER TABLE public.mensagens_evento_templates ADD CONSTRAINT mensagens_evento_templates_tipo_mensagem_check CHECK (tipo_mensagem = ANY (ARRAY['confirmacao_inscricao','inscricao_recebida','lembrete_pagamento','vaga_liberada','contato_emergencia','aviso_importante','lembrete_evento','culto_batismo','apresentacao_criancas','ceia_senhor','prestacao_contas','evento_especial']));
