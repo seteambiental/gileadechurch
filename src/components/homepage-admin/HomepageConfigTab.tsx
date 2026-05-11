@@ -166,6 +166,13 @@ const HomepageConfigTab = () => {
   const queryClient = useQueryClient();
   const [mensagemAniversario, setMensagemAniversario] = useState("");
   const [tiposCategoriaExpandido, setTiposCategoriaExpandido] = useState(false);
+  const [envioDialog, setEnvioDialog] = useState<{
+    open: boolean;
+    eventoId: string;
+    eventoTipo: "impacto" | "agenda";
+    eventoTitulo: string;
+    mensagem: string;
+  } | null>(null);
   const [mensagemCarregada, setMensagemCarregada] = useState(false);
 
   // Estado da seção "Mensagens de Eventos"
