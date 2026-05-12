@@ -247,7 +247,7 @@ export default function EnvioEmergenciaDialog({
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
             tipoMensagem:
-              templateSel ||
+              (templateSel ? templateSel.split(":").pop() : "") ||
               (contatoTipo === "emergencia"
                 ? "contato_emergencia"
                 : "aviso_importante"),
