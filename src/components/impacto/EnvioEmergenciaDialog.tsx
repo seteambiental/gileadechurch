@@ -147,31 +147,33 @@ export default function EnvioEmergenciaDialog({
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: [
-      "mensagens-templates",
-      eventoId,
-      eventoTipo,
-      inscritosEventoId,
-      inscritosEventoTipo,
-    ],
+    queryKey: ["mensagens-templates-todos"],
     queryFn: async () => {
-      // Busca modelos salvos para o evento da mensagem E para o evento de
-      // origem dos inscritos (ex.: PRE IMPACTO usa modelos do IMPACTO).
-      const ids = Array.from(new Set([eventoId, inscritosEventoId].filter(Boolean)));
-      const { data } = await supabase
+      // Lista TODOS os modelos salvos (de qualquer evento), exceto o de
+      // contato de emergência. Inclui o título do evento de origem para
+      // ajudar a identificar o modelo na lista.
+      const { data: tpls } = await supabase
         .from("mensagens_evento_templates")
-        .select("tipo_mensagem, mensagem, evento_id, evento_tipo")
-        .in("evento_id", ids)
-        .neq("tipo_mensagem", "contato_emergencia");
-      // Deduplica por tipo_mensagem priorizando o evento da mensagem
-      const byTipo = new Map<string, any>();
-      for (const t of data || []) {
-        const prev = byTipo.get(t.tipo_mensagem);
-        if (!prev || t.evento_id === eventoId) byTipo.set(t.tipo_mensagem, t);
-      }
-      return Array.from(byTipo.values());
+        .select("tipo_mensagem, mensagem, evento_id, evento_tipo, updated_at")
+        .neq("tipo_mensagem", "contato_emergencia")
+        .order("updated_at", { ascending: false });
+      const lista = tpls || [];
+      // Hidrata títulos dos eventos
+      const impIds = Array.from(new Set(lista.filter((t) => t.evento_tipo === "impacto").map((t) => t.evento_id)));
+      const agIds = Array.from(new Set(lista.filter((t) => t.evento_tipo === "agenda").map((t) => t.evento_id)));
+      const [{ data: imps }, { data: ags }] = await Promise.all([
+        impIds.length ? supabase.from("impacto_eventos").select("id, titulo").in("id", impIds) : Promise.resolve({ data: [] as any[] }),
+        agIds.length ? supabase.from("agenda_igreja").select("id, titulo").in("id", agIds) : Promise.resolve({ data: [] as any[] }),
+      ]);
+      const titulos = new Map<string, string>();
+      (imps || []).forEach((e: any) => titulos.set(e.id, e.titulo));
+      (ags || []).forEach((e: any) => titulos.set(e.id, e.titulo));
+      return lista.map((t: any) => ({
+        ...t,
+        evento_titulo: titulos.get(t.evento_id) || "—",
+      }));
     },
-    enabled: open && !!eventoId,
+    enabled: open,
   });
 
   useMemo(() => {
@@ -245,7 +247,7 @@ export default function EnvioEmergenciaDialog({
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
             tipoMensagem:
-              templateSel ||
+              (templateSel ? templateSel.split(":").pop() : "") ||
               (contatoTipo === "emergencia"
                 ? "contato_emergencia"
                 : "aviso_importante"),
@@ -460,7 +462,9 @@ export default function EnvioEmergenciaDialog({
                 value={templateSel}
                 onValueChange={(v) => {
                   setTemplateSel(v);
-                  const t = (templates as any[]).find((x) => x.tipo_mensagem === v);
+                  const t = (templates as any[]).find(
+                    (x) => `${x.evento_tipo}:${x.evento_id}:${x.tipo_mensagem}` === v,
+                  );
                   if (t) setMensagem(t.mensagem || "");
                 }}
               >
@@ -468,11 +472,16 @@ export default function EnvioEmergenciaDialog({
                   <SelectValue placeholder="Usar modelo salvo (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(templates as any[]).map((t) => (
-                    <SelectItem key={t.tipo_mensagem} value={t.tipo_mensagem}>
-                      {TIPO_LABELS[t.tipo_mensagem] || t.tipo_mensagem}
-                    </SelectItem>
-                  ))}
+                  {(templates as any[]).map((t) => {
+                    const k = `${t.evento_tipo}:${t.evento_id}:${t.tipo_mensagem}`;
+                    return (
+                      <SelectItem key={k} value={k}>
+                        {(TIPO_LABELS[t.tipo_mensagem] || t.tipo_mensagem) +
+                          " — " +
+                          (t.evento_titulo || "—")}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : (
