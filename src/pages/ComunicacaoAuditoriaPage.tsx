@@ -423,6 +423,7 @@ const ComunicacaoAuditoriaPage = () => {
                       <TableHead>Telefone</TableHead>
                       <TableHead>Conteúdo</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[100px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -456,6 +457,19 @@ const ComunicacaoAuditoriaPage = () => {
                               {envio.status || "—"}
                             </Badge>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {["erro", "falhou"].includes(envio.status || "") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => reenviarEnvio(envio)}
+                              className="text-xs h-7"
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Reenviar
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
