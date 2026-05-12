@@ -147,15 +147,29 @@ export default function EnvioEmergenciaDialog({
   });
 
   const { data: templates = [] } = useQuery({
-    queryKey: ["mensagens-templates", eventoId, eventoTipo],
+    queryKey: [
+      "mensagens-templates",
+      eventoId,
+      eventoTipo,
+      inscritosEventoId,
+      inscritosEventoTipo,
+    ],
     queryFn: async () => {
+      // Busca modelos salvos para o evento da mensagem E para o evento de
+      // origem dos inscritos (ex.: PRE IMPACTO usa modelos do IMPACTO).
+      const ids = Array.from(new Set([eventoId, inscritosEventoId].filter(Boolean)));
       const { data } = await supabase
         .from("mensagens_evento_templates")
-        .select("tipo_mensagem, mensagem")
-        .eq("evento_id", eventoId)
-        .eq("evento_tipo", eventoTipo)
+        .select("tipo_mensagem, mensagem, evento_id, evento_tipo")
+        .in("evento_id", ids)
         .neq("tipo_mensagem", "contato_emergencia");
-      return data || [];
+      // Deduplica por tipo_mensagem priorizando o evento da mensagem
+      const byTipo = new Map<string, any>();
+      for (const t of data || []) {
+        const prev = byTipo.get(t.tipo_mensagem);
+        if (!prev || t.evento_id === eventoId) byTipo.set(t.tipo_mensagem, t);
+      }
+      return Array.from(byTipo.values());
     },
     enabled: open && !!eventoId,
   });
