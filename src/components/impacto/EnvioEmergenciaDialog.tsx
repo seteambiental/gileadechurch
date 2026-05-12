@@ -462,7 +462,9 @@ export default function EnvioEmergenciaDialog({
                 value={templateSel}
                 onValueChange={(v) => {
                   setTemplateSel(v);
-                  const t = (templates as any[]).find((x) => x.tipo_mensagem === v);
+                  const t = (templates as any[]).find(
+                    (x) => `${x.evento_tipo}:${x.evento_id}:${x.tipo_mensagem}` === v,
+                  );
                   if (t) setMensagem(t.mensagem || "");
                 }}
               >
@@ -470,11 +472,16 @@ export default function EnvioEmergenciaDialog({
                   <SelectValue placeholder="Usar modelo salvo (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(templates as any[]).map((t) => (
-                    <SelectItem key={t.tipo_mensagem} value={t.tipo_mensagem}>
-                      {TIPO_LABELS[t.tipo_mensagem] || t.tipo_mensagem}
-                    </SelectItem>
-                  ))}
+                  {(templates as any[]).map((t) => {
+                    const k = `${t.evento_tipo}:${t.evento_id}:${t.tipo_mensagem}`;
+                    return (
+                      <SelectItem key={k} value={k}>
+                        {(TIPO_LABELS[t.tipo_mensagem] || t.tipo_mensagem) +
+                          " — " +
+                          (t.evento_titulo || "—")}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             ) : (
