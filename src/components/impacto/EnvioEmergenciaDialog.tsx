@@ -455,7 +455,7 @@ export default function EnvioEmergenciaDialog({
 
           <div>
             <Label>Mensagem</Label>
-            {templates.length > 0 && (
+            {templates.length > 0 ? (
               <Select
                 value={templateSel}
                 onValueChange={(v) => {
@@ -475,6 +475,11 @@ export default function EnvioEmergenciaDialog({
                   ))}
                 </SelectContent>
               </Select>
+            ) : (
+              <p className="text-xs text-muted-foreground mb-2 bg-muted/40 border rounded p-2">
+                Nenhum modelo salvo encontrado para este evento. Configure em
+                <strong> Gerenciar Homepage → Configurações → Mensagens do evento</strong>.
+              </p>
             )}
             <Textarea
               rows={8}
