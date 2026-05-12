@@ -134,6 +134,35 @@ const ComunicacaoAuditoriaPage = () => {
     refetchFila();
   };
 
+  const reenviarEnvio = async (envio: Envio) => {
+    if (!envio.destinatario_telefone || !envio.conteudo) {
+      toast({ title: "Não é possível reenviar", description: "Telefone ou conteúdo ausente.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.from("comunicacao_fila").insert({
+      tipo: envio.tipo || "manual",
+      segmento: envio.segmento,
+      destinatario_telefone: envio.destinatario_telefone,
+      destinatario_nome: envio.destinatario_nome,
+      destinatario_member_id: envio.destinatario_member_id,
+      conteudo: envio.conteudo,
+      midia_url: envio.midia_url,
+      evento_id: envio.evento_id,
+      iniciado_por: envio.iniciado_por,
+      status: "pendente",
+      tentativas: 0,
+      max_tentativas: 3,
+      proxima_tentativa_em: new Date().toISOString(),
+    });
+    if (error) {
+      toast({ title: "Erro ao reenviar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Reenvio agendado", description: `Mensagem para ${envio.destinatario_nome || envio.destinatario_telefone} foi reenfileirada.` });
+    setTab("fila");
+    refetchFila();
+  };
+
   const processarAgora = async () => {
     setProcessando(true);
     try {
