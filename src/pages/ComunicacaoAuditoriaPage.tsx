@@ -134,6 +134,38 @@ const ComunicacaoAuditoriaPage = () => {
     refetchFila();
   };
 
+  const reenviarEnvio = async (envio: Envio) => {
+    if (!envio.destinatario_telefone || !envio.conteudo) {
+      toast({ title: "Não é possível reenviar", description: "Telefone ou conteúdo ausente.", variant: "destructive" });
+      return;
+    }
+    const tel = (envio.destinatario_telefone || "").replace(/\D/g, "");
+    const dedupeHash = `reenvio-${envio.id}-${Date.now().toString(36)}`;
+    const { error } = await supabase.from("comunicacao_fila").insert({
+      tipo: envio.tipo || "manual",
+      segmento: envio.segmento,
+      destinatario_telefone: tel,
+      destinatario_nome: envio.destinatario_nome,
+      destinatario_member_id: envio.destinatario_member_id,
+      conteudo: envio.conteudo,
+      midia_url: envio.midia_url,
+      evento_id: envio.evento_id,
+      iniciado_por: envio.iniciado_por,
+      dedupe_hash: dedupeHash,
+      status: "pendente",
+      tentativas: 0,
+      max_tentativas: 3,
+      proxima_tentativa_em: new Date().toISOString(),
+    });
+    if (error) {
+      toast({ title: "Erro ao reenviar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Reenvio agendado", description: `Mensagem para ${envio.destinatario_nome || envio.destinatario_telefone} foi reenfileirada.` });
+    setTab("fila");
+    refetchFila();
+  };
+
   const processarAgora = async () => {
     setProcessando(true);
     try {
@@ -391,6 +423,7 @@ const ComunicacaoAuditoriaPage = () => {
                       <TableHead>Telefone</TableHead>
                       <TableHead>Conteúdo</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[100px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -424,6 +457,19 @@ const ComunicacaoAuditoriaPage = () => {
                               {envio.status || "—"}
                             </Badge>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {["erro", "falhou"].includes(envio.status || "") && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => reenviarEnvio(envio)}
+                              className="text-xs h-7"
+                            >
+                              <RotateCcw className="h-3 w-3 mr-1" />
+                              Reenviar
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
