@@ -139,16 +139,19 @@ const ComunicacaoAuditoriaPage = () => {
       toast({ title: "Não é possível reenviar", description: "Telefone ou conteúdo ausente.", variant: "destructive" });
       return;
     }
+    const tel = (envio.destinatario_telefone || "").replace(/\D/g, "");
+    const dedupeHash = `reenvio-${envio.id}-${Date.now().toString(36)}`;
     const { error } = await supabase.from("comunicacao_fila").insert({
       tipo: envio.tipo || "manual",
       segmento: envio.segmento,
-      destinatario_telefone: envio.destinatario_telefone,
+      destinatario_telefone: tel,
       destinatario_nome: envio.destinatario_nome,
       destinatario_member_id: envio.destinatario_member_id,
       conteudo: envio.conteudo,
       midia_url: envio.midia_url,
       evento_id: envio.evento_id,
       iniciado_por: envio.iniciado_por,
+      dedupe_hash: dedupeHash,
       status: "pendente",
       tentativas: 0,
       max_tentativas: 3,
