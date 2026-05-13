@@ -497,37 +497,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       return;
     }
 
-    // Fetch church logo
-    const { data: configData } = await supabase
-      .from("igreja_config")
-      .select("logo_url, logo_dark_url")
-      .limit(1)
-      .single();
-    const logoUrl = configData?.logo_dark_url || configData?.logo_url || "";
+    // Logo do Impacto (servida estaticamente)
+    const logoUrl = `${window.location.origin}/images/impacto-logo.png`;
 
     const evento = eventos?.find((e) => e.id === selectedEventoId);
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const etiquetasHtml = selected.map((inscricao) => `
-      <div class="etiqueta">
-        <div class="logo-area">
-          ${logoUrl ? `<img class="logo" src="${logoUrl}" alt="Logo" />` : ''}
-        </div>
-        <div class="divider"></div>
-        <div class="info-area">
-          <div class="nome">${inscricao.nome.toUpperCase()}</div>
-          ${inscricao.referencia ? `<div class="ref">${inscricao.referencia}</div>` : ''}
-        </div>
-      </div>
-    `).join("");
-
     printWindow.document.write(`
       <!DOCTYPE html><html><head><title>Etiquetas de Mala - ${evento?.titulo}</title>
+      <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js"></script>
       <style>
         /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm */
         @page { size: letter; margin: 0; }
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
         .page {
           width: 215.9mm;
           height: 279.4mm;
@@ -541,11 +524,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         }
         .page:last-child { page-break-after: auto; }
         .cell {
-          /* Each cell = label width (101.6mm) + half of horizontal gap */
-          /* Horizontal distance between labels: 10.68mm total spacing between columns */
-          /* Gap between two labels = page_width - 2*margin_lateral - 2*label_width = 215.9 - 0.8 - 203.2 = 11.9mm ≈ 10.68mm */
-          width: 106.8mm; /* 101.6 + (10.68/2) on each side, but simpler: half page content */
-          height: 25.4mm; /* label height = vertical distance */
+          width: 103.95mm; /* (215.9 - 4.0*2) / 2 ≈ half da área útil */
+          height: 25.4mm;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -558,40 +538,66 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           display: flex;
           flex-direction: row;
           align-items: center;
-          padding: 1.5mm 3mm;
+          padding: 1mm 2.5mm;
           overflow: hidden;
+          background: #000;
+          color: #fff;
+          border-radius: 1mm;
         }
-        .logo-area { width: 22mm; min-width: 22mm; display: flex; align-items: center; justify-content: center; }
-        .logo { max-width: 18mm; max-height: 20mm; object-fit: contain; }
-        .divider { width: 1px; height: 16mm; background: #bbb; margin: 0 3mm; flex-shrink: 0; }
-        .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
-        .nome { font-size: 10pt; font-weight: bold; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ref { font-size: 9pt; font-weight: bold; color: #555; letter-spacing: 0.5px; margin-top: 1mm; }
+        .logo-area { width: 26mm; min-width: 26mm; display: flex; align-items: center; justify-content: center; }
+        .logo { max-width: 25mm; max-height: 22mm; object-fit: contain; }
+        .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding-left: 2mm; }
+        .nome { font-size: 10pt; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+        .ref { font-size: 8pt; font-weight: bold; color: #fff; letter-spacing: 0.5px; margin-top: 0.5mm; opacity: 0.9; }
+        .barcode-area { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 1mm; padding: 0.5mm 1mm; margin-top: 1mm; }
+        .barcode-area svg { width: 100%; height: 8mm; display: block; }
       </style></head><body>
       ${(() => {
         // 20 labels per page (2 cols x 10 rows)
         const pages: string[] = [];
         for (let i = 0; i < selected.length; i += 20) {
           const pageLabels = selected.slice(i, i + 20);
-          const cells = pageLabels.map((inscricao) => `
+          const cells = pageLabels.map((inscricao) => {
+            const codigo = inscricao.referencia || inscricao.id?.slice(0, 8).toUpperCase() || '';
+            return `
             <div class="cell">
               <div class="etiqueta">
                 <div class="logo-area">
-                  ${logoUrl ? '<img class="logo" src="' + logoUrl + '" alt="Logo" />' : ''}
+                  <img class="logo" src="${logoUrl}" alt="Impacto" />
                 </div>
-                <div class="divider"></div>
                 <div class="info-area">
                   <div class="nome">${inscricao.nome.toUpperCase()}</div>
-                  ${inscricao.referencia ? '<div class="ref">' + inscricao.referencia + '</div>' : ''}
+                  ${codigo ? '<div class="ref">' + codigo + '</div>' : ''}
+                  ${codigo ? '<div class="barcode-area"><svg class="bc" data-code="' + codigo + '"></svg></div>' : ''}
                 </div>
               </div>
             </div>
-          `).join("");
+          `;
+          }).join("");
           pages.push('<div class="page">' + cells + '</div>');
         }
         return pages.join("");
       })()}
-      <script>window.onload = function() { window.print(); }</script>
+      <script>
+        window.onload = function() {
+          try {
+            document.querySelectorAll('svg.bc').forEach(function(el){
+              var code = el.getAttribute('data-code') || '';
+              if (!code) return;
+              window.JsBarcode(el, code, {
+                format: 'CODE128',
+                displayValue: false,
+                margin: 0,
+                height: 30,
+                width: 1.4,
+                background: '#ffffff',
+                lineColor: '#000000'
+              });
+            });
+          } catch(e) { console.error(e); }
+          setTimeout(function(){ window.print(); }, 350);
+        };
+      </script>
       </body></html>
     `);
     printWindow.document.close();
