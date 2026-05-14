@@ -868,7 +868,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
             <Printer className="w-4 h-4 mr-2" />
             Imprimir Crachás
           </Button>
-          <Button size="sm" variant="outline" onClick={printEtiquetas}>
+          <Button size="sm" variant="outline" onClick={() => setEtiquetasDialogOpen(true)}>
             <Tag className="w-4 h-4 mr-2" />
             Etiquetas de Mala
           </Button>
