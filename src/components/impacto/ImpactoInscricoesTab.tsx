@@ -570,12 +570,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <style>
         /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm
            Margens: topo 15mm, base 10mm, laterais 3mm, gutter central 3mm */
-        @page { size: letter; margin: 0; }
+        @page { size: letter; margin: 15mm 3mm 10mm 3mm; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
         .page {
-          width: 215.9mm;
-          height: 279.4mm;
-          padding: 15mm 3mm 10mm 3mm;
+          width: 209.9mm;
+          height: 254.4mm;
+          padding: 0;
           box-sizing: border-box;
           page-break-after: always;
           display: flex;
