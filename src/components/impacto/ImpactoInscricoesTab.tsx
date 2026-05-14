@@ -868,12 +868,72 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
             <Printer className="w-4 h-4 mr-2" />
             Imprimir Crachás
           </Button>
+        </div>
+      )}
+
+      {selectedEventoId && (
+        <div className="flex justify-end">
           <Button size="sm" variant="outline" onClick={() => setEtiquetasDialogOpen(true)}>
             <Tag className="w-4 h-4 mr-2" />
             Etiquetas de Mala
           </Button>
         </div>
       )}
+
+      <Dialog open={etiquetasDialogOpen} onOpenChange={setEtiquetasDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Etiquetas de Mala</DialogTitle>
+            <DialogDescription>
+              Escolha o grupo e, opcionalmente, os números a imprimir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Grupo</Label>
+              <RadioGroup
+                value={etiquetasGrupo}
+                onValueChange={(v) => setEtiquetasGrupo(v as "participantes" | "equipe")}
+                className="flex flex-col gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="participantes" id="grp-part" />
+                  <Label htmlFor="grp-part" className="cursor-pointer font-normal">
+                    Participantes (Membros / Não membros)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="equipe" id="grp-eq" />
+                  <Label htmlFor="grp-eq" className="cursor-pointer font-normal">
+                    Equipe (Apoio / Ministradores / Líderes e Anfitriões)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nums">Números das etiquetas (opcional)</Label>
+              <Input
+                id="nums"
+                placeholder="Ex.: 1-10, 15, 22-25"
+                value={etiquetasNumeros}
+                onChange={(e) => setEtiquetasNumeros(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco para imprimir todas do grupo.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEtiquetasDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGerarEtiquetas}>
+              <Tag className="w-4 h-4 mr-2" />
+              Gerar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {!selectedEventoId ? (
         <Card>
