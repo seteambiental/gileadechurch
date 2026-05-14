@@ -503,8 +503,55 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     printWindow.document.close();
   };
 
-  const printEtiquetas = async () => {
-    const selected = inscricoes.filter((i) => selectedIds.includes(i.id));
+  const parseNumeros = (txt: string): Set<number> | null => {
+    const t = (txt || "").trim();
+    if (!t) return null;
+    const set = new Set<number>();
+    t.split(",").forEach((part) => {
+      const p = part.trim();
+      if (!p) return;
+      const range = p.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (range) {
+        const a = parseInt(range[1], 10);
+        const b = parseInt(range[2], 10);
+        const [lo, hi] = a <= b ? [a, b] : [b, a];
+        for (let n = lo; n <= hi; n++) set.add(n);
+      } else if (/^\d+$/.test(p)) {
+        set.add(parseInt(p, 10));
+      }
+    });
+    return set.size ? set : null;
+  };
+
+  const handleGerarEtiquetas = () => {
+    const tiposGrupo = etiquetasGrupo === "equipe"
+      ? ["equipe", "ministrador", "familia"]
+      : ["membro", "nao_membro"];
+    const numeros = parseNumeros(etiquetasNumeros);
+    const lista = inscricoes
+      .filter((i: any) => tiposGrupo.includes(i.tipo_inscricao || "membro"))
+      .filter((i: any) => {
+        if (!numeros) return true;
+        const n = parseInt(String(i.referencia || "").replace(/\D/g, ""), 10);
+        return Number.isFinite(n) && numeros.has(n);
+      })
+      .sort((a: any, b: any) => {
+        const na = parseInt(String(a.referencia || "9999"), 10);
+        const nb = parseInt(String(b.referencia || "9999"), 10);
+        return na - nb;
+      });
+    if (lista.length === 0) {
+      toast.error("Nenhuma inscrição encontrada para os critérios.");
+      return;
+    }
+    setEtiquetasDialogOpen(false);
+    printEtiquetas(lista);
+  };
+
+  const printEtiquetas = async (listOverride?: any[]) => {
+    const selected = listOverride && listOverride.length
+      ? listOverride
+      : inscricoes.filter((i) => selectedIds.includes(i.id));
     if (selected.length === 0) {
       toast.error("Selecione pelo menos uma inscrição");
       return;
