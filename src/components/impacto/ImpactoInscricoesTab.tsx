@@ -606,11 +606,11 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           color: #000;
           border-radius: 1mm;
         }
-        .logo-area { width: 26mm; min-width: 26mm; display: flex; align-items: center; justify-content: center; }
-        .logo { max-width: 25mm; max-height: 22mm; object-fit: contain; }
-        .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding-left: 2mm; }
-        .nome { font-size: 10pt; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
-        .ref { font-size: 8pt; font-weight: bold; color: #000; letter-spacing: 0.5px; margin-top: 0.5mm; }
+        .logo-area { width: 18mm; min-width: 18mm; display: flex; align-items: center; justify-content: center; }
+        .logo { max-width: 17mm; max-height: 14mm; object-fit: contain; }
+        .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding-left: 1mm; }
+        .nome { font-size: 14pt; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+        .ref { font-size: 12pt; font-weight: bold; color: #000; letter-spacing: 0.5px; margin-top: 0.5mm; }
         .barcode-area { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 1mm; padding: 0.5mm 1mm; margin-top: 1mm; }
         .barcode-area svg { width: 100%; height: 8mm; display: block; }
       </style></head><body>
