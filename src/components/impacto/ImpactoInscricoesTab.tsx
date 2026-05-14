@@ -38,6 +38,16 @@ import { exportGenericToExcel, exportGenericToPDF } from "@/lib/export";
 import { fuzzyMatch } from "@/lib/text-utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -117,6 +127,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
+  const [etiquetasDialogOpen, setEtiquetasDialogOpen] = useState(false);
+  const [etiquetasGrupo, setEtiquetasGrupo] = useState<"participantes" | "equipe">("participantes");
+  const [etiquetasNumeros, setEtiquetasNumeros] = useState("");
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
   }, [eventoSelecionado]);
@@ -490,8 +503,55 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     printWindow.document.close();
   };
 
-  const printEtiquetas = async () => {
-    const selected = inscricoes.filter((i) => selectedIds.includes(i.id));
+  const parseNumeros = (txt: string): Set<number> | null => {
+    const t = (txt || "").trim();
+    if (!t) return null;
+    const set = new Set<number>();
+    t.split(",").forEach((part) => {
+      const p = part.trim();
+      if (!p) return;
+      const range = p.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (range) {
+        const a = parseInt(range[1], 10);
+        const b = parseInt(range[2], 10);
+        const [lo, hi] = a <= b ? [a, b] : [b, a];
+        for (let n = lo; n <= hi; n++) set.add(n);
+      } else if (/^\d+$/.test(p)) {
+        set.add(parseInt(p, 10));
+      }
+    });
+    return set.size ? set : null;
+  };
+
+  const handleGerarEtiquetas = () => {
+    const tiposGrupo = etiquetasGrupo === "equipe"
+      ? ["equipe", "ministrador", "familia"]
+      : ["membro", "nao_membro"];
+    const numeros = parseNumeros(etiquetasNumeros);
+    const lista = inscricoes
+      .filter((i: any) => tiposGrupo.includes(i.tipo_inscricao || "membro"))
+      .filter((i: any) => {
+        if (!numeros) return true;
+        const n = parseInt(String(i.referencia || "").replace(/\D/g, ""), 10);
+        return Number.isFinite(n) && numeros.has(n);
+      })
+      .sort((a: any, b: any) => {
+        const na = parseInt(String(a.referencia || "9999"), 10);
+        const nb = parseInt(String(b.referencia || "9999"), 10);
+        return na - nb;
+      });
+    if (lista.length === 0) {
+      toast.error("Nenhuma inscrição encontrada para os critérios.");
+      return;
+    }
+    setEtiquetasDialogOpen(false);
+    printEtiquetas(lista);
+  };
+
+  const printEtiquetas = async (listOverride?: any[]) => {
+    const selected = listOverride && listOverride.length
+      ? listOverride
+      : inscricoes.filter((i) => selectedIds.includes(i.id));
     if (selected.length === 0) {
       toast.error("Selecione pelo menos uma inscrição");
       return;
@@ -808,12 +868,72 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
             <Printer className="w-4 h-4 mr-2" />
             Imprimir Crachás
           </Button>
-          <Button size="sm" variant="outline" onClick={printEtiquetas}>
+        </div>
+      )}
+
+      {selectedEventoId && (
+        <div className="flex justify-end">
+          <Button size="sm" variant="outline" onClick={() => setEtiquetasDialogOpen(true)}>
             <Tag className="w-4 h-4 mr-2" />
             Etiquetas de Mala
           </Button>
         </div>
       )}
+
+      <Dialog open={etiquetasDialogOpen} onOpenChange={setEtiquetasDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Etiquetas de Mala</DialogTitle>
+            <DialogDescription>
+              Escolha o grupo e, opcionalmente, os números a imprimir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Grupo</Label>
+              <RadioGroup
+                value={etiquetasGrupo}
+                onValueChange={(v) => setEtiquetasGrupo(v as "participantes" | "equipe")}
+                className="flex flex-col gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="participantes" id="grp-part" />
+                  <Label htmlFor="grp-part" className="cursor-pointer font-normal">
+                    Participantes (Membros / Não membros)
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem value="equipe" id="grp-eq" />
+                  <Label htmlFor="grp-eq" className="cursor-pointer font-normal">
+                    Equipe (Apoio / Ministradores / Líderes e Anfitriões)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="nums">Números das etiquetas (opcional)</Label>
+              <Input
+                id="nums"
+                placeholder="Ex.: 1-10, 15, 22-25"
+                value={etiquetasNumeros}
+                onChange={(e) => setEtiquetasNumeros(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco para imprimir todas do grupo.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEtiquetasDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleGerarEtiquetas}>
+              <Tag className="w-4 h-4 mr-2" />
+              Gerar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {!selectedEventoId ? (
         <Card>
