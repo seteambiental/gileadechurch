@@ -508,14 +508,14 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <!DOCTYPE html><html><head><title>Etiquetas de Mala - ${evento?.titulo}</title>
       <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.12.3/dist/JsBarcode.all.min.js"></script>
       <style>
-        /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm */
+        /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm
+           Margens: topo 15mm, base 10mm, laterais 3mm, gutter central 3mm */
         @page { size: letter; margin: 0; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
         .page {
           width: 215.9mm;
           height: 279.4mm;
-          padding-top: 12.7mm;
-          padding-left: 4.0mm;
+          padding: 15mm 3mm 10mm 3mm;
           box-sizing: border-box;
           page-break-after: always;
           display: flex;
@@ -524,13 +524,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         }
         .page:last-child { page-break-after: auto; }
         .cell {
-          width: 103.95mm; /* (215.9 - 4.0*2) / 2 ≈ half da área útil */
+          width: 101.6mm;
           height: 25.4mm;
+          margin-right: 3mm;
           display: flex;
           align-items: center;
           justify-content: center;
           box-sizing: border-box;
         }
+        .cell:nth-child(2n) { margin-right: 0; }
         .etiqueta {
           width: 101.6mm;
           height: 25.4mm;
