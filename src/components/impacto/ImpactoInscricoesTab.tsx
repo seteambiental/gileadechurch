@@ -127,6 +127,9 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
+  const [etiquetasDialogOpen, setEtiquetasDialogOpen] = useState(false);
+  const [etiquetasGrupo, setEtiquetasGrupo] = useState<"participantes" | "equipe">("participantes");
+  const [etiquetasNumeros, setEtiquetasNumeros] = useState("");
   useEffect(() => {
     if (eventoSelecionado) setSelectedEventoIdLocal(eventoSelecionado);
   }, [eventoSelecionado]);
