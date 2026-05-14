@@ -570,7 +570,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       <style>
         /* Pimaco 6081/6181 - Folha Carta 21.59 x 27.94 cm
            Margens: topo 15mm, base 10mm, laterais 3mm, gutter central 3mm */
-        @page { size: letter; margin: 15mm 3mm 10mm 3mm; }
+        @page { size: letter; margin: 14mm 0 10mm 6mm; }
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #fff; }
         .page {
           width: 209.9mm;
@@ -602,15 +602,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           align-items: center;
           padding: 1mm 2.5mm;
           overflow: hidden;
-          background: #000;
-          color: #fff;
+          background: #fff;
+          color: #000;
           border-radius: 1mm;
         }
         .logo-area { width: 26mm; min-width: 26mm; display: flex; align-items: center; justify-content: center; }
         .logo { max-width: 25mm; max-height: 22mm; object-fit: contain; }
         .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding-left: 2mm; }
-        .nome { font-size: 10pt; font-weight: bold; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
-        .ref { font-size: 8pt; font-weight: bold; color: #fff; letter-spacing: 0.5px; margin-top: 0.5mm; opacity: 0.9; }
+        .nome { font-size: 10pt; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+        .ref { font-size: 8pt; font-weight: bold; color: #000; letter-spacing: 0.5px; margin-top: 0.5mm; }
         .barcode-area { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 1mm; padding: 0.5mm 1mm; margin-top: 1mm; }
         .barcode-area svg { width: 100%; height: 8mm; display: block; }
       </style></head><body>
