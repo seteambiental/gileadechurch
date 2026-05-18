@@ -26,7 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive, DollarSign } from "lucide-react";
+import { Plus, Trash2, Printer, Tag, Pencil, Search, Download, FileSpreadsheet, FileText, Columns3, X, CheckCircle, Archive, DollarSign, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { ShieldAlert } from "lucide-react";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Input } from "@/components/ui/input";
@@ -126,6 +126,10 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
   const STATUS_OPTIONS = ["Pago", "Parcial", "Pendente"];
   const [filtroStatus, setFiltroStatus] = useState<Set<string>>(new Set(STATUS_OPTIONS));
+  const [sortRefDir, setSortRefDir] = useState<"asc" | "desc" | null>(null);
+  const toggleSortRef = () => {
+    setSortRefDir((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
+  };
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
@@ -291,7 +295,18 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     });
 
     let all = [...impacto, ...uniqueAgenda];
-    all = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+    if (sortRefDir) {
+      const parseRef = (r: any) => {
+        const n = parseInt(String(r ?? "").replace(/\D/g, ""), 10);
+        return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+      };
+      all = all.sort((a: any, b: any) => {
+        const diff = parseRef(a.referencia) - parseRef(b.referencia);
+        return sortRefDir === "asc" ? diff : -diff;
+      });
+    } else {
+      all = all.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+    }
 
     // Gender filter
     if (filtroGenero.size < GENERO_OPTIONS.length) {
@@ -329,7 +344,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       }
       return false;
     });
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo, filtroStatus]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo, filtroStatus, sortRefDir]);
 
   // Keep selected IDs in sync with currently visible inscrições
   useEffect(() => {
@@ -966,7 +981,25 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
-                  {isCol("referencia") && <TableHead>Ref.</TableHead>}
+                  {isCol("referencia") && (
+                    <TableHead>
+                      <button
+                        type="button"
+                        onClick={toggleSortRef}
+                        className="inline-flex items-center gap-1 hover:text-foreground"
+                        title="Ordenar por referência"
+                      >
+                        Ref.
+                        {sortRefDir === "asc" ? (
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        ) : sortRefDir === "desc" ? (
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        ) : (
+                          <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                        )}
+                      </button>
+                    </TableHead>
+                  )}
                   <TableHead></TableHead>
                   {isCol("nome") && <TableHead>Nome</TableHead>}
                   {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
