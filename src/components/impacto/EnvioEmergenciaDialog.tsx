@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Send, Loader2, Search, MessageCircle } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
 import { Checkbox } from "@/components/ui/checkbox";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 import {
   Select,
   SelectContent,
@@ -66,6 +67,7 @@ export default function EnvioEmergenciaDialog({
   const [enviando, setEnviando] = useState(false);
   const [templateSel, setTemplateSel] = useState<string>("");
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([]);
+  const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
   // Evento de origem dos inscritos (pode diferir do evento da mensagem)
   const [inscritosEventoId, setInscritosEventoId] = useState<string>(eventoId);
   const [inscritosEventoTipo, setInscritosEventoTipo] =
@@ -253,6 +255,8 @@ export default function EnvioEmergenciaDialog({
             inscricaoIds: destino === "selecionados" ? inscricaoIds : null,
             nomeGenerico: destino === "selecionados",
             mensagemOverride: mensagem,
+            midiaUrl: anexo?.url || null,
+            midiaFileName: anexo?.fileName || null,
             destinatarioTipo: contatoTipo,
             tipoMensagem:
               (templateSel ? templateSel.split(":").pop() : "") ||
@@ -273,6 +277,7 @@ export default function EnvioEmergenciaDialog({
       setInscricaoId("");
       setInscricaoIds([]);
       setTemplateSel("");
+      setAnexo(null);
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
     } finally {
@@ -589,6 +594,8 @@ export default function EnvioEmergenciaDialog({
               Placeholders: {"{NOME}"}, {"{NOME_COMPLETO}"}, {"{NOME_EMERGENCIA}"}, {"{EVENTO}"}, {"{DATA_EVENTO}"}
             </p>
           </div>
+
+          <WhatsappAnexoUpload value={anexo} onChange={setAnexo} disabled={enviando} />
 
           {destino === "todos" && totalComTelefone > 1 && (
             <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded p-2">
