@@ -468,6 +468,82 @@ export default function EnvioEmergenciaDialog({
             </div>
           )}
 
+          {destino === "selecionados" && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar participante ou contato..."
+                  className="pl-9"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                <span>{inscricaoIds.length} de {(filtradas as any[]).length} selecionados</span>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => {
+                      const validos = (filtradas as any[])
+                        .filter((i: any) => (telefoneDe(i) || "").replace(/\D/g, "").length >= 10)
+                        .map((i: any) => i.id);
+                      setInscricaoIds(Array.from(new Set([...inscricaoIds, ...validos])));
+                    }}
+                  >
+                    Marcar todos
+                  </button>
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setInscricaoIds([])}
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+              <div className="border rounded-md max-h-60 overflow-y-auto">
+                {filtradas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-3 text-center">Nenhum resultado</p>
+                ) : (
+                  (filtradas as any[]).map((i: any) => {
+                    const tel = telefoneDe(i);
+                    const valid = (tel || "").replace(/\D/g, "").length >= 10;
+                    const checked = inscricaoIds.includes(i.id);
+                    return (
+                      <label
+                        key={i.id}
+                        className={`flex items-center gap-2 w-full text-left p-2 border-b last:border-b-0 hover:bg-muted/60 ${!valid ? "opacity-50" : "cursor-pointer"}`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={!valid}
+                          onCheckedChange={(v) => {
+                            setInscricaoIds((prev) =>
+                              v ? [...prev, i.id] : prev.filter((x) => x !== i.id),
+                            );
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{i.nome}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {contatoTipo === "emergencia"
+                              ? `${i.nome_responsavel || "—"} • ${tel ? formatPhone(tel) : "sem telefone"}`
+                              : tel ? formatPhone(tel) : "sem telefone"}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A mensagem usará <strong>"Querido(a) Participante"</strong> no lugar de {"{NOME}"} / {"{NOME_COMPLETO}"}.
+              </p>
+            </div>
+          )}
+
           <div>
             <Label>Mensagem</Label>
             {templates.length > 0 ? (
