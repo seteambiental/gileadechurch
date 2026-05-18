@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Pencil, Trash2, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { exportGenericToExcel, savePDF } from "@/lib/export";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -96,6 +97,57 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
     },
     enabled: !!eventoId,
   });
+
+  // ===== Filtros por coluna =====
+  const categoriaOptions = useMemo(
+    () => Array.from(new Set(despesas.map((d: any) => d.categoria).filter(Boolean))).sort() as string[],
+    [despesas]
+  );
+  const descricaoOptions = useMemo(
+    () => Array.from(new Set(despesas.map((d: any) => d.descricao || "—"))).sort() as string[],
+    [despesas]
+  );
+  const dataOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          despesas.map((d: any) =>
+            d.data_despesa ? format(parseLocalDate(d.data_despesa), "dd/MM/yyyy") : "—"
+          )
+        )
+      ).sort() as string[],
+    [despesas]
+  );
+  const valorOptions = useMemo(
+    () =>
+      Array.from(new Set(despesas.map((d: any) => formatCurrency(d.valor || 0)))).sort() as string[],
+    [despesas]
+  );
+
+  const [filtroCategoria, setFiltroCategoria] = useState<Set<string>>(new Set());
+  const [filtroDescricao, setFiltroDescricao] = useState<Set<string>>(new Set());
+  const [filtroData, setFiltroData] = useState<Set<string>>(new Set());
+  const [filtroValor, setFiltroValor] = useState<Set<string>>(new Set());
+
+  useEffect(() => { setFiltroCategoria(new Set(categoriaOptions)); }, [categoriaOptions]);
+  useEffect(() => { setFiltroDescricao(new Set(descricaoOptions)); }, [descricaoOptions]);
+  useEffect(() => { setFiltroData(new Set(dataOptions)); }, [dataOptions]);
+  useEffect(() => { setFiltroValor(new Set(valorOptions)); }, [valorOptions]);
+
+  const despesasFiltradas = useMemo(() => {
+    return despesas.filter((d: any) => {
+      const cat = d.categoria || "";
+      const desc = d.descricao || "—";
+      const dt = d.data_despesa ? format(parseLocalDate(d.data_despesa), "dd/MM/yyyy") : "—";
+      const vl = formatCurrency(d.valor || 0);
+      return (
+        filtroCategoria.has(cat) &&
+        filtroDescricao.has(desc) &&
+        filtroData.has(dt) &&
+        filtroValor.has(vl)
+      );
+    });
+  }, [despesas, filtroCategoria, filtroDescricao, filtroData, filtroValor]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -157,10 +209,10 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
     setDialogOpen(true);
   };
 
-  const totalDespesas = despesas.reduce((sum, d) => sum + (d.valor || 0), 0);
+  const totalDespesas = despesasFiltradas.reduce((sum, d) => sum + (d.valor || 0), 0);
 
   // Group totals by category
-  const totalByCategoria = despesas.reduce((acc, d) => {
+  const totalByCategoria = despesasFiltradas.reduce((acc, d) => {
     acc[d.categoria] = (acc[d.categoria] || 0) + (d.valor || 0);
     return acc;
   }, {} as Record<string, number>);
@@ -173,12 +225,12 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
   ];
 
   const handleExportExcel = async () => {
-    if (!despesas.length) return;
-    await exportGenericToExcel(despesas, exportColumns, `Despesas_${eventoNome}`, "Despesas");
+    if (!despesasFiltradas.length) return;
+    await exportGenericToExcel(despesasFiltradas, exportColumns, `Despesas_${eventoNome}`, "Despesas");
   };
 
   const handleExportPDF = () => {
-    if (!despesas.length) return;
+    if (!despesasFiltradas.length) return;
 
     const doc = new jsPDF({ orientation: "portrait" });
 
@@ -209,7 +261,7 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
 
     // Table
     const tableHeaders = exportColumns.map((c) => c.header);
-    const tableData = despesas.map((row) =>
+    const tableData = despesasFiltradas.map((row) =>
       exportColumns.map((col) => {
         const value = typeof col.accessor === "function" ? col.accessor(row) : "";
         if (col.type === "currency") return formatCurrency(Number(value) || 0);
@@ -286,15 +338,23 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Categoria" options={categoriaOptions} selected={filtroCategoria} onChange={setFiltroCategoria} />
+                </TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Descrição" options={descricaoOptions} selected={filtroDescricao} onChange={setFiltroDescricao} />
+                </TableHead>
+                <TableHead>
+                  <ColumnFilterPopover title="Data" options={dataOptions} selected={filtroData} onChange={setFiltroData} />
+                </TableHead>
+                <TableHead className="text-right">
+                  <ColumnFilterPopover title="Valor" options={valorOptions} selected={filtroValor} onChange={setFiltroValor} />
+                </TableHead>
                 <TableHead className="w-[80px]" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {despesas.map((d) => (
+              {despesasFiltradas.map((d) => (
                 <TableRow key={d.id}>
                   <TableCell>
                     <Badge variant="outline">{d.categoria}</Badge>
