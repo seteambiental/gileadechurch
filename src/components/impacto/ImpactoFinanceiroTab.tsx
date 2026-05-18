@@ -38,7 +38,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DollarSign, Check, Clock, TrendingUp, Users, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList, ShieldAlert } from "lucide-react";
+import { DollarSign, Check, Clock, TrendingUp, Users, ArrowDownCircle, Scale, Download, FileSpreadsheet, FileText, Columns3, CalendarClock, Filter, Archive, ClipboardList, ShieldAlert, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
 import { DateInput } from "@/components/ui/date-input";
@@ -73,6 +73,10 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [dataPrevisao, setDataPrevisao] = useState("");
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
+  const [sortRefDir, setSortRefDir] = useState<"asc" | "desc" | null>(null);
+  const toggleSortRef = () => {
+    setSortRefDir((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
+  };
 
   const handleAplicarPrevisao = useCallback(() => {
     setDataPrevisao(dataPrevisaoInput);
@@ -311,8 +315,21 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const inscricoes = useMemo(() => {
     const imp = rawImpactoInscricoes || [];
-    return [...imp].sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
-  }, [rawImpactoInscricoes]);
+    const arr = [...imp];
+    if (sortRefDir) {
+      const parseRef = (r: any) => {
+        const n = parseInt(String(r ?? "").replace(/\D/g, ""), 10);
+        return Number.isFinite(n) ? n : Number.MAX_SAFE_INTEGER;
+      };
+      arr.sort((a: any, b: any) => {
+        const diff = parseRef(a.referencia) - parseRef(b.referencia);
+        return sortRefDir === "asc" ? diff : -diff;
+      });
+    } else {
+      arr.sort((a: any, b: any) => (a.nome || "").localeCompare(b.nome || "", "pt-BR"));
+    }
+    return arr;
+  }, [rawImpactoInscricoes, sortRefDir]);
 
   // Column filter state: key -> Set of selected values
   const [columnFilters, setColumnFilters] = useState<Record<string, Set<string>>>({});
@@ -943,7 +960,25 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={columnUniqueValues["tipo"] || []} selected={columnFilters["tipo"] || new Set(columnUniqueValues["tipo"] || [])} onChange={(s) => setColumnFilter("tipo", s)} /></TableHead>}
                          {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={columnUniqueValues["genero"] || []} selected={columnFilters["genero"] || new Set(columnUniqueValues["genero"] || [])} onChange={(s) => setColumnFilter("genero", s)} /></TableHead>}
-                         {isCol("referencia") && <TableHead><ColumnFilterPopover title="Referência" options={columnUniqueValues["referencia"] || []} selected={columnFilters["referencia"] || new Set(columnUniqueValues["referencia"] || [])} onChange={(s) => setColumnFilter("referencia", s)} /></TableHead>}
+                         {isCol("referencia") && (
+                           <TableHead>
+                             <button
+                               type="button"
+                               onClick={toggleSortRef}
+                               className="inline-flex items-center gap-1 hover:text-foreground"
+                               title="Ordenar por referência"
+                             >
+                               Referência
+                               {sortRefDir === "asc" ? (
+                                 <ArrowUp className="w-3.5 h-3.5" />
+                               ) : sortRefDir === "desc" ? (
+                                 <ArrowDown className="w-3.5 h-3.5" />
+                               ) : (
+                                 <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                               )}
+                             </button>
+                           </TableHead>
+                         )}
                          {isCol("casa_refugio") && <TableHead><ColumnFilterPopover title="Casa Refúgio" options={columnUniqueValues["casa_refugio"] || []} selected={columnFilters["casa_refugio"] || new Set(columnUniqueValues["casa_refugio"] || [])} onChange={(s) => setColumnFilter("casa_refugio", s)} /></TableHead>}
                          {isCol("condominio") && <TableHead><ColumnFilterPopover title="Condomínio" options={columnUniqueValues["condominio"] || []} selected={columnFilters["condominio"] || new Set(columnUniqueValues["condominio"] || [])} onChange={(s) => setColumnFilter("condominio", s)} /></TableHead>}
                          {isCol("funcao") && <TableHead><ColumnFilterPopover title="Função" options={columnUniqueValues["funcao"] || []} selected={columnFilters["funcao"] || new Set(columnUniqueValues["funcao"] || [])} onChange={(s) => setColumnFilter("funcao", s)} /></TableHead>}
