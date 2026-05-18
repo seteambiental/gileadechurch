@@ -114,6 +114,7 @@ export async function dispararEnvioSegmentado(params: {
   mensagem: string;
   segmentos: SegmentoEnvio[];
   ministerioId?: string | null;
+  midiaUrl?: string | null;
 }) {
   return await supabase.functions.invoke("enviar-whatsapp", {
     body: {
@@ -121,6 +122,7 @@ export async function dispararEnvioSegmentado(params: {
       mensagem: params.mensagem,
       segmentos: params.segmentos,
       ministerioId: params.ministerioId || null,
+      midiaUrl: params.midiaUrl || null,
     },
   });
 }
