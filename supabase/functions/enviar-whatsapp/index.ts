@@ -1294,10 +1294,11 @@ serve(async (req) => {
     //  - 'pastores'
     //  - 'integrantes_ministerio' (requer ministerioId)
     if (action === 'enviar_segmentado') {
-      const { mensagem, segmentos, ministerioId } = body as {
+      const { mensagem, segmentos, ministerioId, midiaUrl } = body as {
         mensagem: string;
         segmentos: string[];
         ministerioId?: string;
+        midiaUrl?: string | null;
       };
       if (!mensagem || !Array.isArray(segmentos) || segmentos.length === 0) {
         throw new Error('Mensagem e ao menos um segmento são obrigatórios');
@@ -1403,6 +1404,7 @@ serve(async (req) => {
           destinatario_nome: dest.full_name,
           destinatario_member_id: dest.id,
           conteudo: msgPersonalizada,
+          midia_url: midiaUrl || null,
         });
         if (r.enfileirado) enfileirados++;
         else duplicados++;
