@@ -1492,28 +1492,6 @@ export const EventoFormDialog = ({
               </div>
             )}
 
-            {/* Link de divulgação / grupo de WhatsApp (todos os eventos) */}
-            <div className="p-3 bg-muted/50 rounded-lg space-y-1">
-              <Label htmlFor="link_grupo_whatsapp" className="text-sm flex items-center gap-2">
-                <LinkIcon className="w-4 h-4" />
-                Link do evento ou grupo de WhatsApp (opcional)
-              </Label>
-              <Input
-                id="link_grupo_whatsapp"
-                type="url"
-                placeholder="https://chat.whatsapp.com/... ou https://forms.gle/..."
-                value={formData.link_grupo_whatsapp}
-                onChange={(e) =>
-                  setFormData({ ...formData, link_grupo_whatsapp: e.target.value })
-                }
-                maxLength={500}
-              />
-              <p className="text-xs text-muted-foreground">
-                Pode ser um link para grupo de WhatsApp, formulário externo ou página de informações.
-                Será enviado por WhatsApp e e-mail aos participantes quando o ADM confirmar a inscrição.
-              </p>
-            </div>
-
             {/* Links por tipo de inscrição (impacto / qualquer evento com inscrição) */}
             {formData.necessita_inscricao && (
               <div className="p-3 bg-muted/50 rounded-lg space-y-3">
@@ -1523,7 +1501,7 @@ export const EventoFormDialog = ({
                     Links por tipo de inscrição (opcional)
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    Cada inscrito recebe automaticamente o link correspondente ao seu tipo. Caso vazio, será usado o link geral acima.
+                    Cada inscrito recebe automaticamente o link correspondente ao seu tipo de inscrição.
                   </p>
                 </div>
                 <div className="space-y-2">
