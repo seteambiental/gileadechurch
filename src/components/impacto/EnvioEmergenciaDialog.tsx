@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, Search, MessageCircle } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,9 +57,10 @@ export default function EnvioEmergenciaDialog({
   eventoTitulo,
   mensagemInicial,
 }: Props) {
-  const [destino, setDestino] = useState<"todos" | "um">("todos");
+  const [destino, setDestino] = useState<"todos" | "um" | "selecionados">("todos");
   const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
   const [inscricaoId, setInscricaoId] = useState<string>("");
+  const [inscricaoIds, setInscricaoIds] = useState<string[]>([]);
   const [busca, setBusca] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -232,6 +234,10 @@ export default function EnvioEmergenciaDialog({
       toast.error("Selecione um participante");
       return;
     }
+    if (destino === "selecionados" && inscricaoIds.length === 0) {
+      toast.error("Selecione ao menos um participante");
+      return;
+    }
     setEnviando(true);
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -244,6 +250,8 @@ export default function EnvioEmergenciaDialog({
             inscritosEventoId,
             inscritosEventoTipo,
             inscricaoId: destino === "um" ? inscricaoId : null,
+            inscricaoIds: destino === "selecionados" ? inscricaoIds : null,
+            nomeGenerico: destino === "selecionados",
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
             tipoMensagem:
@@ -263,6 +271,7 @@ export default function EnvioEmergenciaDialog({
       onOpenChange(false);
       setMensagem("");
       setInscricaoId("");
+      setInscricaoIds([]);
       setTemplateSel("");
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
@@ -342,6 +351,10 @@ export default function EnvioEmergenciaDialog({
               <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="um" id="r-um" />
                 <span>Selecionar um participante</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="selecionados" id="r-selecionados" />
+                <span>Selecionar vários participantes ({inscricaoIds.length} marcados)</span>
               </label>
             </RadioGroup>
           </div>
@@ -452,6 +465,82 @@ export default function EnvioEmergenciaDialog({
               </div>
               </>
               )}
+            </div>
+          )}
+
+          {destino === "selecionados" && (
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar participante ou contato..."
+                  className="pl-9"
+                  value={busca}
+                  onChange={(e) => setBusca(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                <span>{inscricaoIds.length} de {(filtradas as any[]).length} selecionados</span>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => {
+                      const validos = (filtradas as any[])
+                        .filter((i: any) => (telefoneDe(i) || "").replace(/\D/g, "").length >= 10)
+                        .map((i: any) => i.id);
+                      setInscricaoIds(Array.from(new Set([...inscricaoIds, ...validos])));
+                    }}
+                  >
+                    Marcar todos
+                  </button>
+                  <button
+                    type="button"
+                    className="underline"
+                    onClick={() => setInscricaoIds([])}
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </div>
+              <div className="border rounded-md max-h-60 overflow-y-auto">
+                {filtradas.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-3 text-center">Nenhum resultado</p>
+                ) : (
+                  (filtradas as any[]).map((i: any) => {
+                    const tel = telefoneDe(i);
+                    const valid = (tel || "").replace(/\D/g, "").length >= 10;
+                    const checked = inscricaoIds.includes(i.id);
+                    return (
+                      <label
+                        key={i.id}
+                        className={`flex items-center gap-2 w-full text-left p-2 border-b last:border-b-0 hover:bg-muted/60 ${!valid ? "opacity-50" : "cursor-pointer"}`}
+                      >
+                        <Checkbox
+                          checked={checked}
+                          disabled={!valid}
+                          onCheckedChange={(v) => {
+                            setInscricaoIds((prev) =>
+                              v ? [...prev, i.id] : prev.filter((x) => x !== i.id),
+                            );
+                          }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{i.nome}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {contatoTipo === "emergencia"
+                              ? `${i.nome_responsavel || "—"} • ${tel ? formatPhone(tel) : "sem telefone"}`
+                              : tel ? formatPhone(tel) : "sem telefone"}
+                          </p>
+                        </div>
+                      </label>
+                    );
+                  })
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A mensagem usará <strong>"Querido(a) Participante"</strong> no lugar de {"{NOME}"} / {"{NOME_COMPLETO}"}.
+              </p>
             </div>
           )}
 

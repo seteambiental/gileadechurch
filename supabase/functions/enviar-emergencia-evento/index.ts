@@ -25,12 +25,14 @@ function preencherTemplate(
     nomeEmergencia?: string | null;
     evento?: string | null;
     data?: string | null;
+    nomeGenerico?: boolean;
   },
 ) {
   const nomeCompleto = (vars.nomeCompleto || "").trim();
+  const nomeGen = "Querido(a) Participante";
   const valores: Record<string, string> = {
-    NOME_COMPLETO: nomeCompleto,
-    NOME: primeiroNomeDe(nomeCompleto) || nomeCompleto,
+    NOME_COMPLETO: vars.nomeGenerico ? nomeGen : nomeCompleto,
+    NOME: vars.nomeGenerico ? nomeGen : (primeiroNomeDe(nomeCompleto) || nomeCompleto),
     NOME_EMERGENCIA: (vars.nomeEmergencia || "").trim() || "responsável",
     EVENTO: vars.evento || "o evento",
     DATA_EVENTO: vars.data || "",
@@ -107,6 +109,7 @@ async function buscarInscricoes(
   eventoId: string,
   inscricaoId?: string | null,
   tipoInscricaoFiltro?: string[] | null,
+  inscricaoIds?: string[] | null,
 ) {
   let q = supabase
     .from("impacto_inscricoes")
@@ -115,8 +118,9 @@ async function buscarInscricoes(
     )
     .eq("evento_id", eventoId);
   if (inscricaoId) q = q.eq("id", inscricaoId);
+  else if (inscricaoIds && inscricaoIds.length > 0) q = q.in("id", inscricaoIds);
   else q = q.neq("status_pagamento", "cancelado");
-  if (!inscricaoId && tipoInscricaoFiltro && tipoInscricaoFiltro.length > 0) {
+  if (!inscricaoId && (!inscricaoIds || inscricaoIds.length === 0) && tipoInscricaoFiltro && tipoInscricaoFiltro.length > 0) {
     q = q.in("tipo_inscricao", tipoInscricaoFiltro);
   }
   const { data, error } = await q;
@@ -154,6 +158,10 @@ serve(async (req) => {
     const eventoId = body.eventoId as string;
     const eventoTipo = (body.eventoTipo as string) || "impacto";
     const inscricaoId = (body.inscricaoId as string) || null;
+    const inscricaoIds = Array.isArray(body.inscricaoIds)
+      ? (body.inscricaoIds as string[]).filter(Boolean)
+      : null;
+    const nomeGenerico = body.nomeGenerico === true;
     const mensagemOverride = (body.mensagemOverride as string) || null;
     const destinatarioTipo =
       (body.destinatarioTipo as "principal" | "emergencia") || "emergencia";
@@ -223,6 +231,7 @@ serve(async (req) => {
       inscritosEventoId,
       inscricaoId,
       tipoInscricaoFiltro,
+      inscricaoIds,
     );
     const dataEventoFmt = formatarDataPt(evento.data_inicio);
     let enviados = 0;
@@ -277,6 +286,7 @@ serve(async (req) => {
         nomeEmergencia: insc.nome_responsavel,
         evento: evento.titulo,
         data: dataEventoFmt,
+        nomeGenerico,
       });
 
       console.log(
