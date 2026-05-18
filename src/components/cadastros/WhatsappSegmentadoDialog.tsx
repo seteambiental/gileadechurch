@@ -22,6 +22,7 @@ import {
   type SegmentoEnvio,
 } from "@/lib/whatsapp-notifications";
 import WhatsappMensagemPreview from "./WhatsappMensagemPreview";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface Props {
   open: boolean;
@@ -44,6 +45,7 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
   const [ministerioId, setMinisterioId] = useState<string>("");
   const [mensagem, setMensagem] = useState("Olá {nome}! 👋\n\nPaz do Senhor!");
   const [enviando, setEnviando] = useState(false);
+  const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
 
   const { data: ministerios = [] } = useQuery({
     queryKey: ["ministerios-segmentado"],
@@ -162,6 +164,7 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
         mensagem,
         segmentos,
         ministerioId: segmentos.includes("integrantes_ministerio") ? ministerioId : null,
+        midiaUrl: anexo?.url || null,
       });
       if (error) throw error;
       toast({
@@ -172,6 +175,7 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
       setSegmentos([]);
       setMensagem("Olá {nome}! 👋\n\nPaz do Senhor!");
       setMinisterioId("");
+      setAnexo(null);
     } catch (err: any) {
       toast({
         variant: "destructive",
@@ -248,6 +252,8 @@ export default function WhatsappSegmentadoDialog({ open, onOpenChange }: Props) 
               whatsapp: m.whatsapp,
             }))}
           />
+
+          <WhatsappAnexoUpload value={anexo} onChange={setAnexo} disabled={enviando} />
         </div>
 
         <AlertDialogFooter>
