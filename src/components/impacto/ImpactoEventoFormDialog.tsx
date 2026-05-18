@@ -426,23 +426,6 @@ const ImpactoEventoFormDialog = ({ open, onOpenChange, evento }: ImpactoEventoFo
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="link_grupo_whatsapp"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Link do Grupo de WhatsApp (geral / fallback)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://chat.whatsapp.com/..." {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">
-                    Usado quando não houver link específico para o tipo de inscrição abaixo.
-                  </p>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <div className="space-y-3 border rounded-md p-3 bg-muted/30">
               <p className="text-sm font-medium">Links por tipo de inscrição</p>
               <p className="text-xs text-muted-foreground">
