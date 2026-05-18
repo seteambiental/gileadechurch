@@ -941,9 +941,12 @@ export const CrExpressTab = ({ readOnly = false }: CrExpressTabProps) => {
               <Users className="w-5 h-5 mr-3 text-green-600" />
               <div className="text-left">
                 <p className="font-medium">Enviar para todos os líderes</p>
-                <p className="text-xs text-muted-foreground">Líderes, supervisores e síndicos (intervalo de 30s entre envios)</p>
+                <p className="text-xs text-muted-foreground">Líderes, supervisores e síndicos</p>
               </div>
             </Button>
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              ⚠️ Os envios são espaçados aleatoriamente em 15–30 segundos para evitar bloqueio. O processo pode demorar alguns minutos.
+            </div>
             <div className="border rounded-lg p-3 space-y-3">
               <p className="font-medium text-sm">Enviar para destinatários específicos</p>
               
