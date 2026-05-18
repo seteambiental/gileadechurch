@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { Send, Loader2, Search, MessageCircle } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,9 +57,10 @@ export default function EnvioEmergenciaDialog({
   eventoTitulo,
   mensagemInicial,
 }: Props) {
-  const [destino, setDestino] = useState<"todos" | "um">("todos");
+  const [destino, setDestino] = useState<"todos" | "um" | "selecionados">("todos");
   const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
   const [inscricaoId, setInscricaoId] = useState<string>("");
+  const [inscricaoIds, setInscricaoIds] = useState<string[]>([]);
   const [busca, setBusca] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -232,6 +234,10 @@ export default function EnvioEmergenciaDialog({
       toast.error("Selecione um participante");
       return;
     }
+    if (destino === "selecionados" && inscricaoIds.length === 0) {
+      toast.error("Selecione ao menos um participante");
+      return;
+    }
     setEnviando(true);
     try {
       const { data, error } = await supabase.functions.invoke(
@@ -244,6 +250,8 @@ export default function EnvioEmergenciaDialog({
             inscritosEventoId,
             inscritosEventoTipo,
             inscricaoId: destino === "um" ? inscricaoId : null,
+            inscricaoIds: destino === "selecionados" ? inscricaoIds : null,
+            nomeGenerico: destino === "selecionados",
             mensagemOverride: mensagem,
             destinatarioTipo: contatoTipo,
             tipoMensagem:
@@ -263,6 +271,7 @@ export default function EnvioEmergenciaDialog({
       onOpenChange(false);
       setMensagem("");
       setInscricaoId("");
+      setInscricaoIds([]);
       setTemplateSel("");
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
@@ -342,6 +351,10 @@ export default function EnvioEmergenciaDialog({
               <label className="flex items-center gap-2 cursor-pointer">
                 <RadioGroupItem value="um" id="r-um" />
                 <span>Selecionar um participante</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <RadioGroupItem value="selecionados" id="r-selecionados" />
+                <span>Selecionar vários participantes ({inscricaoIds.length} marcados)</span>
               </label>
             </RadioGroup>
           </div>
