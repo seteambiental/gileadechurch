@@ -79,6 +79,54 @@ async function enviarTexto(telefone: string, mensagem: string) {
   return result;
 }
 
+function detectarMediaType(url: string): "image" | "video" | "document" {
+  const u = url.split("?")[0].toLowerCase();
+  if (/\.(jpe?g|png|webp|gif|bmp)$/.test(u)) return "image";
+  if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(u)) return "video";
+  return "document";
+}
+
+function fileNameDeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const base = u.pathname.split("/").pop() || "arquivo";
+    return decodeURIComponent(base);
+  } catch {
+    return "arquivo";
+  }
+}
+
+async function enviarMidia(
+  telefone: string,
+  midiaUrl: string,
+  caption: string,
+  fileName?: string,
+) {
+  const phoneClean = telefone.replace(/\D/g, "");
+  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
+  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
+  const mediatype = detectarMediaType(midiaUrl);
+  const payload: Record<string, unknown> = {
+    number: phoneFormatted,
+    mediatype,
+    media: midiaUrl,
+    caption: caption || "",
+  };
+  if (mediatype === "document") {
+    payload.fileName = fileName || fileNameDeUrl(midiaUrl);
+  }
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || result.error || `Falha mídia (${response.status})`);
+  }
+  return result;
+}
+
 async function buscarEvento(supabase: any, eventoId: string, eventoTipo: string) {
   const tabela = eventoTipo === "impacto" ? "impacto_eventos" : "agenda_igreja";
   const campoData = eventoTipo === "impacto" ? "data_inicio" : "data_evento";
@@ -163,6 +211,8 @@ serve(async (req) => {
       : null;
     const nomeGenerico = body.nomeGenerico === true;
     const mensagemOverride = (body.mensagemOverride as string) || null;
+    const midiaUrl = (body.midiaUrl as string) || null;
+    const midiaFileName = (body.midiaFileName as string) || null;
     const destinatarioTipo =
       (body.destinatarioTipo as "principal" | "emergencia") || "emergencia";
     const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
@@ -294,7 +344,16 @@ serve(async (req) => {
       );
 
       try {
-        await enviarTexto(tel, mensagemFinal);
+        if (midiaUrl) {
+          try {
+            await enviarMidia(tel, midiaUrl, mensagemFinal, midiaFileName);
+          } catch (mediaErr) {
+            console.warn("Falha mídia, enviando texto:", mediaErr);
+            await enviarTexto(tel, mensagemFinal);
+          }
+        } else {
+          await enviarTexto(tel, mensagemFinal);
+        }
         enviados++;
         await supabase.from("emergencia_envios_log").insert({
           inscricao_id: insc.id,
