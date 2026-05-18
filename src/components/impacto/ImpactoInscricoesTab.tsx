@@ -124,6 +124,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
   const TIPO_OPTIONS = ["Membro", "Não membro", "Família", "Líderes e Anfitriões", "Equipe (apoio/serviço)", "Ministrador", "—"];
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
+  const STATUS_OPTIONS = ["Pago", "Parcial", "Pendente"];
+  const [filtroStatus, setFiltroStatus] = useState<Set<string>>(new Set(STATUS_OPTIONS));
   const [deletingInscricao, setDeletingInscricao] = useState<{ id: string; source?: string; nome: string; member_id?: string | null; evento_id?: string } | null>(null);
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
@@ -304,6 +306,15 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       });
     }
 
+    // Status filter
+    if (filtroStatus.size < STATUS_OPTIONS.length) {
+      all = all.filter((i: any) => {
+        const s = String(i.status_pagamento || "").toLowerCase().trim();
+        const label = s === "pago" ? "Pago" : s === "parcial" ? "Parcial" : "Pendente";
+        return filtroStatus.has(label);
+      });
+    }
+
     if (!searchNome.trim()) return all;
     const q = searchNome.trim();
     const digits = q.replace(/\D/g, "");
@@ -318,7 +329,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       }
       return false;
     });
-  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo]);
+  }, [rawImpactoInscricoes, rawAgendaInscricoes, searchNome, filtroGenero, filtroTipo, filtroStatus]);
 
   // Keep selected IDs in sync with currently visible inscrições
   useEffect(() => {
@@ -966,7 +977,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("valor_inscricao") && <TableHead>Valor Inscrição</TableHead>}
                   {isCol("a_pagar") && <TableHead>A Pagar</TableHead>}
                   {isCol("valor_pago") && <TableHead>Valor Pago</TableHead>}
-                  {isCol("status") && <TableHead>Status</TableHead>}
+                  {isCol("status") && <TableHead><ColumnFilterPopover title="Status" options={STATUS_OPTIONS} selected={filtroStatus} onChange={setFiltroStatus} /></TableHead>}
                   {isCol("contato_emergencia") && <TableHead>Contato Emergência</TableHead>}
                   {isCol("telefone_emergencia") && <TableHead>Tel. Emergência</TableHead>}
                   <TableHead className="w-20"></TableHead>
@@ -987,6 +998,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                             onClick={() => {
                               setFiltroGenero(new Set(GENERO_OPTIONS));
                               setFiltroTipo(new Set(TIPO_OPTIONS));
+                              setFiltroStatus(new Set(STATUS_OPTIONS));
                               setSearchNome("");
                             }}
                           >
