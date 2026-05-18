@@ -62,19 +62,47 @@ async function enviarTextoEvolution(telefone: string, mensagem: string) {
   return result;
 }
 
-async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
+function detectarMediaType(url: string): "image" | "video" | "document" {
+  const u = url.split("?")[0].toLowerCase();
+  if (/\.(jpe?g|png|webp|gif|bmp)$/.test(u)) return "image";
+  if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(u)) return "video";
+  return "document";
+}
+
+function fileNameDeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const base = u.pathname.split("/").pop() || "arquivo";
+    return decodeURIComponent(base);
+  } catch {
+    return "arquivo";
+  }
+}
+
+async function enviarMidiaEvolution(
+  telefone: string,
+  midiaUrl: string,
+  caption?: string,
+  fileName?: string,
+) {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
   const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
+  const mediatype = detectarMediaType(midiaUrl);
+  const payload: Record<string, unknown> = {
+    number: phoneFormatted,
+    mediatype,
+    media: midiaUrl,
+    caption: caption || "",
+  };
+  if (mediatype === "document") {
+    payload.fileName = fileName || fileNameDeUrl(midiaUrl);
+    payload.mimetype = undefined; // deixa Evolution inferir
+  }
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-    body: JSON.stringify({
-      number: phoneFormatted,
-      mediatype: "image",
-      media: imageUrl,
-      caption: caption || "",
-    }),
+    body: JSON.stringify(payload),
   });
   const result = await resp.json().catch(() => ({}));
   if (!resp.ok) {
@@ -84,12 +112,17 @@ async function enviarImagemEvolution(telefone: string, imageUrl: string, caption
   return result;
 }
 
-async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
+async function enviarMidiaComFallbackTexto(
+  telefone: string,
+  midiaUrl: string,
+  caption: string,
+  fileName?: string,
+) {
   try {
-    return await enviarImagemEvolution(telefone, imageUrl, caption);
+    return await enviarMidiaEvolution(telefone, midiaUrl, caption, fileName);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
+    console.warn(`Falha ao enviar mídia; tentando texto. Motivo: ${msg}`);
     return await enviarTextoEvolution(telefone, caption);
   }
 }
@@ -241,7 +274,7 @@ Deno.serve(async (req) => {
           `  substituiu_placeholders=${houveSubstituicao}`
         );
         if (item.midia_url) {
-          await enviarImagemComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
+          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
         } else {
           await enviarTextoEvolution(item.destinatario_telefone, conteudoFinal);
         }
