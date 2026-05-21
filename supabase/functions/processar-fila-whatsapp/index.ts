@@ -42,15 +42,49 @@ async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-async function enviarTextoEvolution(telefone: string, mensagem: string) {
+// Descobre o JID real no WhatsApp (alguns números brasileiros não usam o "9" extra).
+// Retorna o JID quando o número existe; caso contrário lança erro para sair da fila.
+async function resolverJid(telefone: string): Promise<string> {
   const phoneClean = telefone.replace(/\D/g, "");
   const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
+  const variantes = new Set<string>([phoneFormatted]);
+  if (phoneFormatted.length === 13 && phoneFormatted.charAt(4) === "9") {
+    variantes.add(phoneFormatted.slice(0, 4) + phoneFormatted.slice(5));
+  }
+  if (phoneFormatted.length === 12) {
+    variantes.add(phoneFormatted.slice(0, 4) + "9" + phoneFormatted.slice(4));
+  }
+
+  try {
+    const checkUrl = `${EVOLUTION_API_URL}/chat/whatsappNumbers/${EVOLUTION_INSTANCE_NAME}`;
+    const resp = await fetch(checkUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
+      body: JSON.stringify({ numbers: Array.from(variantes) }),
+    });
+    const data = await resp.json().catch(() => null);
+    if (Array.isArray(data)) {
+      const valido = data.find((n: any) => n?.exists === true && n?.jid);
+      if (valido?.jid) return valido.jid as string;
+      throw new Error(`Número não existe no WhatsApp: ${phoneFormatted}`);
+    }
+  } catch (err) {
+    // Se a verificação falhar por erro de rede, tenta o formato padrão como fallback
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.startsWith("Número não existe")) throw err;
+    console.warn("Falha ao verificar JID, usando formato padrão:", msg);
+  }
+  return `${phoneFormatted}@s.whatsapp.net`;
+}
+
+async function enviarTextoEvolution(telefone: string, mensagem: string) {
+  const jid = await resolverJid(telefone);
   const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
   const resp = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
     body: JSON.stringify({
-      number: phoneFormatted,
+      number: jid,
       text: mensagem,
     }),
   });
@@ -85,12 +119,11 @@ async function enviarMidiaEvolution(
   caption?: string,
   fileName?: string,
 ) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
+  const jid = await resolverJid(telefone);
   const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
   const mediatype = detectarMediaType(midiaUrl);
   const payload: Record<string, unknown> = {
-    number: phoneFormatted,
+    number: jid,
     mediatype,
     media: midiaUrl,
     caption: caption || "",
