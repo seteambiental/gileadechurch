@@ -140,7 +140,7 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos")
+        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
         .eq("evento_id", expandedId)
         .order("nome");
       if (error) throw error;
