@@ -575,6 +575,7 @@ export type Database = {
           data_envio: string
           erro_mensagem: string | null
           id: string
+          inscricao_evento_id: string | null
           member_id: string | null
           novo_convertido_id: string | null
           sucesso: boolean
@@ -584,6 +585,7 @@ export type Database = {
           data_envio?: string
           erro_mensagem?: string | null
           id?: string
+          inscricao_evento_id?: string | null
           member_id?: string | null
           novo_convertido_id?: string | null
           sucesso?: boolean
@@ -593,6 +595,7 @@ export type Database = {
           data_envio?: string
           erro_mensagem?: string | null
           id?: string
+          inscricao_evento_id?: string | null
           member_id?: string | null
           novo_convertido_id?: string | null
           sucesso?: boolean

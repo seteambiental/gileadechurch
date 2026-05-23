@@ -21,6 +21,7 @@ interface Aniversariante {
   whatsapp: string | null;
   birth_date: string;
   photo_url?: string | null;
+  nao_membro?: boolean;
 }
 
 interface AniversariantesDialogProps {
@@ -82,6 +83,15 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
 
       if (ncError) throw ncError;
 
+      // Buscar participantes de eventos do Impacto que NÃO são membros
+      const { data: inscricoesEventos, error: inscError } = await supabase
+        .from("impacto_inscricoes")
+        .select("id, nome, telefone, data_nascimento, member_id")
+        .is("member_id", null)
+        .not("data_nascimento", "is", null);
+
+      if (inscError) throw inscError;
+
       // Filtrar por dia e mês
       const aniversariantes: Aniversariante[] = [];
 
@@ -113,6 +123,27 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
             });
           }
         }
+      });
+
+      // Adicionar inscritos de eventos (não membros), evitando duplicatas por nome
+      const nomesJa = new Set(
+        aniversariantes.map((a) => a.full_name.trim().toLowerCase()),
+      );
+      inscricoesEventos?.forEach((ins) => {
+        if (!ins.data_nascimento || !ins.nome) return;
+        const birthDate = parseLocalDate(ins.data_nascimento);
+        if (birthDate.getDate() !== day || birthDate.getMonth() + 1 !== month) return;
+        const nomeKey = ins.nome.trim().toLowerCase();
+        if (nomesJa.has(nomeKey)) return;
+        nomesJa.add(nomeKey);
+        aniversariantes.push({
+          id: `ev-${ins.id}`,
+          full_name: ins.nome,
+          whatsapp: ins.telefone ?? null,
+          birth_date: ins.data_nascimento,
+          photo_url: null,
+          nao_membro: true,
+        });
       });
 
       return aniversariantes;
@@ -199,7 +230,14 @@ _Igreja Gileade_ 💙🙏`;
                   )}
 
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium">{aniv.full_name}</h4>
+                    <h4 className="font-medium flex items-center gap-2 flex-wrap">
+                      <span>{aniv.full_name}</span>
+                      {aniv.nao_membro && (
+                        <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                          Não é membro
+                        </span>
+                      )}
+                    </h4>
                     {aniv.whatsapp && (
                       <p className="text-sm text-muted-foreground">{aniv.whatsapp}</p>
                     )}
