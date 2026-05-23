@@ -17,6 +17,15 @@ import { savePDF, exportGenericToExcel } from "@/lib/export";
 interface Props { mesRef: string; cotacao: number }
 
 // Referências de preços médios em Moçambique (MZN). Valores aproximados 2024/2025.
+const ALIMENTACAO_MZ: { item: string; valor: number; unidade: string }[] = [
+  { item: "Refeição simples", valor: 150, unidade: "unid." },
+  { item: "Transporte urbano (chapa)", valor: 20, unidade: "viagens" },
+  { item: "1kg de arroz", valor: 80, unidade: "kg" },
+  { item: "1kg de frango", valor: 250, unidade: "kg" },
+  { item: "Água (20L)", valor: 30, unidade: "garrafões" },
+  { item: "Bíblia impressa", valor: 500, unidade: "exemplares" },
+];
+
 const SALARIOS_MZ: { cargo: string; valor: number }[] = [
   { cargo: "Salário mínimo nacional", valor: 5000 },
   { cargo: "Trabalhador rural / agricultura", valor: 5500 },
@@ -202,6 +211,19 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setTextColor(0); y += 7;
     autoTable(doc, {
       startY: y,
+      head: [["Ítens de alimentação", "Preço (MZN)", "Quantidade que dá para comprar"]],
+      body: ALIMENTACAO_MZ.map((a) => [
+        a.item,
+        fmtMZN(a.valor),
+        `${fmtQtd(totalMZN / a.valor)} ${a.unidade}`,
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 53, 69] },
+    });
+    y = (doc as any).lastAutoTable.finalY + 4;
+    if (y > 240) { doc.addPage(); y = 18; }
+    autoTable(doc, {
+      startY: y,
       head: [["Salário / sustento mensal", "Valor (MZN)", "Quantos meses pode pagar"]],
       body: SALARIOS_MZ.map((s) => [
         s.cargo,
@@ -364,7 +386,29 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
             Com o total arrecadado deste mês ({fmtMZN(totalMZN)}) é possível custear:
           </p>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+        <CardContent className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Ítens de alimentação</h4>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Preço</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {ALIMENTACAO_MZ.map((a) => (
+                  <TableRow key={a.item}>
+                    <TableCell className="text-sm">{a.item}</TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(a.valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-blue-600">
+                      {totalMZN > 0 ? `${fmtQtd(totalMZN / a.valor)} ${a.unidade}` : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
           <div>
             <h4 className="text-sm font-semibold mb-2">Salários e sustento mensal</h4>
             <Table>
@@ -407,7 +451,8 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
               </TableBody>
             </Table>
           </div>
-          <p className="text-[11px] text-muted-foreground md:col-span-2">
+          </div>
+          <p className="text-[11px] text-muted-foreground">
             Valores médios de referência em Moçambique (2024/2025). Podem variar conforme região e câmbio.
           </p>
         </CardContent>
