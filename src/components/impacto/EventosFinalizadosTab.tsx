@@ -102,7 +102,16 @@ const EventosFinalizadosTab = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [searchNome, setSearchNome] = useState("");
-  const [searchStatus, setSearchStatus] = useState("todos");
+  // Column filters (cabeçalhos da tabela de inscritos)
+  const TIPO_OPTIONS = ["Membro", "Não membro", "Líderes e Anfitriões", "Equipe", "Ministrador", "—"];
+  const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
+  const STATUS_OPTIONS = ["Pago", "Parcial", "Pendente"];
+  const SIM_NAO_OPTIONS = ["Sim", "Não"];
+  const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
+  const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
+  const [filtroStatus, setFiltroStatus] = useState<Set<string>>(new Set(STATUS_OPTIONS));
+  const [filtroConverteu, setFiltroConverteu] = useState<Set<string>>(new Set(SIM_NAO_OPTIONS));
+  const [filtroReconciliou, setFiltroReconciliou] = useState<Set<string>>(new Set(SIM_NAO_OPTIONS));
 
   // Payment dialog state
   const [pagamentoOpen, setPagamentoOpen] = useState(false);
