@@ -34,29 +34,36 @@ import {
 const DEFAULT_COTACAO = 10.5;
 
 // Referências de poder de compra em Moçambique
-// Mesmos itens do Relatório (salários + materiais de construção)
-const REFERENCIAS_PODER_COMPRA: { item: string; valor_mzn: number; emoji: string; unidade: string }[] = [
+// Mesmos itens do Relatório, agrupados por categoria
+const REFERENCIAS_PODER_COMPRA: { item: string; valor_mzn: number; emoji: string; unidade: string; categoria: string }[] = [
+  // Itens de alimentação (topo)
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Refeição simples", valor_mzn: 150, emoji: "🍽️", unidade: "unidades" },
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Transporte urbano (chapa)", valor_mzn: 20, emoji: "🚌", unidade: "unidades" },
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "1kg de arroz", valor_mzn: 80, emoji: "🍚", unidade: "kg" },
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "1kg de frango", valor_mzn: 250, emoji: "🍗", unidade: "kg" },
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Água (20L)", valor_mzn: 30, emoji: "💧", unidade: "garrafões" },
+  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Bíblia impressa", valor_mzn: 500, emoji: "📖", unidade: "exemplares" },
   // Salários / sustento mensal
-  { item: "Salário mínimo nacional", valor_mzn: 5000, emoji: "💵", unidade: "meses" },
-  { item: "Trabalhador rural / agricultura", valor_mzn: 5500, emoji: "🌾", unidade: "meses" },
-  { item: "Empregada doméstica", valor_mzn: 7000, emoji: "🧺", unidade: "meses" },
-  { item: "Pedreiro / servente de obra", valor_mzn: 15000, emoji: "👷", unidade: "meses" },
-  { item: "Professor do ensino primário", valor_mzn: 20000, emoji: "👩‍🏫", unidade: "meses" },
-  { item: "Enfermeiro", valor_mzn: 25000, emoji: "🩺", unidade: "meses" },
-  { item: "Pastor local (apoio mensal)", valor_mzn: 12000, emoji: "⛪", unidade: "meses" },
-  { item: "Cesta básica familiar (mês)", valor_mzn: 8000, emoji: "🛒", unidade: "cestas" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Salário mínimo nacional", valor_mzn: 5000, emoji: "💵", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Trabalhador rural / agricultura", valor_mzn: 5500, emoji: "🌾", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Empregada doméstica", valor_mzn: 7000, emoji: "🧺", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Pedreiro / servente de obra", valor_mzn: 15000, emoji: "👷", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Professor do ensino primário", valor_mzn: 20000, emoji: "👩‍🏫", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Enfermeiro", valor_mzn: 25000, emoji: "🩺", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Pastor local (apoio mensal)", valor_mzn: 12000, emoji: "⛪", unidade: "meses" },
+  { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Cesta básica familiar (mês)", valor_mzn: 8000, emoji: "🛒", unidade: "cestas" },
   // Materiais de construção
-  { item: "Saco de cimento 50 kg", valor_mzn: 650, emoji: "🧱", unidade: "sacos" },
-  { item: "Bloco de cimento 15 cm", valor_mzn: 25, emoji: "🟪", unidade: "unid." },
-  { item: "Tijolo queimado", valor_mzn: 10, emoji: "🧱", unidade: "unid." },
-  { item: "Chapa de zinco 3 m", valor_mzn: 900, emoji: "🏠", unidade: "chapas" },
-  { item: "Telha lusa", valor_mzn: 35, emoji: "🏚️", unidade: "unid." },
-  { item: "Vergalhão de ferro 12 mm (12 m)", valor_mzn: 750, emoji: "🔩", unidade: "barras" },
-  { item: "Areia para construção", valor_mzn: 1500, emoji: "⏳", unidade: "m³" },
-  { item: "Brita / pedra britada", valor_mzn: 2500, emoji: "🪨", unidade: "m³" },
-  { item: "Porta de madeira simples", valor_mzn: 3500, emoji: "🚪", unidade: "unid." },
-  { item: "Janela de alumínio simples", valor_mzn: 4500, emoji: "🪟", unidade: "unid." },
-  { item: "Bíblia em português", valor_mzn: 500, emoji: "📖", unidade: "exemplares" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Saco de cimento 50 kg", valor_mzn: 650, emoji: "🧱", unidade: "sacos" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Bloco de cimento 15 cm", valor_mzn: 25, emoji: "🟪", unidade: "unid." },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Tijolo queimado", valor_mzn: 10, emoji: "🧱", unidade: "unid." },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Chapa de zinco 3 m", valor_mzn: 900, emoji: "🏠", unidade: "chapas" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Telha lusa", valor_mzn: 35, emoji: "🏚️", unidade: "unid." },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Vergalhão de ferro 12 mm (12 m)", valor_mzn: 750, emoji: "🔩", unidade: "barras" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Areia para construção", valor_mzn: 1500, emoji: "⏳", unidade: "m³" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Brita / pedra britada", valor_mzn: 2500, emoji: "🪨", unidade: "m³" },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Porta de madeira simples", valor_mzn: 3500, emoji: "🚪", unidade: "unid." },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Janela de alumínio simples", valor_mzn: 4500, emoji: "🪟", unidade: "unid." },
+  { categoria: "MATERIAIS DE CONSTRUÇÃO", item: "Bíblia em português", valor_mzn: 500, emoji: "📖", unidade: "exemplares" },
 ];
 
 export function MissoesFechamentoTab() {
