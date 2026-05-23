@@ -16,6 +16,32 @@ import { savePDF, exportGenericToExcel } from "@/lib/export";
 
 interface Props { mesRef: string; cotacao: number }
 
+// Referências de preços médios em Moçambique (MZN). Valores aproximados 2024/2025.
+const SALARIOS_MZ: { cargo: string; valor: number }[] = [
+  { cargo: "Salário mínimo nacional", valor: 5000 },
+  { cargo: "Trabalhador rural / agricultura", valor: 5500 },
+  { cargo: "Empregada doméstica", valor: 7000 },
+  { cargo: "Pedreiro / servente de obra", valor: 15000 },
+  { cargo: "Professor do ensino primário", valor: 20000 },
+  { cargo: "Enfermeiro", valor: 25000 },
+  { cargo: "Pastor local (apoio mensal)", valor: 12000 },
+  { cargo: "Cesta básica familiar (mês)", valor: 8000 },
+];
+
+const MATERIAIS_MZ: { item: string; valor: number; unidade: string }[] = [
+  { item: "Saco de cimento 50 kg", valor: 650, unidade: "saco" },
+  { item: "Bloco de cimento 15 cm", valor: 25, unidade: "unid." },
+  { item: "Tijolo queimado", valor: 10, unidade: "unid." },
+  { item: "Chapa de zinco 3 m", valor: 900, unidade: "chapa" },
+  { item: "Telha lusa", valor: 35, unidade: "unid." },
+  { item: "Vergalhão de ferro 12 mm (12 m)", valor: 750, unidade: "barra" },
+  { item: "Areia para construção", valor: 1500, unidade: "m³" },
+  { item: "Brita / pedra britada", valor: 2500, unidade: "m³" },
+  { item: "Porta de madeira simples", valor: 3500, unidade: "unid." },
+  { item: "Janela de alumínio simples", valor: 4500, unidade: "unid." },
+  { item: "Bíblia em português", valor: 500, unidade: "exemplar" },
+];
+
 export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
   const { data: contribuintes = [] } = useQuery({
     queryKey: ["mm-rel-contrib"],
@@ -75,6 +101,12 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
   }, [contribuicoes, lancamentos, despesas]);
 
   const mesLabel = format(new Date(mesRef), "MMMM 'de' yyyy", { locale: ptBR });
+
+  const totalMZN = totaisCalc.totalArrecadado * cotacao;
+  const fmtMZN = (v: number) => `MZN ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const fmtQtd = (v: number) =>
+    v >= 100 ? v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+             : v.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 
   const getNomeContrib = (c: any) => c.member?.full_name || c.nome_manual || "Sem nome";
   const pagoMap = new Map(contribuicoes.map((c: any) => [c.contribuinte_id, c]));
@@ -160,6 +192,37 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         headStyles: { fillColor: [220, 53, 69] },
       });
     }
+
+    // Poder de compra
+    if (y > 220) { doc.addPage(); y = 18; }
+    doc.setFontSize(11); doc.text("Poder de compra em Moçambique", 14, y); y += 2;
+    doc.setFontSize(9); doc.setTextColor(100);
+    doc.text(`Com o total arrecadado (${fmtMZN(totalMZN)}) é possível custear:`, 14, y + 4);
+    doc.setTextColor(0); y += 7;
+    autoTable(doc, {
+      startY: y,
+      head: [["Salário / sustento mensal", "Valor (MZN)", "Quantos meses pode pagar"]],
+      body: SALARIOS_MZ.map((s) => [
+        s.cargo,
+        fmtMZN(s.valor),
+        `${fmtQtd(totalMZN / s.valor)} meses`,
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 53, 69] },
+    });
+    y = (doc as any).lastAutoTable.finalY + 4;
+    if (y > 240) { doc.addPage(); y = 18; }
+    autoTable(doc, {
+      startY: y,
+      head: [["Material de construção", "Preço (MZN)", "Quantidade que dá para comprar"]],
+      body: MATERIAIS_MZ.map((m) => [
+        m.item,
+        fmtMZN(m.valor),
+        `${fmtQtd(totalMZN / m.valor)} ${m.unidade}`,
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 53, 69] },
+    });
 
     savePDF(doc, `Relatorio_Missoes_${mesRef.slice(0, 7)}.pdf`);
   };
@@ -288,6 +351,62 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
               ))}
             </TableBody>
           </Table>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Poder de compra em Moçambique</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Com o total arrecadado deste mês ({fmtMZN(totalMZN)}) é possível custear:
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Salários e sustento mensal</h4>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Cargo / referência</TableHead>
+                <TableHead className="text-right">Valor</TableHead>
+                <TableHead className="text-right">Meses</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {SALARIOS_MZ.map((s) => (
+                  <TableRow key={s.cargo}>
+                    <TableCell className="text-sm">{s.cargo}</TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(s.valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-blue-600">
+                      {totalMZN > 0 ? `${fmtQtd(totalMZN / s.valor)} meses` : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Materiais de construção</h4>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Preço</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {MATERIAIS_MZ.map((m) => (
+                  <TableRow key={m.item}>
+                    <TableCell className="text-sm">{m.item}</TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(m.valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-green-700">
+                      {totalMZN > 0 ? `${fmtQtd(totalMZN / m.valor)} ${m.unidade}` : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-[11px] text-muted-foreground md:col-span-2">
+            Valores médios de referência em Moçambique (2024/2025). Podem variar conforme região e câmbio.
+          </p>
         </CardContent>
       </Card>
     </div>
