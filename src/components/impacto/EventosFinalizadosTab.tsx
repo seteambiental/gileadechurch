@@ -59,7 +59,8 @@ import { todayDateStr } from "@/lib/date-utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { savePDF } from "@/lib/export";
-import { FileText } from "lucide-react";
+import { FileText, MessageCircle } from "lucide-react";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 
 const TIPOS_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -114,6 +115,10 @@ const EventosFinalizadosTab = () => {
   const [despesaValor, setDespesaValor] = useState("");
   const [despesaCategoria, setDespesaCategoria] = useState("Outros");
   const [despesaData, setDespesaData] = useState(todayDateStr());
+
+  // WhatsApp dialog state
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappEvento, setWhatsappEvento] = useState<{ id: string; titulo: string } | null>(null);
 
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["impacto-eventos-finalizados"],
@@ -630,7 +635,20 @@ const EventosFinalizadosTab = () => {
                           </div>
 
                           {/* Botão de relatório */}
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-green-600 text-green-700 hover:bg-green-50 hover:text-green-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setWhatsappEvento({ id: evento.id, titulo: evento.titulo });
+                                setWhatsappOpen(true);
+                              }}
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                              Enviar WhatsApp
+                            </Button>
                             <Button
                               variant="default"
                               size="sm"
@@ -872,6 +890,20 @@ const EventosFinalizadosTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp dialog (reaproveita EnvioEmergenciaDialog com filtros por tipo) */}
+      {whatsappEvento && (
+        <EnvioEmergenciaDialog
+          open={whatsappOpen}
+          onOpenChange={(o) => {
+            setWhatsappOpen(o);
+            if (!o) setWhatsappEvento(null);
+          }}
+          eventoId={whatsappEvento.id}
+          eventoTipo="impacto"
+          eventoTitulo={whatsappEvento.titulo}
+        />
+      )}
     </div>
   );
 };
