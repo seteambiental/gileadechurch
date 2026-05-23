@@ -209,19 +209,22 @@ const EventosFinalizadosTab = () => {
 
   // Stats per expanded event
   const stats = useMemo(() => {
-    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, receita: 0, recebido: 0, aReceber: 0 };
-    let masc = 0, fem = 0, receita = 0, recebido = 0, aReceber = 0;
+    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, participantes: 0, equipe: 0, receita: 0, recebido: 0, aReceber: 0 };
+    let masc = 0, fem = 0, participantes = 0, equipe = 0, receita = 0, recebido = 0, aReceber = 0;
     inscricoes.forEach((i: any) => {
       const g = (i.genero || "").toLowerCase();
       if (g === "m" || g === "masculino") masc++;
       else if (g === "f" || g === "feminino") fem++;
+      const tipo = (i.tipo_inscricao || "").toLowerCase();
+      if (tipo === "membro" || tipo === "nao_membro") participantes++;
+      else if (tipo === "equipe" || tipo === "familia" || tipo === "ministrador") equipe++;
       receita += parseFloat(i.valor_inscricao) || 0;
       recebido += parseFloat(i.valor_pago) || 0;
       const norm = normalizeStatus(i.status_pagamento);
       if (norm === "pendente") aReceber += parseFloat(i.valor_inscricao) || 0;
       else if (norm === "parcial") aReceber += Math.max(0, (parseFloat(i.valor_inscricao) || 0) - (parseFloat(i.valor_pago) || 0));
     });
-    return { total: inscricoes.length, masc, fem, receita, recebido, aReceber };
+    return { total: inscricoes.length, masc, fem, participantes, equipe, receita, recebido, aReceber };
   }, [inscricoes]);
 
   const totalDespesas = useMemo(() => {
@@ -351,6 +354,8 @@ const EventosFinalizadosTab = () => {
     doc.setTextColor(60);
     const resumoLinhas: Array<[string, string]> = [
       ["Inscrições", String(stats.total)],
+      ["Participantes", String(stats.participantes)],
+      ["Equipe / Apoio", String(stats.equipe)],
       ["Total Previsto (Entradas)", formatCurrency(stats.receita)],
       ["Total Recebido", formatCurrency(stats.recebido)],
       ["A Receber", formatCurrency(stats.aReceber)],
@@ -571,6 +576,9 @@ const EventosFinalizadosTab = () => {
                               <p className="text-xs text-muted-foreground">Total</p>
                               <p className="text-lg font-bold">{stats.total}</p>
                               <p className="text-[10px] text-muted-foreground">{stats.masc}M / {stats.fem}F</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {stats.participantes} part. / {stats.equipe} equipe
+                              </p>
                             </div>
                             <div className="bg-muted/50 rounded-lg p-3 text-center">
                               <div className="flex items-center justify-center gap-1 mb-1">
