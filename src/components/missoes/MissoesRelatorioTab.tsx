@@ -144,10 +144,11 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setFontSize(11); doc.text("Contribuintes fixos", 14, y); y += 2;
     autoTable(doc, {
       startY: y,
-      head: [["Nome", "Valor mensal", "Status do mês"]],
+      head: [["Nome", "Valor mensal (R$)", "Equiv. (MZN)", "Status do mês"]],
       body: contribuintes.map((c: any) => {
         const pago = pagoMap.get(c.id);
-        return [getNomeContrib(c), formatCurrency(Number(c.valor_mensal || 0)), pago?.pago ? "Recebido" : "Pendente"];
+        const v = Number(c.valor_mensal || 0);
+        return [getNomeContrib(c), formatCurrency(v), fmtMZN(v * cotacao), pago?.pago ? "Recebido" : "Pendente"];
       }),
       styles: { fontSize: 9 },
       headStyles: { fillColor: [220, 53, 69] },
