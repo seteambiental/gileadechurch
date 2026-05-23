@@ -890,6 +890,20 @@ const EventosFinalizadosTab = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* WhatsApp dialog (reaproveita EnvioEmergenciaDialog com filtros por tipo) */}
+      {whatsappEvento && (
+        <EnvioEmergenciaDialog
+          open={whatsappOpen}
+          onOpenChange={(o) => {
+            setWhatsappOpen(o);
+            if (!o) setWhatsappEvento(null);
+          }}
+          eventoId={whatsappEvento.id}
+          eventoTipo="impacto"
+          eventoTitulo={whatsappEvento.titulo}
+        />
+      )}
     </div>
   );
 };
