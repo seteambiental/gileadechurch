@@ -322,6 +322,160 @@ const EventosFinalizadosTab = () => {
     despesaMutation.mutate({ eventoId: despesaEvento.id, descricao: despesaDescricao, valor, categoria: despesaCategoria, data: despesaData });
   };
 
+  const handleGerarRelatorio = (evento: any) => {
+    const doc = new jsPDF({ orientation: "portrait" });
+
+    doc.setFontSize(16);
+    doc.text(`Relatório Financeiro — ${evento.titulo}`, 14, 18);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    const periodo = `${format(parseLocalDate(evento.data_inicio), "dd/MM/yyyy", { locale: ptBR })}${
+      evento.data_fim && evento.data_fim !== evento.data_inicio
+        ? ` a ${format(parseLocalDate(evento.data_fim), "dd/MM/yyyy", { locale: ptBR })}`
+        : ""
+    }`;
+    doc.text(`Período do evento: ${periodo}`, 14, 25);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 30);
+
+    // ===== Resumo Geral =====
+    let yPos = 38;
+    doc.setFontSize(11);
+    doc.setTextColor(40);
+    doc.setFont(undefined, "bold");
+    doc.text("Resumo Geral do Evento", 14, yPos);
+    doc.setFont(undefined, "normal");
+    yPos += 6;
+
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+    const resumoLinhas: Array<[string, string]> = [
+      ["Inscrições", String(stats.total)],
+      ["Total Previsto (Entradas)", formatCurrency(stats.receita)],
+      ["Total Recebido", formatCurrency(stats.recebido)],
+      ["A Receber", formatCurrency(stats.aReceber)],
+      ["Total de Despesas (Saídas)", formatCurrency(totalDespesas)],
+      ["Saldo Final do Evento", formatCurrency(saldoEvento)],
+    ];
+    const colWidth = 95;
+    const half = Math.ceil(resumoLinhas.length / 2);
+    resumoLinhas.forEach(([label, val], idx) => {
+      const col = idx < half ? 0 : 1;
+      const row = idx < half ? idx : idx - half;
+      doc.text(`${label}: ${val}`, 14 + col * colWidth, yPos + row * 5);
+    });
+    yPos += half * 5 + 4;
+
+    // ===== Entradas por forma de pagamento =====
+    const totalByFormaPgto = (inscricoes as any[]).reduce((acc: Record<string, number>, i: any) => {
+      const pagamentos = Array.isArray(i.pagamentos) ? i.pagamentos : [];
+      if (pagamentos.length > 0) {
+        pagamentos.forEach((p: any) => {
+          const tipo = p?.tipo || "outros";
+          acc[tipo] = (acc[tipo] || 0) + (Number(p?.valor) || 0);
+        });
+      } else if (i.forma_pagamento && Number(i.valor_pago) > 0) {
+        acc[i.forma_pagamento] = (acc[i.forma_pagamento] || 0) + (Number(i.valor_pago) || 0);
+      }
+      return acc;
+    }, {});
+    const formasOrdenadas = Object.entries(totalByFormaPgto).sort(([, a], [, b]) => (b as number) - (a as number));
+    if (formasOrdenadas.length > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Entradas por Forma de Pagamento", 14, yPos);
+      doc.setFont(undefined, "normal");
+      yPos += 5;
+      doc.setFontSize(9);
+      doc.setTextColor(60);
+      formasOrdenadas.forEach(([forma, val]) => {
+        doc.text(`  ${FORMAS_PAGAMENTO_LABELS[forma] || forma}: ${formatCurrency(val as number)}`, 14, yPos);
+        yPos += 5;
+      });
+      yPos += 2;
+    }
+
+    // ===== Saídas por categoria =====
+    const totalByCategoria = (despesas as any[]).reduce((acc: Record<string, number>, d: any) => {
+      const cat = d.categoria || "Outros";
+      acc[cat] = (acc[cat] || 0) + (Number(d.valor) || 0);
+      return acc;
+    }, {});
+    const categoriasOrdenadas = Object.entries(totalByCategoria).sort(([, a], [, b]) => (b as number) - (a as number));
+    if (categoriasOrdenadas.length > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Saídas por Categoria", 14, yPos);
+      doc.setFont(undefined, "normal");
+      yPos += 5;
+      doc.setFontSize(9);
+      doc.setTextColor(60);
+      categoriasOrdenadas.forEach(([cat, val]) => {
+        doc.text(`  ${cat}: ${formatCurrency(val as number)}`, 14, yPos);
+        yPos += 5;
+      });
+      yPos += 2;
+    }
+
+    // ===== Detalhamento das Despesas =====
+    if ((despesas as any[]).length > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Detalhamento das Despesas", 14, yPos);
+      doc.setFont(undefined, "normal");
+      yPos += 3;
+
+      const tableData = (despesas as any[]).map((d: any) => [
+        d.categoria || "—",
+        d.descricao || "—",
+        d.data_despesa ? format(parseLocalDate(d.data_despesa), "dd/MM/yyyy") : "—",
+        formatCurrency(Number(d.valor) || 0),
+      ]);
+      tableData.push(["TOTAL", "", "", formatCurrency(totalDespesas)]);
+
+      autoTable(doc, {
+        head: [["Categoria", "Descrição", "Data", "Valor"]],
+        body: tableData,
+        startY: yPos,
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [220, 53, 69], textColor: 255, fontStyle: "bold" },
+        didParseCell: (hookData: any) => {
+          if (hookData.section !== "body") return;
+          if (hookData.row.index === tableData.length - 1) {
+            hookData.cell.styles.fillColor = [230, 230, 230];
+            hookData.cell.styles.fontStyle = "bold";
+          }
+        },
+      });
+      yPos = (doc as any).lastAutoTable?.finalY || yPos;
+    }
+
+    // Rodapé com saldo final destacado
+    let footerY = yPos + 8;
+    if (footerY > 270) {
+      doc.addPage();
+      footerY = 20;
+    }
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.setTextColor(saldoEvento >= 0 ? 25 : 200, saldoEvento >= 0 ? 135 : 35, saldoEvento >= 0 ? 84 : 51);
+    doc.text(`Saldo Final do Evento: ${formatCurrency(saldoEvento)}`, 14, footerY);
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(120);
+    doc.setFontSize(8);
+    doc.text(
+      `(Total Recebido ${formatCurrency(stats.recebido)}  -  Total de Despesas ${formatCurrency(totalDespesas)})`,
+      14,
+      footerY + 5,
+    );
+
+    const safeNome = (evento.titulo || "evento").replace(/[^a-zA-Z0-9-_]/g, "_");
+    savePDF(doc, `RelatorioFinanceiro_${safeNome}.pdf`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
