@@ -67,6 +67,7 @@ export default function EnvioEmergenciaDialog({
   const [enviando, setEnviando] = useState(false);
   const [templateSel, setTemplateSel] = useState<string>("");
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([]);
+  const [statusEspiritualFiltro, setStatusEspiritualFiltro] = useState<string[]>([]);
   const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
   // Evento de origem dos inscritos (pode diferir do evento da mensagem)
   const [inscritosEventoId, setInscritosEventoId] = useState<string>(eventoId);
