@@ -250,7 +250,7 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Contribuintes Ativos</CardTitle>
@@ -272,6 +272,18 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Previsão Mensal (MZN)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {cotacaoMZN > 0
+                ? `MZN ${(totalMensal * cotacaoMZN).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : "—"}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Recebido este Mês</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -288,6 +300,18 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
           <CardContent>
             <div className="text-2xl font-bold">
               R$ {totalContribuintes > 0 ? (totalMensal / totalContribuintes).toLocaleString("pt-BR", { minimumFractionDigits: 2 }) : "0,00"}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Média / Contribuinte (MZN)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {totalContribuintes > 0 && cotacaoMZN > 0
+                ? `MZN ${((totalMensal / totalContribuintes) * cotacaoMZN).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : "—"}
             </div>
           </CardContent>
         </Card>
