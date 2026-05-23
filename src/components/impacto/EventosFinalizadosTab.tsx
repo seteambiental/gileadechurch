@@ -56,6 +56,10 @@ import {
 import { toast } from "sonner";
 import { DateInput } from "@/components/ui/date-input";
 import { todayDateStr } from "@/lib/date-utils";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import { savePDF } from "@/lib/export";
+import { FileText } from "lucide-react";
 
 const TIPOS_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -77,6 +81,18 @@ const FORMAS_PAGAMENTO = [
   { value: "debito", label: "Cartão Débito" },
   { value: "transferencia", label: "Transferência" },
 ];
+
+const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
+  pix: "PIX",
+  dinheiro: "Dinheiro",
+  credito: "Cartão Crédito",
+  debito: "Cartão Débito",
+  cartao_credito: "Cartão Crédito",
+  cartao_debito: "Cartão Débito",
+  transferencia: "Transferência",
+  boleto: "Boleto",
+  vale: "Vale",
+};
 
 const EventosFinalizadosTab = () => {
   const queryClient = useQueryClient();
@@ -133,7 +149,7 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_despesas")
-        .select("valor")
+        .select("categoria, descricao, valor, data_despesa")
         .eq("evento_id", expandedId);
       if (error) throw error;
       return data || [];
