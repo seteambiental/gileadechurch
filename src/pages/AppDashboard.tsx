@@ -164,7 +164,8 @@ const AppDashboard = () => {
     queryFn: async () => {
       const { count, error } = await supabase
         .from("members")
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true })
+        .or("excluido.is.null,excluido.eq.false");
       if (error) return 0;
       return count || 0;
     },
