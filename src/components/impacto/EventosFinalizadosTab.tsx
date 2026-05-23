@@ -574,6 +574,9 @@ const EventosFinalizadosTab = () => {
                               <p className="text-xs text-muted-foreground">Total</p>
                               <p className="text-lg font-bold">{stats.total}</p>
                               <p className="text-[10px] text-muted-foreground">{stats.masc}M / {stats.fem}F</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {stats.participantes} part. / {stats.equipe} equipe
+                              </p>
                             </div>
                             <div className="bg-muted/50 rounded-lg p-3 text-center">
                               <div className="flex items-center justify-center gap-1 mb-1">
