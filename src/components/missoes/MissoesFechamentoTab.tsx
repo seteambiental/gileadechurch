@@ -271,6 +271,86 @@ export function MissoesFechamentoTab() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Impacto: Cesta Básica Família 4 pessoas */}
+          {(() => {
+            const CESTA_FAMILIA_4 = 34364;
+            const SALARIO_MINIMO = 9261;
+            const CESTA_OTM_5 = 42955;
+            const cestasFamilia = totalMZN / CESTA_FAMILIA_4;
+            const salarios = totalMZN / SALARIO_MINIMO;
+            const blocos = [
+              { label: "Cereais e Grãos Básicos", valor: 10500, desc: "Arroz, farinha de milho, feijão, açúcar, óleo — base de carboidratos (xima e arroz diário).", emoji: "🌾" },
+              { label: "Proteínas e Carnes", valor: 13200, desc: "Frango, peixe carapau, carne de vaca e ovos — consumo regular ao longo do mês.", emoji: "🥩" },
+              { label: "Hortofrutícolas", valor: 6800, desc: "Batata reno, cebola, tomate e repolho — compras semanais no atacado.", emoji: "🥬" },
+              { label: "Laticínios, Pão e Higiene", valor: 3864, desc: "Leite, manteiga, pão diário e sabão em barra.", emoji: "🥛" },
+            ];
+            return (
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-4">
+                <div>
+                  <h4 className="text-sm font-bold tracking-wider text-primary mb-1">
+                    🍽️ CESTA BÁSICA — FAMÍLIA DE 4 PESSOAS
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    O custo total estimado de uma cesta básica para uma família de 4 pessoas em Moçambique é de aproximadamente{" "}
+                    <strong>MZN {CESTA_FAMILIA_4.toLocaleString("pt-BR")}</strong>. Esse valor é proporcional à estimativa oficial da
+                    Organização dos Trabalhadores Moçambicanos (OTM-CS), que fixa o custo em{" "}
+                    <strong>MZN {CESTA_OTM_5.toLocaleString("pt-BR")}</strong> para um agregado de 5 pessoas.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div className="rounded-md bg-background p-3 border">
+                    <p className="text-xs text-muted-foreground">Com este envio é possível custear</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {cestasFamilia.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} cestas
+                    </p>
+                    <p className="text-xs text-muted-foreground">para uma família de 4 pessoas</p>
+                  </div>
+                  <div className="rounded-md bg-background p-3 border">
+                    <p className="text-xs text-muted-foreground">Equivale a</p>
+                    <p className="text-2xl font-bold text-primary">
+                      {salarios.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} salários mínimos
+                    </p>
+                    <p className="text-xs text-muted-foreground">médio nacional MZN {SALARIO_MINIMO.toLocaleString("pt-BR")}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    Divisão Estimada de Gastos Mensais (Família de 4 pessoas)
+                  </p>
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {blocos.map((b) => {
+                      const pct = ((b.valor / CESTA_FAMILIA_4) * 100).toFixed(1);
+                      return (
+                        <div key={b.label} className="flex gap-3 p-3 bg-background rounded-md border">
+                          <span className="text-2xl">{b.emoji}</span>
+                          <div className="flex-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <p className="font-medium text-sm">{b.label}</p>
+                              <p className="text-sm font-bold text-primary whitespace-nowrap">
+                                MZN {b.valor.toLocaleString("pt-BR")}
+                              </p>
+                            </div>
+                            <p className="text-xs text-muted-foreground">{b.desc}</p>
+                            <p className="text-[10px] text-muted-foreground mt-1">{pct}% da cesta</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <p className="text-xs italic text-muted-foreground border-t pt-3">
+                  <strong>Realidade do custo de vida:</strong> com salário mínimo médio em torno de MZN{" "}
+                  {SALARIO_MINIMO.toLocaleString("pt-BR")}, uma família de 4 pessoas precisa de quase 4 salários
+                  inteiros só para cobrir alimentação e higiene básica — sem contar transporte (chapas), energia
+                  (Credelec), água e habitação.
+                </p>
+              </div>
+            );
+          })()}
+
           {Array.from(new Set(REFERENCIAS_PODER_COMPRA.map((r) => r.categoria))).map((cat, idx) => (
             <div key={cat}>
               {idx > 0 && <div className="border-t mb-4" />}
