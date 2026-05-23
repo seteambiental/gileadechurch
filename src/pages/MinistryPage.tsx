@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive, DollarSign } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive, DollarSign, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +59,7 @@ import { MissoesLancamentosTab } from "@/components/missoes/MissoesLancamentosTa
 import { MissoesDespesasTab } from "@/components/missoes/MissoesDespesasTab";
 import { MissoesRelatorioTab } from "@/components/missoes/MissoesRelatorioTab";
 import { MissoesFiltroHeader } from "@/components/missoes/MissoesFiltroHeader";
+import { MissoesConfigTab } from "@/components/missoes/MissoesConfigTab";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
 import { MinisterioAgendaTab } from "@/components/ministerio/MinisterioAgendaTab";
 import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosTab";
