@@ -247,7 +247,10 @@ export function MissoesFechamentoTab() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             {REFERENCIAS_PODER_COMPRA.map((ref) => {
-              const quantidade = Math.floor(totalMZN / ref.valor_mzn);
+              const bruto = ref.valor_mzn > 0 ? totalMZN / ref.valor_mzn : 0;
+              const quantidade = bruto >= 100
+                ? bruto.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+                : bruto.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
               return (
                 <div
                   key={ref.item}
@@ -260,7 +263,7 @@ export function MissoesFechamentoTab() {
                       MZN {ref.valor_mzn} cada
                     </p>
                     <p className="text-lg font-bold text-primary">
-                      = {quantidade.toLocaleString("pt-BR")} unidades
+                      = {quantidade} {ref.unidade}
                     </p>
                   </div>
                 </div>
