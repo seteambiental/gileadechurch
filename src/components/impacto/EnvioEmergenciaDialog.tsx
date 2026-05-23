@@ -290,6 +290,8 @@ export default function EnvioEmergenciaDialog({
       setInscricaoIds([]);
       setTemplateSel("");
       setAnexo(null);
+      setStatusEspiritualFiltro([]);
+      setTiposFiltro([]);
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
     } finally {
