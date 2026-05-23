@@ -722,13 +722,15 @@ const EventosFinalizadosTab = () => {
                                   <TableHead>Pago</TableHead>
                                   <TableHead>Saldo</TableHead>
                                   <TableHead>Status</TableHead>
+                                  <TableHead className="text-center">Conv.</TableHead>
+                                  <TableHead className="text-center">Recon.</TableHead>
                                   <TableHead>Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {filteredInscricoes.length === 0 ? (
                                   <TableRow>
-                                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                                       Nenhum resultado encontrado.
                                     </TableCell>
                                   </TableRow>
