@@ -722,17 +722,6 @@ const EventosFinalizadosTab = () => {
                               onChange={setSearchNome}
                               className="max-w-xs w-full"
                             />
-                            <Select value={searchStatus} onValueChange={setSearchStatus}>
-                              <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="todos">Todos</SelectItem>
-                                <SelectItem value="pago">Pago</SelectItem>
-                                <SelectItem value="parcial">Parcial</SelectItem>
-                                <SelectItem value="pendente">Pendente</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
 
                           {/* Participants table */}
@@ -742,14 +731,14 @@ const EventosFinalizadosTab = () => {
                                 <TableRow>
                                   <TableHead>Ref.</TableHead>
                                   <TableHead>Nome</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead>Gênero</TableHead>
+                                  <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>
+                                  <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>
                                   <TableHead>Valor</TableHead>
                                   <TableHead>Pago</TableHead>
                                   <TableHead>Saldo</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="text-center">Conv.</TableHead>
-                                  <TableHead className="text-center">Recon.</TableHead>
+                                  <TableHead><ColumnFilterPopover title="Status" options={STATUS_OPTIONS} selected={filtroStatus} onChange={setFiltroStatus} /></TableHead>
+                                  <TableHead className="text-center"><ColumnFilterPopover title="Conv." options={SIM_NAO_OPTIONS} selected={filtroConverteu} onChange={setFiltroConverteu} /></TableHead>
+                                  <TableHead className="text-center"><ColumnFilterPopover title="Recon." options={SIM_NAO_OPTIONS} selected={filtroReconciliou} onChange={setFiltroReconciliou} /></TableHead>
                                   <TableHead>Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
