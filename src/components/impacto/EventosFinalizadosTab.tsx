@@ -300,6 +300,34 @@ const EventosFinalizadosTab = () => {
     },
   });
 
+  // Toggle "converteu" / "reconciliou" flags inline
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({ [field]: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, field, value }) => {
+      // Atualização otimista para não piscar a UI
+      const key = ["impacto-inscricoes-finalizados", expandedId];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<any[]>(key);
+      if (prev) {
+        queryClient.setQueryData(key, prev.map((i: any) => i.id === id ? { ...i, [field]: value } : i));
+      }
+      return { prev };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["impacto-inscricoes-finalizados", expandedId], ctx.prev);
+      toast.error(err.message || "Erro ao atualizar.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", expandedId] });
+    },
+  });
+
   const handleOpenPagamento = (insc: any) => {
     setPagamentoInscricao(insc);
     setPagamentoValor("");
