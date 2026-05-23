@@ -643,11 +643,33 @@ const MinistryPage = () => {
             {isMissoes ? (
               <>
                 <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesContribuintesTab mesRef={mmMesRef} />
+                </TabsContent>
+                <TabsContent value="lancamentos" forceMount className={activeTab !== "lancamentos" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesLancamentosTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                <TabsContent value="despesas" forceMount className={activeTab !== "despesas" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesDespesasTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                <TabsContent value="fechamento" forceMount className={activeTab !== "fechamento" ? "hidden" : ""}>
+                  <MissoesFechamentoTab />
+                </TabsContent>
+                <TabsContent value="relatorio" forceMount className={activeTab !== "relatorio" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesRelatorioTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                {/* Conteúdos antigos removidos abaixo */}
+                {false && (<>
+                <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
                   <MissoesContribuintesTab />
                 </TabsContent>
                 <TabsContent value="fechamento" forceMount className={activeTab !== "fechamento" ? "hidden" : ""}>
                   <MissoesFechamentoTab />
                 </TabsContent>
+                </>)}
               </>
             ) : isImpacto ? (
               <>
