@@ -98,6 +98,20 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
     enabled: !!eventoId,
   });
 
+  // Inscrições do evento — usadas para montar o resumo completo (entradas, a receber, saldo)
+  const { data: inscricoes = [] } = useQuery({
+    queryKey: ["impacto-inscricoes-resumo", eventoId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("impacto_inscricoes")
+        .select("valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, previsoes_pagamento, tipo_inscricao")
+        .eq("evento_id", eventoId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!eventoId,
+  });
+
   // ===== Filtros por coluna =====
   const categoriaOptions = useMemo(
     () => Array.from(new Set(despesas.map((d: any) => d.categoria).filter(Boolean))).sort() as string[],
@@ -217,6 +231,42 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
     return acc;
   }, {} as Record<string, number>);
 
+  // ===== Resumo financeiro completo do evento =====
+  const totalInscritos = inscricoes.length;
+  const totalPrevisao = inscricoes.reduce((s: number, i: any) => s + (Number(i.valor_inscricao) || 0), 0);
+  const totalPago = inscricoes.reduce((s: number, i: any) => s + (Number(i.valor_pago) || 0), 0);
+  const totalAReceber = inscricoes.reduce((s: number, i: any) => {
+    const status = String(i.status_pagamento || "").toLowerCase();
+    if (status === "cancelado") return s;
+    const diff = (Number(i.valor_inscricao) || 0) - (Number(i.valor_pago) || 0);
+    return s + (diff > 0 ? diff : 0);
+  }, 0);
+  const saldoEvento = totalPago - totalDespesas;
+
+  // Quebra por forma de pagamento (considera pagamentos mistos)
+  const totalByFormaPgto = inscricoes.reduce((acc: Record<string, number>, i: any) => {
+    const pagamentos = Array.isArray(i.pagamentos) ? i.pagamentos : [];
+    if (pagamentos.length > 0) {
+      pagamentos.forEach((p: any) => {
+        const tipo = p?.tipo || "outros";
+        acc[tipo] = (acc[tipo] || 0) + (Number(p?.valor) || 0);
+      });
+    } else if (i.forma_pagamento && Number(i.valor_pago) > 0) {
+      acc[i.forma_pagamento] = (acc[i.forma_pagamento] || 0) + (Number(i.valor_pago) || 0);
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
+    pix: "PIX",
+    dinheiro: "Dinheiro",
+    cartao_credito: "Cartão Crédito",
+    cartao_debito: "Cartão Débito",
+    transferencia: "Transferência",
+    boleto: "Boleto",
+    vale: "Vale",
+  };
+
   const exportColumns: import("@/lib/export").ExportColumn[] = [
     { header: "Categoria", accessor: (row: any) => row.categoria },
     { header: "Descrição", accessor: (row: any) => row.descricao || "—" },
@@ -235,29 +285,83 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
     const doc = new jsPDF({ orientation: "portrait" });
 
     doc.setFontSize(16);
-    doc.text(`Despesas — ${eventoNome}`, 14, 18);
+    doc.text(`Relatório Financeiro — ${eventoNome}`, 14, 18);
 
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`, 14, 25);
 
-    // Summary
-    let yPos = 34;
-    doc.setFontSize(10);
-    doc.setTextColor(60);
-    doc.text(`Total de Despesas: ${formatCurrency(totalDespesas)}`, 14, yPos);
+    // ===== Bloco 1: Resumo Geral =====
+    let yPos = 32;
+    doc.setFontSize(11);
+    doc.setTextColor(40);
+    doc.setFont(undefined, "bold");
+    doc.text("Resumo Geral do Evento", 14, yPos);
+    doc.setFont(undefined, "normal");
     yPos += 6;
 
-    // Totals by category
-    const categoriasOrdenadas = Object.entries(totalByCategoria).sort(([, a], [, b]) => b - a);
-    if (categoriasOrdenadas.length > 0) {
+    doc.setFontSize(9);
+    doc.setTextColor(60);
+    const resumoLinhas: Array<[string, string]> = [
+      ["Inscrições", String(totalInscritos)],
+      ["Total Previsto (Entradas)", formatCurrency(totalPrevisao)],
+      ["Total Recebido", formatCurrency(totalPago)],
+      ["A Receber", formatCurrency(totalAReceber)],
+      ["Total de Despesas (Saídas)", formatCurrency(totalDespesas)],
+      ["Saldo Final do Evento", formatCurrency(saldoEvento)],
+    ];
+    const colWidth = 95;
+    const half = Math.ceil(resumoLinhas.length / 2);
+    resumoLinhas.forEach(([label, val], idx) => {
+      const col = idx < half ? 0 : 1;
+      const row = idx < half ? idx : idx - half;
+      doc.text(`${label}: ${val}`, 14 + col * colWidth, yPos + row * 5);
+    });
+    yPos += half * 5 + 4;
+
+    // ===== Bloco 2: Entradas por forma de pagamento =====
+    const formasOrdenadas = Object.entries(totalByFormaPgto).sort(([, a], [, b]) => (b as number) - (a as number));
+    if (formasOrdenadas.length > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Entradas por Forma de Pagamento", 14, yPos);
+      doc.setFont(undefined, "normal");
+      yPos += 5;
       doc.setFontSize(9);
-      categoriasOrdenadas.forEach(([cat, val]) => {
-        doc.text(`  ${cat}: ${formatCurrency(val)}`, 14, yPos);
+      doc.setTextColor(60);
+      formasOrdenadas.forEach(([forma, val]) => {
+        doc.text(`  ${FORMAS_PAGAMENTO_LABELS[forma] || forma}: ${formatCurrency(val as number)}`, 14, yPos);
         yPos += 5;
       });
       yPos += 2;
     }
+
+    // ===== Bloco 3: Saídas por categoria =====
+    const categoriasOrdenadas = Object.entries(totalByCategoria).sort(([, a], [, b]) => (b as number) - (a as number));
+    if (categoriasOrdenadas.length > 0) {
+      doc.setFontSize(10);
+      doc.setTextColor(40);
+      doc.setFont(undefined, "bold");
+      doc.text("Saídas por Categoria", 14, yPos);
+      doc.setFont(undefined, "normal");
+      yPos += 5;
+      doc.setFontSize(9);
+      doc.setTextColor(60);
+      categoriasOrdenadas.forEach(([cat, val]) => {
+        doc.text(`  ${cat}: ${formatCurrency(val as number)}`, 14, yPos);
+        yPos += 5;
+      });
+      yPos += 2;
+    }
+
+    // Título do detalhamento
+    doc.setFontSize(10);
+    doc.setTextColor(40);
+    doc.setFont(undefined, "bold");
+    doc.text("Detalhamento das Despesas", 14, yPos);
+    doc.setFont(undefined, "normal");
+    yPos += 3;
 
     // Table
     const tableHeaders = exportColumns.map((c) => c.header);
@@ -292,7 +396,23 @@ const ImpactoDespesasTab = ({ eventoId, eventoNome = "evento" }: Props) => {
       },
     });
 
-    savePDF(doc, `Despesas_${eventoNome}.pdf`);
+    // Rodapé com saldo final destacado
+    const finalY = (doc as any).lastAutoTable?.finalY || yPos;
+    let footerY = finalY + 8;
+    if (footerY > 270) {
+      doc.addPage();
+      footerY = 20;
+    }
+    doc.setFontSize(11);
+    doc.setFont(undefined, "bold");
+    doc.setTextColor(saldoEvento >= 0 ? 25 : 200, saldoEvento >= 0 ? 135 : 35, saldoEvento >= 0 ? 84 : 51);
+    doc.text(`Saldo Final do Evento: ${formatCurrency(saldoEvento)}`, 14, footerY);
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(120);
+    doc.setFontSize(8);
+    doc.text(`(Total Recebido ${formatCurrency(totalPago)}  -  Total de Despesas ${formatCurrency(totalDespesas)})`, 14, footerY + 5);
+
+    savePDF(doc, `RelatorioFinanceiro_${eventoNome}.pdf`);
   };
 
   return (
