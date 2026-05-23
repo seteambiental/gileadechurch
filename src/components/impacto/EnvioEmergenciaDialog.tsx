@@ -67,6 +67,7 @@ export default function EnvioEmergenciaDialog({
   const [enviando, setEnviando] = useState(false);
   const [templateSel, setTemplateSel] = useState<string>("");
   const [tiposFiltro, setTiposFiltro] = useState<string[]>([]);
+  const [statusEspiritualFiltro, setStatusEspiritualFiltro] = useState<string[]>([]);
   const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
   // Evento de origem dos inscritos (pode diferir do evento da mensagem)
   const [inscritosEventoId, setInscritosEventoId] = useState<string>(eventoId);
@@ -194,7 +195,7 @@ export default function EnvioEmergenciaDialog({
     queryFn: async () => {
       const { data } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao")
+        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao, converteu, reconciliou")
         .eq("evento_id", inscritosEventoId)
         .neq("status_pagamento", "cancelado")
         .order("nome");
@@ -204,9 +205,18 @@ export default function EnvioEmergenciaDialog({
   });
 
   const inscricoesFiltradas = useMemo(() => {
-    if (tiposFiltro.length === 0) return inscricoes;
-    return (inscricoes as any[]).filter((i) => tiposFiltro.includes(i.tipo_inscricao));
-  }, [inscricoes, tiposFiltro]);
+    let list = inscricoes as any[];
+    if (tiposFiltro.length > 0) {
+      list = list.filter((i) => tiposFiltro.includes(i.tipo_inscricao));
+    }
+    if (statusEspiritualFiltro.length > 0) {
+      list = list.filter((i) =>
+        (statusEspiritualFiltro.includes("convertido") && i.converteu) ||
+        (statusEspiritualFiltro.includes("reconciliado") && i.reconciliou)
+      );
+    }
+    return list;
+  }, [inscricoes, tiposFiltro, statusEspiritualFiltro]);
 
   const filtradas = useMemo(() => {
     if (!busca) return inscricoesFiltradas;
@@ -265,6 +275,8 @@ export default function EnvioEmergenciaDialog({
                 : "aviso_importante"),
             tipoInscricaoFiltro:
               destino === "todos" && tiposFiltro.length > 0 ? tiposFiltro : null,
+            statusEspiritualFiltro:
+              destino === "todos" && statusEspiritualFiltro.length > 0 ? statusEspiritualFiltro : null,
           },
         },
       );
@@ -278,6 +290,8 @@ export default function EnvioEmergenciaDialog({
       setInscricaoIds([]);
       setTemplateSel("");
       setAnexo(null);
+      setStatusEspiritualFiltro([]);
+      setTiposFiltro([]);
     } catch (e: any) {
       toast.error(e.message || "Erro ao enviar");
     } finally {
@@ -401,6 +415,45 @@ export default function EnvioEmergenciaDialog({
                     limpar
                   </button>
                 )}
+              </div>
+              <div className="mt-3">
+                <Label className="text-xs text-muted-foreground">Status espiritual</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {[
+                    { v: "convertido", l: "Novos Convertidos" },
+                    { v: "reconciliado", l: "Reconciliados" },
+                  ].map((opt) => {
+                    const ativo = statusEspiritualFiltro.includes(opt.v);
+                    return (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() =>
+                          setStatusEspiritualFiltro((prev) =>
+                            prev.includes(opt.v)
+                              ? prev.filter((x) => x !== opt.v)
+                              : [...prev, opt.v],
+                          )
+                        }
+                        className={`px-3 py-1 rounded-full border text-xs ${ativo ? "bg-emerald-600 text-white border-emerald-600" : "bg-muted/40 hover:bg-muted"}`}
+                      >
+                        {opt.l}
+                      </button>
+                    );
+                  })}
+                  {statusEspiritualFiltro.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setStatusEspiritualFiltro([])}
+                      className="text-xs text-muted-foreground underline ml-1"
+                    >
+                      limpar
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Quando marcado, envia apenas para quem está marcado como "Conv." ou "Recon." na lista do evento.
+                </p>
               </div>
             </div>
           )}

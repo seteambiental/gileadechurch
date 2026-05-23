@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -139,7 +140,7 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos")
+        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
         .eq("evento_id", expandedId)
         .order("nome");
       if (error) throw error;
@@ -296,6 +297,34 @@ const EventosFinalizadosTab = () => {
     },
     onError: (err: any) => {
       toast.error(err.message || "Erro ao registrar despesa.");
+    },
+  });
+
+  // Toggle "converteu" / "reconciliou" flags inline
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({ [field]: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, field, value }) => {
+      // Atualização otimista para não piscar a UI
+      const key = ["impacto-inscricoes-finalizados", expandedId];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<any[]>(key);
+      if (prev) {
+        queryClient.setQueryData(key, prev.map((i: any) => i.id === id ? { ...i, [field]: value } : i));
+      }
+      return { prev };
+    },
+    onError: (err: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["impacto-inscricoes-finalizados", expandedId], ctx.prev);
+      toast.error(err.message || "Erro ao atualizar.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", expandedId] });
     },
   });
 
@@ -693,13 +722,15 @@ const EventosFinalizadosTab = () => {
                                   <TableHead>Pago</TableHead>
                                   <TableHead>Saldo</TableHead>
                                   <TableHead>Status</TableHead>
+                                  <TableHead className="text-center">Conv.</TableHead>
+                                  <TableHead className="text-center">Recon.</TableHead>
                                   <TableHead>Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {filteredInscricoes.length === 0 ? (
                                   <TableRow>
-                                    <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                                    <TableCell colSpan={11} className="text-center text-muted-foreground py-6">
                                       Nenhum resultado encontrado.
                                     </TableCell>
                                   </TableRow>
@@ -742,6 +773,24 @@ const EventosFinalizadosTab = () => {
                                           {status === "parcial" && <Clock className="w-3 h-3 mr-1" />}
                                           {getStatusLabel(insc.status_pagamento)}
                                         </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Checkbox
+                                          checked={!!insc.converteu}
+                                          onCheckedChange={(v) =>
+                                            toggleFlagMutation.mutate({ id: insc.id, field: "converteu", value: !!v })
+                                          }
+                                          aria-label="Converteu"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Checkbox
+                                          checked={!!insc.reconciliou}
+                                          onCheckedChange={(v) =>
+                                            toggleFlagMutation.mutate({ id: insc.id, field: "reconciliou", value: !!v })
+                                          }
+                                          aria-label="Reconciliou"
+                                        />
                                       </TableCell>
                                       <TableCell>
                                         {status !== "pago" && (
