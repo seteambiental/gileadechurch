@@ -774,6 +774,24 @@ const EventosFinalizadosTab = () => {
                                           {getStatusLabel(insc.status_pagamento)}
                                         </Badge>
                                       </TableCell>
+                                      <TableCell className="text-center">
+                                        <Checkbox
+                                          checked={!!insc.converteu}
+                                          onCheckedChange={(v) =>
+                                            toggleFlagMutation.mutate({ id: insc.id, field: "converteu", value: !!v })
+                                          }
+                                          aria-label="Converteu"
+                                        />
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        <Checkbox
+                                          checked={!!insc.reconciliou}
+                                          onCheckedChange={(v) =>
+                                            toggleFlagMutation.mutate({ id: insc.id, field: "reconciliou", value: !!v })
+                                          }
+                                          aria-label="Reconciliou"
+                                        />
+                                      </TableCell>
                                       <TableCell>
                                         {status !== "pago" && (
                                           <Button
