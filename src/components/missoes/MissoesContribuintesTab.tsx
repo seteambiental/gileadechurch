@@ -59,7 +59,11 @@ interface Contribuicao {
   agradecimento_enviado: boolean;
 }
 
-export function MissoesContribuintesTab() {
+interface ContribProps {
+  mesRef?: string; // YYYY-MM-DD (1º dia do mês)
+}
+
+export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedContribuinte, setSelectedContribuinte] = useState<Contribuinte | null>(null);
@@ -67,7 +71,10 @@ export function MissoesContribuintesTab() {
   const [contribuinteToDelete, setContribuinteToDelete] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  const mesAtual = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`; })(); // YYYY-MM
+  // Aceita mesRef (YYYY-MM-DD) e converte para YYYY-MM, ou usa o mês atual
+  const mesAtual = mesRef
+    ? mesRef.slice(0, 7)
+    : (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}`; })();
 
   const { data: contribuintes, isLoading } = useQuery({
     queryKey: ["missoes-contribuintes"],
