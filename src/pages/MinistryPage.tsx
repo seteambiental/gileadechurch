@@ -370,6 +370,13 @@ const MinistryPage = () => {
 
   const ministry = slug ? ministriesData[slug] : null;
 
+  // Estado compartilhado do módulo Missões (declarado antes de qualquer early return)
+  const [mmMesRef, setMmMesRef] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
+
   if (!ministry) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -399,13 +406,6 @@ const MinistryPage = () => {
   const isServico = ministry.isServico;
   const hasEscalasServico = ministry.hasEscalasServico && ministryFromDb?.id;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
-
-  // Estado compartilhado do módulo Missões
-  const [mmMesRef, setMmMesRef] = useState<string>(() => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
-  });
-  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
 
   return (
     <div className="min-h-screen bg-background">
