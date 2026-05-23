@@ -195,7 +195,7 @@ export default function EnvioEmergenciaDialog({
     queryFn: async () => {
       const { data } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao")
+        .select("id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, tipo_inscricao, converteu, reconciliou")
         .eq("evento_id", inscritosEventoId)
         .neq("status_pagamento", "cancelado")
         .order("nome");
@@ -205,9 +205,18 @@ export default function EnvioEmergenciaDialog({
   });
 
   const inscricoesFiltradas = useMemo(() => {
-    if (tiposFiltro.length === 0) return inscricoes;
-    return (inscricoes as any[]).filter((i) => tiposFiltro.includes(i.tipo_inscricao));
-  }, [inscricoes, tiposFiltro]);
+    let list = inscricoes as any[];
+    if (tiposFiltro.length > 0) {
+      list = list.filter((i) => tiposFiltro.includes(i.tipo_inscricao));
+    }
+    if (statusEspiritualFiltro.length > 0) {
+      list = list.filter((i) =>
+        (statusEspiritualFiltro.includes("convertido") && i.converteu) ||
+        (statusEspiritualFiltro.includes("reconciliado") && i.reconciliou)
+      );
+    }
+    return list;
+  }, [inscricoes, tiposFiltro, statusEspiritualFiltro]);
 
   const filtradas = useMemo(() => {
     if (!busca) return inscricoesFiltradas;
