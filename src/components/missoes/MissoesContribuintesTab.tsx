@@ -43,6 +43,7 @@ interface Contribuinte {
   ativo: boolean;
   data_inicio: string;
   dia_vencimento: number | null;
+  forma_contribuicao: string | null;
   observacoes: string | null;
   member?: {
     full_name: string;
