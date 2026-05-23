@@ -211,6 +211,19 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setTextColor(0); y += 7;
     autoTable(doc, {
       startY: y,
+      head: [["Ítens de alimentação", "Preço (MZN)", "Quantidade que dá para comprar"]],
+      body: ALIMENTACAO_MZ.map((a) => [
+        a.item,
+        fmtMZN(a.valor),
+        `${fmtQtd(totalMZN / a.valor)} ${a.unidade}`,
+      ]),
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [220, 53, 69] },
+    });
+    y = (doc as any).lastAutoTable.finalY + 4;
+    if (y > 240) { doc.addPage(); y = 18; }
+    autoTable(doc, {
+      startY: y,
       head: [["Salário / sustento mensal", "Valor (MZN)", "Quantos meses pode pagar"]],
       body: SALARIOS_MZ.map((s) => [
         s.cargo,
