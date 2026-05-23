@@ -158,11 +158,12 @@ async function buscarInscricoes(
   inscricaoId?: string | null,
   tipoInscricaoFiltro?: string[] | null,
   inscricaoIds?: string[] | null,
+  statusEspiritualFiltro?: string[] | null,
 ) {
   let q = supabase
     .from("impacto_inscricoes")
     .select(
-      "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado, tipo_inscricao",
+      "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel, status_pagamento, aprovado, tipo_inscricao, converteu, reconciliou",
     )
     .eq("evento_id", eventoId);
   if (inscricaoId) q = q.eq("id", inscricaoId);
@@ -171,9 +172,23 @@ async function buscarInscricoes(
   if (!inscricaoId && (!inscricaoIds || inscricaoIds.length === 0) && tipoInscricaoFiltro && tipoInscricaoFiltro.length > 0) {
     q = q.in("tipo_inscricao", tipoInscricaoFiltro);
   }
+  // Filtro por status espiritual (converteu / reconciliou) - aplicado em memória (OR entre os flags)
+  // pois PostgREST não suporta facilmente um OR composto com múltiplas colunas booleanas.
   const { data, error } = await q;
   if (error) throw error;
-  return data || [];
+  let rows = data || [];
+  if (
+    !inscricaoId &&
+    (!inscricaoIds || inscricaoIds.length === 0) &&
+    statusEspiritualFiltro &&
+    statusEspiritualFiltro.length > 0
+  ) {
+    rows = rows.filter((r: any) =>
+      (statusEspiritualFiltro.includes("convertido") && r.converteu) ||
+      (statusEspiritualFiltro.includes("reconciliado") && r.reconciliou)
+    );
+  }
+  return rows;
 }
 
 function delayBulk() {
