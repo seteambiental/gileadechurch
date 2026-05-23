@@ -665,6 +665,9 @@ const MinistryPage = () => {
                   <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
                   <MissoesRelatorioTab mesRef={mmMesRef} cotacao={mmCotacao} />
                 </TabsContent>
+                <TabsContent value="config" forceMount className={activeTab !== "config" ? "hidden" : ""}>
+                  <MissoesConfigTab />
+                </TabsContent>
                 {/* Conteúdos antigos removidos abaixo */}
                 {false && (<>
                 <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
