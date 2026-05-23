@@ -635,7 +635,20 @@ const EventosFinalizadosTab = () => {
                           </div>
 
                           {/* Botão de relatório */}
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-2 flex-wrap">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-green-600 text-green-700 hover:bg-green-50 hover:text-green-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setWhatsappEvento({ id: evento.id, titulo: evento.titulo });
+                                setWhatsappOpen(true);
+                              }}
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 mr-1" />
+                              Enviar WhatsApp
+                            </Button>
                             <Button
                               variant="default"
                               size="sm"
