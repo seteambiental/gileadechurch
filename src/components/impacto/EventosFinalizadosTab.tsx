@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import {
   Table,
   TableBody,
@@ -101,7 +102,16 @@ const EventosFinalizadosTab = () => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [searchNome, setSearchNome] = useState("");
-  const [searchStatus, setSearchStatus] = useState("todos");
+  // Column filters (cabeçalhos da tabela de inscritos)
+  const TIPO_OPTIONS = ["Membro", "Não membro", "Líderes e Anfitriões", "Equipe", "Ministrador", "—"];
+  const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
+  const STATUS_OPTIONS = ["Pago", "Parcial", "Pendente"];
+  const SIM_NAO_OPTIONS = ["Sim", "Não"];
+  const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set(TIPO_OPTIONS));
+  const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
+  const [filtroStatus, setFiltroStatus] = useState<Set<string>>(new Set(STATUS_OPTIONS));
+  const [filtroConverteu, setFiltroConverteu] = useState<Set<string>>(new Set(SIM_NAO_OPTIONS));
+  const [filtroReconciliou, setFiltroReconciliou] = useState<Set<string>>(new Set(SIM_NAO_OPTIONS));
 
   // Payment dialog state
   const [pagamentoOpen, setPagamentoOpen] = useState(false);
@@ -201,16 +211,32 @@ const EventosFinalizadosTab = () => {
         (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
       );
     }
-    if (searchStatus !== "todos") {
-      result = result.filter((i: any) => normalizeStatus(i.status_pagamento) === searchStatus);
+    if (filtroTipo.size < TIPO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroTipo.has(TIPOS_LABELS[i.tipo_inscricao] || "—"));
+    }
+    if (filtroGenero.size < GENERO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroGenero.has(resolveGenero(i.genero)));
+    }
+    if (filtroStatus.size < STATUS_OPTIONS.length) {
+      result = result.filter((i: any) => filtroStatus.has(getStatusLabel(i.status_pagamento)));
+    }
+    if (filtroConverteu.size < SIM_NAO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroConverteu.has(i.converteu ? "Sim" : "Não"));
+    }
+    if (filtroReconciliou.size < SIM_NAO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroReconciliou.has(i.reconciliou ? "Sim" : "Não"));
     }
     return result;
-  }, [inscricoes, searchNome, searchStatus]);
+  }, [inscricoes, searchNome, filtroTipo, filtroGenero, filtroStatus, filtroConverteu, filtroReconciliou]);
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
     setSearchNome("");
-    setSearchStatus("todos");
+    setFiltroTipo(new Set(TIPO_OPTIONS));
+    setFiltroGenero(new Set(GENERO_OPTIONS));
+    setFiltroStatus(new Set(STATUS_OPTIONS));
+    setFiltroConverteu(new Set(SIM_NAO_OPTIONS));
+    setFiltroReconciliou(new Set(SIM_NAO_OPTIONS));
   };
 
   // Stats per expanded event
@@ -696,17 +722,6 @@ const EventosFinalizadosTab = () => {
                               onChange={setSearchNome}
                               className="max-w-xs w-full"
                             />
-                            <Select value={searchStatus} onValueChange={setSearchStatus}>
-                              <SelectTrigger className="w-[150px]">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="todos">Todos</SelectItem>
-                                <SelectItem value="pago">Pago</SelectItem>
-                                <SelectItem value="parcial">Parcial</SelectItem>
-                                <SelectItem value="pendente">Pendente</SelectItem>
-                              </SelectContent>
-                            </Select>
                           </div>
 
                           {/* Participants table */}
@@ -716,14 +731,14 @@ const EventosFinalizadosTab = () => {
                                 <TableRow>
                                   <TableHead>Ref.</TableHead>
                                   <TableHead>Nome</TableHead>
-                                  <TableHead>Tipo</TableHead>
-                                  <TableHead>Gênero</TableHead>
+                                  <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>
+                                  <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>
                                   <TableHead>Valor</TableHead>
                                   <TableHead>Pago</TableHead>
                                   <TableHead>Saldo</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  <TableHead className="text-center">Conv.</TableHead>
-                                  <TableHead className="text-center">Recon.</TableHead>
+                                  <TableHead><ColumnFilterPopover title="Status" options={STATUS_OPTIONS} selected={filtroStatus} onChange={setFiltroStatus} /></TableHead>
+                                  <TableHead className="text-center"><ColumnFilterPopover title="Conv." options={SIM_NAO_OPTIONS} selected={filtroConverteu} onChange={setFiltroConverteu} /></TableHead>
+                                  <TableHead className="text-center"><ColumnFilterPopover title="Recon." options={SIM_NAO_OPTIONS} selected={filtroReconciliou} onChange={setFiltroReconciliou} /></TableHead>
                                   <TableHead>Ações</TableHead>
                                 </TableRow>
                               </TableHeader>
