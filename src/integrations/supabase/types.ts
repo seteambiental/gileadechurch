@@ -5848,6 +5848,69 @@ export type Database = {
           },
         ]
       }
+      missoes_mocambique_cotacao_cache: {
+        Row: {
+          consultado_em: string
+          cotacao: number
+          fonte: string | null
+          id: string
+        }
+        Insert: {
+          consultado_em?: string
+          cotacao: number
+          fonte?: string | null
+          id?: string
+        }
+        Update: {
+          consultado_em?: string
+          cotacao?: number
+          fonte?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      missoes_mocambique_despesas: {
+        Row: {
+          categoria: string
+          comprovante_url: string | null
+          created_at: string
+          data_despesa: string
+          descricao: string | null
+          forma_pagamento: string | null
+          id: string
+          mes_referencia: string
+          observacoes: string | null
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          categoria: string
+          comprovante_url?: string | null
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          mes_referencia: string
+          observacoes?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          categoria?: string
+          comprovante_url?: string | null
+          created_at?: string
+          data_despesa?: string
+          descricao?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          mes_referencia?: string
+          observacoes?: string | null
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
       missoes_mocambique_fechamentos: {
         Row: {
           cotacao_mzn: number
@@ -5886,6 +5949,73 @@ export type Database = {
           valor_convertido_mzn?: number
         }
         Relationships: []
+      }
+      missoes_mocambique_lancamentos: {
+        Row: {
+          condominio_id: string | null
+          created_at: string
+          data_lancamento: string
+          forma_pagamento: string | null
+          id: string
+          member_id: string | null
+          mes_referencia: string
+          nome_manual: string | null
+          observacoes: string | null
+          origem: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          condominio_id?: string | null
+          created_at?: string
+          data_lancamento?: string
+          forma_pagamento?: string | null
+          id?: string
+          member_id?: string | null
+          mes_referencia: string
+          nome_manual?: string | null
+          observacoes?: string | null
+          origem?: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          condominio_id?: string | null
+          created_at?: string
+          data_lancamento?: string
+          forma_pagamento?: string | null
+          id?: string
+          member_id?: string | null
+          mes_referencia?: string
+          nome_manual?: string | null
+          observacoes?: string | null
+          origem?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "missoes_mocambique_lancamentos_condominio_id_fkey"
+            columns: ["condominio_id"]
+            isOneToOne: false
+            referencedRelation: "condominios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missoes_mocambique_lancamentos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "missoes_mocambique_lancamentos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mudancas_pendentes: {
         Row: {

@@ -55,6 +55,10 @@ import NovasInscricoesTab from "@/components/impacto/NovasInscricoesTab";
 import EventosFinalizadosTab from "@/components/impacto/EventosFinalizadosTab";
 import { MissoesContribuintesTab } from "@/components/missoes/MissoesContribuintesTab";
 import { MissoesFechamentoTab } from "@/components/missoes/MissoesFechamentoTab";
+import { MissoesLancamentosTab } from "@/components/missoes/MissoesLancamentosTab";
+import { MissoesDespesasTab } from "@/components/missoes/MissoesDespesasTab";
+import { MissoesRelatorioTab } from "@/components/missoes/MissoesRelatorioTab";
+import { MissoesFiltroHeader } from "@/components/missoes/MissoesFiltroHeader";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
 import { MinisterioAgendaTab } from "@/components/ministerio/MinisterioAgendaTab";
 import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosTab";
@@ -396,6 +400,13 @@ const MinistryPage = () => {
   const hasEscalasServico = ministry.hasEscalasServico && ministryFromDb?.id;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
 
+  // Estado compartilhado do módulo Missões
+  const [mmMesRef, setMmMesRef] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -436,7 +447,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-4' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-6' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -447,9 +458,21 @@ const MinistryPage = () => {
                     <Users className="w-4 h-4" />
                     <span className="hidden sm:inline">Contribuintes</span>
                   </TabsTrigger>
+                  <TabsTrigger value="lancamentos" className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="hidden sm:inline">Lançamentos</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="despesas" className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="hidden sm:inline">Despesas</span>
+                  </TabsTrigger>
                   <TabsTrigger value="fechamento" className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
                     <span className="hidden sm:inline">Fechamento</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="relatorio" className="flex items-center gap-2">
+                    <BookOpenIcon className="w-4 h-4" />
+                    <span className="hidden sm:inline">Relatório</span>
                   </TabsTrigger>
                 </>
               ) : isImpacto ? (
@@ -620,11 +643,33 @@ const MinistryPage = () => {
             {isMissoes ? (
               <>
                 <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesContribuintesTab mesRef={mmMesRef} />
+                </TabsContent>
+                <TabsContent value="lancamentos" forceMount className={activeTab !== "lancamentos" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesLancamentosTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                <TabsContent value="despesas" forceMount className={activeTab !== "despesas" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesDespesasTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                <TabsContent value="fechamento" forceMount className={activeTab !== "fechamento" ? "hidden" : ""}>
+                  <MissoesFechamentoTab />
+                </TabsContent>
+                <TabsContent value="relatorio" forceMount className={activeTab !== "relatorio" ? "hidden" : ""}>
+                  <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
+                  <MissoesRelatorioTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                {/* Conteúdos antigos removidos abaixo */}
+                {false && (<>
+                <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
                   <MissoesContribuintesTab />
                 </TabsContent>
                 <TabsContent value="fechamento" forceMount className={activeTab !== "fechamento" ? "hidden" : ""}>
                   <MissoesFechamentoTab />
                 </TabsContent>
+                </>)}
               </>
             ) : isImpacto ? (
               <>

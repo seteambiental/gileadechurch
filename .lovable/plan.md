@@ -1,72 +1,63 @@
-## Objetivo
+## O que vou construir no módulo Missões — Moçambique
 
-Quando o evento criado for do tipo **Apresentação de Crianças**, o sistema deve gerar um link de inscrição específico, voltado para o cadastro **dos pais da criança a ser apresentada**. Os pais que ainda não são membros poderão se cadastrar (e ao seu cônjuge), e esses cadastros entrarão como **solicitação de cadastro pendente de aprovação**, mas já ficam disponíveis na lista suspensa para concluir a inscrição da apresentação.
+### 1. Filtro de mês no topo (compartilhado entre as abas)
+- Um seletor de mês/ano fica no topo do módulo (acima das abas).
+- Todas as abas (Contribuintes, Lançamentos, Despesas, Fechamento, Relatório) passam a respeitar esse mês.
+- Por padrão abre no mês atual.
 
-## Fluxo proposto
+### 2. Cotação automática Real → Metical (MZN)
+- Vou criar uma função no servidor (edge function) que busca a cotação atualizada do BRL→MZN na internet (usando uma API pública gratuita de câmbio).
+- A cotação aparece em destaque no topo, com data/hora da última atualização e botão de "atualizar".
+- O usuário ainda pode digitar uma cotação manual caso queira sobrescrever (igual hoje).
+- Os totais em MZN passam a usar a cotação atual.
 
-```text
-Admin cria evento "Apresentação de Crianças"
-        │
-        ▼
-Sistema gera link público /inscricao/apresentacao/:eventoId
-(além do botão "Compartilhar" já existente)
-        │
-        ▼
-Pretendente abre o link
-        │
-        ├── Seleciona PAI na lista suspensa (membros + solicitações já feitas)
-        │       └── Se não encontrar: clicar em "Cadastrar novo"
-        │              ├── Pergunta: "É membro da Igreja Gileade?" (Sim / Não)
-        │              ├── Preenche cadastro completo (mesma estrutura de MemberRequestForm)
-        │              ├── Opção "Adicionar cônjuge" → abre 2º cadastro com endereço/CR/condomínio compartilhados
-        │              └── Salva como solicitação (status pendente) e já fica disponível na lista
-        │
-        ├── Seleciona MÃE (mesma lógica)
-        │
-        ├── Dados da CRIANÇA a ser apresentada (nome, data nasc., gênero)
-        │
-        └── Confirma inscrição da apresentação
-```
+### 3. Nova aba "Despesas" (igual à dos eventos)
+- Cadastro de despesas do módulo (descrição, categoria, valor, data, forma de pagamento, comprovante opcional, observações).
+- Filtrado pelo mês selecionado.
+- Cards de resumo: Total de despesas, Saldo (Arrecadado − Despesas).
+- Mesmo padrão visual do `TeologiaDespesasTab`.
 
-## Mudanças no código
+### 4. Nova aba "Lançamentos" + botão "Lançar Contribuição"
+- Botão grande "Lançar Contribuição" abre um diálogo com 2 modos:
+  - **Por Membro**: busca o membro (igual ao MemberSearchSelect já usado em outros módulos) — preenche valor, data, forma de pagamento, observações.
+  - **Por Condomínio**: lista os condomínios cadastrados, permite escolher um e lançar o valor ofertado por aquele condomínio no mês.
+- Os lançamentos do mês aparecem em uma tabela com filtros, podem ser editados ou excluídos.
+- Lançamentos manuais entram no total arrecadado do mês (junto com as contribuições registradas dos contribuintes fixos).
 
-### 1. `src/components/agenda/EventoFormDialog.tsx`
-- Quando `tipo_evento === 'apresentacao_criancas'`:
-  - Marcar evento como tendo formulário de inscrição habilitado.
-  - Mostrar bloco extra na ficha do evento com link público `/inscricao/apresentacao/:id`, botão **Copiar link** e botão **Compartilhar** (igual ao `CompartilharInscricaoDialog` existente, mas apontando para a rota nova).
+### 5. Relatório mensal completo
+- Nova aba "Relatório" (ou botão "Gerar Relatório PDF" no Fechamento).
+- O relatório do mês selecionado traz:
+  - Cabeçalho com mês, cotação usada, totais em R$ e MZN.
+  - Lista de contribuintes fixos (quem pagou, quem está pendente).
+  - Lista de lançamentos avulsos por membro.
+  - Lista de ofertas por condomínio.
+  - Lista de despesas do mês.
+  - Saldo final (Arrecadado − Despesas) em R$ e MZN.
+  - Equivalência em poder de compra (mantém os itens já existentes).
+- Exportação em PDF (mesmo padrão dos demais relatórios do sistema) e Excel.
 
-### 2. Nova página `src/pages/InscricaoApresentacaoCriancas.tsx`
-- Rota pública: `/inscricao/apresentacao/:eventoId` (registrada antes das rotas dinâmicas em `App.tsx`).
-- Estrutura de formulário com 3 blocos: **Pai**, **Mãe**, **Criança**.
-- Cada bloco de pai/mãe usa um componente reutilizável `<ResponsavelSelect />`:
-  - Combo com busca em `members_safe` + em `member_requests` aprovadas e pendentes (apenas `nome`, `id`).
-  - Botão "Não encontrei → Cadastrar novo" abre dialog inline.
-- Submit cria registro em `inscricoes_eventos` (ou tabela específica `apresentacao_criancas_inscricoes` — ver decisão técnica) referenciando `pai_id`, `mae_id` (member ou request) e dados da criança.
+---
 
-### 3. Cadastro inline do responsável (novo componente)
-- `src/components/inscricao-apresentacao/CadastroResponsavelDialog.tsx`
-- Reaproveita validações/máscaras de `MemberRequestForm.tsx`.
-- Etapas:
-  1. Pergunta inicial: "É membro da Igreja Gileade?" (sim/não).
-  2. Formulário completo de membro (nome, CPF, data nasc., gênero, WhatsApp, endereço, CR/condomínio, foto, etc.).
-  3. Switch **"Adicionar cônjuge"** → abre segundo formulário pré-preenchendo endereço, CR/condomínio, telefone alternativo do casal.
-- Ao salvar:
-  - Chama edge function `criar-solicitacao-membro` (já existe) para gravar como `member_requests` com status `pendente`.
-  - Retorna `id` da solicitação para ser usado imediatamente como `pai_id`/`mae_id` na inscrição da apresentação.
+## Mudanças no banco de dados
 
-### 4. Backend
-- **Não cria nova tabela** se possível: usar `inscricoes_eventos` com colunas existentes + JSONB `dados_extras` para guardar `pai_id`, `mae_id`, `crianca_nome`, `crianca_data_nasc`, `crianca_genero`. Se preferirem rastreabilidade dedicada, criar `apresentacao_criancas_inscricoes` (perguntar antes — ver dúvidas).
-- Edge function `criar-solicitacao-membro` precisa aceitar parâmetro opcional `conjuge: {...}` para gravar duas solicitações vinculadas (campo `solicitacao_vinculada_id`).
-- Lista suspensa do responsável usa view/RPC pública (`members_safe` + `member_requests` filtradas) — criar RPC `buscar_responsaveis_publico(termo text)` com `security definer` para evitar expor dados sensíveis.
+- **Nova tabela** `missoes_mocambique_despesas` (descrição, categoria, valor, data, forma de pagamento, comprovante, observações, mes_referencia).
+- **Nova tabela** `missoes_mocambique_lancamentos` para lançamentos avulsos:
+  - Pode referenciar `member_id` **ou** `condominio_id` **ou** nome manual.
+  - Campos: valor, data, forma de pagamento, mes_referencia, observações.
+- **Nova tabela** `missoes_mocambique_cotacao_cache` (1 linha) para guardar a última cotação automática + timestamp, evitando chamadas repetidas.
+- Regras de acesso (RLS): mesmo padrão das tabelas atuais do módulo.
 
-### 5. `src/App.tsx`
-- Registrar rota `/inscricao/apresentacao/:eventoId` antes de rotas dinâmicas.
+## Mudanças técnicas
 
-## Pontos a confirmar antes da implementação
+- Nova função no servidor `obter-cotacao-mzn` que consulta a API pública `https://api.frankfurter.app/latest?from=BRL&to=MZN` (gratuita, sem chave). Se falhar, mantém o último valor em cache.
+- Layout das abas em Missões muda de 2 para 5 abas: Contribuintes • Lançamentos • Despesas • Fechamento • Relatório.
 
-1. **Persistência da inscrição da apresentação**: usar a tabela genérica `inscricoes_eventos` com campos extras em JSONB, ou criar tabela dedicada `apresentacao_criancas_inscricoes`?
-2. **Aprovação do cadastro pendente**: o cadastro recém-criado deve aparecer na lista suspensa **imediatamente** (mesmo pendente) ou só depois da aprovação? O texto sugere "imediatamente" — confirmar.
-3. **Cadastro do cônjuge**: deve ser obrigatório ou opcional? Se a pessoa marcar "casada", o sistema obriga preencher o cônjuge?
-4. **Foto**: o cadastro público hoje exige foto. Para esse fluxo expresso vamos manter a foto obrigatória ou deixar opcional (já que o casal pode estar fazendo no celular sem fotos prontas)?
+## O que NÃO vou mexer (a menos que você peça)
 
-Após confirmar esses pontos, parto para a implementação.
+- Lógica de envio de WhatsApp de agradecimento já existente.
+- Cadastro de contribuintes fixos (continua igual).
+- Layout do dashboard de fechamento (apenas adiciono "despesas" e "saldo" nos cards).
+
+---
+
+Posso seguir com tudo isso?
