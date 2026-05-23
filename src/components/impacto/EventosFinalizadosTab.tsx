@@ -354,6 +354,8 @@ const EventosFinalizadosTab = () => {
     doc.setTextColor(60);
     const resumoLinhas: Array<[string, string]> = [
       ["Inscrições", String(stats.total)],
+      ["Participantes", String(stats.participantes)],
+      ["Equipe / Apoio", String(stats.equipe)],
       ["Total Previsto (Entradas)", formatCurrency(stats.receita)],
       ["Total Recebido", formatCurrency(stats.recebido)],
       ["A Receber", formatCurrency(stats.aReceber)],
