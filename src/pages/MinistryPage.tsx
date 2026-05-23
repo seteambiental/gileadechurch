@@ -400,6 +400,13 @@ const MinistryPage = () => {
   const hasEscalasServico = ministry.hasEscalasServico && ministryFromDb?.id;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
 
+  // Estado compartilhado do módulo Missões
+  const [mmMesRef, setMmMesRef] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
