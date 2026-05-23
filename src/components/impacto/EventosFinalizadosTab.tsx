@@ -209,19 +209,22 @@ const EventosFinalizadosTab = () => {
 
   // Stats per expanded event
   const stats = useMemo(() => {
-    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, receita: 0, recebido: 0, aReceber: 0 };
-    let masc = 0, fem = 0, receita = 0, recebido = 0, aReceber = 0;
+    if (!inscricoes.length) return { total: 0, masc: 0, fem: 0, participantes: 0, equipe: 0, receita: 0, recebido: 0, aReceber: 0 };
+    let masc = 0, fem = 0, participantes = 0, equipe = 0, receita = 0, recebido = 0, aReceber = 0;
     inscricoes.forEach((i: any) => {
       const g = (i.genero || "").toLowerCase();
       if (g === "m" || g === "masculino") masc++;
       else if (g === "f" || g === "feminino") fem++;
+      const tipo = (i.tipo_inscricao || "").toLowerCase();
+      if (tipo === "membro" || tipo === "nao_membro") participantes++;
+      else if (tipo === "equipe" || tipo === "familia" || tipo === "ministrador") equipe++;
       receita += parseFloat(i.valor_inscricao) || 0;
       recebido += parseFloat(i.valor_pago) || 0;
       const norm = normalizeStatus(i.status_pagamento);
       if (norm === "pendente") aReceber += parseFloat(i.valor_inscricao) || 0;
       else if (norm === "parcial") aReceber += Math.max(0, (parseFloat(i.valor_inscricao) || 0) - (parseFloat(i.valor_pago) || 0));
     });
-    return { total: inscricoes.length, masc, fem, receita, recebido, aReceber };
+    return { total: inscricoes.length, masc, fem, participantes, equipe, receita, recebido, aReceber };
   }, [inscricoes]);
 
   const totalDespesas = useMemo(() => {
