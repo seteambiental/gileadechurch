@@ -28,12 +28,14 @@ import { Switch } from "@/components/ui/switch";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField } from "@/lib/text-utils";
 import { ClearableSelect } from "@/components/ui/clearable-select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
   member_id: z.string().optional(),
   nome_manual: z.string().optional(),
   valor_mensal: z.string().min(1, "Valor é obrigatório"),
   dia_vencimento: z.string().min(1, "Dia de vencimento é obrigatório"),
+  forma_contribuicao: z.string().optional(),
   ativo: z.boolean(),
   data_inicio: z.string().min(1, "Data de início é obrigatória"),
   observacoes: z.string().optional(),
@@ -47,6 +49,7 @@ interface Contribuinte {
   nome_manual: string | null;
   valor_mensal: number;
   dia_vencimento: number | null;
+  forma_contribuicao: string | null;
   ativo: boolean;
   data_inicio: string;
   observacoes: string | null;
@@ -142,6 +145,7 @@ export function ContribuinteFormDialog({
       nome_manual: "",
       valor_mensal: "",
       dia_vencimento: "10",
+      forma_contribuicao: "PIX",
       ativo: true,
       data_inicio: todayDateStr(),
       observacoes: "",
@@ -155,6 +159,7 @@ export function ContribuinteFormDialog({
         nome_manual: contribuinte.nome_manual || "",
         valor_mensal: String(contribuinte.valor_mensal),
         dia_vencimento: String(contribuinte.dia_vencimento || 10),
+        forma_contribuicao: contribuinte.forma_contribuicao || "PIX",
         ativo: contribuinte.ativo,
         data_inicio: contribuinte.data_inicio,
         observacoes: contribuinte.observacoes || "",
@@ -165,6 +170,7 @@ export function ContribuinteFormDialog({
         nome_manual: "",
         valor_mensal: "",
         dia_vencimento: "10",
+        forma_contribuicao: "PIX",
         ativo: true,
         data_inicio: todayDateStr(),
         observacoes: "",
@@ -179,6 +185,7 @@ export function ContribuinteFormDialog({
         nome_manual: data.nome_manual ? formatNameField(data.nome_manual) : null,
         valor_mensal: parseFloat(data.valor_mensal),
         dia_vencimento: parseInt(data.dia_vencimento),
+        forma_contribuicao: data.forma_contribuicao || null,
         ativo: data.ativo,
         data_inicio: data.data_inicio,
         observacoes: data.observacoes || null,
@@ -272,6 +279,29 @@ export function ContribuinteFormDialog({
                   <p className="text-xs text-muted-foreground">
                     Dia do mês em que será enviado o lembrete (1 dia antes)
                   </p>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="forma_contribuicao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Forma de Contribuição</FormLabel>
+                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="PIX">PIX</SelectItem>
+                      <SelectItem value="DÉBITO">Débito</SelectItem>
+                      <SelectItem value="CRÉDITO">Crédito</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

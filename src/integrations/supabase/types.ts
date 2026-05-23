@@ -5797,6 +5797,7 @@ export type Database = {
           created_at: string
           data_inicio: string
           dia_vencimento: number | null
+          forma_contribuicao: string | null
           id: string
           lembrete_enviado_mes: string | null
           member_id: string | null
@@ -5810,6 +5811,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           dia_vencimento?: number | null
+          forma_contribuicao?: string | null
           id?: string
           lembrete_enviado_mes?: string | null
           member_id?: string | null
@@ -5823,6 +5825,7 @@ export type Database = {
           created_at?: string
           data_inicio?: string
           dia_vencimento?: number | null
+          forma_contribuicao?: string | null
           id?: string
           lembrete_enviado_mes?: string | null
           member_id?: string | null
