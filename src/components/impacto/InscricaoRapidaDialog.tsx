@@ -210,9 +210,16 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
               id="manual"
               checked={isManual}
               onCheckedChange={(v) => {
-                setIsManual(!!v);
+                const novo = !!v;
+                setIsManual(novo);
                 setSelectedMember(null);
                 setSearch("");
+                if (novo && tipoInscricao === "membro") {
+                  setTipoInscricao("nao_membro");
+                }
+                if (!novo && tipoInscricao === "nao_membro") {
+                  setTipoInscricao("membro");
+                }
               }}
             />
             <Label htmlFor="manual" className="cursor-pointer text-sm">
@@ -334,18 +341,32 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
 
           <div className="space-y-2">
             <Label>Tipo de Inscrição</Label>
-            <Select value={tipoInscricao} onValueChange={setTipoInscricao}>
+            <Select
+              value={tipoInscricao}
+              onValueChange={(v) => {
+                if (v === "membro" && isManual) {
+                  toast.error("Para marcar como Membro, busque a pessoa na lista. Visitantes ficam como Não Membro até serem cadastrados.");
+                  return;
+                }
+                setTipoInscricao(v);
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="membro">Membro</SelectItem>
+                <SelectItem value="membro" disabled={isManual}>Membro</SelectItem>
                 <SelectItem value="nao_membro">Não Membro</SelectItem>
                 <SelectItem value="familia">Líderes e Anfitriões</SelectItem>
                 <SelectItem value="equipe">Equipe (Apoio/Serviço)</SelectItem>
                 <SelectItem value="ministrador">Ministrador</SelectItem>
               </SelectContent>
             </Select>
+            {isManual && (
+              <p className="text-xs text-muted-foreground">
+                Visitantes não podem ser do tipo "Membro". Quando se cadastrarem, poderão ser reclassificados.
+              </p>
+            )}
           </div>
 
           <Button
