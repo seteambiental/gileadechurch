@@ -621,6 +621,18 @@ const EventosFinalizadosTab = () => {
                             </div>
                           </div>
 
+                          {/* Botão de relatório */}
+                          <div className="flex justify-end">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); handleGerarRelatorio(evento); }}
+                            >
+                              <FileText className="w-3.5 h-3.5 mr-1" />
+                              Gerar Relatório (PDF)
+                            </Button>
+                          </div>
+
                           {/* Search filters */}
                           <div className="flex flex-wrap gap-3 items-end">
                             <SearchInput
