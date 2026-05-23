@@ -211,16 +211,32 @@ const EventosFinalizadosTab = () => {
         (i.nome || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
       );
     }
-    if (searchStatus !== "todos") {
-      result = result.filter((i: any) => normalizeStatus(i.status_pagamento) === searchStatus);
+    if (filtroTipo.size < TIPO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroTipo.has(TIPOS_LABELS[i.tipo_inscricao] || "—"));
+    }
+    if (filtroGenero.size < GENERO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroGenero.has(resolveGenero(i.genero)));
+    }
+    if (filtroStatus.size < STATUS_OPTIONS.length) {
+      result = result.filter((i: any) => filtroStatus.has(getStatusLabel(i.status_pagamento)));
+    }
+    if (filtroConverteu.size < SIM_NAO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroConverteu.has(i.converteu ? "Sim" : "Não"));
+    }
+    if (filtroReconciliou.size < SIM_NAO_OPTIONS.length) {
+      result = result.filter((i: any) => filtroReconciliou.has(i.reconciliou ? "Sim" : "Não"));
     }
     return result;
-  }, [inscricoes, searchNome, searchStatus]);
+  }, [inscricoes, searchNome, filtroTipo, filtroGenero, filtroStatus, filtroConverteu, filtroReconciliou]);
 
   const toggleExpand = (id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
     setSearchNome("");
-    setSearchStatus("todos");
+    setFiltroTipo(new Set(TIPO_OPTIONS));
+    setFiltroGenero(new Set(GENERO_OPTIONS));
+    setFiltroStatus(new Set(STATUS_OPTIONS));
+    setFiltroConverteu(new Set(SIM_NAO_OPTIONS));
+    setFiltroReconciliou(new Set(SIM_NAO_OPTIONS));
   };
 
   // Stats per expanded event
