@@ -233,6 +233,9 @@ serve(async (req) => {
     const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
       ? (body.tipoInscricaoFiltro as string[])
       : null;
+    const statusEspiritualFiltro = Array.isArray(body.statusEspiritualFiltro)
+      ? (body.statusEspiritualFiltro as string[])
+      : null;
     // Tipo da mensagem para auditoria (vindo do template selecionado).
     // Se não vier, mantém comportamento antigo (emergencia_inicial/manual).
     const tipoMensagemAudit = (body.tipoMensagem as string) || null;
@@ -297,6 +300,7 @@ serve(async (req) => {
       inscricaoId,
       tipoInscricaoFiltro,
       inscricaoIds,
+      statusEspiritualFiltro,
     );
     const dataEventoFmt = formatarDataPt(evento.data_inicio);
     let enviados = 0;
