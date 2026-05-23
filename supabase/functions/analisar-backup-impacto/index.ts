@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { evento_id, limit = 30 } = await req.json();
+    const { evento_id, limit = 30, arquivo, incluir_linhas = false } = await req.json();
 
     if (!evento_id) {
       return new Response(JSON.stringify({ error: "evento_id é obrigatório" }), {
@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const summaries: BackupSummary[] = [];
 
-    for (const file of files || []) {
+    for (const file of (files || []).filter((f) => !arquivo || f.name === arquivo)) {
       if (!file.name.endsWith(".json")) continue;
 
       const { data: blob, error: downloadError } = await supabase.storage
@@ -94,6 +94,7 @@ serve(async (req) => {
           total: inscricoesEventosRows.length,
           existe_no_backup: Array.isArray(backup.inscricoes_eventos),
         },
+        ...(incluir_linhas ? { linhas: impactoRows } : {}),
       });
     }
 
