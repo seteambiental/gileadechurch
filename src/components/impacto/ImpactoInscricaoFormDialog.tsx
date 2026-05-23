@@ -457,7 +457,18 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               <Checkbox
                 id="is_manual"
                 checked={isManual}
-                onCheckedChange={(v) => setIsManual(!!v)}
+                onCheckedChange={(v) => {
+                  const novo = !!v;
+                  setIsManual(novo);
+                  // Regra: manual = não é membro. Força tipo "nao_membro".
+                  if (novo && tipoInscricao === "membro") {
+                    setTipoInscricao("nao_membro");
+                  }
+                  // Saindo do manual, se ainda não escolheu, volta para "membro".
+                  if (!novo && tipoInscricao === "nao_membro") {
+                    setTipoInscricao("membro");
+                  }
+                }}
               />
               <Label htmlFor="is_manual" className="cursor-pointer">
                 Adicionar manualmente (não é membro)
@@ -604,6 +615,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             <div>
               <Label>Tipo de Inscrição *</Label>
               <Select value={tipoInscricao} onValueChange={(v) => {
+                // Bloqueia escolher "membro" se está em modo manual (não tem cadastro)
+                if (v === "membro" && isManual) {
+                  toast.error("Para marcar como Membro, selecione a pessoa na lista de membros cadastrados. Caso contrário, mantenha como Não Membro.");
+                  return;
+                }
                 setTipoInscricao(v);
                 // Auto-fill valorInscricao (not valorPago) based on type
                 const vpt = evento?.valores_por_tipo as Record<string, string> | null;
@@ -618,12 +634,17 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
                 </SelectTrigger>
                 <SelectContent>
                   {tiposPermitidos.map((t) => (
-                    <SelectItem key={t} value={t}>
+                    <SelectItem key={t} value={t} disabled={t === "membro" && isManual}>
                       {TIPOS_INSCRICAO_LABELS[t] || t}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {isManual && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Como a pessoa não está na lista de membros, o tipo "Membro" fica indisponível. Ela será cadastrada como Não Membro até efetivar o cadastro.
+                </p>
+              )}
               <div className="mt-2">
                 <Label className="text-xs text-muted-foreground">Valor da Inscrição (R$)</Label>
                 <Input
