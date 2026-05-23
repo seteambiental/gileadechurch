@@ -451,7 +451,8 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
               </TableBody>
             </Table>
           </div>
-          <p className="text-[11px] text-muted-foreground md:col-span-2">
+          </div>
+          <p className="text-[11px] text-muted-foreground">
             Valores médios de referência em Moçambique (2024/2025). Podem variar conforme região e câmbio.
           </p>
         </CardContent>
