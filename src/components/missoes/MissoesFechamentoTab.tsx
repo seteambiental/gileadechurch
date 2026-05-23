@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { todayDateStr } from "@/lib/date-utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -89,6 +89,25 @@ export function MissoesFechamentoTab() {
   const queryClient = useQueryClient();
   const [mesAtual] = useState(() => format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [cotacaoInput, setCotacaoInput] = useState(String(DEFAULT_COTACAO));
+  const [cotacaoTocada, setCotacaoTocada] = useState(false);
+
+  // Cotação automática BRL → MZN (mesma fonte das outras abas)
+  const { data: cotacaoAuto } = useQuery({
+    queryKey: ["mm-cotacao-auto"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("obter-cotacao-mzn");
+      if (error) throw error;
+      return data as { cotacao: number };
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+
+  // Quando a cotação automática chega, atualiza o input (se o usuário não tiver editado manualmente)
+  useEffect(() => {
+    if (cotacaoAuto?.cotacao && !cotacaoTocada) {
+      setCotacaoInput(String(cotacaoAuto.cotacao));
+    }
+  }, [cotacaoAuto?.cotacao, cotacaoTocada]);
 
   const { data: contribuintes } = useQuery({
     queryKey: ["missoes-contribuintes"],
@@ -213,7 +232,7 @@ export function MissoesFechamentoTab() {
                 type="number"
                 step="0.01"
                 value={cotacaoInput}
-                onChange={(e) => setCotacaoInput(e.target.value)}
+                onChange={(e) => { setCotacaoInput(e.target.value); setCotacaoTocada(true); }}
                 className="w-24"
               />
               <span className="text-sm text-muted-foreground">MZN</span>
