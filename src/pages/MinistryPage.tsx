@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive, DollarSign } from "lucide-react";
+import { ArrowLeft, Loader2, LucideIcon, Megaphone, Car, ClipboardList, Crown, Shield, Zap, DoorOpen, BookOpen as BookOpenIcon, Award, Globe, UserPlus, Share2, Archive, DollarSign, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,6 +59,7 @@ import { MissoesLancamentosTab } from "@/components/missoes/MissoesLancamentosTa
 import { MissoesDespesasTab } from "@/components/missoes/MissoesDespesasTab";
 import { MissoesRelatorioTab } from "@/components/missoes/MissoesRelatorioTab";
 import { MissoesFiltroHeader } from "@/components/missoes/MissoesFiltroHeader";
+import { MissoesConfigTab } from "@/components/missoes/MissoesConfigTab";
 import { AprovacaoCandidaturasTab } from "@/components/ministerio/AprovacaoCandidaturasTab";
 import { MinisterioAgendaTab } from "@/components/ministerio/MinisterioAgendaTab";
 import { MinisterioMembrosTab } from "@/components/ministerio/MinisterioMembrosTab";
@@ -473,6 +474,10 @@ const MinistryPage = () => {
                     <BookOpenIcon className="w-4 h-4" />
                     <span className="hidden sm:inline">Relatório</span>
                   </TabsTrigger>
+                  <TabsTrigger value="config" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    <span className="hidden sm:inline">Config</span>
+                  </TabsTrigger>
                 </>
               ) : isImpacto ? (
                 <>
@@ -659,6 +664,9 @@ const MinistryPage = () => {
                 <TabsContent value="relatorio" forceMount className={activeTab !== "relatorio" ? "hidden" : ""}>
                   <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
                   <MissoesRelatorioTab mesRef={mmMesRef} cotacao={mmCotacao} />
+                </TabsContent>
+                <TabsContent value="config" forceMount className={activeTab !== "config" ? "hidden" : ""}>
+                  <MissoesConfigTab />
                 </TabsContent>
                 {/* Conteúdos antigos removidos abaixo */}
                 {false && (<>
