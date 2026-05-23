@@ -162,12 +162,9 @@ const AppDashboard = () => {
   const { data: totalMembros } = useQuery({
     queryKey: ["total-membros-counter"],
     queryFn: async () => {
-      const { count, error } = await supabase
-        .from("members")
-        .select("id", { count: "exact", head: true })
-        .or("excluido.is.null,excluido.eq.false");
+      const { data, error } = await supabase.rpc("get_members_count");
       if (error) return 0;
-      return count || 0;
+      return Number(data) || 0;
     },
   });
 
