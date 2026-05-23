@@ -34,13 +34,29 @@ import {
 const DEFAULT_COTACAO = 10.5;
 
 // Referências de poder de compra em Moçambique
-const REFERENCIAS_PODER_COMPRA = [
-  { item: "Refeição simples", valor_mzn: 150, emoji: "🍽️" },
-  { item: "Transporte urbano (chapa)", valor_mzn: 20, emoji: "🚌" },
-  { item: "1kg de arroz", valor_mzn: 80, emoji: "🍚" },
-  { item: "1kg de frango", valor_mzn: 250, emoji: "🍗" },
-  { item: "Água (20L)", valor_mzn: 30, emoji: "💧" },
-  { item: "Bíblia impressa", valor_mzn: 500, emoji: "📖" },
+// Mesmos itens do Relatório (salários + materiais de construção)
+const REFERENCIAS_PODER_COMPRA: { item: string; valor_mzn: number; emoji: string; unidade: string }[] = [
+  // Salários / sustento mensal
+  { item: "Salário mínimo nacional", valor_mzn: 5000, emoji: "💵", unidade: "meses" },
+  { item: "Trabalhador rural / agricultura", valor_mzn: 5500, emoji: "🌾", unidade: "meses" },
+  { item: "Empregada doméstica", valor_mzn: 7000, emoji: "🧺", unidade: "meses" },
+  { item: "Pedreiro / servente de obra", valor_mzn: 15000, emoji: "👷", unidade: "meses" },
+  { item: "Professor do ensino primário", valor_mzn: 20000, emoji: "👩‍🏫", unidade: "meses" },
+  { item: "Enfermeiro", valor_mzn: 25000, emoji: "🩺", unidade: "meses" },
+  { item: "Pastor local (apoio mensal)", valor_mzn: 12000, emoji: "⛪", unidade: "meses" },
+  { item: "Cesta básica familiar (mês)", valor_mzn: 8000, emoji: "🛒", unidade: "cestas" },
+  // Materiais de construção
+  { item: "Saco de cimento 50 kg", valor_mzn: 650, emoji: "🧱", unidade: "sacos" },
+  { item: "Bloco de cimento 15 cm", valor_mzn: 25, emoji: "🟪", unidade: "unid." },
+  { item: "Tijolo queimado", valor_mzn: 10, emoji: "🧱", unidade: "unid." },
+  { item: "Chapa de zinco 3 m", valor_mzn: 900, emoji: "🏠", unidade: "chapas" },
+  { item: "Telha lusa", valor_mzn: 35, emoji: "🏚️", unidade: "unid." },
+  { item: "Vergalhão de ferro 12 mm (12 m)", valor_mzn: 750, emoji: "🔩", unidade: "barras" },
+  { item: "Areia para construção", valor_mzn: 1500, emoji: "⏳", unidade: "m³" },
+  { item: "Brita / pedra britada", valor_mzn: 2500, emoji: "🪨", unidade: "m³" },
+  { item: "Porta de madeira simples", valor_mzn: 3500, emoji: "🚪", unidade: "unid." },
+  { item: "Janela de alumínio simples", valor_mzn: 4500, emoji: "🪟", unidade: "unid." },
+  { item: "Bíblia em português", valor_mzn: 500, emoji: "📖", unidade: "exemplares" },
 ];
 
 export function MissoesFechamentoTab() {
@@ -231,7 +247,10 @@ export function MissoesFechamentoTab() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             {REFERENCIAS_PODER_COMPRA.map((ref) => {
-              const quantidade = Math.floor(totalMZN / ref.valor_mzn);
+              const bruto = ref.valor_mzn > 0 ? totalMZN / ref.valor_mzn : 0;
+              const quantidade = bruto >= 100
+                ? bruto.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+                : bruto.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
               return (
                 <div
                   key={ref.item}
@@ -244,7 +263,7 @@ export function MissoesFechamentoTab() {
                       MZN {ref.valor_mzn} cada
                     </p>
                     <p className="text-lg font-bold text-primary">
-                      = {quantidade.toLocaleString("pt-BR")} unidades
+                      = {quantidade} {ref.unidade}
                     </p>
                   </div>
                 </div>
