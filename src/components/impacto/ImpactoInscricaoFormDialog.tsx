@@ -441,6 +441,10 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       toast.error("Digite o nome do participante");
       return;
     }
+    if (isManual && tipoInscricao === "membro") {
+      toast.error("Inscrição manual não pode ser do tipo Membro. Selecione a pessoa na lista de membros ou mantenha como Não Membro.");
+      return;
+    }
     mutation.mutate();
   };
 
