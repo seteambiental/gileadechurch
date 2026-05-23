@@ -17,6 +17,15 @@ import { savePDF, exportGenericToExcel } from "@/lib/export";
 interface Props { mesRef: string; cotacao: number }
 
 // Referências de preços médios em Moçambique (MZN). Valores aproximados 2024/2025.
+const ALIMENTACAO_MZ: { item: string; valor: number; unidade: string }[] = [
+  { item: "Refeição simples", valor: 150, unidade: "unid." },
+  { item: "Transporte urbano (chapa)", valor: 20, unidade: "viagens" },
+  { item: "1kg de arroz", valor: 80, unidade: "kg" },
+  { item: "1kg de frango", valor: 250, unidade: "kg" },
+  { item: "Água (20L)", valor: 30, unidade: "garrafões" },
+  { item: "Bíblia impressa", valor: 500, unidade: "exemplares" },
+];
+
 const SALARIOS_MZ: { cargo: string; valor: number }[] = [
   { cargo: "Salário mínimo nacional", valor: 5000 },
   { cargo: "Trabalhador rural / agricultura", valor: 5500 },
