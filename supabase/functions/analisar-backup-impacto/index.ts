@@ -28,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { evento_id, limit = 30, arquivo, incluir_linhas = false } = await req.json();
+      const { evento_id, limit = 30, arquivo, incluir_linhas = false, gerar_sql = false } = await req.json();
 
     if (!evento_id) {
       return new Response(JSON.stringify({ error: "evento_id é obrigatório" }), {
@@ -80,6 +80,26 @@ serve(async (req) => {
         if (row.referencia) referencias.push(String(row.referencia));
       }
 
+      const columns = [
+        "id", "evento_id", "member_id", "nome", "telefone", "email", "genero", "data_nascimento",
+        "observacoes", "valor_pago", "status_pagamento", "forma_pagamento", "data_pagamento",
+        "created_at", "updated_at", "pagamentos", "tipo_inscricao", "valor_inscricao", "referencia",
+        "previsoes_pagamento", "aprovado", "telefone_emergencia", "nome_responsavel", "telefone_responsavel",
+      ];
+
+      const sqlValue = (value: unknown, jsonb = false) => {
+        if (value === null || value === undefined) return "NULL";
+        if (typeof value === "number") return Number.isFinite(value) ? String(value) : "NULL";
+        if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+        const text = jsonb ? JSON.stringify(value) : String(value);
+        return `'${text.replace(/'/g, "''")}'${jsonb ? "::jsonb" : ""}`;
+      };
+
+      const valuesSql = impactoRows.map((row: any) => `(${columns.map((col) => {
+        const isJsonb = col === "pagamentos" || col === "previsoes_pagamento";
+        return sqlValue(row[col], isJsonb);
+      }).join(", ")})`).join(",\n");
+
       summaries.push({
         arquivo: file.name,
         criado_em: file.created_at || null,
@@ -95,6 +115,9 @@ serve(async (req) => {
           existe_no_backup: Array.isArray(backup.inscricoes_eventos),
         },
         ...(incluir_linhas ? { linhas: impactoRows } : {}),
+        ...(gerar_sql && valuesSql ? {
+          sql: `INSERT INTO public.impacto_inscricoes (${columns.join(", ")})\nVALUES\n${valuesSql}\nON CONFLICT (id) DO NOTHING;`,
+        } : {}),
       });
     }
 
