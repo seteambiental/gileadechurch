@@ -290,6 +290,7 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
               { header: "Nome", accessor: (row: any) => getNome(row) },
               { header: "Valor Mensal", accessor: (row: any) => `R$ ${Number(row.valor_mensal).toFixed(2).replace(".", ",")}` },
               { header: "Dia Venc.", accessor: (row: any) => `Dia ${row.dia_vencimento || 10}` },
+              { header: "Forma", accessor: (row: any) => row.forma_contribuicao || "—" },
               { header: "Status", accessor: (row: any) => row.ativo ? "Ativo" : "Inativo" },
               { header: "Data Início", accessor: (row: any) => row.data_inicio },
               { header: "Observações", accessor: (row: any) => row.observacoes || "" },
@@ -312,6 +313,7 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
                 <TableHead>Nome</TableHead>
                 <TableHead>Valor Mensal</TableHead>
                 <TableHead>Dia Venc.</TableHead>
+                <TableHead>Forma</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Mês Atual</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -331,6 +333,13 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
                     </TableCell>
                     <TableCell>
                       Dia {contribuinte.dia_vencimento || 10}
+                    </TableCell>
+                    <TableCell>
+                      {contribuinte.forma_contribuicao ? (
+                        <Badge variant="outline">{contribuinte.forma_contribuicao}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={contribuinte.ativo ? "default" : "secondary"}>
