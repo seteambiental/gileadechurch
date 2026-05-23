@@ -37,12 +37,31 @@ const DEFAULT_COTACAO = 10.5;
 // Mesmos itens do Relatório, agrupados por categoria
 const REFERENCIAS_PODER_COMPRA: { item: string; valor_mzn: number; emoji: string; unidade: string; categoria: string }[] = [
   // Itens de alimentação (topo)
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Refeição simples", valor_mzn: 150, emoji: "🍽️", unidade: "unidades" },
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Transporte urbano (chapa)", valor_mzn: 20, emoji: "🚌", unidade: "unidades" },
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "1kg de arroz", valor_mzn: 80, emoji: "🍚", unidade: "kg" },
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "1kg de frango", valor_mzn: 250, emoji: "🍗", unidade: "kg" },
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Água (20L)", valor_mzn: 30, emoji: "💧", unidade: "garrafões" },
-  { categoria: "ÍTENS DE ALIMENTAÇÃO", item: "Bíblia impressa", valor_mzn: 500, emoji: "📖", unidade: "exemplares" },
+  // Cereais, Grãos e Mercearia Básica
+  { categoria: "CESTA BÁSICA", item: "Arroz (saco 25 kg)", valor_mzn: 1825, emoji: "🍚", unidade: "sacos" },
+  { categoria: "CESTA BÁSICA", item: "Farinha de milho (12,5 kg)", valor_mzn: 600, emoji: "🌽", unidade: "sacos" },
+  { categoria: "CESTA BÁSICA", item: "Farinha de trigo (1 kg)", valor_mzn: 75, emoji: "🌾", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Feijão manteiga (1 kg)", valor_mzn: 110, emoji: "🫘", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Óleo alimentar (5 L)", valor_mzn: 750, emoji: "🛢️", unidade: "garrafas" },
+  { categoria: "CESTA BÁSICA", item: "Açúcar (6 kg)", valor_mzn: 400, emoji: "🍬", unidade: "pacotes" },
+  { categoria: "CESTA BÁSICA", item: "Massa esparguete (500 g)", valor_mzn: 45, emoji: "🍝", unidade: "pacotes" },
+  { categoria: "CESTA BÁSICA", item: "Pão (carcaça)", valor_mzn: 12, emoji: "🥖", unidade: "unidades" },
+  // Carnes e Proteínas
+  { categoria: "CESTA BÁSICA", item: "Carne de vaca (1 kg)", valor_mzn: 562, emoji: "🥩", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Frango inteiro nacional (1,8 kg)", valor_mzn: 410, emoji: "🍗", unidade: "unidades" },
+  { categoria: "CESTA BÁSICA", item: "Coxas de frango (pacote 2 kg)", valor_mzn: 450, emoji: "🍗", unidade: "pacotes" },
+  { categoria: "CESTA BÁSICA", item: "Peixe carapau (1 kg)", valor_mzn: 165, emoji: "🐟", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Carne de porco (1 kg)", valor_mzn: 367, emoji: "🥓", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Ovos (dúzia)", valor_mzn: 120, emoji: "🥚", unidade: "dúzias" },
+  // Hortofrutícolas
+  { categoria: "CESTA BÁSICA", item: "Batata reno (saco 10 kg)", valor_mzn: 500, emoji: "🥔", unidade: "sacos" },
+  { categoria: "CESTA BÁSICA", item: "Cebola (saco 10 kg)", valor_mzn: 450, emoji: "🧅", unidade: "sacos" },
+  { categoria: "CESTA BÁSICA", item: "Tomate (1 kg)", valor_mzn: 70, emoji: "🍅", unidade: "kg" },
+  { categoria: "CESTA BÁSICA", item: "Repolho (unidade)", valor_mzn: 50, emoji: "🥬", unidade: "unidades" },
+  // Laticínios e Higiene
+  { categoria: "CESTA BÁSICA", item: "Leite longa vida (1 L)", valor_mzn: 112, emoji: "🥛", unidade: "litros" },
+  { categoria: "CESTA BÁSICA", item: "Manteiga / margarina (250 g)", valor_mzn: 95, emoji: "🧈", unidade: "unidades" },
+  { categoria: "CESTA BÁSICA", item: "Sabão em barra", valor_mzn: 45, emoji: "🧼", unidade: "unidades" },
   // Salários / sustento mensal
   { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Salário mínimo nacional", valor_mzn: 5000, emoji: "💵", unidade: "meses" },
   { categoria: "SALÁRIOS E SUSTENTO MENSAL", item: "Trabalhador rural / agricultura", valor_mzn: 5500, emoji: "🌾", unidade: "meses" },
