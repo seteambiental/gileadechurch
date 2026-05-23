@@ -5741,6 +5741,33 @@ export type Database = {
           },
         ]
       }
+      missoes_mocambique_config: {
+        Row: {
+          created_at: string
+          hora_envio: string
+          id: string
+          lembretes_ativos: boolean
+          template_mensagem: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          hora_envio?: string
+          id?: string
+          lembretes_ativos?: boolean
+          template_mensagem?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          hora_envio?: string
+          id?: string
+          lembretes_ativos?: boolean
+          template_mensagem?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       missoes_mocambique_contribuicoes: {
         Row: {
           agradecimento_enviado: boolean | null
