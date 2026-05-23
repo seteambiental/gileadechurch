@@ -276,6 +276,12 @@ const MinistryPage = () => {
   const [tabHistory, setTabHistory] = useState<string[]>([]);
   const [shareCasaisOpen, setShareCasaisOpen] = useState(false);
   const [impactoEventoId, setImpactoEventoId] = useState(initialEvento);
+  // Estado compartilhado do módulo Missões — precisa estar no topo (antes de early returns)
+  const [mmMesRef, setMmMesRef] = useState<string>(() => {
+    const n = new Date();
+    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
 
   // Sync URL with active tab so browser back restores correct tab
   useEffect(() => {
@@ -369,13 +375,6 @@ const MinistryPage = () => {
   }
 
   const ministry = slug ? ministriesData[slug] : null;
-
-  // Estado compartilhado do módulo Missões (declarado antes de qualquer early return)
-  const [mmMesRef, setMmMesRef] = useState<string>(() => {
-    const n = new Date();
-    return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
-  });
-  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
 
   if (!ministry) {
     return (
