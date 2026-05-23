@@ -3356,6 +3356,7 @@ export type Database = {
       impacto_inscricoes: {
         Row: {
           aprovado: boolean
+          converteu: boolean
           created_at: string
           data_nascimento: string | null
           data_pagamento: string | null
@@ -3370,6 +3371,7 @@ export type Database = {
           observacoes: string | null
           pagamentos: Json | null
           previsoes_pagamento: Json | null
+          reconciliou: boolean
           referencia: string | null
           status_pagamento: string
           telefone: string | null
@@ -3382,6 +3384,7 @@ export type Database = {
         }
         Insert: {
           aprovado?: boolean
+          converteu?: boolean
           created_at?: string
           data_nascimento?: string | null
           data_pagamento?: string | null
@@ -3396,6 +3399,7 @@ export type Database = {
           observacoes?: string | null
           pagamentos?: Json | null
           previsoes_pagamento?: Json | null
+          reconciliou?: boolean
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
@@ -3408,6 +3412,7 @@ export type Database = {
         }
         Update: {
           aprovado?: boolean
+          converteu?: boolean
           created_at?: string
           data_nascimento?: string | null
           data_pagamento?: string | null
@@ -3422,6 +3427,7 @@ export type Database = {
           observacoes?: string | null
           pagamentos?: Json | null
           previsoes_pagamento?: Json | null
+          reconciliou?: boolean
           referencia?: string | null
           status_pagamento?: string
           telefone?: string | null
