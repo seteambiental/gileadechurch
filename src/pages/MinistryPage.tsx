@@ -648,7 +648,7 @@ const MinistryPage = () => {
               <>
                 <TabsContent value="contribuintes" forceMount className={activeTab !== "contribuintes" ? "hidden" : ""}>
                   <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />
-                  <MissoesContribuintesTab mesRef={mmMesRef} />
+                  <MissoesContribuintesTab mesRef={mmMesRef} cotacao={mmCotacao} />
                 </TabsContent>
                 <TabsContent value="lancamentos" forceMount className={activeTab !== "lancamentos" ? "hidden" : ""}>
                   <MissoesFiltroHeader mesRef={mmMesRef} onMesRefChange={setMmMesRef} cotacao={mmCotacao} onCotacaoChange={setMmCotacao} />

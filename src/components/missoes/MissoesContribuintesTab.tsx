@@ -62,10 +62,22 @@ interface Contribuicao {
 
 interface ContribProps {
   mesRef?: string; // YYYY-MM-DD (1º dia do mês)
+  cotacao?: number;
 }
 
-export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
+export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) {
   const queryClient = useQueryClient();
+  // Cotação automática (fallback se prop não vier)
+  const { data: cotacaoCache } = useQuery({
+    queryKey: ["mm-cotacao-auto"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("obter-cotacao-mzn");
+      if (error) throw error;
+      return data as { cotacao: number };
+    },
+    staleTime: 30 * 60 * 1000,
+  });
+  const cotacaoMZN = cotacao || cotacaoCache?.cotacao || 0;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedContribuinte, setSelectedContribuinte] = useState<Contribuinte | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -312,6 +324,7 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Valor Mensal</TableHead>
+                <TableHead>Valor (MZN)</TableHead>
                 <TableHead>Dia Venc.</TableHead>
                 <TableHead>Forma</TableHead>
                 <TableHead>Status</TableHead>
@@ -330,6 +343,11 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
                     <TableCell className="font-medium">{getNome(contribuinte)}</TableCell>
                     <TableCell>
                       R$ {Number(contribuinte.valor_mensal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell className="text-orange-600 font-medium">
+                      {cotacaoMZN > 0
+                        ? `MZN ${(Number(contribuinte.valor_mensal) * cotacaoMZN).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                        : "—"}
                     </TableCell>
                     <TableCell>
                       Dia {contribuinte.dia_vencimento || 10}
@@ -403,7 +421,7 @@ export function MissoesContribuintesTab({ mesRef }: ContribProps = {}) {
               })}
               {(!contribuintes || contribuintes.length === 0) && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     Nenhum contribuinte cadastrado
                   </TableCell>
                 </TableRow>
