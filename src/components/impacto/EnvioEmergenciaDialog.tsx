@@ -275,6 +275,8 @@ export default function EnvioEmergenciaDialog({
                 : "aviso_importante"),
             tipoInscricaoFiltro:
               destino === "todos" && tiposFiltro.length > 0 ? tiposFiltro : null,
+            statusEspiritualFiltro:
+              destino === "todos" && statusEspiritualFiltro.length > 0 ? statusEspiritualFiltro : null,
           },
         },
       );
