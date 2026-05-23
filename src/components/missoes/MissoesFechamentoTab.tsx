@@ -251,32 +251,40 @@ export function MissoesFechamentoTab() {
             Veja o que R$ {totalMensal.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} podem proporcionar
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            {REFERENCIAS_PODER_COMPRA.map((ref) => {
-              const bruto = ref.valor_mzn > 0 ? totalMZN / ref.valor_mzn : 0;
-              const quantidade = bruto >= 100
-                ? bruto.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
-                : bruto.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
-              return (
-                <div
-                  key={ref.item}
-                  className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
-                >
-                  <span className="text-2xl">{ref.emoji}</span>
-                  <div>
-                    <p className="font-medium">{ref.item}</p>
-                    <p className="text-sm text-muted-foreground">
-                      MZN {ref.valor_mzn} cada
-                    </p>
-                    <p className="text-lg font-bold text-primary">
-                      = {quantidade} {ref.unidade}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <CardContent className="space-y-6">
+          {Array.from(new Set(REFERENCIAS_PODER_COMPRA.map((r) => r.categoria))).map((cat, idx) => (
+            <div key={cat}>
+              {idx > 0 && <div className="border-t mb-4" />}
+              <h4 className="text-xs font-bold tracking-wider text-muted-foreground mb-3">
+                {cat}
+              </h4>
+              <div className="grid gap-4 md:grid-cols-3">
+                {REFERENCIAS_PODER_COMPRA.filter((r) => r.categoria === cat).map((ref) => {
+                  const bruto = ref.valor_mzn > 0 ? totalMZN / ref.valor_mzn : 0;
+                  const quantidade = bruto >= 100
+                    ? bruto.toLocaleString("pt-BR", { maximumFractionDigits: 0 })
+                    : bruto.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+                  return (
+                    <div
+                      key={ref.item}
+                      className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
+                    >
+                      <span className="text-2xl">{ref.emoji}</span>
+                      <div>
+                        <p className="font-medium">{ref.item}</p>
+                        <p className="text-sm text-muted-foreground">
+                          MZN {ref.valor_mzn} cada
+                        </p>
+                        <p className="text-lg font-bold text-primary">
+                          = {quantidade} {ref.unidade}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
 
