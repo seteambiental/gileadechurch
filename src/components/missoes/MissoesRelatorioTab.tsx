@@ -386,7 +386,29 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
             Com o total arrecadado deste mês ({fmtMZN(totalMZN)}) é possível custear:
           </p>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
+        <CardContent className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold mb-2">Ítens de alimentação</h4>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Item</TableHead>
+                <TableHead className="text-right">Preço</TableHead>
+                <TableHead className="text-right">Quantidade</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {ALIMENTACAO_MZ.map((a) => (
+                  <TableRow key={a.item}>
+                    <TableCell className="text-sm">{a.item}</TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(a.valor)}</TableCell>
+                    <TableCell className="text-right font-semibold text-blue-600">
+                      {totalMZN > 0 ? `${fmtQtd(totalMZN / a.valor)} ${a.unidade}` : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
           <div>
             <h4 className="text-sm font-semibold mb-2">Salários e sustento mensal</h4>
             <Table>
