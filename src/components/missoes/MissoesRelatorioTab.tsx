@@ -294,14 +294,16 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         <CardHeader><CardTitle className="text-base">Contribuintes fixos</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead className="text-right">Valor mensal</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead className="text-right">Valor mensal (R$)</TableHead><TableHead className="text-right">Equiv. (MZN)</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
             <TableBody>
               {contribuintes.map((c: any) => {
                 const pago = pagoMap.get(c.id);
+                const v = Number(c.valor_mensal || 0);
                 return (
                   <TableRow key={c.id}>
                     <TableCell>{getNomeContrib(c)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(Number(c.valor_mensal || 0))}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(v)}</TableCell>
+                    <TableCell className="text-right text-blue-600 text-sm">{cotacao > 0 ? fmtMZN(v * cotacao) : "—"}</TableCell>
                     <TableCell>
                       <Badge variant={pago?.pago ? "default" : "secondary"}>{pago?.pago ? "Recebido" : "Pendente"}</Badge>
                     </TableCell>
