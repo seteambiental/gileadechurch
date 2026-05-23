@@ -59,7 +59,8 @@ import { todayDateStr } from "@/lib/date-utils";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { savePDF } from "@/lib/export";
-import { FileText } from "lucide-react";
+import { FileText, MessageCircle } from "lucide-react";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 
 const TIPOS_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -114,6 +115,10 @@ const EventosFinalizadosTab = () => {
   const [despesaValor, setDespesaValor] = useState("");
   const [despesaCategoria, setDespesaCategoria] = useState("Outros");
   const [despesaData, setDespesaData] = useState(todayDateStr());
+
+  // WhatsApp dialog state
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const [whatsappEvento, setWhatsappEvento] = useState<{ id: string; titulo: string } | null>(null);
 
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["impacto-eventos-finalizados"],
