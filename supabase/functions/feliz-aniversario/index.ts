@@ -179,15 +179,44 @@ serve(async (req) => {
         return mes === mesAtual && dia === diaAtual;
       }) || [];
 
+      // Inscritos em eventos do Impacto que NÃO são membros
+      const { data: inscritosEventos, error: inscError } = await supabase
+        .from('impacto_inscricoes')
+        .select('id, nome, telefone, data_nascimento, member_id')
+        .is('member_id', null)
+        .not('telefone', 'is', null)
+        .not('data_nascimento', 'is', null);
+
+      if (inscError) {
+        console.error('Erro ao buscar inscritos de eventos:', inscError);
+      }
+
+      // Evitar duplicatas por nome com membros e convertidos
+      const nomesJa = new Set<string>([
+        ...aniversariantes.map(m => (m.full_name || '').trim().toLowerCase()),
+        ...aniversariantesConvertidos.map(c => (c.full_name || '').trim().toLowerCase()),
+      ]);
+
+      const aniversariantesEventos = (inscritosEventos || []).filter(i => {
+        if (!i.data_nascimento || !i.nome) return false;
+        const [, mes, dia] = i.data_nascimento.split('-');
+        if (mes !== mesAtual || dia !== diaAtual) return false;
+        const nomeKey = i.nome.trim().toLowerCase();
+        if (nomesJa.has(nomeKey)) return false;
+        nomesJa.add(nomeKey);
+        return true;
+      });
+
       const dataHoje = hoje.toISOString().split('T')[0];
       const { data: jaEnviados } = await supabase
         .from('aniversarios_enviados')
-        .select('member_id, novo_convertido_id')
+        .select('member_id, novo_convertido_id, inscricao_evento_id')
         .eq('data_envio', dataHoje)
         .eq('sucesso', true);
 
       const membrosJaEnviados = new Set(jaEnviados?.filter(e => e.member_id).map(e => e.member_id) || []);
       const convertidosJaEnviados = new Set(jaEnviados?.filter(e => e.novo_convertido_id).map(e => e.novo_convertido_id) || []);
+      const inscritosJaEnviados = new Set(jaEnviados?.filter((e: any) => e.inscricao_evento_id).map((e: any) => e.inscricao_evento_id) || []);
 
       let enviados = 0;
       let erros = 0;
@@ -274,6 +303,46 @@ serve(async (req) => {
         }
       }
 
+      // Envio para inscritos de eventos (não membros)
+      for (const inscrito of aniversariantesEventos) {
+        if (inscritosJaEnviados.has(inscrito.id)) {
+          ignorados++;
+          resultados.push({ nome: inscrito.nome, sucesso: true, ignorado: true });
+          continue;
+        }
+
+        try {
+          const mensagem = gerarMensagemAniversario(inscrito.nome, mensagemTemplate);
+          await enviarMensagemEvolution(inscrito.telefone!, mensagem);
+
+          await supabase.from('aniversarios_enviados').insert({
+            inscricao_evento_id: inscrito.id,
+            data_envio: dataHoje,
+            sucesso: true,
+          });
+
+          enviados++;
+          resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: true });
+          console.log(`✅ Mensagem (não-membro) enviada para ${inscrito.nome}`);
+
+          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
+        } catch (err) {
+          erros++;
+          const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+
+          try {
+            await supabase.from('aniversarios_enviados').insert({
+              inscricao_evento_id: inscrito.id,
+              data_envio: dataHoje,
+              sucesso: false,
+              erro_mensagem: errorMsg,
+            });
+          } catch {}
+
+          resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: false, erro: errorMsg });
+        }
+      }
+
       return new Response(JSON.stringify({
         success: true,
         message: `Mensagens de aniversário: ${enviados} enviadas, ${ignorados} já enviadas antes, ${erros} falhas`,
@@ -281,7 +350,7 @@ serve(async (req) => {
         enviados,
         ignorados,
         erros,
-        total: aniversariantes.length + aniversariantesConvertidos.length,
+        total: aniversariantes.length + aniversariantesConvertidos.length + aniversariantesEventos.length,
         resultados,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
