@@ -412,6 +412,45 @@ export default function EnvioEmergenciaDialog({
                   </button>
                 )}
               </div>
+              <div className="mt-3">
+                <Label className="text-xs text-muted-foreground">Status espiritual</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {[
+                    { v: "convertido", l: "Novos Convertidos" },
+                    { v: "reconciliado", l: "Reconciliados" },
+                  ].map((opt) => {
+                    const ativo = statusEspiritualFiltro.includes(opt.v);
+                    return (
+                      <button
+                        key={opt.v}
+                        type="button"
+                        onClick={() =>
+                          setStatusEspiritualFiltro((prev) =>
+                            prev.includes(opt.v)
+                              ? prev.filter((x) => x !== opt.v)
+                              : [...prev, opt.v],
+                          )
+                        }
+                        className={`px-3 py-1 rounded-full border text-xs ${ativo ? "bg-emerald-600 text-white border-emerald-600" : "bg-muted/40 hover:bg-muted"}`}
+                      >
+                        {opt.l}
+                      </button>
+                    );
+                  })}
+                  {statusEspiritualFiltro.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setStatusEspiritualFiltro([])}
+                      className="text-xs text-muted-foreground underline ml-1"
+                    >
+                      limpar
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Quando marcado, envia apenas para quem está marcado como "Conv." ou "Recon." na lista do evento.
+                </p>
+              </div>
             </div>
           )}
 
