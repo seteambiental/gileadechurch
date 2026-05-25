@@ -50,7 +50,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
     queryFn: async () => {
       const { data, error } = await supabase
         .from("homepage_config")
-        .select("mensagem_aniversario, mensagem_aniversario_nao_membro")
+        .select("mensagem_aniversario")
         .limit(1)
         .single();
       if (error) return null;
