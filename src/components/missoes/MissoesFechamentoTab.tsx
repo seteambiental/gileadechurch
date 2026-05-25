@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/table";
 import { format, startOfMonth, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ColumnFilter } from "./ColumnFilter";
+import { X } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -90,6 +92,8 @@ export function MissoesFechamentoTab() {
   const [mesAtual] = useState(() => format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [cotacaoInput, setCotacaoInput] = useState(String(DEFAULT_COTACAO));
   const [cotacaoTocada, setCotacaoTocada] = useState(false);
+  const emptyHistFiltros = { mes: [] as string[], contribuintes: [] as string[], total: [] as string[], cotacao: [] as string[], totalMzn: [] as string[], status: [] as string[] };
+  const [histFiltros, setHistFiltros] = useState(emptyHistFiltros);
 
   // Cotação automática BRL → MZN (mesma fonte das outras abas)
   const { data: cotacaoAuto } = useQuery({
