@@ -172,8 +172,7 @@ Que este dia seja repleto de alegria, paz e amor. Você é muito especial para n
 Com carinho,
 _Igreja Gileade_ 💙🙏`;
 
-    const templateNaoMembro = homepageConfig?.mensagem_aniversario_nao_membro ||
-      `🎂🎉 *FELIZ ANIVERSÁRIO, {NOME}!* 🎉🎂
+    const templateNaoMembro = `🎂🎉 *FELIZ ANIVERSÁRIO, {NOME}!* 🎉🎂
 
 Hoje é um dia muito especial e nós da *Igreja Gileade* queremos celebrar com você! Foi uma alegria ter você em nossos eventos e ainda mais especial poder te abençoar neste dia.
 
