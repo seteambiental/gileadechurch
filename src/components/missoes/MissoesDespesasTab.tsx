@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { ColumnFilter } from "./ColumnFilter";
 
 const CATEGORIAS = [
   "Envio para Moçambique",
@@ -34,7 +35,8 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filtros, setFiltros] = useState({ categoria: "", descricao: "", data: "", forma: "", valor: "" });
+  const emptyFiltros = { categoria: [] as string[], descricao: [] as string[], data: [] as string[], forma: [] as string[], valor: [] as string[] };
+  const [filtros, setFiltros] = useState(emptyFiltros);
   const [form, setForm] = useState({
     categoria: "",
     descricao: "",
@@ -101,17 +103,31 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
     },
   });
 
-  const despesasFiltradas = (despesas as any[]).filter((d) => {
-    const f = filtros;
-    if (f.categoria && !String(d.categoria || "").toLowerCase().includes(f.categoria.toLowerCase())) return false;
-    if (f.descricao && !String(d.descricao || "").toLowerCase().includes(f.descricao.toLowerCase())) return false;
-    if (f.data && !format(parseLocalDate(d.data_despesa), "dd/MM/yyyy").includes(f.data)) return false;
-    if (f.forma && !String(d.forma_pagamento || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
-    if (f.valor && !String(d.valor || "").includes(f.valor.replace(",", "."))) return false;
-    return true;
+  const rowValues = (d: any) => ({
+    categoria: String(d.categoria || ""),
+    descricao: String(d.descricao || ""),
+    data: format(parseLocalDate(d.data_despesa), "dd/MM/yyyy"),
+    forma: String(d.forma_pagamento || ""),
+    valor: formatCurrency(Number(d.valor || 0)),
   });
+  const match = (sel: string[], v: string) => sel.length === 0 || sel.includes(v);
+  const despesasFiltradas = (despesas as any[]).filter((d) => {
+    const v = rowValues(d);
+    return match(filtros.categoria, v.categoria)
+      && match(filtros.descricao, v.descricao)
+      && match(filtros.data, v.data)
+      && match(filtros.forma, v.forma)
+      && match(filtros.valor, v.valor);
+  });
+  const opcoes = {
+    categoria: (despesas as any[]).map((d) => rowValues(d).categoria),
+    descricao: (despesas as any[]).map((d) => rowValues(d).descricao),
+    data: (despesas as any[]).map((d) => rowValues(d).data),
+    forma: (despesas as any[]).map((d) => rowValues(d).forma),
+    valor: (despesas as any[]).map((d) => rowValues(d).valor),
+  };
   const total = despesasFiltradas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
-  const algumFiltro = Object.values(filtros).some(Boolean);
+  const algumFiltro = Object.values(filtros).some((arr) => arr.length > 0);
 
   const openEdit = (d: any) => {
     setEditingId(d.id);
@@ -143,23 +159,15 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Categoria</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Forma</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="w-[80px]" />
-              </TableRow>
-              <TableRow className="bg-muted/30">
-                <TableHead className="py-1"><Input value={filtros.categoria} onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.descricao} onChange={(e) => setFiltros({ ...filtros, descricao: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.data} onChange={(e) => setFiltros({ ...filtros, data: e.target.value })} placeholder="dd/mm" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1">
+                <TableHead><ColumnFilter label="Categoria" options={opcoes.categoria} selected={filtros.categoria} onChange={(v) => setFiltros({ ...filtros, categoria: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Descrição" options={opcoes.descricao} selected={filtros.descricao} onChange={(v) => setFiltros({ ...filtros, descricao: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Data" options={opcoes.data} selected={filtros.data} onChange={(v) => setFiltros({ ...filtros, data: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Forma" options={opcoes.forma} selected={filtros.forma} onChange={(v) => setFiltros({ ...filtros, forma: v })} /></TableHead>
+                <TableHead className="text-right"><ColumnFilter label="Valor" options={opcoes.valor} selected={filtros.valor} onChange={(v) => setFiltros({ ...filtros, valor: v })} align="end" className="justify-end" /></TableHead>
+                <TableHead className="w-[80px] text-right">
                   {algumFiltro && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ categoria: "", descricao: "", data: "", forma: "", valor: "" })}>
-                      <X className="w-3 h-3" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros(emptyFiltros)} aria-label="Limpar filtros">
+                      <X className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </TableHead>
