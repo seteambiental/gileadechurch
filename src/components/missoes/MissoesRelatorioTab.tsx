@@ -229,31 +229,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Contribuintes fixos</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead className="text-right">Valor mensal (R$)</TableHead><TableHead className="text-right">Equiv. (MZN)</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {contribuintes.map((c: any) => {
-                const pago = pagoMap.get(c.id);
-                const v = Number(c.valor_mensal || 0);
-                return (
-                  <TableRow key={c.id}>
-                    <TableCell>{getNomeContrib(c)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(v)}</TableCell>
-                    <TableCell className="text-right text-blue-600 text-sm">{cotacao > 0 ? fmtMZN(v * cotacao) : "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={pago?.pago ? "default" : "secondary"}>{pago?.pago ? "Recebido" : "Pendente"}</Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader><CardTitle className="text-base">Lançamentos avulsos do mês</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -261,7 +236,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
             <TableBody>
               {lancamentos.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">Nenhum lançamento.</TableCell></TableRow>
-              ) : lancamentos.map((l: any) => (
+              ) : ordenarLancamentos(lancamentos).map((l: any) => (
                 <TableRow key={l.id}>
                   <TableCell>{format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy")}</TableCell>
                   <TableCell><Badge variant="outline">{l.origem}</Badge></TableCell>
@@ -295,84 +270,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Poder de compra em Moçambique</CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Com o total arrecadado deste mês ({fmtMZN(totalMZN)}) é possível custear:
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Ítens de alimentação</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {ALIMENTACAO_MZ.map((a) => (
-                  <TableRow key={a.item}>
-                    <TableCell className="text-sm">{a.item}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(a.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-blue-600">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / a.valor)} ${a.unidade}` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Salários e sustento mensal</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Cargo / referência</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-right">Meses</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {SALARIOS_MZ.map((s) => (
-                  <TableRow key={s.cargo}>
-                    <TableCell className="text-sm">{s.cargo}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(s.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-blue-600">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / s.valor)} meses` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Materiais de construção</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {MATERIAIS_MZ.map((m) => (
-                  <TableRow key={m.item}>
-                    <TableCell className="text-sm">{m.item}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(m.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-green-700">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / m.valor)} ${m.unidade}` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Valores médios de referência em Moçambique (2024/2025). Podem variar conforme região e câmbio.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
