@@ -492,10 +492,10 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
                   </TableRow>
                 );
               })}
-              {(!contribuintes || contribuintes.length === 0) && (
+              {contribuintesFiltrados.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Nenhum contribuinte cadastrado
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    {algumFiltro ? "Nenhum contribuinte para os filtros aplicados." : "Nenhum contribuinte cadastrado"}
                   </TableCell>
                 </TableRow>
               )}
