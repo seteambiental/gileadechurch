@@ -448,19 +448,52 @@ export function MissoesFechamentoTab() {
           <CardTitle>Histórico de Fechamentos</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
+          {(() => {
+            const rowVals = (f: any) => ({
+              mes: format(new Date(f.mes_referencia), "MMMM/yyyy", { locale: ptBR }),
+              contribuintes: String(f.total_contribuintes ?? ""),
+              total: `R$ ${Number(f.total_arrecadado).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+              cotacao: Number(f.cotacao_mzn).toFixed(2),
+              totalMzn: `MZN ${Number(f.valor_convertido_mzn).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+              status: f.fechado ? "Fechado" : "Aberto",
+            });
+            const m = (sel: string[], v: string) => sel.length === 0 || sel.includes(v);
+            const filtrados = (fechamentos || []).filter((f: any) => {
+              const v = rowVals(f);
+              return m(histFiltros.mes, v.mes) && m(histFiltros.contribuintes, v.contribuintes) && m(histFiltros.total, v.total) && m(histFiltros.cotacao, v.cotacao) && m(histFiltros.totalMzn, v.totalMzn) && m(histFiltros.status, v.status);
+            });
+            const opcs = {
+              mes: (fechamentos || []).map((f: any) => rowVals(f).mes),
+              contribuintes: (fechamentos || []).map((f: any) => rowVals(f).contribuintes),
+              total: (fechamentos || []).map((f: any) => rowVals(f).total),
+              cotacao: (fechamentos || []).map((f: any) => rowVals(f).cotacao),
+              totalMzn: (fechamentos || []).map((f: any) => rowVals(f).totalMzn),
+              status: (fechamentos || []).map((f: any) => rowVals(f).status),
+            };
+            const algum = Object.values(histFiltros).some((a) => a.length > 0);
+            return (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Mês</TableHead>
-                <TableHead>Contribuintes</TableHead>
-                <TableHead>Total (R$)</TableHead>
-                <TableHead>Cotação</TableHead>
-                <TableHead>Total (MZN)</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead><ColumnFilter label="Mês" options={opcs.mes} selected={histFiltros.mes} onChange={(v) => setHistFiltros({ ...histFiltros, mes: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Contribuintes" options={opcs.contribuintes} selected={histFiltros.contribuintes} onChange={(v) => setHistFiltros({ ...histFiltros, contribuintes: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Total (R$)" options={opcs.total} selected={histFiltros.total} onChange={(v) => setHistFiltros({ ...histFiltros, total: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Cotação" options={opcs.cotacao} selected={histFiltros.cotacao} onChange={(v) => setHistFiltros({ ...histFiltros, cotacao: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Total (MZN)" options={opcs.totalMzn} selected={histFiltros.totalMzn} onChange={(v) => setHistFiltros({ ...histFiltros, totalMzn: v })} /></TableHead>
+                <TableHead>
+                  <div className="flex items-center justify-between gap-2">
+                    <ColumnFilter label="Status" options={opcs.status} selected={histFiltros.status} onChange={(v) => setHistFiltros({ ...histFiltros, status: v })} />
+                    {algum && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setHistFiltros(emptyHistFiltros)} aria-label="Limpar filtros">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {fechamentos?.map((f) => (
+              {filtrados.map((f: any) => (
                 <TableRow key={f.id}>
                   <TableCell className="font-medium">
                     {format(new Date(f.mes_referencia), "MMMM/yyyy", { locale: ptBR })}
@@ -480,15 +513,17 @@ export function MissoesFechamentoTab() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!fechamentos || fechamentos.length === 0) && (
+              {filtrados.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    Nenhum fechamento realizado
+                    {algum ? "Nenhum fechamento para os filtros aplicados." : "Nenhum fechamento realizado"}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+            );
+          })()}
         </CardContent>
       </Card>
     </div>
