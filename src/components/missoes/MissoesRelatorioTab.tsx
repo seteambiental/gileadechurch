@@ -16,40 +16,15 @@ import { savePDF, exportGenericToExcel } from "@/lib/export";
 
 interface Props { mesRef: string; cotacao: number }
 
-// Referências de preços médios em Moçambique (MZN). Valores aproximados 2024/2025.
-const ALIMENTACAO_MZ: { item: string; valor: number; unidade: string }[] = [
-  { item: "Refeição simples", valor: 150, unidade: "unid." },
-  { item: "Transporte urbano (chapa)", valor: 20, unidade: "viagens" },
-  { item: "1kg de arroz", valor: 80, unidade: "kg" },
-  { item: "1kg de frango", valor: 250, unidade: "kg" },
-  { item: "Água (20L)", valor: 30, unidade: "garrafões" },
-  { item: "Bíblia impressa", valor: 500, unidade: "exemplares" },
-];
-
-const SALARIOS_MZ: { cargo: string; valor: number }[] = [
-  { cargo: "Salário mínimo nacional", valor: 5000 },
-  { cargo: "Trabalhador rural / agricultura", valor: 5500 },
-  { cargo: "Empregada doméstica", valor: 7000 },
-  { cargo: "Pedreiro / servente de obra", valor: 15000 },
-  { cargo: "Professor do ensino primário", valor: 20000 },
-  { cargo: "Enfermeiro", valor: 25000 },
-  { cargo: "Pastor local (apoio mensal)", valor: 12000 },
-  { cargo: "Cesta básica familiar (mês)", valor: 8000 },
-];
-
-const MATERIAIS_MZ: { item: string; valor: number; unidade: string }[] = [
-  { item: "Saco de cimento 50 kg", valor: 650, unidade: "saco" },
-  { item: "Bloco de cimento 15 cm", valor: 25, unidade: "unid." },
-  { item: "Tijolo queimado", valor: 10, unidade: "unid." },
-  { item: "Chapa de zinco 3 m", valor: 900, unidade: "chapa" },
-  { item: "Telha lusa", valor: 35, unidade: "unid." },
-  { item: "Vergalhão de ferro 12 mm (12 m)", valor: 750, unidade: "barra" },
-  { item: "Areia para construção", valor: 1500, unidade: "m³" },
-  { item: "Brita / pedra britada", valor: 2500, unidade: "m³" },
-  { item: "Porta de madeira simples", valor: 3500, unidade: "unid." },
-  { item: "Janela de alumínio simples", valor: 4500, unidade: "unid." },
-  { item: "Bíblia em português", valor: 500, unidade: "exemplar" },
-];
+// Ordem de origem para listagem: membros, manuais, condomínios.
+const ORDEM_ORIGEM: Record<string, number> = { membro: 1, manual: 2, condominio: 3 };
+const ordenarLancamentos = (lista: any[]) =>
+  [...lista].sort((a, b) => {
+    const oa = ORDEM_ORIGEM[a.origem] ?? 99;
+    const ob = ORDEM_ORIGEM[b.origem] ?? 99;
+    if (oa !== ob) return oa - ob;
+    return (b.data_lancamento || "").localeCompare(a.data_lancamento || "");
+  });
 
 export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
   const { data: contribuintes = [] } = useQuery({
