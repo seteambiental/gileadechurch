@@ -16,40 +16,15 @@ import { savePDF, exportGenericToExcel } from "@/lib/export";
 
 interface Props { mesRef: string; cotacao: number }
 
-// Referências de preços médios em Moçambique (MZN). Valores aproximados 2024/2025.
-const ALIMENTACAO_MZ: { item: string; valor: number; unidade: string }[] = [
-  { item: "Refeição simples", valor: 150, unidade: "unid." },
-  { item: "Transporte urbano (chapa)", valor: 20, unidade: "viagens" },
-  { item: "1kg de arroz", valor: 80, unidade: "kg" },
-  { item: "1kg de frango", valor: 250, unidade: "kg" },
-  { item: "Água (20L)", valor: 30, unidade: "garrafões" },
-  { item: "Bíblia impressa", valor: 500, unidade: "exemplares" },
-];
-
-const SALARIOS_MZ: { cargo: string; valor: number }[] = [
-  { cargo: "Salário mínimo nacional", valor: 5000 },
-  { cargo: "Trabalhador rural / agricultura", valor: 5500 },
-  { cargo: "Empregada doméstica", valor: 7000 },
-  { cargo: "Pedreiro / servente de obra", valor: 15000 },
-  { cargo: "Professor do ensino primário", valor: 20000 },
-  { cargo: "Enfermeiro", valor: 25000 },
-  { cargo: "Pastor local (apoio mensal)", valor: 12000 },
-  { cargo: "Cesta básica familiar (mês)", valor: 8000 },
-];
-
-const MATERIAIS_MZ: { item: string; valor: number; unidade: string }[] = [
-  { item: "Saco de cimento 50 kg", valor: 650, unidade: "saco" },
-  { item: "Bloco de cimento 15 cm", valor: 25, unidade: "unid." },
-  { item: "Tijolo queimado", valor: 10, unidade: "unid." },
-  { item: "Chapa de zinco 3 m", valor: 900, unidade: "chapa" },
-  { item: "Telha lusa", valor: 35, unidade: "unid." },
-  { item: "Vergalhão de ferro 12 mm (12 m)", valor: 750, unidade: "barra" },
-  { item: "Areia para construção", valor: 1500, unidade: "m³" },
-  { item: "Brita / pedra britada", valor: 2500, unidade: "m³" },
-  { item: "Porta de madeira simples", valor: 3500, unidade: "unid." },
-  { item: "Janela de alumínio simples", valor: 4500, unidade: "unid." },
-  { item: "Bíblia em português", valor: 500, unidade: "exemplar" },
-];
+// Ordem de origem para listagem: membros, manuais, condomínios.
+const ORDEM_ORIGEM: Record<string, number> = { membro: 1, manual: 2, condominio: 3 };
+const ordenarLancamentos = (lista: any[]) =>
+  [...lista].sort((a, b) => {
+    const oa = ORDEM_ORIGEM[a.origem] ?? 99;
+    const ob = ORDEM_ORIGEM[b.origem] ?? 99;
+    if (oa !== ob) return oa - ob;
+    return (b.data_lancamento || "").localeCompare(a.data_lancamento || "");
+  });
 
 export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
   const { data: contribuintes = [] } = useQuery({
@@ -133,10 +108,9 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setFontSize(11); doc.setTextColor(0);
     doc.text("Resumo", 14, y); y += 5;
     const resumo = [
-      ["Contribuições fixas (pagas)", formatCurrency(totaisCalc.totalFixos)],
       ["Lançamentos de membros", formatCurrency(totaisCalc.totalMembros)],
-      ["Ofertas de condomínios", formatCurrency(totaisCalc.totalCond)],
       ["Lançamentos manuais", formatCurrency(totaisCalc.totalManual)],
+      ["Ofertas de condomínios", formatCurrency(totaisCalc.totalCond)],
       ["TOTAL ARRECADADO (R$)", formatCurrency(totaisCalc.totalArrecadado)],
       ["Equivalente em MZN", `MZN ${(totaisCalc.totalArrecadado * cotacao).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
       ["Total de despesas (R$)", formatCurrency(totaisCalc.totalDespesas)],
@@ -149,29 +123,15 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     });
     y = (doc as any).lastAutoTable.finalY + 6;
 
-    // Contribuintes fixos
-    doc.setFontSize(11); doc.text("Contribuintes fixos", 14, y); y += 2;
-    autoTable(doc, {
-      startY: y,
-      head: [["Nome", "Valor mensal (R$)", "Equiv. (MZN)", "Status do mês"]],
-      body: contribuintes.map((c: any) => {
-        const pago = pagoMap.get(c.id);
-        const v = Number(c.valor_mensal || 0);
-        return [getNomeContrib(c), formatCurrency(v), fmtMZN(v * cotacao), pago?.pago ? "Recebido" : "Pendente"];
-      }),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-
     // Lançamentos
-    if (lancamentos.length > 0) {
+    const lancamentosOrdenados = ordenarLancamentos(lancamentos);
+    if (lancamentosOrdenados.length > 0) {
       if (y > 240) { doc.addPage(); y = 18; }
       doc.setFontSize(11); doc.text("Lançamentos avulsos", 14, y); y += 2;
       autoTable(doc, {
         startY: y,
         head: [["Data", "Origem", "Nome", "Forma", "Valor"]],
-        body: lancamentos.map((l: any) => [
+        body: lancamentosOrdenados.map((l: any) => [
           format(parseLocalDate(l.data_lancamento), "dd/MM"),
           l.origem,
           l.member?.full_name || l.condominio?.name || l.nome_manual || "—",
@@ -203,66 +163,12 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
       });
     }
 
-    // Poder de compra
-    if (y > 220) { doc.addPage(); y = 18; }
-    doc.setFontSize(11); doc.text("Poder de compra em Moçambique", 14, y); y += 2;
-    doc.setFontSize(9); doc.setTextColor(100);
-    doc.text(`Com o total arrecadado (${fmtMZN(totalMZN)}) é possível custear:`, 14, y + 4);
-    doc.setTextColor(0); y += 7;
-    autoTable(doc, {
-      startY: y,
-      head: [["Ítens de alimentação", "Preço (MZN)", "Quantidade que dá para comprar"]],
-      body: ALIMENTACAO_MZ.map((a) => [
-        a.item,
-        fmtMZN(a.valor),
-        `${fmtQtd(totalMZN / a.valor)} ${a.unidade}`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 4;
-    if (y > 240) { doc.addPage(); y = 18; }
-    autoTable(doc, {
-      startY: y,
-      head: [["Salário / sustento mensal", "Valor (MZN)", "Quantos meses pode pagar"]],
-      body: SALARIOS_MZ.map((s) => [
-        s.cargo,
-        fmtMZN(s.valor),
-        `${fmtQtd(totalMZN / s.valor)} meses`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 4;
-    if (y > 240) { doc.addPage(); y = 18; }
-    autoTable(doc, {
-      startY: y,
-      head: [["Material de construção", "Preço (MZN)", "Quantidade que dá para comprar"]],
-      body: MATERIAIS_MZ.map((m) => [
-        m.item,
-        fmtMZN(m.valor),
-        `${fmtQtd(totalMZN / m.valor)} ${m.unidade}`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-
     savePDF(doc, `Relatorio_Missoes_${mesRef.slice(0, 7)}.pdf`);
   };
 
   const handleExcel = async () => {
     const rows: any[] = [];
-    rows.push({ secao: "Contribuinte Fixo", nome: "", valor: "", info: "" });
-    contribuintes.forEach((c: any) => {
-      const pago = pagoMap.get(c.id);
-      rows.push({
-        secao: "Contribuinte Fixo",
-        nome: getNomeContrib(c),
-        valor: Number(c.valor_mensal || 0),
-        info: pago?.pago ? "Recebido" : "Pendente",
-      });
-    });
-    lancamentos.forEach((l: any) => {
+    ordenarLancamentos(lancamentos).forEach((l: any) => {
       rows.push({
         secao: `Lançamento (${l.origem})`,
         nome: l.member?.full_name || l.condominio?.name || l.nome_manual || "—",
@@ -313,31 +219,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Contribuintes fixos</CardTitle></CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Nome</TableHead><TableHead className="text-right">Valor mensal (R$)</TableHead><TableHead className="text-right">Equiv. (MZN)</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {contribuintes.map((c: any) => {
-                const pago = pagoMap.get(c.id);
-                const v = Number(c.valor_mensal || 0);
-                return (
-                  <TableRow key={c.id}>
-                    <TableCell>{getNomeContrib(c)}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(v)}</TableCell>
-                    <TableCell className="text-right text-blue-600 text-sm">{cotacao > 0 ? fmtMZN(v * cotacao) : "—"}</TableCell>
-                    <TableCell>
-                      <Badge variant={pago?.pago ? "default" : "secondary"}>{pago?.pago ? "Recebido" : "Pendente"}</Badge>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      <Card>
         <CardHeader><CardTitle className="text-base">Lançamentos avulsos do mês</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -345,7 +226,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
             <TableBody>
               {lancamentos.length === 0 ? (
                 <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">Nenhum lançamento.</TableCell></TableRow>
-              ) : lancamentos.map((l: any) => (
+              ) : ordenarLancamentos(lancamentos).map((l: any) => (
                 <TableRow key={l.id}>
                   <TableCell>{format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy")}</TableCell>
                   <TableCell><Badge variant="outline">{l.origem}</Badge></TableCell>
@@ -379,84 +260,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Poder de compra em Moçambique</CardTitle>
-          <p className="text-xs text-muted-foreground mt-1">
-            Com o total arrecadado deste mês ({fmtMZN(totalMZN)}) é possível custear:
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Ítens de alimentação</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {ALIMENTACAO_MZ.map((a) => (
-                  <TableRow key={a.item}>
-                    <TableCell className="text-sm">{a.item}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(a.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-blue-600">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / a.valor)} ${a.unidade}` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 pt-4 border-t">
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Salários e sustento mensal</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Cargo / referência</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-right">Meses</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {SALARIOS_MZ.map((s) => (
-                  <TableRow key={s.cargo}>
-                    <TableCell className="text-sm">{s.cargo}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(s.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-blue-600">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / s.valor)} meses` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold mb-2">Materiais de construção</h4>
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Preço</TableHead>
-                <TableHead className="text-right">Quantidade</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {MATERIAIS_MZ.map((m) => (
-                  <TableRow key={m.item}>
-                    <TableCell className="text-sm">{m.item}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtMZN(m.valor)}</TableCell>
-                    <TableCell className="text-right font-semibold text-green-700">
-                      {totalMZN > 0 ? `${fmtQtd(totalMZN / m.valor)} ${m.unidade}` : "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Valores médios de referência em Moçambique (2024/2025). Podem variar conforme região e câmbio.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 }
