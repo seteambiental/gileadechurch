@@ -550,22 +550,19 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   };
 
   const handleGerarEtiquetas = () => {
-    const tiposGrupo = etiquetasGrupo === "equipe"
-      ? ["equipe", "ministrador", "familia"]
-      : ["membro", "nao_membro"];
+    // Equipe e ministradores nunca recebem etiqueta de mala.
+    const tiposExcluidos = new Set(["equipe", "ministrador"]);
     const numeros = parseNumeros(etiquetasNumeros);
     const lista = inscricoes
-      .filter((i: any) => tiposGrupo.includes(i.tipo_inscricao || "membro"))
+      .filter((i: any) => !tiposExcluidos.has(i.tipo_inscricao || "membro"))
       .filter((i: any) => {
         if (!numeros) return true;
         const n = parseInt(String(i.referencia || "").replace(/\D/g, ""), 10);
         return Number.isFinite(n) && numeros.has(n);
       })
-      .sort((a: any, b: any) => {
-        const na = parseInt(String(a.referencia || "9999"), 10);
-        const nb = parseInt(String(b.referencia || "9999"), 10);
-        return na - nb;
-      });
+      .sort((a: any, b: any) =>
+        (a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }),
+      );
     if (lista.length === 0) {
       toast.error("Nenhuma inscrição encontrada para os critérios.");
       return;
@@ -911,31 +908,10 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           <DialogHeader>
             <DialogTitle>Gerar Etiquetas de Mala</DialogTitle>
             <DialogDescription>
-              Escolha o grupo e, opcionalmente, os números a imprimir.
+              Imprime etiquetas para Membros e Não Membros em ordem alfabética. Equipe e Ministradores não recebem etiqueta.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label>Grupo</Label>
-              <RadioGroup
-                value={etiquetasGrupo}
-                onValueChange={(v) => setEtiquetasGrupo(v as "participantes" | "equipe")}
-                className="flex flex-col gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="participantes" id="grp-part" />
-                  <Label htmlFor="grp-part" className="cursor-pointer font-normal">
-                    Participantes (Membros / Não membros)
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="equipe" id="grp-eq" />
-                  <Label htmlFor="grp-eq" className="cursor-pointer font-normal">
-                    Equipe (Apoio / Ministradores / Líderes e Anfitriões)
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
             <div className="space-y-2">
               <Label htmlFor="nums">Números das etiquetas (opcional)</Label>
               <Input
