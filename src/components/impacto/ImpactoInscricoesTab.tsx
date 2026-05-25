@@ -550,22 +550,19 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   };
 
   const handleGerarEtiquetas = () => {
-    const tiposGrupo = etiquetasGrupo === "equipe"
-      ? ["equipe", "ministrador", "familia"]
-      : ["membro", "nao_membro"];
+    // Equipe e ministradores nunca recebem etiqueta de mala.
+    const tiposExcluidos = new Set(["equipe", "ministrador"]);
     const numeros = parseNumeros(etiquetasNumeros);
     const lista = inscricoes
-      .filter((i: any) => tiposGrupo.includes(i.tipo_inscricao || "membro"))
+      .filter((i: any) => !tiposExcluidos.has(i.tipo_inscricao || "membro"))
       .filter((i: any) => {
         if (!numeros) return true;
         const n = parseInt(String(i.referencia || "").replace(/\D/g, ""), 10);
         return Number.isFinite(n) && numeros.has(n);
       })
-      .sort((a: any, b: any) => {
-        const na = parseInt(String(a.referencia || "9999"), 10);
-        const nb = parseInt(String(b.referencia || "9999"), 10);
-        return na - nb;
-      });
+      .sort((a: any, b: any) =>
+        (a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }),
+      );
     if (lista.length === 0) {
       toast.error("Nenhuma inscrição encontrada para os critérios.");
       return;
