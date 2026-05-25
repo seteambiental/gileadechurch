@@ -168,17 +168,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
 
   const handleExcel = async () => {
     const rows: any[] = [];
-    rows.push({ secao: "Contribuinte Fixo", nome: "", valor: "", info: "" });
-    contribuintes.forEach((c: any) => {
-      const pago = pagoMap.get(c.id);
-      rows.push({
-        secao: "Contribuinte Fixo",
-        nome: getNomeContrib(c),
-        valor: Number(c.valor_mensal || 0),
-        info: pago?.pago ? "Recebido" : "Pendente",
-      });
-    });
-    lancamentos.forEach((l: any) => {
+    ordenarLancamentos(lancamentos).forEach((l: any) => {
       rows.push({
         secao: `Lançamento (${l.origem})`,
         nome: l.member?.full_name || l.condominio?.name || l.nome_manual || "—",
