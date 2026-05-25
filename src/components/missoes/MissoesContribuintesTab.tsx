@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ContribuinteFormDialog } from "./ContribuinteFormDialog";
 import { formatDateBR } from "@/lib/masks";
+import { ColumnFilter } from "./ColumnFilter";
 
 interface Contribuinte {
   id: string;
@@ -84,15 +85,16 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contribuinteToDelete, setContribuinteToDelete] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [filtros, setFiltros] = useState({
-    nome: "",
-    valor: "",
-    valorMzn: "",
-    dia: "",
-    forma: "",
-    status: "",
-    mes: "",
-  });
+  const emptyFiltros = {
+    nome: [] as string[],
+    valor: [] as string[],
+    valorMzn: [] as string[],
+    dia: [] as string[],
+    forma: [] as string[],
+    status: [] as string[],
+    mes: [] as string[],
+  };
+  const [filtros, setFiltros] = useState(emptyFiltros);
 
   // Aceita mesRef (YYYY-MM-DD) e converte para YYYY-MM, ou usa o mês atual
   const mesAtual = mesRef
@@ -250,28 +252,41 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
     return contribuicoesMes?.find(c => c.contribuinte_id === contribuinteId);
   };
 
+  const rowValues = (c: Contribuinte) => {
+    const contrib = getContribuicaoMes(c.id);
+    return {
+      nome: getNome(c),
+      valor: `R$ ${Number(c.valor_mensal).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      valorMzn: cotacaoMZN > 0
+        ? `MZN ${(Number(c.valor_mensal) * cotacaoMZN).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : "—",
+      dia: `Dia ${c.dia_vencimento || 10}`,
+      forma: c.forma_contribuicao || "—",
+      status: c.ativo ? "Ativo" : "Inativo",
+      mes: contrib?.pago ? "Recebido" : "Pendente",
+    };
+  };
+  const match = (sel: string[], v: string) => sel.length === 0 || sel.includes(v);
   const contribuintesFiltrados = (contribuintes || []).filter((c) => {
-    const f = filtros;
-    if (f.nome && !getNome(c).toLowerCase().includes(f.nome.toLowerCase())) return false;
-    if (f.valor && !String(c.valor_mensal || "").includes(f.valor.replace(",", "."))) return false;
-    if (f.valorMzn && cotacaoMZN > 0) {
-      const mzn = (Number(c.valor_mensal) * cotacaoMZN).toFixed(2);
-      if (!mzn.includes(f.valorMzn.replace(",", "."))) return false;
-    }
-    if (f.dia && !String(c.dia_vencimento || 10).includes(f.dia)) return false;
-    if (f.forma && !String(c.forma_contribuicao || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
-    if (f.status) {
-      const s = c.ativo ? "ativo" : "inativo";
-      if (!s.includes(f.status.toLowerCase())) return false;
-    }
-    if (f.mes) {
-      const contrib = getContribuicaoMes(c.id);
-      const s = contrib?.pago ? "recebido" : "pendente";
-      if (!s.includes(f.mes.toLowerCase())) return false;
-    }
-    return true;
+    const v = rowValues(c);
+    return match(filtros.nome, v.nome)
+      && match(filtros.valor, v.valor)
+      && match(filtros.valorMzn, v.valorMzn)
+      && match(filtros.dia, v.dia)
+      && match(filtros.forma, v.forma)
+      && match(filtros.status, v.status)
+      && match(filtros.mes, v.mes);
   });
-  const algumFiltro = Object.values(filtros).some(Boolean);
+  const opcoes = {
+    nome: (contribuintes || []).map((c) => rowValues(c).nome),
+    valor: (contribuintes || []).map((c) => rowValues(c).valor),
+    valorMzn: (contribuintes || []).map((c) => rowValues(c).valorMzn),
+    dia: (contribuintes || []).map((c) => rowValues(c).dia),
+    forma: (contribuintes || []).map((c) => rowValues(c).forma),
+    status: (contribuintes || []).map((c) => rowValues(c).status),
+    mes: (contribuintes || []).map((c) => rowValues(c).mes),
+  };
+  const algumFiltro = Object.values(filtros).some((arr) => arr.length > 0);
 
   const totalMensal = contribuintes?.filter(c => c.ativo).reduce((acc, c) => acc + Number(c.valor_mensal), 0) || 0;
   const totalContribuintes = contribuintes?.filter(c => c.ativo).length || 0;
@@ -379,29 +394,19 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Valor Mensal</TableHead>
-                <TableHead>Valor (MZN)</TableHead>
-                <TableHead>Dia Venc.</TableHead>
-                <TableHead>Forma</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Mês Atual</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-              <TableRow className="bg-muted/30">
-                <TableHead className="py-1"><Input value={filtros.nome} onChange={(e) => setFiltros({ ...filtros, nome: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.valorMzn} onChange={(e) => setFiltros({ ...filtros, valorMzn: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.dia} onChange={(e) => setFiltros({ ...filtros, dia: e.target.value })} placeholder="Dia" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })} placeholder="Ativo/Inativo" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.mes} onChange={(e) => setFiltros({ ...filtros, mes: e.target.value })} placeholder="Recebido/Pendente" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1 text-right">
-                  {algumFiltro && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ nome: "", valor: "", valorMzn: "", dia: "", forma: "", status: "", mes: "" })}>
-                      <X className="w-3 h-3" />
+                <TableHead><ColumnFilter label="Nome" options={opcoes.nome} selected={filtros.nome} onChange={(v) => setFiltros({ ...filtros, nome: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Valor Mensal" options={opcoes.valor} selected={filtros.valor} onChange={(v) => setFiltros({ ...filtros, valor: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Valor (MZN)" options={opcoes.valorMzn} selected={filtros.valorMzn} onChange={(v) => setFiltros({ ...filtros, valorMzn: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Dia Venc." options={opcoes.dia} selected={filtros.dia} onChange={(v) => setFiltros({ ...filtros, dia: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Forma" options={opcoes.forma} selected={filtros.forma} onChange={(v) => setFiltros({ ...filtros, forma: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Status" options={opcoes.status} selected={filtros.status} onChange={(v) => setFiltros({ ...filtros, status: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Mês Atual" options={opcoes.mes} selected={filtros.mes} onChange={(v) => setFiltros({ ...filtros, mes: v })} /></TableHead>
+                <TableHead className="text-right">
+                  {algumFiltro ? (
+                    <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" onClick={() => setFiltros(emptyFiltros)} aria-label="Limpar filtros">
+                      <X className="w-3.5 h-3.5" />
                     </Button>
-                  )}
+                  ) : "Ações"}
                 </TableHead>
               </TableRow>
             </TableHeader>
