@@ -5,7 +5,8 @@ import { todayDateStr } from "@/lib/date-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Users, MessageCircle, Loader2, Check, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Users, MessageCircle, Loader2, Check, Calendar, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ExportButton } from "@/components/ui/export-button";
 import {
@@ -83,6 +84,15 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [contribuinteToDelete, setContribuinteToDelete] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState({
+    nome: "",
+    valor: "",
+    valorMzn: "",
+    dia: "",
+    forma: "",
+    status: "",
+    mes: "",
+  });
 
   // Aceita mesRef (YYYY-MM-DD) e converte para YYYY-MM, ou usa o mês atual
   const mesAtual = mesRef
@@ -240,6 +250,29 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
     return contribuicoesMes?.find(c => c.contribuinte_id === contribuinteId);
   };
 
+  const contribuintesFiltrados = (contribuintes || []).filter((c) => {
+    const f = filtros;
+    if (f.nome && !getNome(c).toLowerCase().includes(f.nome.toLowerCase())) return false;
+    if (f.valor && !String(c.valor_mensal || "").includes(f.valor.replace(",", "."))) return false;
+    if (f.valorMzn && cotacaoMZN > 0) {
+      const mzn = (Number(c.valor_mensal) * cotacaoMZN).toFixed(2);
+      if (!mzn.includes(f.valorMzn.replace(",", "."))) return false;
+    }
+    if (f.dia && !String(c.dia_vencimento || 10).includes(f.dia)) return false;
+    if (f.forma && !String(c.forma_contribuicao || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
+    if (f.status) {
+      const s = c.ativo ? "ativo" : "inativo";
+      if (!s.includes(f.status.toLowerCase())) return false;
+    }
+    if (f.mes) {
+      const contrib = getContribuicaoMes(c.id);
+      const s = contrib?.pago ? "recebido" : "pendente";
+      if (!s.includes(f.mes.toLowerCase())) return false;
+    }
+    return true;
+  });
+  const algumFiltro = Object.values(filtros).some(Boolean);
+
   const totalMensal = contribuintes?.filter(c => c.ativo).reduce((acc, c) => acc + Number(c.valor_mensal), 0) || 0;
   const totalContribuintes = contribuintes?.filter(c => c.ativo).length || 0;
   const totalRecebidoMes = contribuicoesMes?.filter(c => c.pago).reduce((acc, c) => acc + Number(c.valor), 0) || 0;
@@ -355,9 +388,25 @@ export function MissoesContribuintesTab({ mesRef, cotacao }: ContribProps = {}) 
                 <TableHead>Mês Atual</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
+              <TableRow className="bg-muted/30">
+                <TableHead className="py-1"><Input value={filtros.nome} onChange={(e) => setFiltros({ ...filtros, nome: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.valorMzn} onChange={(e) => setFiltros({ ...filtros, valorMzn: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.dia} onChange={(e) => setFiltros({ ...filtros, dia: e.target.value })} placeholder="Dia" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.status} onChange={(e) => setFiltros({ ...filtros, status: e.target.value })} placeholder="Ativo/Inativo" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.mes} onChange={(e) => setFiltros({ ...filtros, mes: e.target.value })} placeholder="Recebido/Pendente" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1 text-right">
+                  {algumFiltro && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ nome: "", valor: "", valorMzn: "", dia: "", forma: "", status: "", mes: "" })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
-              {contribuintes?.map((contribuinte) => {
+              {contribuintesFiltrados.map((contribuinte) => {
                 const contribuicao = getContribuicaoMes(contribuinte.id);
                 const jaRecebeuAgradecimento = contribuicao?.agradecimento_enviado;
                 const jaPagouMes = contribuicao?.pago;
