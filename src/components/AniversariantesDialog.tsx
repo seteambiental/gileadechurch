@@ -54,7 +54,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
         .limit(1)
         .single();
       if (error) return null;
-      return data;
+      return data as any;
     },
     enabled: open,
   });
@@ -158,8 +158,8 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
     // Pegar primeiro nome
     const primeiroNome = aniversariante.full_name.split(" ")[0];
 
-    // Usar template da config ou default
-    const template = homepageConfig?.mensagem_aniversario || 
+    // Template diferenciado para não-membros (visitantes de eventos)
+    const templateMembro = homepageConfig?.mensagem_aniversario ||
       `🎂🎉 *FELIZ ANIVERSÁRIO, {NOME}!* 🎉🎂
 
 Que o Senhor continue abençoando sua vida abundantemente neste novo ciclo que se inicia!
@@ -171,6 +171,20 @@ Que este dia seja repleto de alegria, paz e amor. Você é muito especial para n
 
 Com carinho,
 _Igreja Gileade_ 💙🙏`;
+
+    const templateNaoMembro = `🎂🎉 *FELIZ ANIVERSÁRIO, {NOME}!* 🎉🎂
+
+Hoje é um dia muito especial e nós da *Igreja Gileade* queremos celebrar com você! Foi uma alegria ter você em nossos eventos e ainda mais especial poder te abençoar neste dia.
+
+📖 *"{VERSICULO}"*
+— {REFERENCIA}
+
+Que Deus encha o seu novo ciclo de paz, saúde e propósito. Saiba que as portas da nossa casa estão sempre abertas para você. Será uma alegria te receber novamente! 🙌
+
+Com carinho,
+_Igreja Gileade_ 💙🙏`;
+
+    const template = aniversariante.nao_membro ? templateNaoMembro : templateMembro;
 
     return template
       .replace(/{NOME}/g, primeiroNome)
