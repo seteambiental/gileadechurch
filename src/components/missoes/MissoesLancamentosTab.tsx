@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { toast } from "sonner";
 import { LancamentoFormDialog } from "./LancamentoFormDialog";
+import { ColumnFilter } from "./ColumnFilter";
 
 interface Props {
   mesRef: string;
@@ -22,7 +23,8 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
-  const [filtros, setFiltros] = useState({ data: "", origem: "", nome: "", forma: "", valor: "" });
+  const emptyFiltros = { data: [] as string[], origem: [] as string[], nome: [] as string[], forma: [] as string[], valor: [] as string[] };
+  const [filtros, setFiltros] = useState(emptyFiltros);
 
   const { data: lancamentos = [], isLoading } = useQuery({
     queryKey: ["mm-lancamentos", mesRef],
@@ -59,16 +61,26 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
     l.nome_manual ||
     "—";
 
-  const lancamentosFiltrados = (lancamentos as any[]).filter((l) => {
-    const f = filtros;
-    if (f.data && !format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy").includes(f.data)) return false;
-    if (f.origem && !String(l.origem || "").toLowerCase().includes(f.origem.toLowerCase())) return false;
-    if (f.nome && !getNome(l).toLowerCase().includes(f.nome.toLowerCase())) return false;
-    if (f.forma && !String(l.forma_pagamento || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
-    if (f.valor && !String(l.valor || "").includes(f.valor.replace(",", "."))) return false;
-    return true;
+  const rowValues = (l: any) => ({
+    data: format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy"),
+    origem: String(l.origem || ""),
+    nome: getNome(l),
+    forma: String(l.forma_pagamento || ""),
+    valor: formatCurrency(Number(l.valor || 0)),
   });
-  const algumFiltro = Object.values(filtros).some(Boolean);
+  const match = (sel: string[], v: string) => sel.length === 0 || sel.includes(v);
+  const lancamentosFiltrados = (lancamentos as any[]).filter((l) => {
+    const v = rowValues(l);
+    return match(filtros.data, v.data) && match(filtros.origem, v.origem) && match(filtros.nome, v.nome) && match(filtros.forma, v.forma) && match(filtros.valor, v.valor);
+  });
+  const opcoes = {
+    data: (lancamentos as any[]).map((l) => rowValues(l).data),
+    origem: (lancamentos as any[]).map((l) => rowValues(l).origem),
+    nome: (lancamentos as any[]).map((l) => rowValues(l).nome),
+    forma: (lancamentos as any[]).map((l) => rowValues(l).forma),
+    valor: (lancamentos as any[]).map((l) => rowValues(l).valor),
+  };
+  const algumFiltro = Object.values(filtros).some((arr) => arr.length > 0);
 
   const iconeOrigem = (o: string) =>
     o === "membro" ? <User className="w-3 h-3" /> :
@@ -104,23 +116,15 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Forma</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="w-[80px]" />
-              </TableRow>
-              <TableRow className="bg-muted/30">
-                <TableHead className="py-1"><Input value={filtros.data} onChange={(e) => setFiltros({ ...filtros, data: e.target.value })} placeholder="dd/mm" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.origem} onChange={(e) => setFiltros({ ...filtros, origem: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.nome} onChange={(e) => setFiltros({ ...filtros, nome: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
-                <TableHead className="py-1">
+                <TableHead><ColumnFilter label="Data" options={opcoes.data} selected={filtros.data} onChange={(v) => setFiltros({ ...filtros, data: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Origem" options={opcoes.origem} selected={filtros.origem} onChange={(v) => setFiltros({ ...filtros, origem: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Nome" options={opcoes.nome} selected={filtros.nome} onChange={(v) => setFiltros({ ...filtros, nome: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Forma" options={opcoes.forma} selected={filtros.forma} onChange={(v) => setFiltros({ ...filtros, forma: v })} /></TableHead>
+                <TableHead className="text-right"><ColumnFilter label="Valor" options={opcoes.valor} selected={filtros.valor} onChange={(v) => setFiltros({ ...filtros, valor: v })} align="end" className="justify-end" /></TableHead>
+                <TableHead className="w-[80px] text-right">
                   {algumFiltro && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ data: "", origem: "", nome: "", forma: "", valor: "" })}>
-                      <X className="w-3 h-3" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros(emptyFiltros)} aria-label="Limpar filtros">
+                      <X className="w-3.5 h-3.5" />
                     </Button>
                   )}
                 </TableHead>
