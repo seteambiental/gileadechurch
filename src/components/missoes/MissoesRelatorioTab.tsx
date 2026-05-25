@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +9,11 @@ import { formatCurrency } from "@/lib/masks";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseLocalDate } from "@/lib/date-utils";
-import { FileText, FileSpreadsheet } from "lucide-react";
+import { FileText, FileSpreadsheet, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { savePDF, exportGenericToExcel } from "@/lib/export";
+import { ColumnFilter } from "./ColumnFilter";
 
 interface Props { mesRef: string; cotacao: number }
 
@@ -27,6 +28,10 @@ const ordenarLancamentos = (lista: any[]) =>
   });
 
 export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
+  const emptyLancFiltros = { data: [] as string[], origem: [] as string[], nome: [] as string[], valor: [] as string[] };
+  const emptyDespFiltros = { data: [] as string[], categoria: [] as string[], descricao: [] as string[], valor: [] as string[] };
+  const [lancFiltros, setLancFiltros] = useState(emptyLancFiltros);
+  const [despFiltros, setDespFiltros] = useState(emptyDespFiltros);
   const { data: contribuintes = [] } = useQuery({
     queryKey: ["mm-rel-contrib"],
     queryFn: async () => {
@@ -94,6 +99,43 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
 
   const getNomeContrib = (c: any) => c.member?.full_name || c.nome_manual || "Sem nome";
   const pagoMap = new Map(contribuicoes.map((c: any) => [c.contribuinte_id, c]));
+
+  const lancRow = (l: any) => ({
+    data: format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy"),
+    origem: String(l.origem || ""),
+    nome: l.member?.full_name || l.condominio?.name || l.nome_manual || "—",
+    valor: formatCurrency(Number(l.valor || 0)),
+  });
+  const despRow = (d: any) => ({
+    data: format(parseLocalDate(d.data_despesa), "dd/MM/yyyy"),
+    categoria: String(d.categoria || ""),
+    descricao: d.descricao || "—",
+    valor: formatCurrency(Number(d.valor || 0)),
+  });
+  const m = (sel: string[], v: string) => sel.length === 0 || sel.includes(v);
+  const lancamentosOrd = ordenarLancamentos(lancamentos);
+  const lancamentosFiltrados = lancamentosOrd.filter((l: any) => {
+    const v = lancRow(l);
+    return m(lancFiltros.data, v.data) && m(lancFiltros.origem, v.origem) && m(lancFiltros.nome, v.nome) && m(lancFiltros.valor, v.valor);
+  });
+  const despesasFiltradas = (despesas as any[]).filter((d: any) => {
+    const v = despRow(d);
+    return m(despFiltros.data, v.data) && m(despFiltros.categoria, v.categoria) && m(despFiltros.descricao, v.descricao) && m(despFiltros.valor, v.valor);
+  });
+  const lancOpcoes = {
+    data: lancamentosOrd.map((l: any) => lancRow(l).data),
+    origem: lancamentosOrd.map((l: any) => lancRow(l).origem),
+    nome: lancamentosOrd.map((l: any) => lancRow(l).nome),
+    valor: lancamentosOrd.map((l: any) => lancRow(l).valor),
+  };
+  const despOpcoes = {
+    data: (despesas as any[]).map((d: any) => despRow(d).data),
+    categoria: (despesas as any[]).map((d: any) => despRow(d).categoria),
+    descricao: (despesas as any[]).map((d: any) => despRow(d).descricao),
+    valor: (despesas as any[]).map((d: any) => despRow(d).valor),
+  };
+  const lancAtivo = Object.values(lancFiltros).some((a) => a.length > 0);
+  const despAtivo = Object.values(despFiltros).some((a) => a.length > 0);
 
   const handlePDF = () => {
     const doc = new jsPDF({ orientation: "portrait" });
@@ -222,11 +264,27 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         <CardHeader><CardTitle className="text-base">Lançamentos avulsos do mês</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Origem</TableHead><TableHead>Nome</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead><ColumnFilter label="Data" options={lancOpcoes.data} selected={lancFiltros.data} onChange={(v) => setLancFiltros({ ...lancFiltros, data: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Origem" options={lancOpcoes.origem} selected={lancFiltros.origem} onChange={(v) => setLancFiltros({ ...lancFiltros, origem: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Nome" options={lancOpcoes.nome} selected={lancFiltros.nome} onChange={(v) => setLancFiltros({ ...lancFiltros, nome: v })} /></TableHead>
+                <TableHead className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <ColumnFilter label="Valor" options={lancOpcoes.valor} selected={lancFiltros.valor} onChange={(v) => setLancFiltros({ ...lancFiltros, valor: v })} align="end" />
+                    {lancAtivo && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setLancFiltros(emptyLancFiltros)} aria-label="Limpar filtros">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
-              {lancamentos.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">Nenhum lançamento.</TableCell></TableRow>
-              ) : ordenarLancamentos(lancamentos).map((l: any) => (
+              {lancamentosFiltrados.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">{lancAtivo ? "Nenhum lançamento para os filtros aplicados." : "Nenhum lançamento."}</TableCell></TableRow>
+              ) : lancamentosFiltrados.map((l: any) => (
                 <TableRow key={l.id}>
                   <TableCell>{format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy")}</TableCell>
                   <TableCell><Badge variant="outline">{l.origem}</Badge></TableCell>
@@ -243,11 +301,27 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         <CardHeader><CardTitle className="text-base">Despesas do mês</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Categoria</TableHead><TableHead>Descrição</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader>
+            <TableHeader>
+              <TableRow>
+                <TableHead><ColumnFilter label="Data" options={despOpcoes.data} selected={despFiltros.data} onChange={(v) => setDespFiltros({ ...despFiltros, data: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Categoria" options={despOpcoes.categoria} selected={despFiltros.categoria} onChange={(v) => setDespFiltros({ ...despFiltros, categoria: v })} /></TableHead>
+                <TableHead><ColumnFilter label="Descrição" options={despOpcoes.descricao} selected={despFiltros.descricao} onChange={(v) => setDespFiltros({ ...despFiltros, descricao: v })} /></TableHead>
+                <TableHead className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <ColumnFilter label="Valor" options={despOpcoes.valor} selected={despFiltros.valor} onChange={(v) => setDespFiltros({ ...despFiltros, valor: v })} align="end" />
+                    {despAtivo && (
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setDespFiltros(emptyDespFiltros)} aria-label="Limpar filtros">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
-              {despesas.length === 0 ? (
-                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">Nenhuma despesa.</TableCell></TableRow>
-              ) : despesas.map((d: any) => (
+              {despesasFiltradas.length === 0 ? (
+                <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">{despAtivo ? "Nenhuma despesa para os filtros aplicados." : "Nenhuma despesa."}</TableCell></TableRow>
+              ) : despesasFiltradas.map((d: any) => (
                 <TableRow key={d.id}>
                   <TableCell>{format(parseLocalDate(d.data_despesa), "dd/MM/yyyy")}</TableCell>
                   <TableCell><Badge variant="outline">{d.categoria}</Badge></TableCell>
