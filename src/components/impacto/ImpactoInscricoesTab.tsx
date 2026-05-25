@@ -636,7 +636,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         .logo { max-width: 17mm; max-height: 14mm; object-fit: contain; }
         .info-area { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; padding-left: 1mm; }
         .nome { font-size: 14pt; font-weight: bold; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
-        .ref { font-size: 12pt; font-weight: bold; color: #000; letter-spacing: 0.5px; margin-top: 0.5mm; }
+        .ref { font-size: 24pt; font-weight: bold; color: #000; letter-spacing: 0.5px; margin-top: 0.5mm; line-height: 1; }
         .barcode-area { display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 1mm; padding: 0.5mm 1mm; margin-top: 1mm; }
         .barcode-area svg { width: 100%; height: 8mm; display: block; }
       </style></head><body>
