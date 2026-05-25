@@ -108,10 +108,9 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setFontSize(11); doc.setTextColor(0);
     doc.text("Resumo", 14, y); y += 5;
     const resumo = [
-      ["Contribuições fixas (pagas)", formatCurrency(totaisCalc.totalFixos)],
       ["Lançamentos de membros", formatCurrency(totaisCalc.totalMembros)],
-      ["Ofertas de condomínios", formatCurrency(totaisCalc.totalCond)],
       ["Lançamentos manuais", formatCurrency(totaisCalc.totalManual)],
+      ["Ofertas de condomínios", formatCurrency(totaisCalc.totalCond)],
       ["TOTAL ARRECADADO (R$)", formatCurrency(totaisCalc.totalArrecadado)],
       ["Equivalente em MZN", `MZN ${(totaisCalc.totalArrecadado * cotacao).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
       ["Total de despesas (R$)", formatCurrency(totaisCalc.totalDespesas)],
@@ -124,29 +123,15 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     });
     y = (doc as any).lastAutoTable.finalY + 6;
 
-    // Contribuintes fixos
-    doc.setFontSize(11); doc.text("Contribuintes fixos", 14, y); y += 2;
-    autoTable(doc, {
-      startY: y,
-      head: [["Nome", "Valor mensal (R$)", "Equiv. (MZN)", "Status do mês"]],
-      body: contribuintes.map((c: any) => {
-        const pago = pagoMap.get(c.id);
-        const v = Number(c.valor_mensal || 0);
-        return [getNomeContrib(c), formatCurrency(v), fmtMZN(v * cotacao), pago?.pago ? "Recebido" : "Pendente"];
-      }),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 6;
-
     // Lançamentos
-    if (lancamentos.length > 0) {
+    const lancamentosOrdenados = ordenarLancamentos(lancamentos);
+    if (lancamentosOrdenados.length > 0) {
       if (y > 240) { doc.addPage(); y = 18; }
       doc.setFontSize(11); doc.text("Lançamentos avulsos", 14, y); y += 2;
       autoTable(doc, {
         startY: y,
         head: [["Data", "Origem", "Nome", "Forma", "Valor"]],
-        body: lancamentos.map((l: any) => [
+        body: lancamentosOrdenados.map((l: any) => [
           format(parseLocalDate(l.data_lancamento), "dd/MM"),
           l.origem,
           l.member?.full_name || l.condominio?.name || l.nome_manual || "—",
@@ -177,50 +162,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
         headStyles: { fillColor: [220, 53, 69] },
       });
     }
-
-    // Poder de compra
-    if (y > 220) { doc.addPage(); y = 18; }
-    doc.setFontSize(11); doc.text("Poder de compra em Moçambique", 14, y); y += 2;
-    doc.setFontSize(9); doc.setTextColor(100);
-    doc.text(`Com o total arrecadado (${fmtMZN(totalMZN)}) é possível custear:`, 14, y + 4);
-    doc.setTextColor(0); y += 7;
-    autoTable(doc, {
-      startY: y,
-      head: [["Ítens de alimentação", "Preço (MZN)", "Quantidade que dá para comprar"]],
-      body: ALIMENTACAO_MZ.map((a) => [
-        a.item,
-        fmtMZN(a.valor),
-        `${fmtQtd(totalMZN / a.valor)} ${a.unidade}`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 4;
-    if (y > 240) { doc.addPage(); y = 18; }
-    autoTable(doc, {
-      startY: y,
-      head: [["Salário / sustento mensal", "Valor (MZN)", "Quantos meses pode pagar"]],
-      body: SALARIOS_MZ.map((s) => [
-        s.cargo,
-        fmtMZN(s.valor),
-        `${fmtQtd(totalMZN / s.valor)} meses`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
-    y = (doc as any).lastAutoTable.finalY + 4;
-    if (y > 240) { doc.addPage(); y = 18; }
-    autoTable(doc, {
-      startY: y,
-      head: [["Material de construção", "Preço (MZN)", "Quantidade que dá para comprar"]],
-      body: MATERIAIS_MZ.map((m) => [
-        m.item,
-        fmtMZN(m.valor),
-        `${fmtQtd(totalMZN / m.valor)} ${m.unidade}`,
-      ]),
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [220, 53, 69] },
-    });
 
     savePDF(doc, `Relatorio_Missoes_${mesRef.slice(0, 7)}.pdf`);
   };
