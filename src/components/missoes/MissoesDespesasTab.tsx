@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -34,6 +34,7 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [filtros, setFiltros] = useState({ categoria: "", descricao: "", data: "", forma: "", valor: "" });
   const [form, setForm] = useState({
     categoria: "",
     descricao: "",
@@ -100,7 +101,17 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
     },
   });
 
-  const total = despesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const despesasFiltradas = (despesas as any[]).filter((d) => {
+    const f = filtros;
+    if (f.categoria && !String(d.categoria || "").toLowerCase().includes(f.categoria.toLowerCase())) return false;
+    if (f.descricao && !String(d.descricao || "").toLowerCase().includes(f.descricao.toLowerCase())) return false;
+    if (f.data && !format(parseLocalDate(d.data_despesa), "dd/MM/yyyy").includes(f.data)) return false;
+    if (f.forma && !String(d.forma_pagamento || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
+    if (f.valor && !String(d.valor || "").includes(f.valor.replace(",", "."))) return false;
+    return true;
+  });
+  const total = despesasFiltradas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
+  const algumFiltro = Object.values(filtros).some(Boolean);
 
   const openEdit = (d: any) => {
     setEditingId(d.id);
@@ -139,13 +150,27 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="w-[80px]" />
               </TableRow>
+              <TableRow className="bg-muted/30">
+                <TableHead className="py-1"><Input value={filtros.categoria} onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.descricao} onChange={(e) => setFiltros({ ...filtros, descricao: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.data} onChange={(e) => setFiltros({ ...filtros, data: e.target.value })} placeholder="dd/mm" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1">
+                  {algumFiltro && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ categoria: "", descricao: "", data: "", forma: "", valor: "" })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-6">Carregando...</TableCell></TableRow>
-              ) : despesas.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhuma despesa neste mês.</TableCell></TableRow>
-              ) : despesas.map((d: any) => (
+              ) : despesasFiltradas.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{algumFiltro ? "Nenhuma despesa para os filtros aplicados." : "Nenhuma despesa neste mês."}</TableCell></TableRow>
+              ) : despesasFiltradas.map((d: any) => (
                 <TableRow key={d.id}>
                   <TableCell><Badge variant="outline">{d.categoria}</Badge></TableCell>
                   <TableCell>{d.descricao || "—"}</TableCell>
@@ -160,7 +185,7 @@ export function MissoesDespesasTab({ mesRef, cotacao }: Props) {
                   </TableCell>
                 </TableRow>
               ))}
-              {despesas.length > 0 && (
+              {despesasFiltradas.length > 0 && (
                 <TableRow className="font-semibold">
                   <TableCell colSpan={4}>Total</TableCell>
                   <TableCell className="text-right text-destructive">{formatCurrency(total)}</TableCell>
