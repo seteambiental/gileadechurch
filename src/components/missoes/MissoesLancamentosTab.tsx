@@ -3,8 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, User, Building2, UserPlus } from "lucide-react";
+import { Plus, Pencil, Trash2, User, Building2, UserPlus, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/masks";
 import { format } from "date-fns";
@@ -21,6 +22,7 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [filtros, setFiltros] = useState({ data: "", origem: "", nome: "", forma: "", valor: "" });
 
   const { data: lancamentos = [], isLoading } = useQuery({
     queryKey: ["mm-lancamentos", mesRef],
@@ -56,6 +58,17 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
     (l.condominio?.name ? `Condomínio: ${l.condominio.name}` : null) ||
     l.nome_manual ||
     "—";
+
+  const lancamentosFiltrados = (lancamentos as any[]).filter((l) => {
+    const f = filtros;
+    if (f.data && !format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy").includes(f.data)) return false;
+    if (f.origem && !String(l.origem || "").toLowerCase().includes(f.origem.toLowerCase())) return false;
+    if (f.nome && !getNome(l).toLowerCase().includes(f.nome.toLowerCase())) return false;
+    if (f.forma && !String(l.forma_pagamento || "").toLowerCase().includes(f.forma.toLowerCase())) return false;
+    if (f.valor && !String(l.valor || "").includes(f.valor.replace(",", "."))) return false;
+    return true;
+  });
+  const algumFiltro = Object.values(filtros).some(Boolean);
 
   const iconeOrigem = (o: string) =>
     o === "membro" ? <User className="w-3 h-3" /> :
@@ -98,13 +111,27 @@ export function MissoesLancamentosTab({ mesRef, cotacao }: Props) {
                 <TableHead className="text-right">Valor</TableHead>
                 <TableHead className="w-[80px]" />
               </TableRow>
+              <TableRow className="bg-muted/30">
+                <TableHead className="py-1"><Input value={filtros.data} onChange={(e) => setFiltros({ ...filtros, data: e.target.value })} placeholder="dd/mm" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.origem} onChange={(e) => setFiltros({ ...filtros, origem: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.nome} onChange={(e) => setFiltros({ ...filtros, nome: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.forma} onChange={(e) => setFiltros({ ...filtros, forma: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1"><Input value={filtros.valor} onChange={(e) => setFiltros({ ...filtros, valor: e.target.value })} placeholder="Filtrar" className="h-7 text-xs" /></TableHead>
+                <TableHead className="py-1">
+                  {algumFiltro && (
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setFiltros({ data: "", origem: "", nome: "", forma: "", valor: "" })}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
+                </TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-6">Carregando...</TableCell></TableRow>
-              ) : lancamentos.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Nenhum lançamento neste mês.</TableCell></TableRow>
-              ) : lancamentos.map((l: any) => (
+              ) : lancamentosFiltrados.length === 0 ? (
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{algumFiltro ? "Nenhum lançamento para os filtros aplicados." : "Nenhum lançamento neste mês."}</TableCell></TableRow>
+              ) : lancamentosFiltrados.map((l: any) => (
                 <TableRow key={l.id}>
                   <TableCell>{format(parseLocalDate(l.data_lancamento), "dd/MM/yyyy")}</TableCell>
                   <TableCell><Badge variant="outline" className="gap-1">{iconeOrigem(l.origem)}{l.origem}</Badge></TableCell>
