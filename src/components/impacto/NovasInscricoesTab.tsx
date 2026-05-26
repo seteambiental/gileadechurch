@@ -182,18 +182,29 @@ const NovasInscricoesTab = () => {
         console.warn("[novasInscricoes] enrich mirror falhou:", e);
       }
 
-      // Best-effort whatsapp
+      // Best-effort: enviar mensagem de CONFIRMAÇÃO (com link do grupo WhatsApp)
       try {
-        await dispararMensagemInscricaoRecebida({
-          telefone: inscricao.telefone_contato,
-          nome: inscricao.nome_participante,
-          tituloEvento: inscricao.evento?.titulo || null,
-          eventoId: inscricao.evento_id,
-          eventoTipo: "agenda",
-          tipoInscricao: inscricao.tipo_inscricao,
+        const { data: eventoFull } = await supabase
+          .from("agenda_igreja")
+          .select("titulo, data_evento, hora_inicio, local, link_grupo_whatsapp")
+          .eq("id", inscricao.evento_id)
+          .maybeSingle();
+
+        await supabase.functions.invoke("enviar-whatsapp", {
+          body: {
+            action: "confirmacao_inscricao",
+            inscricaoId: id,
+            evento: {
+              titulo: eventoFull?.titulo ?? inscricao.evento?.titulo ?? null,
+              data_evento: eventoFull?.data_evento ?? inscricao.evento?.data_evento ?? null,
+              hora_inicio: eventoFull?.hora_inicio ?? null,
+              local: eventoFull?.local ?? null,
+              link_grupo_whatsapp: eventoFull?.link_grupo_whatsapp ?? null,
+            },
+          },
         });
       } catch (waErr) {
-        console.warn("[novasInscricoes] disparo whatsapp falhou:", waErr);
+        console.warn("[novasInscricoes] confirmação whatsapp falhou:", waErr);
       }
     },
     onMutate: (id) => {
@@ -321,19 +332,30 @@ const NovasInscricoesTab = () => {
         }
       }
 
-      // Best-effort whatsapp para cada inscrição aprovada em lote
+      // Best-effort: confirmação com link do grupo para cada inscrição aprovada em lote
       for (const inscricao of toApprove) {
         try {
-          await dispararMensagemInscricaoRecebida({
-            telefone: inscricao.telefone_contato,
-            nome: inscricao.nome_participante,
-            tituloEvento: inscricao.evento?.titulo || null,
-            eventoId: inscricao.evento_id,
-            eventoTipo: "agenda",
-            tipoInscricao: inscricao.tipo_inscricao,
+          const { data: eventoFull } = await supabase
+            .from("agenda_igreja")
+            .select("titulo, data_evento, hora_inicio, local, link_grupo_whatsapp")
+            .eq("id", inscricao.evento_id)
+            .maybeSingle();
+
+          await supabase.functions.invoke("enviar-whatsapp", {
+            body: {
+              action: "confirmacao_inscricao",
+              inscricaoId: inscricao.id,
+              evento: {
+                titulo: eventoFull?.titulo ?? inscricao.evento?.titulo ?? null,
+                data_evento: eventoFull?.data_evento ?? inscricao.evento?.data_evento ?? null,
+                hora_inicio: eventoFull?.hora_inicio ?? null,
+                local: eventoFull?.local ?? null,
+                link_grupo_whatsapp: eventoFull?.link_grupo_whatsapp ?? null,
+              },
+            },
           });
         } catch (waErr) {
-          console.warn("[novasInscricoes/lote] disparo whatsapp falhou:", waErr);
+          console.warn("[novasInscricoes/lote] confirmação whatsapp falhou:", waErr);
         }
       }
     },
