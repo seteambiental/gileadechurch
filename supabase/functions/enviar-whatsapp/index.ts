@@ -1143,7 +1143,7 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    if (action === 'mensagem_direta') {
+    if (action === 'mensagem_direta' || action === 'mensagem_livre') {
       const { telefone, mensagem } = body;
       if (!telefone || !mensagem) {
         throw new Error('Telefone e mensagem são obrigatórios');
