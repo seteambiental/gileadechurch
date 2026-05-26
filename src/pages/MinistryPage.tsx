@@ -282,7 +282,21 @@ const MinistryPage = () => {
     const n = new Date();
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-01`;
   });
-  const [mmCotacao, setMmCotacao] = useState<number>(10.5);
+  const [mmCotacao, setMmCotacaoState] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("mm-cotacao-mzn");
+      const n = saved ? parseFloat(saved) : NaN;
+      return Number.isFinite(n) && n > 0 ? n : 10.5;
+    } catch {
+      return 10.5;
+    }
+  });
+  const setMmCotacao = (v: number) => {
+    setMmCotacaoState(v);
+    try {
+      if (Number.isFinite(v) && v > 0) localStorage.setItem("mm-cotacao-mzn", String(v));
+    } catch {}
+  };
 
   // Sync URL with active tab so browser back restores correct tab
   useEffect(() => {
