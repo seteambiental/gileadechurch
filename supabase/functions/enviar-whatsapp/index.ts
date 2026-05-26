@@ -662,11 +662,20 @@ serve(async (req) => {
           })}${grupoWhatsappBlock}`
         : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
-      await enviarImagemComFallbackTexto(inscricao.telefone_contato, LOGO_GILEADE_URL, mensagem);
+      // Enfileira (rastreável + retentativa) ao invés de envio direto
+      const rConf = await enfileirarComDedupe(supabase, {
+        tipo: 'confirmacao_inscricao',
+        destinatario_telefone: inscricao.telefone_contato,
+        destinatario_nome: inscricao.nome_participante,
+        conteudo: mensagem,
+        midia_url: LOGO_GILEADE_URL,
+        evento_id: inscricao.evento_id || null,
+      });
 
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: 'Confirmação enviada por WhatsApp!' 
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Confirmação enfileirada por WhatsApp!',
+        ...rConf,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -19,6 +19,7 @@ import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { formatPhone, formatCPF } from "@/lib/masks";
 import { includesNormalized } from "@/lib/text-utils";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 interface Evento {
   id: string;
@@ -427,25 +428,16 @@ const InscricaoEvento = () => {
       if (error) throw error;
       const inscricaoData = { id: novoId as unknown as string };
 
-      // Enviar confirmação por WhatsApp automaticamente
-      try {
-        await supabase.functions.invoke('enviar-whatsapp', {
-          body: {
-            action: 'confirmacao_inscricao',
-            inscricaoId: inscricaoData.id,
-            evento: {
-              titulo: evento?.titulo,
-              data_evento: evento?.data_evento,
-              hora_inicio: evento?.hora_inicio,
-              local: evento?.local,
-              link_grupo_whatsapp: (evento as any)?.link_grupo_whatsapp || null,
-            },
-          },
-        });
-      } catch (whatsappError) {
-        console.error('Erro ao enviar WhatsApp:', whatsappError);
-        // Não bloqueia a inscrição se o WhatsApp falhar
-      }
+      // Mensagem inicial "Recebemos sua inscrição" + notifica o ADM (vai pela fila, com retentativa)
+      // A confirmação final (com link do grupo) será enviada DEPOIS que o ADM aprovar no painel.
+      await dispararMensagemInscricaoRecebida({
+        telefone: telefoneContato,
+        nome: nomeParticipante,
+        tituloEvento: evento?.titulo,
+        eventoId: eventoId,
+        eventoTipo: "agenda",
+        tipoInscricao: tipoInscricao,
+      });
 
       return inscricaoData;
     },
