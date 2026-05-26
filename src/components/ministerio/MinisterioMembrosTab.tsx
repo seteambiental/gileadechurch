@@ -77,6 +77,7 @@ export const MinisterioMembrosTab = ({
   const [shareSearch, setShareSearch] = useState("");
   const [shareDestinatarioId, setShareDestinatarioId] = useState<string>("");
   const [shareSending, setShareSending] = useState(false);
+  const [shareMensagemExtra, setShareMensagemExtra] = useState("");
 
   // Buscar membros da tabela members
   const { data: membros = [], isLoading: loadingMembros } = useQuery({
@@ -300,6 +301,10 @@ export const MinisterioMembrosTab = ({
   // Gera a lista formatada para WhatsApp
   const gerarListaTexto = () => {
     const linhas: string[] = [];
+    if (shareMensagemExtra.trim()) {
+      linhas.push(shareMensagemExtra.trim());
+      linhas.push("");
+    }
     linhas.push(`*Lista — ${ministerioTitle}*`);
     linhas.push(`Total: ${todosMembros.length} pessoa(s)`);
     linhas.push("");
@@ -330,6 +335,7 @@ export const MinisterioMembrosTab = ({
       if (error) throw error;
       toast.success(`Lista enviada para ${destinatario.full_name}`);
       setShareDialogOpen(false);
+      setShareMensagemExtra("");
     } catch (err) {
       console.error("Erro ao compartilhar lista:", err);
       toast.error("Erro ao enviar lista");
@@ -678,6 +684,18 @@ export const MinisterioMembrosTab = ({
               value={shareSearch}
               onChange={setShareSearch}
             />
+
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                Mensagem adicional (opcional)
+              </p>
+              <Textarea
+                placeholder="Ex: Segue a lista atualizada da equipe..."
+                value={shareMensagemExtra}
+                onChange={(e) => setShareMensagemExtra(e.target.value)}
+                rows={3}
+              />
+            </div>
 
             <div className="max-h-56 overflow-y-auto rounded-md border divide-y">
               {todosMembros
