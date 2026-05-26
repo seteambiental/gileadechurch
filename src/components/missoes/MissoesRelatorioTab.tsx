@@ -167,7 +167,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     const lancamentosOrdenados = ordenarLancamentos(lancamentos);
     if (lancamentosOrdenados.length > 0) {
       if (y > 240) { doc.addPage(); y = 18; }
-      doc.setFontSize(11); doc.text("Lançamentos avulsos", 14, y); y += 2;
+      doc.setFontSize(11); doc.text("Lançamentos", 14, y); y += 2;
       autoTable(doc, {
         startY: y,
         head: [["Data", "Origem", "Nome", "Forma", "Valor"]],
@@ -259,7 +259,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Lançamentos avulsos do mês</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Lançamentos do mês</CardTitle></CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
