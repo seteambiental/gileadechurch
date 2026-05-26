@@ -685,6 +685,18 @@ export const MinisterioMembrosTab = ({
               onChange={setShareSearch}
             />
 
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                Mensagem adicional (opcional)
+              </p>
+              <Textarea
+                placeholder="Ex: Segue a lista atualizada da equipe..."
+                value={shareMensagemExtra}
+                onChange={(e) => setShareMensagemExtra(e.target.value)}
+                rows={3}
+              />
+            </div>
+
             <div className="max-h-56 overflow-y-auto rounded-md border divide-y">
               {todosMembros
                 .filter((m) => m.whatsapp && includesNormalized(m.full_name, shareSearch))
