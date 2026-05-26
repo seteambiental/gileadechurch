@@ -242,7 +242,7 @@ export const MinisterioMembrosTab = ({
         try {
           await supabase.functions.invoke("enviar-whatsapp", {
             body: {
-              action: "mensagem_livre",
+              action: "mensagem_direta",
               telefone: membro.whatsapp,
               mensagem: mensagemPersonalizada,
             },
@@ -322,7 +322,7 @@ export const MinisterioMembrosTab = ({
     try {
       const { error } = await supabase.functions.invoke("enviar-whatsapp", {
         body: {
-          action: "mensagem_livre",
+          action: "mensagem_direta",
           telefone: destinatario.whatsapp,
           mensagem: gerarListaTexto(),
         },
