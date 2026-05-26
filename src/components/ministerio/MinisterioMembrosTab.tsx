@@ -8,6 +8,15 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Users, 
   MessageCircle, 
@@ -58,7 +67,9 @@ export const MinisterioMembrosTab = ({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [mensagem, setMensagem] = useState("");
-  const [showMensagemInput, setShowMensagemInput] = useState(false);
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkSearch, setBulkSearch] = useState("");
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "membro" | "visitante">("todos");
 
   // Buscar membros da tabela members
@@ -215,25 +226,43 @@ export const MinisterioMembrosTab = ({
         return;
       }
 
-      for (const membro of membrosParaEnviar) {
-        await supabase.functions.invoke("enviar-whatsapp", {
-          body: {
-            action: "mensagem_livre",
-            telefone: membro.whatsapp,
-            mensagem: mensagem,
-          },
-        });
+      const total = membrosParaEnviar.length;
+      setSendProgress({ current: 0, total });
+      let enviados = 0;
+      for (let i = 0; i < membrosParaEnviar.length; i++) {
+        const membro = membrosParaEnviar[i];
+        const primeiroNome = (membro.full_name || "").trim().split(/\s+/)[0] || "";
+        const mensagemPersonalizada = mensagem.replace(/\{nome\}/gi, primeiroNome);
+        try {
+          await supabase.functions.invoke("enviar-whatsapp", {
+            body: {
+              action: "mensagem_livre",
+              telefone: membro.whatsapp,
+              mensagem: mensagemPersonalizada,
+            },
+          });
+          enviados++;
+        } catch (err) {
+          console.warn("Falha ao enviar para", membro.full_name, err);
+        }
+        setSendProgress({ current: i + 1, total });
+        // Espaçamento aleatório 15-30s entre envios (anti-SPAM Evolution)
+        if (i < membrosParaEnviar.length - 1) {
+          const delay = Math.floor(Math.random() * 15000) + 15000;
+          await new Promise((r) => setTimeout(r, delay));
+        }
       }
 
-      toast.success(`Mensagem enviada para ${membrosParaEnviar.length} pessoa(s)!`);
+      toast.success(`Mensagem enviada para ${enviados} de ${total} pessoa(s)!`);
       setSelectedMembers([]);
       setMensagem("");
-      setShowMensagemInput(false);
+      setBulkDialogOpen(false);
     } catch (error) {
       console.error("Erro ao enviar mensagens:", error);
       toast.error("Erro ao enviar mensagens");
     } finally {
       setIsSending(false);
+      setSendProgress(null);
     }
   };
 
@@ -286,6 +315,17 @@ export const MinisterioMembrosTab = ({
             title={`Membros - ${ministerioTitle}`}
             sheetName="Membros"
           />
+          <Button
+            size="sm"
+            className="gap-1"
+            onClick={() => {
+              setBulkSearch("");
+              setBulkDialogOpen(true);
+            }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            Mensagem em Lote
+          </Button>
           <VisitanteFormDialog 
             ministerioSlug={ministerioSlug} 
             ministerioTitle={ministerioTitle} 
@@ -331,61 +371,6 @@ export const MinisterioMembrosTab = ({
         </div>
       </div>
 
-      {/* Ações em lote */}
-      {selectedMembers.length > 0 && (
-        <Card className="bg-secondary/10 border-secondary">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedMembers.length} selecionado(s)
-              </span>
-              
-              {showMensagemInput ? (
-                <div className="flex flex-col sm:flex-row gap-2 flex-1 sm:ml-4">
-                  <Input
-                    placeholder="Digite a mensagem..."
-                    value={mensagem}
-                    onChange={(e) => setMensagem(e.target.value)}
-                    className="flex-1"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowMensagemInput(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={enviarMensagemLote}
-                      disabled={isSending}
-                      className="gap-1"
-                    >
-                      {isSending ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Send className="w-4 h-4" />
-                      )}
-                      Enviar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => setShowMensagemInput(true)}
-                  className="gap-1"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Enviar Mensagem em Lote
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Lista de Membros */}
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -405,16 +390,6 @@ export const MinisterioMembrosTab = ({
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base">Lista de Participantes</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleSelectAll}
-                className="text-xs"
-              >
-                {selectedMembers.length === todosMembros.length
-                  ? "Desmarcar todos"
-                  : "Selecionar todos"}
-              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -424,11 +399,6 @@ export const MinisterioMembrosTab = ({
                   key={membro.id}
                   className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
                 >
-                  <Checkbox
-                    checked={selectedMembers.includes(membro.id)}
-                    onCheckedChange={() => toggleSelect(membro.id)}
-                  />
-                  
                   <Avatar className="h-10 w-10 border border-border">
                     <AvatarImage src={membro.photo_url || undefined} />
                     <AvatarFallback className="bg-muted text-xs">
@@ -502,6 +472,119 @@ export const MinisterioMembrosTab = ({
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog: seleção de destinatários e envio em lote */}
+      <Dialog
+        open={bulkDialogOpen}
+        onOpenChange={(v) => {
+          if (isSending) return;
+          setBulkDialogOpen(v);
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-secondary" />
+              Enviar mensagem em lote
+            </DialogTitle>
+            <DialogDescription>
+              Selecione os destinatários e escreva a mensagem. Use {"{nome}"} para
+              personalizar com o primeiro nome. Envio espaçado de 15–30 segundos
+              entre cada mensagem para evitar bloqueios (Evolution API).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <SearchInput
+              placeholder="Buscar destinatários..."
+              value={bulkSearch}
+              onChange={setBulkSearch}
+            />
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {selectedMembers.length} selecionado(s) • {todosMembros.filter((m) => m.whatsapp).length} com WhatsApp
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const elegiveis = todosMembros.filter((m) => m.whatsapp);
+                  const todosIds = elegiveis.map((m) => m.id);
+                  const allSelected = todosIds.every((id) => selectedMembers.includes(id));
+                  if (allSelected) {
+                    setSelectedMembers((prev) => prev.filter((id) => !todosIds.includes(id)));
+                  } else {
+                    setSelectedMembers((prev) => Array.from(new Set([...prev, ...todosIds])));
+                  }
+                }}
+                className="text-xs"
+              >
+                Selecionar todos com WhatsApp
+              </Button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto rounded-md border divide-y">
+              {todosMembros
+                .filter((m) => includesNormalized(m.full_name, bulkSearch))
+                .map((membro) => {
+                  const disabled = !membro.whatsapp;
+                  return (
+                    <label
+                      key={membro.id}
+                      className={`flex items-center gap-3 p-2 text-sm cursor-pointer hover:bg-muted/50 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <Checkbox
+                        checked={selectedMembers.includes(membro.id)}
+                        disabled={disabled}
+                        onCheckedChange={() => !disabled && toggleSelect(membro.id)}
+                      />
+                      <span className="flex-1 truncate">{membro.full_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {membro.whatsapp || "sem WhatsApp"}
+                      </span>
+                    </label>
+                  );
+                })}
+            </div>
+
+            <Textarea
+              placeholder="Digite a mensagem... Use {nome} para personalizar"
+              value={mensagem}
+              onChange={(e) => setMensagem(e.target.value)}
+              rows={5}
+            />
+
+            {sendProgress && (
+              <div className="text-sm text-muted-foreground">
+                Enviando {sendProgress.current} de {sendProgress.total}...
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBulkDialogOpen(false)}
+              disabled={isSending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={enviarMensagemLote}
+              disabled={isSending || selectedMembers.length === 0 || !mensagem.trim()}
+              className="gap-1"
+            >
+              {isSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              Enviar {selectedMembers.length > 0 ? `(${selectedMembers.length})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
