@@ -144,9 +144,8 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     doc.setFontSize(9);
     doc.setTextColor(100);
     doc.text(`Gerado em ${new Date().toLocaleString("pt-BR")}`, 14, 25);
-    doc.text(`Cotação usada: 1 BRL = ${cotacao.toFixed(4)} MZN`, 14, 30);
 
-    let y = 38;
+    let y = 32;
     doc.setFontSize(11); doc.setTextColor(0);
     doc.text("Resumo", 14, y); y += 5;
     const resumo = [
@@ -154,7 +153,6 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
       ["Lançamentos manuais", formatCurrency(totaisCalc.totalManual)],
       ["Ofertas de condomínios", formatCurrency(totaisCalc.totalCond)],
       ["TOTAL ARRECADADO (R$)", formatCurrency(totaisCalc.totalArrecadado)],
-      ["Equivalente em MZN", `MZN ${(totaisCalc.totalArrecadado * cotacao).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`],
       ["Total de despesas (R$)", formatCurrency(totaisCalc.totalDespesas)],
       ["SALDO FINAL (R$)", formatCurrency(totaisCalc.saldo)],
     ];
