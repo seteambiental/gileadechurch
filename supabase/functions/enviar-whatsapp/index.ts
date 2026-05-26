@@ -36,7 +36,7 @@ const MENSAGEM_CADASTRO_APROVADO = (primeiroNome: string) =>
 
 // Telefone(s) que recebem notificação interna de novas inscrições.
 // Vanderlei Aparecido Pedro – administrador responsável.
-const ADMIN_NOTIF_INSCRICAO_TELEFONES = ['41991735186'];
+const ADMIN_NOTIF_INSCRICAO_TELEFONES = ['41984006740'];
 
 const MENSAGEM_ADMIN_NOVA_INSCRICAO = (
   nomeInscrito: string,
