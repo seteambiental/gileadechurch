@@ -72,17 +72,30 @@ export const MinisterioAgendaTab = ({ ministerioSlug, ministerioTitle, memberId 
     cor?: string | null;
   } | null>(null);
 
-  // Filtros por ministério
+  // Mapeia o slug do ministério para o valor de genero_alvo em agenda_igreja
+  const getGeneroAlvo = (): string | null => {
+    switch (ministerioSlug) {
+      case "true-man":
+      case "homens":
+        return "homens";
+      case "mulheres":
+        return "mulheres";
+      case "flow":
+        return "jovens";
+      case "gt":
+        return "adolescentes";
+      default:
+        return null;
+    }
+  };
+
+  // Fallback por palavras-chave no título/descrição (para ministérios sem genero_alvo)
   const getMinisterioKeywords = () => {
     switch (ministerioSlug) {
       case "flow":
         return ["jovem", "jovens", "youth", "flow"];
       case "gt":
         return ["adolescente", "adolescentes", "teens", "gt"];
-      case "homens":
-        return ["homem", "homens", "masculino"];
-      case "mulheres":
-        return ["mulher", "mulheres", "feminino"];
       default:
         return [];
     }
@@ -92,20 +105,31 @@ export const MinisterioAgendaTab = ({ ministerioSlug, ministerioTitle, memberId 
     queryKey: ["eventos-ministerio", ministerioSlug],
     queryFn: async () => {
       const hoje = todayDateStr();
-      
-      const { data, error } = await supabase
+      const generoAlvo = getGeneroAlvo();
+
+      let query = supabase
         .from("agenda_igreja")
         .select("*")
         .eq("ativo", true)
         .eq("recorrente", false)
         .gte("data_evento", hoje)
         .order("data_evento");
-      
+
+      // Se o ministério tem público-alvo definido, filtra direto pelo campo
+      if (generoAlvo) {
+        query = query.eq("genero_alvo", generoAlvo);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      
+
+      if (generoAlvo) {
+        return data as Evento[];
+      }
+
+      // Fallback: filtra por palavras-chave para slugs sem mapeamento direto
       const keywords = getMinisterioKeywords();
-      
-      // Filtrar eventos pelo ministério
+      if (keywords.length === 0) return [] as Evento[];
       return (data as Evento[]).filter((evento) => {
         const titulo = evento.titulo.toLowerCase();
         const descricao = (evento.descricao || "").toLowerCase();
