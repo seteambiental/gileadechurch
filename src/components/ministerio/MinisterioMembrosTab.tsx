@@ -26,6 +26,8 @@ import {
   Send,
   Filter,
   ArrowUpDown,
+  Share2,
+  FileText,
 } from "lucide-react";
 import { differenceInYears } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
@@ -71,6 +73,10 @@ export const MinisterioMembrosTab = ({
   const [bulkSearch, setBulkSearch] = useState("");
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "membro" | "visitante">("todos");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareDestinatarioId, setShareDestinatarioId] = useState<string>("");
+  const [shareSending, setShareSending] = useState(false);
 
   // Buscar membros da tabela members
   const { data: membros = [], isLoading: loadingMembros } = useQuery({
@@ -325,6 +331,19 @@ export const MinisterioMembrosTab = ({
           >
             <MessageCircle className="w-4 h-4" />
             Mensagem em Lote
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1"
+            onClick={() => {
+              setShareSearch("");
+              setShareDestinatarioId("");
+              setShareDialogOpen(true);
+            }}
+          >
+            <Share2 className="w-4 h-4" />
+            Compartilhar Lista
           </Button>
           <VisitanteFormDialog 
             ministerioSlug={ministerioSlug} 
