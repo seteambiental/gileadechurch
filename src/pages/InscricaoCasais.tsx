@@ -207,8 +207,15 @@ export default function InscricaoCasais() {
         aceite_confidencialidade: aceiteConfidencialidade,
       };
 
-      const { data, error } = await supabase.from("casais_inscritos").insert(payload).select("id").single();
+      const novoId =
+        (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function")
+          ? globalThis.crypto.randomUUID()
+          : undefined;
+      const { error } = await supabase
+        .from("casais_inscritos")
+        .insert({ ...payload, ...(novoId ? { id: novoId } : {}) } as any);
       if (error) throw error;
+      const data = { id: novoId as string };
 
       // Insert filhos
       if (filhos.length > 0) {
