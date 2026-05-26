@@ -297,6 +297,47 @@ export const MinisterioMembrosTab = ({
 
   const isLoading = loadingMembros || loadingVisitantes;
 
+  // Gera a lista formatada para WhatsApp
+  const gerarListaTexto = () => {
+    const linhas: string[] = [];
+    linhas.push(`*Lista — ${ministerioTitle}*`);
+    linhas.push(`Total: ${todosMembros.length} pessoa(s)`);
+    linhas.push("");
+    todosMembros.forEach((m, i) => {
+      const idade = m.idade != null ? ` (${m.idade}a)` : "";
+      const tipo = m.tipo === "visitante" ? " — visitante" : "";
+      const wpp = m.whatsapp ? ` — ${m.whatsapp}` : "";
+      linhas.push(`${i + 1}. ${m.full_name}${idade}${tipo}${wpp}`);
+    });
+    return linhas.join("\n");
+  };
+
+  const compartilharLista = async () => {
+    const destinatario = todosMembros.find((m) => m.id === shareDestinatarioId);
+    if (!destinatario || !destinatario.whatsapp) {
+      toast.error("Selecione um contato com WhatsApp");
+      return;
+    }
+    setShareSending(true);
+    try {
+      const { error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: {
+          action: "mensagem_livre",
+          telefone: destinatario.whatsapp,
+          mensagem: gerarListaTexto(),
+        },
+      });
+      if (error) throw error;
+      toast.success(`Lista enviada para ${destinatario.full_name}`);
+      setShareDialogOpen(false);
+    } catch (err) {
+      console.error("Erro ao compartilhar lista:", err);
+      toast.error("Erro ao enviar lista");
+    } finally {
+      setShareSending(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -600,6 +641,89 @@ export const MinisterioMembrosTab = ({
                 <Send className="w-4 h-4" />
               )}
               Enviar {selectedMembers.length > 0 ? `(${selectedMembers.length})` : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: compartilhar lista por WhatsApp */}
+      <Dialog
+        open={shareDialogOpen}
+        onOpenChange={(v) => {
+          if (shareSending) return;
+          setShareDialogOpen(v);
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="w-5 h-5 text-secondary" />
+              Compartilhar lista por WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              Selecione um contato da equipe para receber a lista de {todosMembros.length} pessoa(s) de {ministerioTitle}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            <div className="rounded-md border bg-muted/30 p-3 max-h-40 overflow-y-auto">
+              <p className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+                <FileText className="w-3 h-3" /> Prévia
+              </p>
+              <pre className="text-xs whitespace-pre-wrap font-mono">{gerarListaTexto()}</pre>
+            </div>
+
+            <SearchInput
+              placeholder="Buscar contato..."
+              value={shareSearch}
+              onChange={setShareSearch}
+            />
+
+            <div className="max-h-56 overflow-y-auto rounded-md border divide-y">
+              {todosMembros
+                .filter((m) => m.whatsapp && includesNormalized(m.full_name, shareSearch))
+                .map((membro) => (
+                  <label
+                    key={membro.id}
+                    className="flex items-center gap-3 p-2 text-sm cursor-pointer hover:bg-muted/50"
+                  >
+                    <input
+                      type="radio"
+                      name="share-dest"
+                      checked={shareDestinatarioId === membro.id}
+                      onChange={() => setShareDestinatarioId(membro.id)}
+                    />
+                    <span className="flex-1 truncate">{membro.full_name}</span>
+                    <span className="text-xs text-muted-foreground">{membro.whatsapp}</span>
+                  </label>
+                ))}
+              {todosMembros.filter((m) => m.whatsapp).length === 0 && (
+                <p className="p-3 text-sm text-muted-foreground text-center">
+                  Nenhum contato com WhatsApp disponível.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShareDialogOpen(false)}
+              disabled={shareSending}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={compartilharLista}
+              disabled={shareSending || !shareDestinatarioId}
+              className="gap-1"
+            >
+              {shareSending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              Enviar lista
             </Button>
           </DialogFooter>
         </DialogContent>
