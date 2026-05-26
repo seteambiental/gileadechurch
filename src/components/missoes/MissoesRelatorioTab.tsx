@@ -89,7 +89,7 @@ export function MissoesRelatorioTab({ mesRef, cotacao }: Props) {
     return { totalFixos, totalMembros, totalCond, totalManual, totalArrecadado, totalDespesas, saldo };
   }, [contribuicoes, lancamentos, despesas]);
 
-  const mesLabel = format(new Date(mesRef), "MMMM 'de' yyyy", { locale: ptBR });
+  const mesLabel = format(parseLocalDate(mesRef), "MMMM 'de' yyyy", { locale: ptBR });
 
   const totalMZN = totaisCalc.totalArrecadado * cotacao;
   const fmtMZN = (v: number) => `MZN ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
