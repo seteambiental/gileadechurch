@@ -1,0 +1,1 @@
+DELETE FROM public.inscricoes_eventos WHERE nome_participante='Teste RLS Debug';

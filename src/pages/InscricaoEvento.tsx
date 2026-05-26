@@ -420,12 +420,12 @@ const InscricaoEvento = () => {
         valor_inscricao: valorInscricao,
       };
 
-      const { data: inscricaoData, error } = await supabase
-        .from("inscricoes_eventos")
-        .insert(payload)
-        .select()
-        .single();
+      const { data: novoId, error } = await supabase.rpc(
+        "criar_inscricao_evento_publica" as any,
+        { payload: payload as any }
+      );
       if (error) throw error;
+      const inscricaoData = { id: novoId as unknown as string };
 
       // Enviar confirmação por WhatsApp automaticamente
       try {
