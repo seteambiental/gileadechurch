@@ -358,14 +358,6 @@ const NovasInscricoesTab = () => {
           console.warn("[novasInscricoes/lote] confirmação whatsapp falhou:", waErr);
         }
       }
-            eventoId: inscricao.evento_id,
-            eventoTipo: "agenda",
-            tipoInscricao: inscricao.tipo_inscricao,
-          });
-        } catch (waErr) {
-          console.warn("[novasInscricoes/lote] disparo whatsapp falhou:", waErr);
-        }
-      }
     },
     onSuccess: () => {
       toast.success("Todas as inscrições foram aprovadas!");
