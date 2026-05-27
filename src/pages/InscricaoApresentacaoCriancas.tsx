@@ -32,6 +32,7 @@ import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
+import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 interface Evento {
   id: string;
@@ -272,6 +273,41 @@ const InscricaoApresentacaoCriancas = () => {
         .from("apresentacao_criancas_inscricoes")
         .insert(payload);
       if (error) throw error;
+
+      // Dispara mensagem "inscrição recebida" para o WhatsApp do pai e/ou da mãe
+      try {
+        const responsaveis: Array<Selecionado | null> = [pai, mae];
+        for (const resp of responsaveis) {
+          if (!resp) continue;
+          let telefone: string | null = null;
+          if (resp.tipo === "member") {
+            const { data } = await supabase
+              .from("members")
+              .select("whatsapp")
+              .eq("id", resp.id)
+              .maybeSingle();
+            telefone = (data as any)?.whatsapp ?? null;
+          } else {
+            const { data } = await (supabase as any)
+              .from("member_requests")
+              .select("whatsapp")
+              .eq("id", resp.id)
+              .maybeSingle();
+            telefone = (data as any)?.whatsapp ?? null;
+          }
+          if (telefone) {
+            await dispararMensagemInscricaoRecebida({
+              telefone,
+              nome: resp.full_name,
+              tituloEvento: evento.titulo,
+              eventoId: evento.id,
+              eventoTipo: "agenda",
+            });
+          }
+        }
+      } catch (e) {
+        console.warn("[apresentacao-criancas] falha ao enviar whatsapp:", e);
+      }
     },
     onSuccess: () => {
       setEnviado(true);
