@@ -1195,7 +1195,6 @@ serve(async (req) => {
         destinatario_telefone: telefone,
         destinatario_nome: nome,
         conteudo: mensagem,
-        midia_url: LOGO_GILEADE_URL,
         evento_id: eventoId || null,
       });
 
