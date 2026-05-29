@@ -9,6 +9,7 @@ import { RefreshCw, TrendingUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { parseLocalDate } from "@/lib/date-utils";
 
 interface Props {
   mesRef: string; // YYYY-MM-DD (1º dia do mês)
@@ -69,7 +70,7 @@ export function MissoesFiltroHeader({ mesRef, onMesRefChange, cotacao, onCotacao
               className="w-44"
             />
             <div className="text-xs text-muted-foreground mt-1">
-              {format(new Date(mesRef), "MMMM 'de' yyyy", { locale: ptBR })}
+              {format(parseLocalDate(mesRef), "MMMM 'de' yyyy", { locale: ptBR })}
             </div>
           </div>
 
