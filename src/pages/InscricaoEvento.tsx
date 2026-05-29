@@ -760,6 +760,23 @@ const InscricaoEvento = () => {
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
+                    </div>
+
+                    {showField("data_nascimento") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento</Label>
+                      <Input
+                        id="data_nascimento"
+                        type="date"
+                        value={dataNascimento}
+                        onChange={(e) => setDataNascimento(e.target.value)}
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    <div className="space-y-2 md:space-y-3 hidden">
+                      <Label htmlFor="telefone-dup" className="text-base md:text-lg">Telefone para Contato *</Label>
                       {telefoneLocked ? (
                         <div className="relative">
                           <Input
