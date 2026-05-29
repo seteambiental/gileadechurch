@@ -42,6 +42,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualDataNascimento, setManualDataNascimento] = useState("");
   const [manualPhoneEmergencia, setManualPhoneEmergencia] = useState("");
   const [manualIgreja, setManualIgreja] = useState("");
   const [manualMinisterio, setManualMinisterio] = useState("");
