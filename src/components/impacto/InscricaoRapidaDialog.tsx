@@ -189,6 +189,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     setSelectedMember(null);
     setManualName("");
     setManualPhone("");
+    setManualDataNascimento("");
     setManualPhoneEmergencia("");
     setManualIgreja("");
     setManualMinisterio("");
