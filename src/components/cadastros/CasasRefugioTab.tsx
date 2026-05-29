@@ -238,6 +238,12 @@ const CasasRefugioTab = () => {
                 { header: "Supervisores", accessor: (r) => formatLeaderNames(r.supervisor?.full_name, r.supervisor_esposa?.full_name, "Supervisor") || r.supervisores || "-" },
                 { header: "Dias", accessor: "dias" },
                 { header: "Frequência", accessor: "frequencia" },
+                { header: "Endereço Completo", accessor: (r) => [
+                  [r.address, r.numero].filter(Boolean).join(", "),
+                  r.neighborhood,
+                  [r.city, r.state].filter(Boolean).join(" - "),
+                  r.cep,
+                ].filter(Boolean).join(" - ") || "-" },
                 { header: "Bairro", accessor: "neighborhood" },
                 { header: "Cidade", accessor: "city" },
                 { header: "Estado", accessor: "state" },
