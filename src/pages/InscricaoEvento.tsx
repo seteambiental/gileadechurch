@@ -403,6 +403,7 @@ const InscricaoEvento = () => {
         novo_convertido_id: selectedPerson?.type === "convertido" ? selectedPerson.id : null,
         nome_participante: nomeParticipante,
         genero,
+        data_nascimento: dataNascimento || null,
         telefone_contato: telefoneContato,
         telefone_emergencia: telefoneEmergencia || null,
         is_menor: isMenor,
