@@ -119,6 +119,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           cpf: manualCpf || null,
           rg: manualRg || null,
           tipo_inscricao: tipoInscricao,
+          data_nascimento: manualDataNascimento || null,
         });
         if (error) throw error;
         dispararMensagemInscricaoRecebida({
