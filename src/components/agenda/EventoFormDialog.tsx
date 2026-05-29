@@ -221,6 +221,7 @@ export const EventoFormDialog = ({
     { key: "nome", label: "Nome completo" },
     { key: "telefone", label: "Telefone / WhatsApp" },
     { key: "genero", label: "Gênero" },
+    { key: "data_nascimento", label: "Data de Nascimento" },
     { key: "telefone_emergencia", label: "Telefone de Emergência" },
     { key: "cpf", label: "CPF" },
     { key: "rg", label: "RG" },

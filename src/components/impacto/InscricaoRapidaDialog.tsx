@@ -42,6 +42,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [manualName, setManualName] = useState("");
   const [manualPhone, setManualPhone] = useState("");
+  const [manualDataNascimento, setManualDataNascimento] = useState("");
   const [manualPhoneEmergencia, setManualPhoneEmergencia] = useState("");
   const [manualIgreja, setManualIgreja] = useState("");
   const [manualMinisterio, setManualMinisterio] = useState("");
@@ -118,6 +119,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
           cpf: manualCpf || null,
           rg: manualRg || null,
           tipo_inscricao: tipoInscricao,
+          data_nascimento: manualDataNascimento || null,
         });
         if (error) throw error;
         dispararMensagemInscricaoRecebida({
@@ -187,6 +189,7 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
     setSelectedMember(null);
     setManualName("");
     setManualPhone("");
+    setManualDataNascimento("");
     setManualPhoneEmergencia("");
     setManualIgreja("");
     setManualMinisterio("");
@@ -256,6 +259,14 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                   />
                 </div>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label>Data de Nascimento</Label>
+                <Input
+                  type="date"
+                  value={manualDataNascimento}
+                  onChange={(e) => setManualDataNascimento(e.target.value)}
+                />
               </div>
               {showField("igreja_congrega") && (
               <div className="space-y-2">

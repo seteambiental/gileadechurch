@@ -3473,6 +3473,7 @@ export type Database = {
           casa_refugio_id: string | null
           cpf: string | null
           created_at: string
+          data_nascimento: string | null
           descricao_alergia: string | null
           descricao_medicamento: string | null
           evento_id: string
@@ -3507,6 +3508,7 @@ export type Database = {
           casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           descricao_alergia?: string | null
           descricao_medicamento?: string | null
           evento_id: string
@@ -3541,6 +3543,7 @@ export type Database = {
           casa_refugio_id?: string | null
           cpf?: string | null
           created_at?: string
+          data_nascimento?: string | null
           descricao_alergia?: string | null
           descricao_medicamento?: string | null
           evento_id?: string

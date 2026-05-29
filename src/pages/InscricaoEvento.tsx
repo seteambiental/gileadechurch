@@ -64,6 +64,7 @@ const InscricaoEvento = () => {
   const [selectedPerson, setSelectedPerson] = useState<{ type: "member" | "convertido" | "novo"; id?: string } | null>(null);
   const [nomeParticipante, setNomeParticipante] = useState("");
   const [genero, setGenero] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [telefoneContato, setTelefoneContato] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [isMenor, setIsMenor] = useState(false);
@@ -402,6 +403,7 @@ const InscricaoEvento = () => {
         novo_convertido_id: selectedPerson?.type === "convertido" ? selectedPerson.id : null,
         nome_participante: nomeParticipante,
         genero,
+        data_nascimento: dataNascimento || null,
         telefone_contato: telefoneContato,
         telefone_emergencia: telefoneEmergencia || null,
         is_menor: isMenor,
@@ -716,6 +718,7 @@ const InscricaoEvento = () => {
                       setSelectedPerson(null);
                       setNomeParticipante("");
                       setGenero("");
+                      setDataNascimento("");
                       setTelefoneContato("");
                       setCpf("");
                       setTelefoneEmergencia("");
@@ -753,6 +756,19 @@ const InscricaoEvento = () => {
                           <SelectItem value="feminino" className="text-base md:text-lg py-2 md:py-3">Feminino</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    )}
+
+                    {showField("data_nascimento") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento</Label>
+                      <Input
+                        id="data_nascimento"
+                        type="date"
+                        value={dataNascimento}
+                        onChange={(e) => setDataNascimento(e.target.value)}
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
                     </div>
                     )}
 
