@@ -64,6 +64,7 @@ const InscricaoEvento = () => {
   const [selectedPerson, setSelectedPerson] = useState<{ type: "member" | "convertido" | "novo"; id?: string } | null>(null);
   const [nomeParticipante, setNomeParticipante] = useState("");
   const [genero, setGenero] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [telefoneContato, setTelefoneContato] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [isMenor, setIsMenor] = useState(false);
