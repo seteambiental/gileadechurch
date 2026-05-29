@@ -19,11 +19,16 @@ interface Props { mesRef: string; cotacao: number }
 
 // Ordem de origem para listagem: membros, manuais, condomínios.
 const ORDEM_ORIGEM: Record<string, number> = { membro: 1, manual: 2, condominio: 3 };
+const getNomeLanc = (l: any) =>
+  (l.member?.full_name || l.condominio?.name || l.nome_manual || "").toLowerCase().trim();
 const ordenarLancamentos = (lista: any[]) =>
   [...lista].sort((a, b) => {
     const oa = ORDEM_ORIGEM[a.origem] ?? 99;
     const ob = ORDEM_ORIGEM[b.origem] ?? 99;
     if (oa !== ob) return oa - ob;
+    const na = getNomeLanc(a);
+    const nb = getNomeLanc(b);
+    if (na !== nb) return na.localeCompare(nb, "pt-BR");
     return (b.data_lancamento || "").localeCompare(a.data_lancamento || "");
   });
 
