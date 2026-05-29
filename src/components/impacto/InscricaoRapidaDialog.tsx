@@ -260,6 +260,14 @@ const InscricaoRapidaDialog = ({ open, onOpenChange, eventoId, eventoTitulo }: I
                 </div>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>Data de Nascimento</Label>
+                <Input
+                  type="date"
+                  value={manualDataNascimento}
+                  onChange={(e) => setManualDataNascimento(e.target.value)}
+                />
+              </div>
               {showField("igreja_congrega") && (
               <div className="space-y-2">
                 <Label>Igreja onde congrega</Label>
