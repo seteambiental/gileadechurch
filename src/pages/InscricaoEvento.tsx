@@ -718,6 +718,7 @@ const InscricaoEvento = () => {
                       setSelectedPerson(null);
                       setNomeParticipante("");
                       setGenero("");
+                      setDataNascimento("");
                       setTelefoneContato("");
                       setCpf("");
                       setTelefoneEmergencia("");
