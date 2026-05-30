@@ -545,6 +545,29 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         invalidateKeys={[eventosKey, manualKey]}
       />
 
+      <Dialog open={!!whatsTarget} onOpenChange={(o) => { if (!o) { setWhatsTarget(null); setWhatsMsg(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={whatsMsg}
+            onChange={(e) => setWhatsMsg(e.target.value)}
+            rows={5}
+            placeholder="Digite a mensagem..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); }} disabled={sendingWhats}>
+              Cancelar
+            </Button>
+            <Button onClick={enviarWhats} disabled={sendingWhats || !whatsMsg.trim()} className="bg-green-600 hover:bg-green-700">
+              {sendingWhats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <NovoConvertidoFormDialog
         open={showForm}
         onOpenChange={(o) => {
