@@ -421,28 +421,49 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const deleteMutation = useMutation({
     mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
       const isAgenda = source === "agenda_inscricao";
-      const primaryTable = isAgenda ? "inscricoes_eventos" : "impacto_inscricoes";
-
-      // Delete from primary table
-      const { error } = await supabase.from(primaryTable as any).delete().eq("id", id);
-      if (error) throw error;
-
-      // Delete counterpart in BOTH tables to ensure no ghost records remain
       const evId = evento_id || selectedEventoId;
-      if (evId) {
-        // Always try to delete by member_id from both tables
+      const nomeNorm = nome?.trim();
+
+      // Helper: encontra UMA inscrição base (inscricoes_eventos) correspondente.
+      // Excluí-la dispara o gatilho que remove UMA cópia no Impacto, mantendo
+      // eventuais duplicatas intactas (evita "excluir uma e sumir as duas").
+      const findOneBaseCounterpart = async (): Promise<string | null> => {
+        if (!evId) return null;
+        let query = supabase
+          .from("inscricoes_eventos")
+          .select("id")
+          .eq("evento_id", evId)
+          .order("created_at", { ascending: true })
+          .limit(1);
         if (member_id) {
-          await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).eq("member_id", member_id);
-          await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).eq("member_id", member_id);
+          query = query.eq("member_id", member_id);
+        } else if (nomeNorm) {
+          query = query.ilike("nome_participante", `%${nomeNorm}%`);
+        } else {
+          return null;
         }
-        // Also try to delete by name (handles cases without member_id or name-only records)
-        if (nome) {
-          const nomeNorm = nome.trim();
-          if (nomeNorm) {
-            await supabase.from("impacto_inscricoes").delete().eq("evento_id", evId).ilike("nome", `%${nomeNorm}%`);
-            await supabase.from("inscricoes_eventos").delete().eq("evento_id", evId).ilike("nome_participante", `%${nomeNorm}%`);
-          }
-        }
+        const { data } = await query.maybeSingle();
+        return data?.id ?? null;
+      };
+
+      if (isAgenda) {
+        // A linha clicada já é uma inscrição base: exclui por id.
+        // O gatilho remove automaticamente UMA cópia correspondente no Impacto.
+        const { error } = await supabase.from("inscricoes_eventos").delete().eq("id", id);
+        if (error) throw error;
+        return;
+      }
+
+      // A linha clicada é uma cópia do Impacto. Se existir uma inscrição base
+      // correspondente, exclui-a (o gatilho remove UMA cópia no Impacto).
+      const baseId = await findOneBaseCounterpart();
+      if (baseId) {
+        const { error } = await supabase.from("inscricoes_eventos").delete().eq("id", baseId);
+        if (error) throw error;
+      } else {
+        // Registro manual sem inscrição base: exclui diretamente a cópia do Impacto.
+        const { error } = await supabase.from("impacto_inscricoes").delete().eq("id", id);
+        if (error) throw error;
       }
     },
     onSuccess: () => {
