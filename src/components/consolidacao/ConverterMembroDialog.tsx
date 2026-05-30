@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserRoundCheck } from "lucide-react";
-import { formatCep, formatPhone, formatCPF, unformatPhone, unformatCep, unformatCPF } from "@/lib/masks";
+import { formatCep, formatPhone, formatCPF, unformatPhone, unformatCep } from "@/lib/masks";
 import { DateInput } from "@/components/ui/date-input";
 import { formatNameField, toTitleCase } from "@/lib/text-utils";
 import { useCepLookup } from "@/hooks/useCepLookup";
@@ -139,7 +139,7 @@ export const ConverterMembroDialog = ({
         state: form.state ? form.state.toUpperCase() : null,
         whatsapp: form.whatsapp ? unformatPhone(form.whatsapp) : null,
         email: form.email || null,
-        cpf: form.cpf ? unformatCPF(form.cpf) : null,
+        cpf: form.cpf ? form.cpf.replace(/\D/g, "") : null,
       };
 
       const { data: newMember, error: memberError } = await supabase
