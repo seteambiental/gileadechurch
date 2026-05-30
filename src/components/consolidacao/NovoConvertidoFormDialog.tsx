@@ -200,19 +200,20 @@ export const NovoConvertidoFormDialog = ({
         frequenta_casa_refugio: formData.frequenta_casa_refugio,
         casa_refugio_frequenta_id: formData.frequenta_casa_refugio ? formData.casa_refugio_frequenta_id || null : null,
         evento_id: formData.evento_id || null,
+        impacto_inscricao_id: impactoInscricaoId || convertido?.impacto_inscricao_id || null,
       };
 
       if (convertido) {
         const { error } = await supabase
           .from("novos_convertidos")
-          .update(payload)
+          .update(payload as any)
           .eq("id", convertido.id);
         if (error) throw error;
         toast({ title: "Atualizado com sucesso!" });
       } else {
         const { error } = await supabase
           .from("novos_convertidos")
-          .insert(payload);
+          .insert(payload as any);
         if (error) throw error;
         toast({ title: "Cadastrado com sucesso!" });
       }
@@ -220,6 +221,8 @@ export const NovoConvertidoFormDialog = ({
       queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
       queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-manual"] });
       queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-manual"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-eventos"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
