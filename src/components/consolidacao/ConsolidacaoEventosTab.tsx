@@ -242,6 +242,34 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     return `https://wa.me/${full}`;
   };
 
+  const openWhats = (nome: string, telefone?: string | null) => {
+    const num = onlyDigits(telefone);
+    if (!num) return;
+    const full = num.startsWith("55") ? num : `55${num}`;
+    const primeiroNome = (nome || "").split(" ")[0] || "";
+    setWhatsTarget({ nome, telefone: full });
+    setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
+  };
+
+  const enviarWhats = async () => {
+    if (!whatsTarget || !whatsMsg.trim()) return;
+    setSendingWhats(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim() },
+      });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error || "Falha no envio");
+      toast({ title: "Mensagem enviada!", description: `Enviada para ${whatsTarget.nome}.` });
+      setWhatsTarget(null);
+      setWhatsMsg("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao enviar", description: err.message });
+    } finally {
+      setSendingWhats(false);
+    }
+  };
+
   const exportHeaders = ["Nome", "Origem", "Telefone", "E-mail", "Gênero", "Nascimento"];
   const exportData = () =>
     filtradas.map((r) => ({
