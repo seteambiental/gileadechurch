@@ -86,6 +86,44 @@ const resolveGenero = (g?: string | null) => {
 
 const onlyDigits = (s?: string | null) => (s || "").replace(/\D/g, "");
 
+// Modelos de mensagem prontos (com {nome} substituído pelo primeiro nome).
+const MODELOS_MENSAGEM: Record<"conversao" | "reconciliacao", { label: string; texto: string }[]> = {
+  conversao: [
+    {
+      label: "Boas-vindas à família",
+      texto:
+        "Olá {nome}! 🙏\n\nQue alegria ter você na família de Deus! Sua decisão de entregar a vida a Jesus é o início de uma linda caminhada.\n\nEstamos aqui para te acompanhar de perto. Conte conosco sempre!\n\nCom carinho,\nIgreja Gileade 💙",
+    },
+    {
+      label: "Convite para o próximo culto",
+      texto:
+        "Oi {nome}! 😊\n\nFoi uma bênção ter você conosco! Queremos te convidar para o nosso próximo culto e continuar essa caminhada juntos.\n\nVocê tem um lugar especial aqui!\n\nIgreja Gileade 💙",
+    },
+    {
+      label: "Acompanhamento / discipulado",
+      texto:
+        "Olá {nome}! 🙏\n\nEstamos muito felizes com a sua decisão por Jesus! Gostaríamos de te acompanhar nessa nova fase através do nosso discipulado.\n\nPodemos conversar sobre isso?\n\nIgreja Gileade 💙",
+    },
+  ],
+  reconciliacao: [
+    {
+      label: "Bem-vindo de volta",
+      texto:
+        "Olá {nome}! 🙏\n\nQue alegria imensa ter você de volta à casa do Pai! Sua reconciliação é uma grande festa no céu.\n\nEstamos aqui para caminhar com você nessa nova fase. Conte conosco sempre!\n\nCom carinho,\nIgreja Gileade 💙",
+    },
+    {
+      label: "Convite para o próximo culto",
+      texto:
+        "Oi {nome}! 😊\n\nQue bom ter você de volta! Queremos te convidar para o nosso próximo culto e seguir juntos nessa caminhada.\n\nVocê é muito especial para nós!\n\nIgreja Gileade 💙",
+    },
+    {
+      label: "Acompanhamento / discipulado",
+      texto:
+        "Olá {nome}! 🙏\n\nFicamos muito felizes com a sua reconciliação! Gostaríamos de te acompanhar de perto através do nosso discipulado.\n\nPodemos conversar sobre isso?\n\nIgreja Gileade 💙",
+    },
+  ],
+};
+
 interface UnifiedRow {
   id: string;
   source: "evento" | "manual";
