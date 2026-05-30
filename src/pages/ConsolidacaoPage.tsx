@@ -19,12 +19,13 @@ import {
   UserRoundCheck,
   Calendar,
   Home,
+  Heart,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
 import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
 import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
-import { ConsolidacaoAgendaTab } from "@/components/consolidacao/ConsolidacaoAgendaTab";
+import { ConsolidacaoEventosTab } from "@/components/consolidacao/ConsolidacaoEventosTab";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import {
@@ -215,8 +216,8 @@ const ConsolidacaoPage = () => {
               <span className="sm:hidden">Convertidos</span>
             </TabsTrigger>
             <TabsTrigger value="eventos" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span>Eventos</span>
+              <Heart className="w-4 h-4" />
+              <span>Reconciliações</span>
             </TabsTrigger>
           </TabsList>
 
@@ -337,16 +338,15 @@ const ConsolidacaoPage = () => {
                 ))}
               </div>
             )}
+
+            {/* Convertidos vindos dos eventos finalizados */}
+            <div className="mt-10 pt-8 border-t border-border">
+              <ConsolidacaoEventosTab tipo="conversao" />
+            </div>
           </TabsContent>
 
           <TabsContent value="eventos">
-            <ConsolidacaoAgendaTab 
-              onEventoSelect={(id, titulo) => {
-                setEventoSelecionado({ id, titulo });
-                setEditingConvertido(null);
-                setShowForm(true);
-              }}
-            />
+            <ConsolidacaoEventosTab tipo="reconciliacao" />
           </TabsContent>
         </Tabs>
       </main>
