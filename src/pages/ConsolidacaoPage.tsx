@@ -19,6 +19,7 @@ import {
   UserRoundCheck,
   Calendar,
   Home,
+  Heart,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
