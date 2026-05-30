@@ -359,26 +359,40 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
                     <TableCell className="whitespace-nowrap">{r.nascimento}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-green-600 hover:text-green-700"
-                          disabled={r.telefone === "—"}
-                          title="Enviar WhatsApp"
-                          onClick={() => enviarWhatsapp(r.telefone)}
-                        >
-                          <MessageCircle className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="text-blue-600 hover:text-blue-700"
-                          disabled={r.email === "—"}
-                          title="Enviar e-mail"
-                          onClick={() => enviarEmail(r.email)}
-                        >
-                          <Mail className="w-4 h-4" />
-                        </Button>
+                        {whatsappHref(r.telefone) ? (
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            className="text-green-600 hover:text-green-700"
+                            title="Enviar WhatsApp"
+                          >
+                            <a href={whatsappHref(r.telefone)!} target="_blank" rel="noopener noreferrer">
+                              <MessageCircle className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="text-green-600" disabled title="Sem telefone">
+                            <MessageCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {r.email !== "—" ? (
+                          <Button
+                            asChild
+                            size="icon"
+                            variant="ghost"
+                            className="text-blue-600 hover:text-blue-700"
+                            title="Enviar e-mail"
+                          >
+                            <a href={`mailto:${r.email}`}>
+                              <Mail className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="text-blue-600" disabled title="Sem e-mail">
+                            <Mail className="w-4 h-4" />
+                          </Button>
+                        )}
                         {r.source === "manual" && (
                           <>
                             <Button
