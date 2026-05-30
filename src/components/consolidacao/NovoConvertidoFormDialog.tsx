@@ -88,20 +88,22 @@ export const NovoConvertidoFormDialog = ({
   eventoId,
   eventoTitulo,
   tipoConversaoDefault,
+  impactoInscricaoId,
+  impactoDefaults,
 }: NovoConvertidoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
-  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
+  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId, tipoConversaoDefault, impactoDefaults));
 
   // Reset form when dialog opens or convertido changes
   useEffect(() => {
     if (open) {
-      setFormData(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
+      setFormData(getInitialFormData(convertido, eventoId, tipoConversaoDefault, impactoDefaults));
     }
-  }, [open, convertido, eventoId, tipoConversaoDefault]);
+  }, [open, convertido, eventoId, tipoConversaoDefault, impactoDefaults]);
 
   const { data: membros = [] } = useQuery({
     queryKey: ["membros-lista"],
