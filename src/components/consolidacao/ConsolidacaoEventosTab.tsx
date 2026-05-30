@@ -48,6 +48,8 @@ interface ConsolidacaoEventosTabProps {
   tipo: "conversao" | "reconciliacao";
   /** Include manual records from novos_convertidos with the matching tipo_conversao. */
   includeManual?: boolean;
+  /** Hide the title/description header (useful when embedded in a page that already has context). */
+  hideTitle?: boolean;
 }
 
 const comoChegouLabels: Record<string, string> = {
