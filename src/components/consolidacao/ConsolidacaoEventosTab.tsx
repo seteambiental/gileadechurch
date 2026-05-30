@@ -45,7 +45,15 @@ import {
   Trash2,
   FileSpreadsheet,
   FileText,
+  Sparkles,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import { formatEventoPeriodo, parseLocalDate } from "@/lib/date-utils";
