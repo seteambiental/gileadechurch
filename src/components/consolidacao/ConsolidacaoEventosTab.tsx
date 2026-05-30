@@ -25,6 +25,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Send } from "lucide-react";
+import {
   Loader2,
   MessageCircle,
   Mail,
@@ -99,6 +108,9 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
+  const [whatsMsg, setWhatsMsg] = useState("");
+  const [sendingWhats, setSendingWhats] = useState(false);
 
   // Column filters
   const [fNome, setFNome] = useState<Set<string>>(new Set());
@@ -228,6 +240,34 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     if (!num) return null;
     const full = num.startsWith("55") ? num : `55${num}`;
     return `https://wa.me/${full}`;
+  };
+
+  const openWhats = (nome: string, telefone?: string | null) => {
+    const num = onlyDigits(telefone);
+    if (!num) return;
+    const full = num.startsWith("55") ? num : `55${num}`;
+    const primeiroNome = (nome || "").split(" ")[0] || "";
+    setWhatsTarget({ nome, telefone: full });
+    setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
+  };
+
+  const enviarWhats = async () => {
+    if (!whatsTarget || !whatsMsg.trim()) return;
+    setSendingWhats(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim() },
+      });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error || "Falha no envio");
+      toast({ title: "Mensagem enviada!", description: `Enviada para ${whatsTarget.nome}.` });
+      setWhatsTarget(null);
+      setWhatsMsg("");
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao enviar", description: err.message });
+    } finally {
+      setSendingWhats(false);
+    }
   };
 
   const exportHeaders = ["Nome", "Origem", "Telefone", "E-mail", "Gênero", "Nascimento"];
@@ -428,15 +468,13 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
                       <div className="flex justify-end gap-1">
                         {whatsappHref(r.telefone) ? (
                           <Button
-                            asChild
                             size="icon"
                             variant="ghost"
                             className="text-green-600 hover:text-green-700"
                             title="Enviar WhatsApp"
+                            onClick={() => openWhats(r.nome, r.telefone)}
                           >
-                            <a href={whatsappHref(r.telefone)!} target="_blank" rel="noopener noreferrer">
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
+                            <MessageCircle className="w-4 h-4" />
                           </Button>
                         ) : (
                           <Button size="icon" variant="ghost" className="text-green-600" disabled title="Sem telefone">
@@ -506,6 +544,29 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         inscricao={converting}
         invalidateKeys={[eventosKey, manualKey]}
       />
+
+      <Dialog open={!!whatsTarget} onOpenChange={(o) => { if (!o) { setWhatsTarget(null); setWhatsMsg(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={whatsMsg}
+            onChange={(e) => setWhatsMsg(e.target.value)}
+            rows={5}
+            placeholder="Digite a mensagem..."
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); }} disabled={sendingWhats}>
+              Cancelar
+            </Button>
+            <Button onClick={enviarWhats} disabled={sendingWhats || !whatsMsg.trim()} className="bg-green-600 hover:bg-green-700">
+              {sendingWhats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+              Enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <NovoConvertidoFormDialog
         open={showForm}
