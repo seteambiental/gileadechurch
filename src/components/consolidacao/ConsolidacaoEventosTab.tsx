@@ -116,7 +116,8 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         .select(
           `id, member_id, nome, telefone, email, genero, data_nascimento, observacoes,
            tipo_inscricao, status_pagamento, virou_membro,
-           evento:impacto_eventos!inner(id, titulo, data_inicio, data_fim, finalizado)`
+           evento:impacto_eventos!inner(id, titulo, data_inicio, data_fim, finalizado),
+           member:members!impacto_inscricoes_member_id_fkey(id, birth_date)`
         )
         .eq(flagField, true)
         .eq("virou_membro", false)
