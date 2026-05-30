@@ -32,14 +32,29 @@ interface NovoConvertidoFormDialogProps {
   eventoId?: string;
   eventoTitulo?: string;
   tipoConversaoDefault?: string;
+  /** When editing a person that came from an event inscription, link to it. */
+  impactoInscricaoId?: string;
+  /** Prefill values from the event inscription when no manual record exists yet. */
+  impactoDefaults?: {
+    full_name?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+    genero?: string | null;
+    data_nascimento?: string | null;
+  };
 }
 
-const getInitialFormData = (convertido?: any, eventoId?: string, tipoConversaoDefault?: string) => ({
-  full_name: convertido?.full_name || "",
-  whatsapp: convertido?.whatsapp || "",
-  email: convertido?.email || "",
-  genero: convertido?.genero || "",
-  data_nascimento: convertido?.data_nascimento || "",
+const getInitialFormData = (
+  convertido?: any,
+  eventoId?: string,
+  tipoConversaoDefault?: string,
+  impactoDefaults?: NovoConvertidoFormDialogProps["impactoDefaults"],
+) => ({
+  full_name: convertido?.full_name || impactoDefaults?.full_name || "",
+  whatsapp: convertido?.whatsapp || impactoDefaults?.whatsapp || "",
+  email: convertido?.email || impactoDefaults?.email || "",
+  genero: convertido?.genero || impactoDefaults?.genero || "",
+  data_nascimento: convertido?.data_nascimento || impactoDefaults?.data_nascimento || "",
   cpf: convertido?.cpf ? formatCPF(convertido.cpf) : "",
   cep: convertido?.cep || "",
   address: convertido?.address || "",
@@ -73,20 +88,22 @@ export const NovoConvertidoFormDialog = ({
   eventoId,
   eventoTitulo,
   tipoConversaoDefault,
+  impactoInscricaoId,
+  impactoDefaults,
 }: NovoConvertidoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
-  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
+  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId, tipoConversaoDefault, impactoDefaults));
 
   // Reset form when dialog opens or convertido changes
   useEffect(() => {
     if (open) {
-      setFormData(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
+      setFormData(getInitialFormData(convertido, eventoId, tipoConversaoDefault, impactoDefaults));
     }
-  }, [open, convertido, eventoId, tipoConversaoDefault]);
+  }, [open, convertido, eventoId, tipoConversaoDefault, impactoDefaults]);
 
   const { data: membros = [] } = useQuery({
     queryKey: ["membros-lista"],
@@ -183,19 +200,20 @@ export const NovoConvertidoFormDialog = ({
         frequenta_casa_refugio: formData.frequenta_casa_refugio,
         casa_refugio_frequenta_id: formData.frequenta_casa_refugio ? formData.casa_refugio_frequenta_id || null : null,
         evento_id: formData.evento_id || null,
+        impacto_inscricao_id: impactoInscricaoId || convertido?.impacto_inscricao_id || null,
       };
 
       if (convertido) {
         const { error } = await supabase
           .from("novos_convertidos")
-          .update(payload)
+          .update(payload as any)
           .eq("id", convertido.id);
         if (error) throw error;
         toast({ title: "Atualizado com sucesso!" });
       } else {
         const { error } = await supabase
           .from("novos_convertidos")
-          .insert(payload);
+          .insert(payload as any);
         if (error) throw error;
         toast({ title: "Cadastrado com sucesso!" });
       }
@@ -203,6 +221,8 @@ export const NovoConvertidoFormDialog = ({
       queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
       queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-manual"] });
       queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-manual"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-eventos"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });

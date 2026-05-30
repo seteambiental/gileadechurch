@@ -91,6 +91,10 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
   const [converting, setConverting] = useState<InscricaoConsolidacao | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [impactoLink, setImpactoLink] = useState<{
+    id: string;
+    defaults: NonNullable<Parameters<typeof NovoConvertidoFormDialog>[0]["impactoDefaults"]>;
+  } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -130,6 +134,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
         .select("*")
         .eq("tipo_conversao", tipo)
         .eq("tornou_membro", false)
+        .is("impacto_inscricao_id", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as any[];
@@ -272,6 +277,31 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
     source: r.source,
   });
 
+  const openManualEdit = (raw: any) => {
+    setImpactoLink(null);
+    setEditing(raw);
+    setShowForm(true);
+  };
+
+  const openEventEdit = async (r: UnifiedRow) => {
+    const defaults = {
+      full_name: r.raw.nome || "",
+      whatsapp: r.raw.telefone || "",
+      email: r.raw.email || "",
+      genero: r.raw.genero || "",
+      data_nascimento: r.data_nascimento || "",
+    };
+    // Load any existing "Trilho em Gileade" record already linked to this inscription.
+    const { data } = await supabase
+      .from("novos_convertidos")
+      .select("*")
+      .eq("impacto_inscricao_id", r.id)
+      .maybeSingle();
+    setEditing((data as any) || null);
+    setImpactoLink({ id: r.id, defaults });
+    setShowForm(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -291,6 +321,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
               size="sm"
               onClick={() => {
                 setEditing(null);
+                setImpactoLink(null);
                 setShowForm(true);
               }}
             >
@@ -393,29 +424,26 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
                             <Mail className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Editar"
+                          onClick={() =>
+                            r.source === "manual" ? openManualEdit(r.raw) : openEventEdit(r)
+                          }
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                         {r.source === "manual" && (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Editar"
-                              onClick={() => {
-                                setEditing(r.raw);
-                                setShowForm(true);
-                              }}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              title="Excluir"
-                              onClick={() => setDeletingId(r.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            title="Excluir"
+                            onClick={() => setDeletingId(r.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         )}
                         <Button
                           size="icon"
@@ -443,14 +471,20 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
         invalidateKeys={[eventosKey, manualKey]}
       />
 
-      {includeManual && (
-        <NovoConvertidoFormDialog
-          open={showForm}
-          onOpenChange={setShowForm}
-          convertido={editing}
-          tipoConversaoDefault={tipo}
-        />
-      )}
+      <NovoConvertidoFormDialog
+        open={showForm}
+        onOpenChange={(o) => {
+          setShowForm(o);
+          if (!o) {
+            setEditing(null);
+            setImpactoLink(null);
+          }
+        }}
+        convertido={editing}
+        tipoConversaoDefault={tipo}
+        impactoInscricaoId={impactoLink?.id}
+        impactoDefaults={impactoLink?.defaults}
+      />
 
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
         <AlertDialogContent>
