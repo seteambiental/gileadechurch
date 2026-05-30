@@ -471,14 +471,20 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
         invalidateKeys={[eventosKey, manualKey]}
       />
 
-      {includeManual && (
-        <NovoConvertidoFormDialog
-          open={showForm}
-          onOpenChange={setShowForm}
-          convertido={editing}
-          tipoConversaoDefault={tipo}
-        />
-      )}
+      <NovoConvertidoFormDialog
+        open={showForm}
+        onOpenChange={(o) => {
+          setShowForm(o);
+          if (!o) {
+            setEditing(null);
+            setImpactoLink(null);
+          }
+        }}
+        convertido={editing}
+        tipoConversaoDefault={tipo}
+        impactoInscricaoId={impactoLink?.id}
+        impactoDefaults={impactoLink?.defaults}
+      />
 
       <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
         <AlertDialogContent>
