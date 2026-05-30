@@ -3369,6 +3369,7 @@ export type Database = {
           genero: string | null
           id: string
           member_id: string | null
+          membro_convertido_id: string | null
           nome: string
           nome_responsavel: string | null
           observacoes: string | null
@@ -3384,6 +3385,7 @@ export type Database = {
           updated_at: string
           valor_inscricao: number | null
           valor_pago: number | null
+          virou_membro: boolean
         }
         Insert: {
           aprovado?: boolean
@@ -3397,6 +3399,7 @@ export type Database = {
           genero?: string | null
           id?: string
           member_id?: string | null
+          membro_convertido_id?: string | null
           nome: string
           nome_responsavel?: string | null
           observacoes?: string | null
@@ -3412,6 +3415,7 @@ export type Database = {
           updated_at?: string
           valor_inscricao?: number | null
           valor_pago?: number | null
+          virou_membro?: boolean
         }
         Update: {
           aprovado?: boolean
@@ -3425,6 +3429,7 @@ export type Database = {
           genero?: string | null
           id?: string
           member_id?: string | null
+          membro_convertido_id?: string | null
           nome?: string
           nome_responsavel?: string | null
           observacoes?: string | null
@@ -3440,6 +3445,7 @@ export type Database = {
           updated_at?: string
           valor_inscricao?: number | null
           valor_pago?: number | null
+          virou_membro?: boolean
         }
         Relationships: [
           {
@@ -3459,6 +3465,20 @@ export type Database = {
           {
             foreignKeyName: "impacto_inscricoes_member_id_fkey"
             columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_inscricoes_membro_convertido_id_fkey"
+            columns: ["membro_convertido_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "impacto_inscricoes_membro_convertido_id_fkey"
+            columns: ["membro_convertido_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
             referencedColumns: ["id"]
