@@ -341,13 +341,7 @@ const ConsolidacaoPage = () => {
           </TabsContent>
 
           <TabsContent value="eventos">
-            <ConsolidacaoAgendaTab 
-              onEventoSelect={(id, titulo) => {
-                setEventoSelecionado({ id, titulo });
-                setEditingConvertido(null);
-                setShowForm(true);
-              }}
-            />
+            <ConsolidacaoEventosTab tipo="reconciliacao" />
           </TabsContent>
         </Tabs>
       </main>
