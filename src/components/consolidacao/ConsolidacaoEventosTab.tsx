@@ -306,36 +306,66 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Icone className="w-5 h-5 text-destructive" />
-        <h2 className="font-heading font-bold text-xl">{titulo}</h2>
-        <Badge variant="secondary">{filtradas.length}</Badge>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={handleExcel}>
-            <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePDF}>
-            <FileText className="w-4 h-4 mr-2" /> PDF
-          </Button>
-          {includeManual && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                setEditing(null);
-                setImpactoLink(null);
-                setShowForm(true);
-              }}
-            >
-              <UserPlus className="w-4 h-4 mr-2" /> Novo
+      {!hideTitle && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <Icone className="w-5 h-5 text-destructive" />
+            <h2 className="font-heading font-bold text-xl">{titulo}</h2>
+            <Badge variant="secondary">{filtradas.length}</Badge>
+            <div className="ml-auto flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleExcel}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
+              </Button>
+              <Button variant="outline" size="sm" onClick={handlePDF}>
+                <FileText className="w-4 h-4 mr-2" /> PDF
+              </Button>
+              {includeManual && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setEditing(null);
+                    setImpactoLink(null);
+                    setShowForm(true);
+                  }}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" /> Novo
+                </Button>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados
+            {includeManual ? " e cadastros manuais." : "."}
+          </p>
+        </>
+      )}
+
+      {hideTitle && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="ml-auto flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={handleExcel}>
+              <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
             </Button>
-          )}
+            <Button variant="outline" size="sm" onClick={handlePDF}>
+              <FileText className="w-4 h-4 mr-2" /> PDF
+            </Button>
+            {includeManual && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setEditing(null);
+                  setImpactoLink(null);
+                  setShowForm(true);
+                }}
+              >
+                <UserPlus className="w-4 h-4 mr-2" /> Novo
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados
-        {includeManual ? " e cadastros manuais." : "."}
-      </p>
+      )}
 
       <SearchInput placeholder="Buscar por nome..." value={search} onChange={setSearch} className="w-full sm:max-w-sm" />
 
