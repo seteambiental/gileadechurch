@@ -215,8 +215,8 @@ const ConsolidacaoPage = () => {
               <span className="sm:hidden">Convertidos</span>
             </TabsTrigger>
             <TabsTrigger value="eventos" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span>Eventos</span>
+              <Heart className="w-4 h-4" />
+              <span>Reconciliações</span>
             </TabsTrigger>
           </TabsList>
 
