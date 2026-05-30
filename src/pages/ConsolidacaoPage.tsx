@@ -24,7 +24,7 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
 import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
 import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
-import { ConsolidacaoAgendaTab } from "@/components/consolidacao/ConsolidacaoAgendaTab";
+import { ConsolidacaoEventosTab } from "@/components/consolidacao/ConsolidacaoEventosTab";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import {
