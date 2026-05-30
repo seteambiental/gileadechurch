@@ -91,6 +91,10 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
   const [converting, setConverting] = useState<InscricaoConsolidacao | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [impactoLink, setImpactoLink] = useState<{
+    id: string;
+    defaults: NonNullable<Parameters<typeof NovoConvertidoFormDialog>[0]["impactoDefaults"]>;
+  } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -130,6 +134,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
         .select("*")
         .eq("tipo_conversao", tipo)
         .eq("tornou_membro", false)
+        .is("impacto_inscricao_id", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data || []) as any[];
