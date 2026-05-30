@@ -45,7 +45,15 @@ import {
   Trash2,
   FileSpreadsheet,
   FileText,
+  Sparkles,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import { formatEventoPeriodo, parseLocalDate } from "@/lib/date-utils";
@@ -77,6 +85,44 @@ const resolveGenero = (g?: string | null) => {
 };
 
 const onlyDigits = (s?: string | null) => (s || "").replace(/\D/g, "");
+
+// Modelos de mensagem prontos (com {nome} substituído pelo primeiro nome).
+const MODELOS_MENSAGEM: Record<"conversao" | "reconciliacao", { label: string; texto: string }[]> = {
+  conversao: [
+    {
+      label: "Boas-vindas à família",
+      texto:
+        "Olá {nome}! 🙏\n\nQue alegria ter você na família de Deus! Sua decisão de entregar a vida a Jesus é o início de uma linda caminhada.\n\nEstamos aqui para te acompanhar de perto. Conte conosco sempre!\n\nCom carinho,\nIgreja Gileade 💙",
+    },
+    {
+      label: "Convite para o próximo culto",
+      texto:
+        "Oi {nome}! 😊\n\nFoi uma bênção ter você conosco! Queremos te convidar para o nosso próximo culto e continuar essa caminhada juntos.\n\nVocê tem um lugar especial aqui!\n\nIgreja Gileade 💙",
+    },
+    {
+      label: "Acompanhamento / discipulado",
+      texto:
+        "Olá {nome}! 🙏\n\nEstamos muito felizes com a sua decisão por Jesus! Gostaríamos de te acompanhar nessa nova fase através do nosso discipulado.\n\nPodemos conversar sobre isso?\n\nIgreja Gileade 💙",
+    },
+  ],
+  reconciliacao: [
+    {
+      label: "Bem-vindo de volta",
+      texto:
+        "Olá {nome}! 🙏\n\nQue alegria imensa ter você de volta à casa do Pai! Sua reconciliação é uma grande festa no céu.\n\nEstamos aqui para caminhar com você nessa nova fase. Conte conosco sempre!\n\nCom carinho,\nIgreja Gileade 💙",
+    },
+    {
+      label: "Convite para o próximo culto",
+      texto:
+        "Oi {nome}! 😊\n\nQue bom ter você de volta! Queremos te convidar para o nosso próximo culto e seguir juntos nessa caminhada.\n\nVocê é muito especial para nós!\n\nIgreja Gileade 💙",
+    },
+    {
+      label: "Acompanhamento / discipulado",
+      texto:
+        "Olá {nome}! 🙏\n\nFicamos muito felizes com a sua reconciliação! Gostaríamos de te acompanhar de perto através do nosso discipulado.\n\nPodemos conversar sobre isso?\n\nIgreja Gileade 💙",
+    },
+  ],
+};
 
 interface UnifiedRow {
   id: string;
@@ -111,6 +157,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
   const [whatsMsg, setWhatsMsg] = useState("");
   const [sendingWhats, setSendingWhats] = useState(false);
+  const [gerandoIA, setGerandoIA] = useState(false);
 
   // Column filters
   const [fNome, setFNome] = useState<Set<string>>(new Set());
@@ -249,6 +296,30 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     const primeiroNome = (nome || "").split(" ")[0] || "";
     setWhatsTarget({ nome, telefone: full });
     setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
+  };
+
+  const aplicarModelo = (texto: string) => {
+    const primeiroNome = (whatsTarget?.nome || "").split(" ")[0] || "";
+    setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+  };
+
+  const gerarMensagemIA = async () => {
+    if (!whatsTarget) return;
+    setGerandoIA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gerar-mensagem-consolidacao", {
+        body: { nome: whatsTarget.nome, tipo },
+      });
+      if (error) throw error;
+      if (data?.mensagem) {
+        setWhatsMsg(data.mensagem);
+        toast({ title: "Mensagem gerada!", description: "Criada com IA. Você pode editá-la antes de enviar." });
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao gerar mensagem", description: err.message });
+    } finally {
+      setGerandoIA(false);
+    }
   };
 
   const enviarWhats = async () => {
@@ -550,12 +621,42 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
           <DialogHeader>
             <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
           </DialogHeader>
-          <Textarea
-            value={whatsMsg}
-            onChange={(e) => setWhatsMsg(e.target.value)}
-            rows={5}
-            placeholder="Digite a mensagem..."
-          />
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select onValueChange={aplicarModelo}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Escolher um modelo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELOS_MENSAGEM[tipo].map((m) => (
+                    <SelectItem key={m.label} value={m.texto}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={gerarMensagemIA}
+                disabled={gerandoIA}
+                className="shrink-0"
+              >
+                {gerandoIA ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                Gerar com IA
+              </Button>
+            </div>
+            <Textarea
+              value={whatsMsg}
+              onChange={(e) => setWhatsMsg(e.target.value)}
+              rows={6}
+              placeholder="Escolha um modelo, gere com IA ou digite a mensagem..."
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); }} disabled={sendingWhats}>
               Cancelar
