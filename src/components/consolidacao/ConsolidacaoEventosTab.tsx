@@ -108,6 +108,9 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
+  const [whatsMsg, setWhatsMsg] = useState("");
+  const [sendingWhats, setSendingWhats] = useState(false);
 
   // Column filters
   const [fNome, setFNome] = useState<Set<string>>(new Set());
