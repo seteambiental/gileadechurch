@@ -423,29 +423,26 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
                             <Mail className="w-4 h-4" />
                           </Button>
                         )}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Editar"
+                          onClick={() =>
+                            r.source === "manual" ? openManualEdit(r.raw) : openEventEdit(r)
+                          }
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
                         {r.source === "manual" && (
-                          <>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              title="Editar"
-                              onClick={() => {
-                                setEditing(r.raw);
-                                setShowForm(true);
-                              }}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              title="Excluir"
-                              onClick={() => setDeletingId(r.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            title="Excluir"
+                            onClick={() => setDeletingId(r.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         )}
                         <Button
                           size="icon"
