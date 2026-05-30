@@ -298,6 +298,30 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
   };
 
+  const aplicarModelo = (texto: string) => {
+    const primeiroNome = (whatsTarget?.nome || "").split(" ")[0] || "";
+    setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+  };
+
+  const gerarMensagemIA = async () => {
+    if (!whatsTarget) return;
+    setGerandoIA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gerar-mensagem-consolidacao", {
+        body: { nome: whatsTarget.nome, tipo },
+      });
+      if (error) throw error;
+      if (data?.mensagem) {
+        setWhatsMsg(data.mensagem);
+        toast({ title: "Mensagem gerada!", description: "Criada com IA. Você pode editá-la antes de enviar." });
+      }
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Erro ao gerar mensagem", description: err.message });
+    } finally {
+      setGerandoIA(false);
+    }
+  };
+
   const enviarWhats = async () => {
     if (!whatsTarget || !whatsMsg.trim()) return;
     setSendingWhats(true);
