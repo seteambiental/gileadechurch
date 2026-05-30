@@ -621,12 +621,42 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
           <DialogHeader>
             <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
           </DialogHeader>
-          <Textarea
-            value={whatsMsg}
-            onChange={(e) => setWhatsMsg(e.target.value)}
-            rows={5}
-            placeholder="Digite a mensagem..."
-          />
+          <div className="space-y-3">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Select onValueChange={aplicarModelo}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Escolher um modelo..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {MODELOS_MENSAGEM[tipo].map((m) => (
+                    <SelectItem key={m.label} value={m.texto}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={gerarMensagemIA}
+                disabled={gerandoIA}
+                className="shrink-0"
+              >
+                {gerandoIA ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                Gerar com IA
+              </Button>
+            </div>
+            <Textarea
+              value={whatsMsg}
+              onChange={(e) => setWhatsMsg(e.target.value)}
+              rows={6}
+              placeholder="Escolha um modelo, gere com IA ou digite a mensagem..."
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); }} disabled={sendingWhats}>
               Cancelar
