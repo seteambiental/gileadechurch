@@ -468,15 +468,13 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
                       <div className="flex justify-end gap-1">
                         {whatsappHref(r.telefone) ? (
                           <Button
-                            asChild
                             size="icon"
                             variant="ghost"
                             className="text-green-600 hover:text-green-700"
                             title="Enviar WhatsApp"
+                            onClick={() => openWhats(r.nome, r.telefone)}
                           >
-                            <a href={whatsappHref(r.telefone)!} target="_blank" rel="noopener noreferrer">
-                              <MessageCircle className="w-4 h-4" />
-                            </a>
+                            <MessageCircle className="w-4 h-4" />
                           </Button>
                         ) : (
                           <Button size="icon" variant="ghost" className="text-green-600" disabled title="Sem telefone">
