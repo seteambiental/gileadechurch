@@ -82,7 +82,7 @@ interface UnifiedRow {
   raw: any;
 }
 
-export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: ConsolidacaoEventosTabProps) => {
+export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle = false }: ConsolidacaoEventosTabProps) => {
   const flagField = tipo === "conversao" ? "converteu" : "reconciliou";
   const eventosKey = `consolidacao-${tipo}-eventos`;
   const manualKey = `consolidacao-${tipo}-manual`;
