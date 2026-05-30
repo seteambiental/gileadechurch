@@ -272,6 +272,61 @@ export const exportToPDF = (members: Member[], filename: string = "membros", fac
   savePDF(doc, `${filename}.pdf`);
 };
 
+// ============= Generic consolidação exports =============
+// Rows are arrays of objects keyed by column header (string values).
+export async function exportRowsToExcel(
+  rows: Record<string, string>[],
+  headers: string[],
+  sheetName: string,
+  filename: string,
+) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName.slice(0, 31));
+
+  worksheet.addRow(headers);
+  worksheet.getRow(1).font = { bold: true };
+
+  rows.forEach((row) => {
+    worksheet.addRow(headers.map((h) => row[h] ?? ""));
+  });
+
+  headers.forEach((header, i) => {
+    const col = worksheet.getColumn(i + 1);
+    let maxLen = header.length;
+    rows.forEach((row) => {
+      const val = String(row[header] || "");
+      if (val.length > maxLen) maxLen = val.length;
+    });
+    col.width = Math.min(50, maxLen + 2);
+  });
+
+  await saveWorkbook(workbook, filename.endsWith(".xlsx") ? filename : `${filename}.xlsx`);
+}
+
+export function exportRowsToPDF(
+  rows: Record<string, string>[],
+  headers: string[],
+  title: string,
+  filename: string,
+) {
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(14);
+  doc.text(title, 14, 16);
+  doc.setFontSize(9);
+  doc.text(`Gerado em ${formatDateBR(new Date().toISOString())} • Total: ${rows.length}`, 14, 22);
+
+  autoTable(doc, {
+    head: [headers],
+    body: rows.map((row) => headers.map((h) => row[h] ?? "")),
+    startY: 28,
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [185, 28, 28], textColor: 255 },
+    alternateRowStyles: { fillColor: [248, 249, 250] },
+  });
+
+  savePDF(doc, `${filename}.pdf`);
+}
+
 // ========== GENERIC EXPORT UTILITIES ==========
 
 export interface ExportColumn {

@@ -1,17 +1,11 @@
-import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SearchInput } from "@/components/ui/search-input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import {
   Table,
   TableBody,
@@ -20,14 +14,49 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, MessageCircle, Mail, UserRoundCheck, HeartHandshake, Heart } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Loader2,
+  MessageCircle,
+  Mail,
+  UserRoundCheck,
+  HeartHandshake,
+  Heart,
+  UserPlus,
+  Pencil,
+  Trash2,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
 import { formatEventoPeriodo, parseLocalDate } from "@/lib/date-utils";
+import { exportRowsToExcel, exportRowsToPDF } from "@/lib/export";
 import { ConverterMembroDialog, type InscricaoConsolidacao } from "./ConverterMembroDialog";
+import { NovoConvertidoFormDialog } from "./NovoConvertidoFormDialog";
 
 interface ConsolidacaoEventosTabProps {
   tipo: "conversao" | "reconciliacao";
+  /** Include manual records from novos_convertidos with the matching tipo_conversao. */
+  includeManual?: boolean;
 }
+
+const comoChegouLabels: Record<string, string> = {
+  culto_domingo: "Culto Domingo",
+  culto_quarta: "Culto Quarta",
+  casa_refugio: "Casa Refúgio",
+  impacto: "Impacto",
+  acao_evangelistica: "Ação Evangelística",
+};
 
 const resolveGenero = (g?: string | null) => {
   const lower = (g || "").toLowerCase();
@@ -38,17 +67,43 @@ const resolveGenero = (g?: string | null) => {
 
 const onlyDigits = (s?: string | null) => (s || "").replace(/\D/g, "");
 
-export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) => {
+interface UnifiedRow {
+  id: string;
+  source: "evento" | "manual";
+  nome: string;
+  origem: string;
+  telefone: string;
+  email: string;
+  genero: string;
+  nascimento: string;
+  data_nascimento?: string | null;
+  raw: any;
+}
+
+export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: ConsolidacaoEventosTabProps) => {
   const flagField = tipo === "conversao" ? "converteu" : "reconciliou";
-  const queryKey = `consolidacao-${tipo}-eventos`;
+  const eventosKey = `consolidacao-${tipo}-eventos`;
+  const manualKey = `consolidacao-${tipo}-manual`;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
-  const [eventoFiltro, setEventoFiltro] = useState("__all__");
-  const [generoFiltro, setGeneroFiltro] = useState("__all__");
   const [converting, setConverting] = useState<InscricaoConsolidacao | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const { data: inscricoes = [], isLoading } = useQuery({
-    queryKey: [queryKey],
+  // Column filters
+  const [fNome, setFNome] = useState<Set<string>>(new Set());
+  const [fOrigem, setFOrigem] = useState<Set<string>>(new Set());
+  const [fTelefone, setFTelefone] = useState<Set<string>>(new Set());
+  const [fEmail, setFEmail] = useState<Set<string>>(new Set());
+  const [fGenero, setFGenero] = useState<Set<string>>(new Set());
+  const [fNasc, setFNasc] = useState<Set<string>>(new Set());
+
+  const { data: inscricoes = [], isLoading: loadingEventos } = useQuery({
+    queryKey: [eventosKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_inscricoes")
@@ -66,25 +121,93 @@ export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) =>
     },
   });
 
-  const eventosDisponiveis = useMemo(() => {
-    const map = new Map<string, string>();
-    inscricoes.forEach((i) => {
-      if (i.evento) {
-        const label = `${i.evento.titulo} — ${formatEventoPeriodo(i.evento.data_inicio, i.evento.data_fim)}`;
-        map.set(i.evento.id, label);
-      }
-    });
-    return Array.from(map.entries());
-  }, [inscricoes]);
+  const { data: manuais = [], isLoading: loadingManuais } = useQuery({
+    queryKey: [manualKey],
+    enabled: includeManual,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("novos_convertidos")
+        .select("*")
+        .eq("tipo_conversao", tipo)
+        .eq("tornou_membro", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  const isLoading = loadingEventos || (includeManual && loadingManuais);
+
+  const rows = useMemo<UnifiedRow[]>(() => {
+    const eventoRows: UnifiedRow[] = inscricoes.map((i) => ({
+      id: i.id,
+      source: "evento",
+      nome: i.nome || "—",
+      origem: i.evento
+        ? `${i.evento.titulo} — ${formatEventoPeriodo(i.evento.data_inicio, i.evento.data_fim)}`
+        : "—",
+      telefone: i.telefone || "—",
+      email: i.email || "—",
+      genero: resolveGenero(i.genero),
+      nascimento: i.data_nascimento
+        ? parseLocalDate(i.data_nascimento).toLocaleDateString("pt-BR")
+        : "—",
+      data_nascimento: i.data_nascimento,
+      raw: i,
+    }));
+
+    const manualRows: UnifiedRow[] = (includeManual ? manuais : []).map((m) => ({
+      id: m.id,
+      source: "manual",
+      nome: m.full_name || "—",
+      origem: m.como_chegou ? comoChegouLabels[m.como_chegou] || m.como_chegou : "Cadastro Manual",
+      telefone: m.whatsapp || "—",
+      email: m.email || "—",
+      genero: resolveGenero(m.genero),
+      nascimento: m.data_nascimento
+        ? parseLocalDate(m.data_nascimento).toLocaleDateString("pt-BR")
+        : "—",
+      data_nascimento: m.data_nascimento,
+      raw: m,
+    }));
+
+    return [...manualRows, ...eventoRows];
+  }, [inscricoes, manuais, includeManual]);
+
+  const columnOptions = useMemo(() => {
+    const uniq = (vals: string[]) => Array.from(new Set(vals)).sort();
+    return {
+      nome: uniq(rows.map((r) => r.nome)),
+      origem: uniq(rows.map((r) => r.origem)),
+      telefone: uniq(rows.map((r) => r.telefone)),
+      email: uniq(rows.map((r) => r.email)),
+      genero: uniq(rows.map((r) => r.genero)),
+      nasc: uniq(rows.map((r) => r.nascimento)),
+    };
+  }, [rows]);
+
+  useEffect(() => {
+    if (fNome.size === 0 && columnOptions.nome.length > 0) setFNome(new Set(columnOptions.nome));
+    if (fOrigem.size === 0 && columnOptions.origem.length > 0) setFOrigem(new Set(columnOptions.origem));
+    if (fTelefone.size === 0 && columnOptions.telefone.length > 0) setFTelefone(new Set(columnOptions.telefone));
+    if (fEmail.size === 0 && columnOptions.email.length > 0) setFEmail(new Set(columnOptions.email));
+    if (fGenero.size === 0 && columnOptions.genero.length > 0) setFGenero(new Set(columnOptions.genero));
+    if (fNasc.size === 0 && columnOptions.nasc.length > 0) setFNasc(new Set(columnOptions.nasc));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columnOptions]);
 
   const filtradas = useMemo(() => {
-    return inscricoes.filter((i) => {
-      if (search && !includesNormalized(i.nome, search)) return false;
-      if (eventoFiltro !== "__all__" && i.evento?.id !== eventoFiltro) return false;
-      if (generoFiltro !== "__all__" && resolveGenero(i.genero) !== generoFiltro) return false;
+    return rows.filter((r) => {
+      if (search && !includesNormalized(r.nome, search)) return false;
+      if (fNome.size < columnOptions.nome.length && !fNome.has(r.nome)) return false;
+      if (fOrigem.size < columnOptions.origem.length && !fOrigem.has(r.origem)) return false;
+      if (fTelefone.size < columnOptions.telefone.length && !fTelefone.has(r.telefone)) return false;
+      if (fEmail.size < columnOptions.email.length && !fEmail.has(r.email)) return false;
+      if (fGenero.size < columnOptions.genero.length && !fGenero.has(r.genero)) return false;
+      if (fNasc.size < columnOptions.nasc.length && !fNasc.has(r.nascimento)) return false;
       return true;
     });
-  }, [inscricoes, search, eventoFiltro, generoFiltro]);
+  }, [rows, search, fNome, fOrigem, fTelefone, fEmail, fGenero, fNasc, columnOptions]);
 
   const Icone = tipo === "conversao" ? Heart : HeartHandshake;
   const titulo = tipo === "conversao" ? "Convertidos em Eventos" : "Reconciliações";
@@ -101,37 +224,92 @@ export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) =>
     window.open(`mailto:${email}`, "_blank");
   };
 
+  const exportHeaders = ["Nome", "Origem", "Telefone", "E-mail", "Gênero", "Nascimento"];
+  const exportData = () =>
+    filtradas.map((r) => ({
+      Nome: r.nome,
+      Origem: r.origem,
+      Telefone: r.telefone === "—" ? "" : r.telefone,
+      "E-mail": r.email === "—" ? "" : r.email,
+      Gênero: r.genero === "—" ? "" : r.genero,
+      Nascimento: r.nascimento === "—" ? "" : r.nascimento,
+    }));
+
+  const handleExcel = async () => {
+    if (filtradas.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum registro para exportar" });
+      return;
+    }
+    await exportRowsToExcel(exportData(), exportHeaders, titulo, `consolidacao-${tipo}`);
+  };
+
+  const handlePDF = () => {
+    if (filtradas.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum registro para exportar" });
+      return;
+    }
+    exportRowsToPDF(exportData(), exportHeaders, titulo, `consolidacao-${tipo}`);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from("novos_convertidos").delete().eq("id", deletingId);
+      if (error) throw error;
+      toast({ title: "Registro excluído com sucesso" });
+      queryClient.invalidateQueries({ queryKey: [manualKey] });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    } finally {
+      setIsDeleting(false);
+      setDeletingId(null);
+    }
+  };
+
+  const toInscricao = (r: UnifiedRow): InscricaoConsolidacao => ({
+    id: r.id,
+    nome: r.nome === "—" ? "" : r.nome,
+    telefone: r.telefone === "—" ? "" : r.telefone,
+    email: r.email === "—" ? "" : r.email,
+    genero: r.raw.genero,
+    data_nascimento: r.data_nascimento,
+    source: r.source,
+  });
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Icone className="w-5 h-5 text-destructive" />
         <h2 className="font-heading font-bold text-xl">{titulo}</h2>
         <Badge variant="secondary">{filtradas.length}</Badge>
+        <div className="ml-auto flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={handleExcel}>
+            <FileSpreadsheet className="w-4 h-4 mr-2" /> Excel
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePDF}>
+            <FileText className="w-4 h-4 mr-2" /> PDF
+          </Button>
+          {includeManual && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setEditing(null);
+                setShowForm(true);
+              }}
+            >
+              <UserPlus className="w-4 h-4 mr-2" /> Novo
+            </Button>
+          )}
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">
-        Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados.
+        Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados
+        {includeManual ? " e cadastros manuais." : "."}
       </p>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <SearchInput placeholder="Buscar por nome..." value={search} onChange={setSearch} className="flex-1" />
-        <Select value={eventoFiltro} onValueChange={setEventoFiltro}>
-          <SelectTrigger className="sm:w-72"><SelectValue placeholder="Evento" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos os eventos</SelectItem>
-            {eventosDisponiveis.map(([id, label]) => (
-              <SelectItem key={id} value={id}>{label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={generoFiltro} onValueChange={setGeneroFiltro}>
-          <SelectTrigger className="sm:w-40"><SelectValue placeholder="Gênero" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__all__">Todos</SelectItem>
-            <SelectItem value="Masculino">Masculino</SelectItem>
-            <SelectItem value="Feminino">Feminino</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <SearchInput placeholder="Buscar por nome..." value={search} onChange={setSearch} className="w-full sm:max-w-sm" />
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -149,44 +327,50 @@ export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) =>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Evento</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Gênero</TableHead>
-                  <TableHead>Nascimento</TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Nome" options={columnOptions.nome} selected={fNome} onChange={setFNome} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Origem" options={columnOptions.origem} selected={fOrigem} onChange={setFOrigem} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Telefone" options={columnOptions.telefone} selected={fTelefone} onChange={setFTelefone} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="E-mail" options={columnOptions.email} selected={fEmail} onChange={setFEmail} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Gênero" options={columnOptions.genero} selected={fGenero} onChange={setFGenero} />
+                  </TableHead>
+                  <TableHead>
+                    <ColumnFilterPopover title="Nascimento" options={columnOptions.nasc} selected={fNasc} onChange={setFNasc} />
+                  </TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtradas.map((i) => (
-                  <TableRow key={i.id}>
-                    <TableCell className="font-medium">{i.nome}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {i.evento ? (
-                        <div>
-                          <p className="text-sm">{i.evento.titulo}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatEventoPeriodo(i.evento.data_inicio, i.evento.data_fim)}
-                          </p>
-                        </div>
-                      ) : "—"}
+                {filtradas.map((r) => (
+                  <TableRow key={`${r.source}-${r.id}`}>
+                    <TableCell className="font-medium">
+                      {r.nome}
+                      {r.source === "manual" && (
+                        <Badge variant="outline" className="ml-2 text-[10px]">Manual</Badge>
+                      )}
                     </TableCell>
-                    <TableCell>{i.telefone || "—"}</TableCell>
-                    <TableCell className="max-w-[180px] truncate">{i.email || "—"}</TableCell>
-                    <TableCell>{resolveGenero(i.genero)}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {i.data_nascimento ? parseLocalDate(i.data_nascimento).toLocaleDateString("pt-BR") : "—"}
-                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">{r.origem}</TableCell>
+                    <TableCell>{r.telefone}</TableCell>
+                    <TableCell className="max-w-[180px] truncate">{r.email}</TableCell>
+                    <TableCell>{r.genero}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.nascimento}</TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
                         <Button
                           size="icon"
                           variant="ghost"
                           className="text-green-600 hover:text-green-700"
-                          disabled={!i.telefone}
+                          disabled={r.telefone === "—"}
                           title="Enviar WhatsApp"
-                          onClick={() => enviarWhatsapp(i.telefone)}
+                          onClick={() => enviarWhatsapp(r.telefone)}
                         >
                           <MessageCircle className="w-4 h-4" />
                         </Button>
@@ -194,18 +378,42 @@ export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) =>
                           size="icon"
                           variant="ghost"
                           className="text-blue-600 hover:text-blue-700"
-                          disabled={!i.email}
+                          disabled={r.email === "—"}
                           title="Enviar e-mail"
-                          onClick={() => enviarEmail(i.email)}
+                          onClick={() => enviarEmail(r.email)}
                         >
                           <Mail className="w-4 h-4" />
                         </Button>
+                        {r.source === "manual" && (
+                          <>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Editar"
+                              onClick={() => {
+                                setEditing(r.raw);
+                                setShowForm(true);
+                              }}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              title="Excluir"
+                              onClick={() => setDeletingId(r.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
                           className="text-destructive hover:text-destructive"
                           title="Converter para Membro"
-                          onClick={() => setConverting(i)}
+                          onClick={() => setConverting(toInscricao(r))}
                         >
                           <UserRoundCheck className="w-4 h-4" />
                         </Button>
@@ -223,8 +431,39 @@ export const ConsolidacaoEventosTab = ({ tipo }: ConsolidacaoEventosTabProps) =>
         open={!!converting}
         onOpenChange={(o) => !o && setConverting(null)}
         inscricao={converting}
-        invalidateKeys={[queryKey]}
+        invalidateKeys={[eventosKey, manualKey]}
       />
+
+      {includeManual && (
+        <NovoConvertidoFormDialog
+          open={showForm}
+          onOpenChange={setShowForm}
+          convertido={editing}
+          tipoConversaoDefault={tipo}
+        />
+      )}
+
+      <AlertDialog open={!!deletingId} onOpenChange={() => setDeletingId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Registro</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

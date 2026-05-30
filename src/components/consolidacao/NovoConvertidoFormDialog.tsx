@@ -31,9 +31,10 @@ interface NovoConvertidoFormDialogProps {
   convertido?: any;
   eventoId?: string;
   eventoTitulo?: string;
+  tipoConversaoDefault?: string;
 }
 
-const getInitialFormData = (convertido?: any, eventoId?: string) => ({
+const getInitialFormData = (convertido?: any, eventoId?: string, tipoConversaoDefault?: string) => ({
   full_name: convertido?.full_name || "",
   whatsapp: convertido?.whatsapp || "",
   email: convertido?.email || "",
@@ -49,7 +50,7 @@ const getInitialFormData = (convertido?: any, eventoId?: string) => ({
   state: convertido?.state || "",
   membro_vinculado_id: convertido?.membro_vinculado_id || "",
   casa_refugio_id: convertido?.casa_refugio_id || "",
-  tipo_conversao: convertido?.tipo_conversao || "",
+  tipo_conversao: convertido?.tipo_conversao || tipoConversaoDefault || "",
   como_chegou: convertido?.como_chegou || "",
   data_decisao: convertido?.data_decisao || "",
   batizado: convertido?.batizado || false,
@@ -71,20 +72,21 @@ export const NovoConvertidoFormDialog = ({
   convertido,
   eventoId,
   eventoTitulo,
+  tipoConversaoDefault,
 }: NovoConvertidoFormDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingCep, setIsFetchingCep] = useState(false);
 
-  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId));
+  const [formData, setFormData] = useState(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
 
   // Reset form when dialog opens or convertido changes
   useEffect(() => {
     if (open) {
-      setFormData(getInitialFormData(convertido, eventoId));
+      setFormData(getInitialFormData(convertido, eventoId, tipoConversaoDefault));
     }
-  }, [open, convertido, eventoId]);
+  }, [open, convertido, eventoId, tipoConversaoDefault]);
 
   const { data: membros = [] } = useQuery({
     queryKey: ["membros-lista"],
@@ -199,6 +201,8 @@ export const NovoConvertidoFormDialog = ({
       }
 
       queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-manual"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-manual"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
@@ -212,7 +216,11 @@ export const NovoConvertidoFormDialog = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {convertido ? "Editar Novo Convertido" : "Cadastrar Novo Convertido"}
+            {(() => {
+              const isReconc = (formData.tipo_conversao || tipoConversaoDefault) === "reconciliacao";
+              const label = isReconc ? "Reconciliação" : "Novo Convertido";
+              return convertido ? `Editar ${label}` : `Cadastrar ${label}`;
+            })()}
           </DialogTitle>
         </DialogHeader>
 
