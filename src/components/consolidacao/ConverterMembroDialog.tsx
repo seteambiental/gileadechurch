@@ -35,6 +35,8 @@ export interface InscricaoConsolidacao {
   genero?: string | null;
   data_nascimento?: string | null;
   observacoes?: string | null;
+  /** Where the record lives: live event inscription or manual consolidation entry. */
+  source?: "evento" | "manual";
 }
 
 interface ConverterMembroDialogProps {
@@ -149,11 +151,19 @@ export const ConverterMembroDialog = ({
         .single();
       if (memberError) throw memberError;
 
-      const { error: updateError } = await supabase
-        .from("impacto_inscricoes")
-        .update({ virou_membro: true, membro_convertido_id: newMember.id, member_id: newMember.id })
-        .eq("id", inscricao.id);
-      if (updateError) throw updateError;
+      if (inscricao.source === "manual") {
+        const { error: updateError } = await supabase
+          .from("novos_convertidos")
+          .update({ tornou_membro: true, member_id: newMember.id, data_membresia: todayDateStr() })
+          .eq("id", inscricao.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: updateError } = await supabase
+          .from("impacto_inscricoes")
+          .update({ virou_membro: true, membro_convertido_id: newMember.id, member_id: newMember.id })
+          .eq("id", inscricao.id);
+        if (updateError) throw updateError;
+      }
 
       toast({ title: "Convertido para membro com sucesso!" });
       invalidateKeys.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }));
