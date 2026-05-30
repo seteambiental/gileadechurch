@@ -338,6 +338,11 @@ const ConsolidacaoPage = () => {
                 ))}
               </div>
             )}
+
+            {/* Convertidos vindos dos eventos finalizados */}
+            <div className="mt-10 pt-8 border-t border-border">
+              <ConsolidacaoEventosTab tipo="conversao" />
+            </div>
           </TabsContent>
 
           <TabsContent value="eventos">
