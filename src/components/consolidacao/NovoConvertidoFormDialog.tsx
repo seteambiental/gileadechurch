@@ -214,7 +214,11 @@ export const NovoConvertidoFormDialog = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {convertido ? "Editar Novo Convertido" : "Cadastrar Novo Convertido"}
+            {(() => {
+              const isReconc = (formData.tipo_conversao || tipoConversaoDefault) === "reconciliacao";
+              const label = isReconc ? "Reconciliação" : "Novo Convertido";
+              return convertido ? `Editar ${label}` : `Cadastrar ${label}`;
+            })()}
           </DialogTitle>
         </DialogHeader>
 
