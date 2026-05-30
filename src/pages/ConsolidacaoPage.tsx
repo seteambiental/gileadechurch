@@ -346,7 +346,7 @@ const ConsolidacaoPage = () => {
           </TabsContent>
 
           <TabsContent value="eventos">
-            <ConsolidacaoEventosTab tipo="reconciliacao" />
+            <ConsolidacaoEventosTab tipo="reconciliacao" includeManual />
           </TabsContent>
         </Tabs>
       </main>
