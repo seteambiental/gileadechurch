@@ -321,6 +321,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
               size="sm"
               onClick={() => {
                 setEditing(null);
+                setImpactoLink(null);
                 setShowForm(true);
               }}
             >
