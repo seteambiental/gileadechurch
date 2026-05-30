@@ -201,6 +201,8 @@ export const NovoConvertidoFormDialog = ({
       }
 
       queryClient.invalidateQueries({ queryKey: ["novos-convertidos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-manual"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-manual"] });
       onOpenChange(false);
     } catch (error: any) {
       toast({ variant: "destructive", title: "Erro", description: error.message });
