@@ -6260,6 +6260,7 @@ export type Database = {
           full_name: string
           genero: string | null
           id: string
+          impacto_inscricao_id: string | null
           kids_numero: number | null
           kids_turma_override: string | null
           member_id: string | null
@@ -6307,6 +6308,7 @@ export type Database = {
           full_name: string
           genero?: string | null
           id?: string
+          impacto_inscricao_id?: string | null
           kids_numero?: number | null
           kids_turma_override?: string | null
           member_id?: string | null
@@ -6354,6 +6356,7 @@ export type Database = {
           full_name?: string
           genero?: string | null
           id?: string
+          impacto_inscricao_id?: string | null
           kids_numero?: number | null
           kids_turma_override?: string | null
           member_id?: string | null
