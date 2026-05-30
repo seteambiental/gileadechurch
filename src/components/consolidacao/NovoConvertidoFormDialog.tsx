@@ -32,14 +32,29 @@ interface NovoConvertidoFormDialogProps {
   eventoId?: string;
   eventoTitulo?: string;
   tipoConversaoDefault?: string;
+  /** When editing a person that came from an event inscription, link to it. */
+  impactoInscricaoId?: string;
+  /** Prefill values from the event inscription when no manual record exists yet. */
+  impactoDefaults?: {
+    full_name?: string | null;
+    whatsapp?: string | null;
+    email?: string | null;
+    genero?: string | null;
+    data_nascimento?: string | null;
+  };
 }
 
-const getInitialFormData = (convertido?: any, eventoId?: string, tipoConversaoDefault?: string) => ({
-  full_name: convertido?.full_name || "",
-  whatsapp: convertido?.whatsapp || "",
-  email: convertido?.email || "",
-  genero: convertido?.genero || "",
-  data_nascimento: convertido?.data_nascimento || "",
+const getInitialFormData = (
+  convertido?: any,
+  eventoId?: string,
+  tipoConversaoDefault?: string,
+  impactoDefaults?: NovoConvertidoFormDialogProps["impactoDefaults"],
+) => ({
+  full_name: convertido?.full_name || impactoDefaults?.full_name || "",
+  whatsapp: convertido?.whatsapp || impactoDefaults?.whatsapp || "",
+  email: convertido?.email || impactoDefaults?.email || "",
+  genero: convertido?.genero || impactoDefaults?.genero || "",
+  data_nascimento: convertido?.data_nascimento || impactoDefaults?.data_nascimento || "",
   cpf: convertido?.cpf ? formatCPF(convertido.cpf) : "",
   cep: convertido?.cep || "",
   address: convertido?.address || "",
