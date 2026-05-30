@@ -2,42 +2,23 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAuthBypassed } from "@/lib/auth-bypass";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/ui/search-input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Loader2,
-  UserPlus,
   Users,
   UserCheck,
-  Trash2,
-  Pencil,
-  UserRoundCheck,
-  Calendar,
   Home,
   Heart,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { NovoConvertidoFormDialog } from "@/components/consolidacao/NovoConvertidoFormDialog";
-import { TrilhoProgress } from "@/components/consolidacao/TrilhoProgress";
-import { EnviarMensagemButton } from "@/components/consolidacao/EnviarMensagemButton";
 import { ConsolidacaoEventosTab } from "@/components/consolidacao/ConsolidacaoEventosTab";
 import { useToast } from "@/hooks/use-toast";
 import { includesNormalized } from "@/lib/text-utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const comoChegouLabels: Record<string, string> = {
   culto_domingo: "Culto Domingo",
