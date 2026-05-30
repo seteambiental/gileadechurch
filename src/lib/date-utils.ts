@@ -38,3 +38,28 @@ export function firstDayOfMonthStr(): string {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   return `${year}-${month}-01`;
 }
+
+const MESES_PT = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+/**
+ * Format an event period like "Impacto Masculino" inputs into a readable
+ * Portuguese range, e.g. "12-14 Junho 2026" or "30 Maio - 2 Junho 2026".
+ */
+export function formatEventoPeriodo(dataInicio?: string | null, dataFim?: string | null): string {
+  if (!dataInicio) return "";
+  const ini = parseLocalDate(dataInicio);
+  if (!dataFim || dataFim === dataInicio) {
+    return `${ini.getDate()} ${MESES_PT[ini.getMonth()]} ${ini.getFullYear()}`;
+  }
+  const fim = parseLocalDate(dataFim);
+  if (ini.getMonth() === fim.getMonth() && ini.getFullYear() === fim.getFullYear()) {
+    return `${ini.getDate()}-${fim.getDate()} ${MESES_PT[ini.getMonth()]} ${ini.getFullYear()}`;
+  }
+  if (ini.getFullYear() === fim.getFullYear()) {
+    return `${ini.getDate()} ${MESES_PT[ini.getMonth()]} - ${fim.getDate()} ${MESES_PT[fim.getMonth()]} ${ini.getFullYear()}`;
+  }
+  return `${ini.getDate()} ${MESES_PT[ini.getMonth()]} ${ini.getFullYear()} - ${fim.getDate()} ${MESES_PT[fim.getMonth()]} ${fim.getFullYear()}`;
+}
