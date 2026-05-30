@@ -277,6 +277,31 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
     source: r.source,
   });
 
+  const openManualEdit = (raw: any) => {
+    setImpactoLink(null);
+    setEditing(raw);
+    setShowForm(true);
+  };
+
+  const openEventEdit = async (r: UnifiedRow) => {
+    const defaults = {
+      full_name: r.raw.nome || "",
+      whatsapp: r.raw.telefone || "",
+      email: r.raw.email || "",
+      genero: r.raw.genero || "",
+      data_nascimento: r.data_nascimento || "",
+    };
+    // Load any existing "Trilho em Gileade" record already linked to this inscription.
+    const { data } = await supabase
+      .from("novos_convertidos")
+      .select("*")
+      .eq("impacto_inscricao_id", r.id)
+      .maybeSingle();
+    setEditing((data as any) || null);
+    setImpactoLink({ id: r.id, defaults });
+    setShowForm(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
