@@ -223,7 +223,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select(`*, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`*, member:members!impacto_inscricoes_member_id_fkey(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
         .eq("evento_id", selectedEventoId) as any;
       if (error) throw error;
       return data;
