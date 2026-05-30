@@ -212,16 +212,11 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false }: Consolid
   const Icone = tipo === "conversao" ? Heart : HeartHandshake;
   const titulo = tipo === "conversao" ? "Convertidos em Eventos" : "Reconciliações";
 
-  const enviarWhatsapp = (telefone?: string | null) => {
+  const whatsappHref = (telefone?: string | null) => {
     const num = onlyDigits(telefone);
-    if (!num) return;
+    if (!num) return null;
     const full = num.startsWith("55") ? num : `55${num}`;
-    window.open(`https://wa.me/${full}`, "_blank");
-  };
-
-  const enviarEmail = (email?: string | null) => {
-    if (!email) return;
-    window.open(`mailto:${email}`, "_blank");
+    return `https://wa.me/${full}`;
   };
 
   const exportHeaders = ["Nome", "Origem", "Telefone", "E-mail", "Gênero", "Nascimento"];
