@@ -1,0 +1,1 @@
+ALTER TABLE public.casas_refugio ADD COLUMN IF NOT EXISTS ativo boolean NOT NULL DEFAULT true;

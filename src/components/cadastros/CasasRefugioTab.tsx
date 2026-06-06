@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle, Power, PowerOff } from "lucide-react";
 import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -53,6 +53,7 @@ interface CasaRefugio {
   state: string | null;
   latitude: number | null;
   longitude: number | null;
+  ativo: boolean;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
   supervisor?: { full_name: string } | null;
@@ -71,6 +72,7 @@ const CasasRefugioTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [condominioFilter, setCondominioFilter] = useState<string>("all");
   const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CasaRefugio | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -147,6 +149,27 @@ const CasasRefugioTab = () => {
     },
   });
 
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase
+        .from("casas_refugio")
+        .update({ ativo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["casas_refugio"] });
+      toast({
+        title: variables.ativo
+          ? "Casa Refúgio reativada com sucesso!"
+          : "Casa Refúgio inativada com sucesso!",
+      });
+    },
+    onError: () => {
+      toast({ title: "Erro ao alterar status da Casa Refúgio", variant: "destructive" });
+    },
+  });
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       // Text search
@@ -166,9 +189,15 @@ const CasasRefugioTab = () => {
       const matchesSupervisor =
         supervisorFilter === "all" || supervisorName === supervisorFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor;
+      // Status filter
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "ativa" && item.ativo !== false) ||
+        (statusFilter === "inativa" && item.ativo === false);
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesStatus;
     });
-  }, [items, searchTerm, condominioFilter, supervisorFilter]);
+  }, [items, searchTerm, condominioFilter, supervisorFilter, statusFilter]);
 
   // Reset supervisor filter when condomínio changes
   const handleCondominioChange = (value: string) => {
@@ -176,7 +205,8 @@ const CasasRefugioTab = () => {
     setSupervisorFilter("all");
   };
 
-  const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all";
+  const hasActiveFilters =
+    condominioFilter !== "all" || supervisorFilter !== "all" || statusFilter !== "all";
 
   // Contar casas sem coordenadas
   const casasSemCoordenadas = useMemo(() => {
@@ -186,6 +216,7 @@ const CasasRefugioTab = () => {
   const clearFilters = () => {
     setCondominioFilter("all");
     setSupervisorFilter("all");
+    setStatusFilter("all");
     setSearchTerm("");
   };
 
@@ -247,10 +278,12 @@ const CasasRefugioTab = () => {
                 { header: "Bairro", accessor: "neighborhood" },
                 { header: "Cidade", accessor: "city" },
                 { header: "Estado", accessor: "state" },
+                { header: "Status", accessor: (r) => (r.ativo === false ? "Inativa" : "Ativa") },
               ]}
               filename="casas-refugio"
               title="Casas Refúgio"
               sheetName="Casas"
+              selectableColumns
             />
             {casasSemCoordenadas > 0 && (
               <Button
@@ -313,6 +346,17 @@ const CasasRefugioTab = () => {
             </SelectContent>
           </Select>
 
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="ativa">Ativas</SelectItem>
+              <SelectItem value="inativa">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
               <X className="w-4 h-4 mr-1" />
@@ -346,12 +390,22 @@ const CasasRefugioTab = () => {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
+            <Card
+              key={item.id}
+              className={`bg-card border-border hover:border-secondary/50 transition-colors ${
+                item.ativo === false ? "opacity-60" : ""
+              }`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                      {item.ativo === false && (
+                        <Badge variant="destructive" className="text-[10px] shrink-0">
+                          Inativa
+                        </Badge>
+                      )}
                       {item.latitude && item.longitude ? (
                         <span title="Coordenadas cadastradas">
                           <Navigation className="w-3 h-3 text-green-500 shrink-0" />
@@ -369,6 +423,21 @@ const CasasRefugioTab = () => {
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={item.ativo === false ? "Reativar casa" : "Inativar casa"}
+                      className={item.ativo === false ? "text-green-600 hover:text-green-600" : "text-muted-foreground"}
+                      onClick={() =>
+                        toggleAtivoMutation.mutate({ id: item.id, ativo: item.ativo === false })
+                      }
+                    >
+                      {item.ativo === false ? (
+                        <Power className="w-4 h-4" />
+                      ) : (
+                        <PowerOff className="w-4 h-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"

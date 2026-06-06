@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Download, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter } from "lucide-react";
+import { Loader2, Download, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter, TrendingUp, TrendingDown, Minus, Users, DollarSign, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, differenceInCalendarDays, subDays } from "date-fns";
 import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
 interface CasaRefugioData {
@@ -391,6 +391,36 @@ export const EncontrosReportDialog = ({
     enabled: open && filteredCasaIds.length > 0,
   });
 
+  // Previous period (same length, immediately before) for growth comparison
+  const prevPeriod = useMemo(() => {
+    if (!appliedStartDate || !appliedEndDate) return null;
+    const start = parseLocalDate(appliedStartDate);
+    const end = parseLocalDate(appliedEndDate);
+    const lengthDays = differenceInCalendarDays(end, start);
+    const prevEnd = subDays(start, 1);
+    const prevStart = subDays(prevEnd, lengthDays);
+    return {
+      start: format(prevStart, "yyyy-MM-dd"),
+      end: format(prevEnd, "yyyy-MM-dd"),
+    };
+  }, [appliedStartDate, appliedEndDate]);
+
+  const { data: encontrosAnterior = [] } = useQuery({
+    queryKey: ["encontros-report-prev", filteredCasaIds, prevPeriod?.start, prevPeriod?.end],
+    queryFn: async () => {
+      if (filteredCasaIds.length === 0 || !prevPeriod) return [];
+      const { data, error } = await supabase
+        .from("encontros_casa_refugio")
+        .select("*")
+        .in("casa_refugio_id", filteredCasaIds)
+        .gte("data_encontro", prevPeriod.start)
+        .lte("data_encontro", prevPeriod.end);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && filteredCasaIds.length > 0 && !!prevPeriod,
+  });
+
   const reportData: EncontroReport[] = useMemo(() => {
     // Build maps of existing encontros indexed by both data_esperada and data_encontro
     // This ensures we find the match regardless of whether the actual date differs from expected
@@ -574,6 +604,56 @@ export const EncontrosReportDialog = ({
         }
       );
   }, [filteredReportData]);
+
+  // Performance summary with growth vs previous period
+  const aggregateRaw = (rows: any[]) =>
+    rows.reduce(
+      (acc, r) => {
+        const presentes =
+          (r.qtd_lideres || 0) +
+          (r.qtd_membros || 0) +
+          (r.qtd_criancas || 0) +
+          (r.qtd_visitantes || 0);
+        acc.arrecadacao += Number(r.ofertas || 0);
+        acc.kilos += Number(r.kilos_arrecadados || 0);
+        acc.presentes += presentes;
+        acc.encontros += 1;
+        return acc;
+      },
+      { arrecadacao: 0, kilos: 0, presentes: 0, encontros: 0 }
+    );
+
+  const desempenho = useMemo(() => {
+    const cur = aggregateRaw(encontros || []);
+    const prev = aggregateRaw(encontrosAnterior || []);
+    // Frequência média = média de presentes por encontro realizado
+    const curFreq = cur.encontros > 0 ? cur.presentes / cur.encontros : 0;
+    const prevFreq = prev.encontros > 0 ? prev.presentes / prev.encontros : 0;
+    const growth = (c: number, p: number): number | null => {
+      if (p === 0) return c === 0 ? 0 : null; // null = sem base de comparação
+      return ((c - p) / p) * 100;
+    };
+    return {
+      arrecadacao: { value: cur.arrecadacao, diff: cur.arrecadacao - prev.arrecadacao, pct: growth(cur.arrecadacao, prev.arrecadacao) },
+      kilos: { value: cur.kilos, diff: cur.kilos - prev.kilos, pct: growth(cur.kilos, prev.kilos) },
+      frequencia: { value: curFreq, diff: curFreq - prevFreq, pct: growth(curFreq, prevFreq) },
+      presentes: { value: cur.presentes, diff: cur.presentes - prev.presentes, pct: growth(cur.presentes, prev.presentes) },
+    };
+  }, [encontros, encontrosAnterior]);
+
+  // Counts of casas in current scope
+  const casasCounts = useMemo(() => {
+    const rede = allCasas.length;
+    const noCondominio =
+      condominioFilter === "all"
+        ? rede
+        : allCasas.filter((c) => c.condominio === condominioFilter).length;
+    const naSupervisao =
+      supervisorFilter === "all"
+        ? noCondominio
+        : casasFiltradasParaSelect.length;
+    return { rede, noCondominio, naSupervisao };
+  }, [allCasas, condominioFilter, supervisorFilter, casasFiltradasParaSelect]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredReportData.length / ITEMS_PER_PAGE));
@@ -868,6 +948,76 @@ export const EncontrosReportDialog = ({
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Desempenho - cards com crescimento vs período anterior */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {[
+            {
+              label: "Arrecadação",
+              icon: DollarSign,
+              value: `R$ ${desempenho.arrecadacao.value.toFixed(2)}`,
+              pct: desempenho.arrecadacao.pct,
+              diff: `R$ ${desempenho.arrecadacao.diff.toFixed(2)}`,
+            },
+            {
+              label: "Frequência média",
+              icon: Users,
+              value: desempenho.frequencia.value.toFixed(1),
+              pct: desempenho.frequencia.pct,
+              diff: desempenho.frequencia.diff.toFixed(1),
+            },
+            {
+              label: "Kilos arrecadados",
+              icon: Package,
+              value: desempenho.kilos.value.toFixed(1),
+              pct: desempenho.kilos.pct,
+              diff: desempenho.kilos.diff.toFixed(1),
+            },
+            {
+              label: "Total presentes",
+              icon: UserCheck,
+              value: String(desempenho.presentes.value),
+              pct: desempenho.presentes.pct,
+              diff: String(desempenho.presentes.diff),
+            },
+          ].map((card) => {
+            const up = card.pct !== null && card.pct > 0;
+            const down = card.pct !== null && card.pct < 0;
+            const TrendIcon = up ? TrendingUp : down ? TrendingDown : Minus;
+            const trendColor = up ? "text-green-500" : down ? "text-destructive" : "text-muted-foreground";
+            return (
+              <div key={card.label} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{card.label}</span>
+                  <card.icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <p className="text-lg font-bold text-foreground mt-1">{card.value}</p>
+                <div className={`flex items-center gap-1 text-xs mt-0.5 ${trendColor}`}>
+                  <TrendIcon className="w-3 h-3" />
+                  <span>
+                    {card.pct === null
+                      ? "sem base anterior"
+                      : `${card.pct > 0 ? "+" : ""}${card.pct.toFixed(1)}% (${card.diff})`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Quantidade de casas no escopo */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { label: "Casas na rede", value: casasCounts.rede },
+            { label: "No condomínio", value: casasCounts.noCondominio },
+            { label: "Na supervisão", value: casasCounts.naSupervisao },
+          ].map((c) => (
+            <div key={c.label} className="rounded-lg border border-border bg-card p-3 text-center">
+              <p className="text-xs text-muted-foreground">{c.label}</p>
+              <p className="text-xl font-bold text-foreground">{c.value}</p>
+            </div>
+          ))}
         </div>
 
         {/* Export Buttons + Stats */}
