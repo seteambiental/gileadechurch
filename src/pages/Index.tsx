@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 import { normalizeText } from "@/lib/text-utils";
@@ -15,9 +15,7 @@ import heroImage from "@/assets/hero-grapes.jpg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
 import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation, Trash2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserAccess } from "@/hooks/useUserAccess";
+import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation } from "lucide-react";
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -29,10 +27,6 @@ const Index = () => {
   const navigate = useNavigate();
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
-  const { user } = useAuth();
-  const { isAdmin } = useUserAccess(user?.id);
-  const queryClient = useQueryClient();
-
   // Buscar imagens do carrossel
   const { data: carrosselImages } = useQuery({
     queryKey: ["homepage-carrossel-public"],
@@ -261,17 +255,6 @@ const Index = () => {
       type: aviso.tipo as "event" | "urgent" | "info",
     }));
   }, [avisosDb]);
-
-  // Mutation para excluir aviso da homepage
-  const deleteAvisoMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("homepage_avisos").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
-    },
-  });
 
   // Formatar programação - usar customização se existir, senão fallback automático
   const scheduleItems = useMemo(() => {
@@ -568,15 +551,6 @@ const Index = () => {
                   {...announcement}
                   delay={index * 100}
                 />
-                {isAdmin && announcement.id !== "default" && (
-                  <button
-                    onClick={() => deleteAvisoMutation.mutate(announcement.id)}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors z-10"
-                    title="Excluir aviso"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             ))}
           </div>
