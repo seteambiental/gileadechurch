@@ -391,6 +391,36 @@ export const EncontrosReportDialog = ({
     enabled: open && filteredCasaIds.length > 0,
   });
 
+  // Previous period (same length, immediately before) for growth comparison
+  const prevPeriod = useMemo(() => {
+    if (!appliedStartDate || !appliedEndDate) return null;
+    const start = parseLocalDate(appliedStartDate);
+    const end = parseLocalDate(appliedEndDate);
+    const lengthDays = differenceInCalendarDays(end, start);
+    const prevEnd = subDays(start, 1);
+    const prevStart = subDays(prevEnd, lengthDays);
+    return {
+      start: format(prevStart, "yyyy-MM-dd"),
+      end: format(prevEnd, "yyyy-MM-dd"),
+    };
+  }, [appliedStartDate, appliedEndDate]);
+
+  const { data: encontrosAnterior = [] } = useQuery({
+    queryKey: ["encontros-report-prev", filteredCasaIds, prevPeriod?.start, prevPeriod?.end],
+    queryFn: async () => {
+      if (filteredCasaIds.length === 0 || !prevPeriod) return [];
+      const { data, error } = await supabase
+        .from("encontros_casa_refugio")
+        .select("*")
+        .in("casa_refugio_id", filteredCasaIds)
+        .gte("data_encontro", prevPeriod.start)
+        .lte("data_encontro", prevPeriod.end);
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && filteredCasaIds.length > 0 && !!prevPeriod,
+  });
+
   const reportData: EncontroReport[] = useMemo(() => {
     // Build maps of existing encontros indexed by both data_esperada and data_encontro
     // This ensures we find the match regardless of whether the actual date differs from expected
