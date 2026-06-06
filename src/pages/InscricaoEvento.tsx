@@ -505,6 +505,26 @@ const InscricaoEvento = () => {
       return;
     }
 
+    // Item 8 — data de nascimento obrigatória para quem não é membro do cadastro
+    if (!dataNascimento) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Informe a data de nascimento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
+    if (tipoInscricao === "membro" && selectedPerson?.type !== "member") {
+      toast({
+        title: "Inscrição inválida",
+        description: "A inscrição como Membro só é permitida para quem consta no cadastro interno de membros. Busque seu nome no cadastro ou selecione outro tipo de inscrição.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (showField("forma_pagamento") && !formaPagamento) {
       toast({
         title: "Campo obrigatório",
