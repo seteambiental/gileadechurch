@@ -259,6 +259,15 @@ const InscricaoEvento = () => {
     // Se é membro cadastrado, não precisa perguntar sobre ministério
     if (person.tipo_pessoa === "member") {
       setMembroMinisterio("gileade");
+      // Inscrição como "membro" só é permitida para quem consta no cadastro interno
+      setTipoInscricao("membro");
+      // Buscar a data de nascimento no cadastro de membros
+      fetchDataNascimento(person.id);
+    } else {
+      // Convertidos/consolidação não são membros internos
+      setTipoInscricao("nao_membro");
+      setDataNascimento("");
+      setDataNascimentoLocked(false);
     }
     // Lock sensitive prefilled fields — public form must never show full values
     setCpfLocked(!!person.cpf);
@@ -268,6 +277,26 @@ const InscricaoEvento = () => {
     setShowSearch(false);
     setSearchTerm("");
   };
+
+  // Fetch birth date from internal member registry
+  const fetchDataNascimento = useCallback(async (memberId: string) => {
+    try {
+      const { data } = await supabase
+        .from("members_safe" as any)
+        .select("birth_date")
+        .eq("id", memberId)
+        .maybeSingle();
+      if ((data as any)?.birth_date) {
+        setDataNascimento((data as any).birth_date);
+        setDataNascimentoLocked(true);
+      } else {
+        setDataNascimento("");
+        setDataNascimentoLocked(false);
+      }
+    } catch {
+      setDataNascimentoLocked(false);
+    }
+  }, []);
 
   // Auto-fill responsible person for minors who are registered members
   const fetchResponsavel = useCallback(async (memberId: string) => {
