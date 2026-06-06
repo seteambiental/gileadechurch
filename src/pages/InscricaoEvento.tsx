@@ -345,6 +345,10 @@ const InscricaoEvento = () => {
     setTelefoneLocked(false);
     setEmergenciaLocked(false);
     setResponsavelTelLocked(false);
+    // Pessoa nova não consta no cadastro interno: não pode ser "membro"
+    setTipoInscricao("nao_membro");
+    setDataNascimento("");
+    setDataNascimentoLocked(false);
   };
 
   // Mutation to create inscription
