@@ -568,15 +568,6 @@ const Index = () => {
                   {...announcement}
                   delay={index * 100}
                 />
-                {isAdmin && announcement.id !== "default" && (
-                  <button
-                    onClick={() => deleteAvisoMutation.mutate(announcement.id)}
-                    className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors z-10"
-                    title="Excluir aviso"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
               </div>
             ))}
           </div>
