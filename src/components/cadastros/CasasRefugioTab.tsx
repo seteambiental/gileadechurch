@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, MapPin, Users, Calendar, Filter, X, Navigation, CheckCircle, XCircle, Power, PowerOff } from "lucide-react";
 import { formatLeaderNames, includesNormalized } from "@/lib/text-utils";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -53,6 +53,7 @@ interface CasaRefugio {
   state: string | null;
   latitude: number | null;
   longitude: number | null;
+  ativo: boolean;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
   supervisor?: { full_name: string } | null;
