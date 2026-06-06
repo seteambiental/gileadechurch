@@ -92,6 +92,7 @@ const InscricaoEvento = () => {
   const [telefoneLocked, setTelefoneLocked] = useState(false);
   const [emergenciaLocked, setEmergenciaLocked] = useState(false);
   const [responsavelTelLocked, setResponsavelTelLocked] = useState(false);
+  const [dataNascimentoLocked, setDataNascimentoLocked] = useState(false);
 
   // Mask helpers — keep last digits visible, replace the rest with •
   const maskCpfDisplay = (value: string) => {
@@ -258,6 +259,15 @@ const InscricaoEvento = () => {
     // Se é membro cadastrado, não precisa perguntar sobre ministério
     if (person.tipo_pessoa === "member") {
       setMembroMinisterio("gileade");
+      // Inscrição como "membro" só é permitida para quem consta no cadastro interno
+      setTipoInscricao("membro");
+      // Buscar a data de nascimento no cadastro de membros
+      fetchDataNascimento(person.id);
+    } else {
+      // Convertidos/consolidação não são membros internos
+      setTipoInscricao("nao_membro");
+      setDataNascimento("");
+      setDataNascimentoLocked(false);
     }
     // Lock sensitive prefilled fields — public form must never show full values
     setCpfLocked(!!person.cpf);
@@ -267,6 +277,26 @@ const InscricaoEvento = () => {
     setShowSearch(false);
     setSearchTerm("");
   };
+
+  // Fetch birth date from internal member registry
+  const fetchDataNascimento = useCallback(async (memberId: string) => {
+    try {
+      const { data } = await supabase
+        .from("members_safe" as any)
+        .select("birth_date")
+        .eq("id", memberId)
+        .maybeSingle();
+      if ((data as any)?.birth_date) {
+        setDataNascimento((data as any).birth_date);
+        setDataNascimentoLocked(true);
+      } else {
+        setDataNascimento("");
+        setDataNascimentoLocked(false);
+      }
+    } catch {
+      setDataNascimentoLocked(false);
+    }
+  }, []);
 
   // Auto-fill responsible person for minors who are registered members
   const fetchResponsavel = useCallback(async (memberId: string) => {
@@ -315,6 +345,10 @@ const InscricaoEvento = () => {
     setTelefoneLocked(false);
     setEmergenciaLocked(false);
     setResponsavelTelLocked(false);
+    // Pessoa nova não consta no cadastro interno: não pode ser "membro"
+    setTipoInscricao("nao_membro");
+    setDataNascimento("");
+    setDataNascimentoLocked(false);
   };
 
   // Mutation to create inscription
@@ -466,6 +500,26 @@ const InscricaoEvento = () => {
       toast({
         title: "Campos obrigatórios",
         description: "Preencha nome e telefone.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Item 8 — data de nascimento obrigatória para quem não é membro do cadastro
+    if (!dataNascimento) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Informe a data de nascimento.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
+    if (tipoInscricao === "membro" && selectedPerson?.type !== "member") {
+      toast({
+        title: "Inscrição inválida",
+        description: "A inscrição como Membro só é permitida para quem consta no cadastro interno de membros. Busque seu nome no cadastro ou selecione outro tipo de inscrição.",
         variant: "destructive",
       });
       return;
@@ -726,6 +780,7 @@ const InscricaoEvento = () => {
                       setTelefoneLocked(false);
                       setEmergenciaLocked(false);
                       setResponsavelTelLocked(false);
+                      setDataNascimentoLocked(false);
                     }}
                   >
                     ← Voltar para busca
@@ -759,18 +814,36 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
-                    {showField("data_nascimento") && (
                     <div className="space-y-2 md:space-y-3">
-                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento</Label>
-                      <Input
-                        id="data_nascimento"
-                        type="date"
-                        value={dataNascimento}
-                        onChange={(e) => setDataNascimento(e.target.value)}
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento *</Label>
+                      {dataNascimentoLocked ? (
+                        <div className="relative">
+                          <Input
+                            id="data_nascimento"
+                            type="date"
+                            value={dataNascimento}
+                            readOnly
+                            tabIndex={-1}
+                            className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                          />
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <Input
+                          id="data_nascimento"
+                          type="date"
+                          value={dataNascimento}
+                          onChange={(e) => setDataNascimento(e.target.value)}
+                          required
+                          className="h-10 md:h-14 text-base md:text-lg"
+                        />
+                      )}
+                      {selectedPerson?.type === "member" && !dataNascimento && (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Não encontramos sua data de nascimento no cadastro. Informe abaixo.
+                        </p>
+                      )}
                     </div>
-                    )}
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
@@ -1019,14 +1092,19 @@ const InscricaoEvento = () => {
                           ].map((opt) => {
                             const disponivel = getVagasDisponiveisTipo(opt.value);
                             const esgotadoTipo = tipoEsgotado(opt.value);
+                            // "Membro" só disponível para quem consta no cadastro interno
+                            const bloqueadoMembro = opt.value === "membro" && selectedPerson?.type !== "member";
                             return (
                               <SelectItem
                                 key={opt.value}
                                 value={opt.value}
                                 className="text-base md:text-lg py-2 md:py-3"
-                                disabled={esgotadoTipo}
+                                disabled={esgotadoTipo || bloqueadoMembro}
                               >
                                 {opt.label}
+                                {bloqueadoMembro && (
+                                  <span className="ml-2 text-xs text-muted-foreground">(somente cadastro interno)</span>
+                                )}
                                 {disponivel !== null && (
                                   <span className={`ml-2 text-xs ${esgotadoTipo ? "text-destructive" : "text-muted-foreground"}`}>
                                     ({esgotadoTipo ? "esgotado" : `${disponivel} vagas`})
