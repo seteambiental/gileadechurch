@@ -262,17 +262,6 @@ const Index = () => {
     }));
   }, [avisosDb]);
 
-  // Mutation para excluir aviso da homepage
-  const deleteAvisoMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("homepage_avisos").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["homepage-avisos-public"] });
-    },
-  });
-
   // Formatar programação - usar customização se existir, senão fallback automático
   const scheduleItems = useMemo(() => {
     // Se há programação customizada, usar ela
