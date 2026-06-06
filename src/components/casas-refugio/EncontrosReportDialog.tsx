@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Download, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter } from "lucide-react";
+import { Loader2, Download, FileSpreadsheet, FileText, Calendar, Filter, Building, Home, UserCheck, ChevronLeft, ChevronRight, Columns3, ListFilter, TrendingUp, TrendingDown, Minus, Users, DollarSign, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, differenceInCalendarDays, subDays } from "date-fns";
 import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
 interface CasaRefugioData {
