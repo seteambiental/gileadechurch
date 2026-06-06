@@ -1092,14 +1092,19 @@ const InscricaoEvento = () => {
                           ].map((opt) => {
                             const disponivel = getVagasDisponiveisTipo(opt.value);
                             const esgotadoTipo = tipoEsgotado(opt.value);
+                            // "Membro" só disponível para quem consta no cadastro interno
+                            const bloqueadoMembro = opt.value === "membro" && selectedPerson?.type !== "member";
                             return (
                               <SelectItem
                                 key={opt.value}
                                 value={opt.value}
                                 className="text-base md:text-lg py-2 md:py-3"
-                                disabled={esgotadoTipo}
+                                disabled={esgotadoTipo || bloqueadoMembro}
                               >
                                 {opt.label}
+                                {bloqueadoMembro && (
+                                  <span className="ml-2 text-xs text-muted-foreground">(somente cadastro interno)</span>
+                                )}
                                 {disponivel !== null && (
                                   <span className={`ml-2 text-xs ${esgotadoTipo ? "text-destructive" : "text-muted-foreground"}`}>
                                     ({esgotadoTipo ? "esgotado" : `${disponivel} vagas`})
