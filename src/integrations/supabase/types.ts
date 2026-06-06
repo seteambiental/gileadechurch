@@ -1385,6 +1385,7 @@ export type Database = {
           anfitriao_esposa_id: string | null
           anfitriao_id: string | null
           anfitrioes: string | null
+          ativo: boolean
           cep: string | null
           city: string | null
           complement: string | null
@@ -1413,6 +1414,7 @@ export type Database = {
           anfitriao_esposa_id?: string | null
           anfitriao_id?: string | null
           anfitrioes?: string | null
+          ativo?: boolean
           cep?: string | null
           city?: string | null
           complement?: string | null
@@ -1441,6 +1443,7 @@ export type Database = {
           anfitriao_esposa_id?: string | null
           anfitriao_id?: string | null
           anfitrioes?: string | null
+          ativo?: boolean
           cep?: string | null
           city?: string | null
           complement?: string | null
