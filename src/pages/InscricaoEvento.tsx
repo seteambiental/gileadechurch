@@ -780,6 +780,7 @@ const InscricaoEvento = () => {
                       setTelefoneLocked(false);
                       setEmergenciaLocked(false);
                       setResponsavelTelLocked(false);
+                      setDataNascimentoLocked(false);
                     }}
                   >
                     ← Voltar para busca
