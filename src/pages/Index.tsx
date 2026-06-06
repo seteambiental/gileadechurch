@@ -29,10 +29,6 @@ const Index = () => {
   const navigate = useNavigate();
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
-  const { user } = useAuth();
-  const { isAdmin } = useUserAccess(user?.id);
-  const queryClient = useQueryClient();
-
   // Buscar imagens do carrossel
   const { data: carrosselImages } = useQuery({
     queryKey: ["homepage-carrossel-public"],
