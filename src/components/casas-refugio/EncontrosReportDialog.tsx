@@ -605,6 +605,56 @@ export const EncontrosReportDialog = ({
       );
   }, [filteredReportData]);
 
+  // Performance summary with growth vs previous period
+  const aggregateRaw = (rows: any[]) =>
+    rows.reduce(
+      (acc, r) => {
+        const presentes =
+          (r.qtd_lideres || 0) +
+          (r.qtd_membros || 0) +
+          (r.qtd_criancas || 0) +
+          (r.qtd_visitantes || 0);
+        acc.arrecadacao += Number(r.ofertas || 0);
+        acc.kilos += Number(r.kilos_arrecadados || 0);
+        acc.presentes += presentes;
+        acc.encontros += 1;
+        return acc;
+      },
+      { arrecadacao: 0, kilos: 0, presentes: 0, encontros: 0 }
+    );
+
+  const desempenho = useMemo(() => {
+    const cur = aggregateRaw(encontros || []);
+    const prev = aggregateRaw(encontrosAnterior || []);
+    // Frequência média = média de presentes por encontro realizado
+    const curFreq = cur.encontros > 0 ? cur.presentes / cur.encontros : 0;
+    const prevFreq = prev.encontros > 0 ? prev.presentes / prev.encontros : 0;
+    const growth = (c: number, p: number): number | null => {
+      if (p === 0) return c === 0 ? 0 : null; // null = sem base de comparação
+      return ((c - p) / p) * 100;
+    };
+    return {
+      arrecadacao: { value: cur.arrecadacao, diff: cur.arrecadacao - prev.arrecadacao, pct: growth(cur.arrecadacao, prev.arrecadacao) },
+      kilos: { value: cur.kilos, diff: cur.kilos - prev.kilos, pct: growth(cur.kilos, prev.kilos) },
+      frequencia: { value: curFreq, diff: curFreq - prevFreq, pct: growth(curFreq, prevFreq) },
+      presentes: { value: cur.presentes, diff: cur.presentes - prev.presentes, pct: growth(cur.presentes, prev.presentes) },
+    };
+  }, [encontros, encontrosAnterior]);
+
+  // Counts of casas in current scope
+  const casasCounts = useMemo(() => {
+    const rede = allCasas.length;
+    const noCondominio =
+      condominioFilter === "all"
+        ? rede
+        : allCasas.filter((c) => c.condominio === condominioFilter).length;
+    const naSupervisao =
+      supervisorFilter === "all"
+        ? noCondominio
+        : casasFiltradasParaSelect.length;
+    return { rede, noCondominio, naSupervisao };
+  }, [allCasas, condominioFilter, supervisorFilter, casasFiltradasParaSelect]);
+
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredReportData.length / ITEMS_PER_PAGE));
   const paginatedData = filteredReportData.slice(
