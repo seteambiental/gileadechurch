@@ -390,12 +390,22 @@ const CasasRefugioTab = () => {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="bg-card border-border hover:border-secondary/50 transition-colors">
+            <Card
+              key={item.id}
+              className={`bg-card border-border hover:border-secondary/50 transition-colors ${
+                item.ativo === false ? "opacity-60" : ""
+              }`}
+            >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                      {item.ativo === false && (
+                        <Badge variant="destructive" className="text-[10px] shrink-0">
+                          Inativa
+                        </Badge>
+                      )}
                       {item.latitude && item.longitude ? (
                         <span title="Coordenadas cadastradas">
                           <Navigation className="w-3 h-3 text-green-500 shrink-0" />
@@ -413,6 +423,21 @@ const CasasRefugioTab = () => {
                     )}
                   </div>
                   <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={item.ativo === false ? "Reativar casa" : "Inativar casa"}
+                      className={item.ativo === false ? "text-green-600 hover:text-green-600" : "text-muted-foreground"}
+                      onClick={() =>
+                        toggleAtivoMutation.mutate({ id: item.id, ativo: item.ativo === false })
+                      }
+                    >
+                      {item.ativo === false ? (
+                        <Power className="w-4 h-4" />
+                      ) : (
+                        <PowerOff className="w-4 h-4" />
+                      )}
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
