@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 import { normalizeText } from "@/lib/text-utils";
@@ -15,9 +15,7 @@ import heroImage from "@/assets/hero-grapes.jpg";
 import { MemberRequestForm } from "@/components/MemberRequestForm";
 import { CompartilharCadastroDialog } from "@/components/CompartilharCadastroDialog";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation, Trash2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUserAccess } from "@/hooks/useUserAccess";
+import { UserPlus, Share2, CalendarDays, ChevronLeft, ChevronRight, Navigation } from "lucide-react";
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
