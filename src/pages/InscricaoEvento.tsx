@@ -92,6 +92,7 @@ const InscricaoEvento = () => {
   const [telefoneLocked, setTelefoneLocked] = useState(false);
   const [emergenciaLocked, setEmergenciaLocked] = useState(false);
   const [responsavelTelLocked, setResponsavelTelLocked] = useState(false);
+  const [dataNascimentoLocked, setDataNascimentoLocked] = useState(false);
 
   // Mask helpers — keep last digits visible, replace the rest with •
   const maskCpfDisplay = (value: string) => {
