@@ -346,6 +346,17 @@ const CasasRefugioTab = () => {
             </SelectContent>
           </Select>
 
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="ativa">Ativas</SelectItem>
+              <SelectItem value="inativa">Inativas</SelectItem>
+            </SelectContent>
+          </Select>
+
           {hasActiveFilters && (
             <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
               <X className="w-4 h-4 mr-1" />
