@@ -278,10 +278,12 @@ const CasasRefugioTab = () => {
                 { header: "Bairro", accessor: "neighborhood" },
                 { header: "Cidade", accessor: "city" },
                 { header: "Estado", accessor: "state" },
+                { header: "Status", accessor: (r) => (r.ativo === false ? "Inativa" : "Ativa") },
               ]}
               filename="casas-refugio"
               title="Casas Refúgio"
               sheetName="Casas"
+              selectableColumns
             />
             {casasSemCoordenadas > 0 && (
               <Button
