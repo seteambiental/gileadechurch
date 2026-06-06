@@ -814,18 +814,36 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
-                    {showField("data_nascimento") && (
                     <div className="space-y-2 md:space-y-3">
-                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento</Label>
-                      <Input
-                        id="data_nascimento"
-                        type="date"
-                        value={dataNascimento}
-                        onChange={(e) => setDataNascimento(e.target.value)}
-                        className="h-10 md:h-14 text-base md:text-lg"
-                      />
+                      <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento *</Label>
+                      {dataNascimentoLocked ? (
+                        <div className="relative">
+                          <Input
+                            id="data_nascimento"
+                            type="date"
+                            value={dataNascimento}
+                            readOnly
+                            tabIndex={-1}
+                            className="h-10 md:h-14 text-base md:text-lg pr-10 bg-muted/40 cursor-not-allowed select-none"
+                          />
+                          <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <Input
+                          id="data_nascimento"
+                          type="date"
+                          value={dataNascimento}
+                          onChange={(e) => setDataNascimento(e.target.value)}
+                          required
+                          className="h-10 md:h-14 text-base md:text-lg"
+                        />
+                      )}
+                      {selectedPerson?.type === "member" && !dataNascimento && (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Não encontramos sua data de nascimento no cadastro. Informe abaixo.
+                        </p>
+                      )}
                     </div>
-                    )}
 
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="telefone" className="text-base md:text-lg">Telefone para Contato *</Label>
