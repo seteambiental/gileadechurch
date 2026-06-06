@@ -72,6 +72,7 @@ const CasasRefugioTab = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [condominioFilter, setCondominioFilter] = useState<string>("all");
   const [supervisorFilter, setSupervisorFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CasaRefugio | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -148,6 +149,27 @@ const CasasRefugioTab = () => {
     },
   });
 
+  const toggleAtivoMutation = useMutation({
+    mutationFn: async ({ id, ativo }: { id: string; ativo: boolean }) => {
+      const { error } = await supabase
+        .from("casas_refugio")
+        .update({ ativo })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["casas_refugio"] });
+      toast({
+        title: variables.ativo
+          ? "Casa Refúgio reativada com sucesso!"
+          : "Casa Refúgio inativada com sucesso!",
+      });
+    },
+    onError: () => {
+      toast({ title: "Erro ao alterar status da Casa Refúgio", variant: "destructive" });
+    },
+  });
+
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
       // Text search
@@ -167,9 +189,15 @@ const CasasRefugioTab = () => {
       const matchesSupervisor =
         supervisorFilter === "all" || supervisorName === supervisorFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor;
+      // Status filter
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "ativa" && item.ativo !== false) ||
+        (statusFilter === "inativa" && item.ativo === false);
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesStatus;
     });
-  }, [items, searchTerm, condominioFilter, supervisorFilter]);
+  }, [items, searchTerm, condominioFilter, supervisorFilter, statusFilter]);
 
   // Reset supervisor filter when condomínio changes
   const handleCondominioChange = (value: string) => {
@@ -177,7 +205,8 @@ const CasasRefugioTab = () => {
     setSupervisorFilter("all");
   };
 
-  const hasActiveFilters = condominioFilter !== "all" || supervisorFilter !== "all";
+  const hasActiveFilters =
+    condominioFilter !== "all" || supervisorFilter !== "all" || statusFilter !== "all";
 
   // Contar casas sem coordenadas
   const casasSemCoordenadas = useMemo(() => {
@@ -187,6 +216,7 @@ const CasasRefugioTab = () => {
   const clearFilters = () => {
     setCondominioFilter("all");
     setSupervisorFilter("all");
+    setStatusFilter("all");
     setSearchTerm("");
   };
 
