@@ -950,6 +950,76 @@ export const EncontrosReportDialog = ({
           </div>
         </div>
 
+        {/* Desempenho - cards com crescimento vs período anterior */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {[
+            {
+              label: "Arrecadação",
+              icon: DollarSign,
+              value: `R$ ${desempenho.arrecadacao.value.toFixed(2)}`,
+              pct: desempenho.arrecadacao.pct,
+              diff: `R$ ${desempenho.arrecadacao.diff.toFixed(2)}`,
+            },
+            {
+              label: "Frequência média",
+              icon: Users,
+              value: desempenho.frequencia.value.toFixed(1),
+              pct: desempenho.frequencia.pct,
+              diff: desempenho.frequencia.diff.toFixed(1),
+            },
+            {
+              label: "Kilos arrecadados",
+              icon: Package,
+              value: desempenho.kilos.value.toFixed(1),
+              pct: desempenho.kilos.pct,
+              diff: desempenho.kilos.diff.toFixed(1),
+            },
+            {
+              label: "Total presentes",
+              icon: UserCheck,
+              value: String(desempenho.presentes.value),
+              pct: desempenho.presentes.pct,
+              diff: String(desempenho.presentes.diff),
+            },
+          ].map((card) => {
+            const up = card.pct !== null && card.pct > 0;
+            const down = card.pct !== null && card.pct < 0;
+            const TrendIcon = up ? TrendingUp : down ? TrendingDown : Minus;
+            const trendColor = up ? "text-green-500" : down ? "text-destructive" : "text-muted-foreground";
+            return (
+              <div key={card.label} className="rounded-lg border border-border bg-card p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">{card.label}</span>
+                  <card.icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <p className="text-lg font-bold text-foreground mt-1">{card.value}</p>
+                <div className={`flex items-center gap-1 text-xs mt-0.5 ${trendColor}`}>
+                  <TrendIcon className="w-3 h-3" />
+                  <span>
+                    {card.pct === null
+                      ? "sem base anterior"
+                      : `${card.pct > 0 ? "+" : ""}${card.pct.toFixed(1)}% (${card.diff})`}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Quantidade de casas no escopo */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          {[
+            { label: "Casas na rede", value: casasCounts.rede },
+            { label: "No condomínio", value: casasCounts.noCondominio },
+            { label: "Na supervisão", value: casasCounts.naSupervisao },
+          ].map((c) => (
+            <div key={c.label} className="rounded-lg border border-border bg-card p-3 text-center">
+              <p className="text-xs text-muted-foreground">{c.label}</p>
+              <p className="text-xl font-bold text-foreground">{c.value}</p>
+            </div>
+          ))}
+        </div>
+
         {/* Export Buttons + Stats */}
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <DropdownMenu>
