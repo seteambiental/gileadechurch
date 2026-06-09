@@ -79,16 +79,21 @@ export default function ContingenciaBackupsTab() {
 
       // Gerar URL temporária e baixar o arquivo
       if (data.file) {
-        const { data: signed } = await supabase.storage
+        // Baixa o arquivo diretamente do storage como blob (evita problema de cross-origin)
+        const { data: blob, error: dlError } = await supabase.storage
           .from("db-backups")
-          .createSignedUrl(data.file, 60);
-        if (signed?.signedUrl) {
+          .download(data.file);
+        if (dlError || !blob) {
+          toast.error("Backup gerado, mas não foi possível baixar o arquivo.");
+        } else {
+          const blobUrl = URL.createObjectURL(blob);
           const a = document.createElement("a");
-          a.href = signed.signedUrl;
+          a.href = blobUrl;
           a.download = data.file;
           document.body.appendChild(a);
           a.click();
           a.remove();
+          URL.revokeObjectURL(blobUrl);
         }
       }
 
