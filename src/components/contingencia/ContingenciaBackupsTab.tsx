@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, CheckCircle, XCircle, Clock, Loader2 } from "lucide-react";
+import { Plus, CheckCircle, XCircle, Clock, Loader2, Download, DatabaseBackup } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -19,6 +19,7 @@ export default function ContingenciaBackupsTab() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
   const [form, setForm] = useState({
     tipo: "database",
     status: "sucesso",
@@ -65,6 +66,43 @@ export default function ContingenciaBackupsTab() {
     setForm({ tipo: "database", status: "sucesso", localizacao: "", hash_integridade: "", observacoes: "", tamanho_bytes: "" });
   };
 
+  const handleRunBackup = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("backup-database");
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Falha ao gerar backup");
+
+      toast.success(
+        `Backup gerado: ${data.records} registros de ${data.tables} tabelas`
+      );
+
+      // Gerar URL temporária e baixar o arquivo
+      if (data.file) {
+        const { data: signed } = await supabase.storage
+          .from("db-backups")
+          .createSignedUrl(data.file, 60);
+        if (signed?.signedUrl) {
+          const a = document.createElement("a");
+          a.href = signed.signedUrl;
+          a.download = data.file;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["contingencia-backups"] });
+      queryClient.invalidateQueries({ queryKey: ["contingencia-ultimo-backup"] });
+      queryClient.invalidateQueries({ queryKey: ["contingencia-stats-backups"] });
+    } catch (e: any) {
+      console.error("Erro no backup:", e);
+      toast.error(e?.message || "Erro ao gerar backup");
+    } finally {
+      setRunning(false);
+    }
+  };
+
   const statusIcon = (status: string) => {
     if (status === "sucesso") return <CheckCircle className="h-4 w-4 text-green-500" />;
     if (status === "falha") return <XCircle className="h-4 w-4 text-red-500" />;
@@ -84,9 +122,19 @@ export default function ContingenciaBackupsTab() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Backups Registrados</CardTitle>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" /> Registrar Backup
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={handleRunBackup} disabled={running}>
+            {running ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <DatabaseBackup className="h-4 w-4 mr-1" />
+            )}
+            {running ? "Gerando..." : "Fazer Backup Agora"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Registrar Manual
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
