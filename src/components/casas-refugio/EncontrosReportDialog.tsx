@@ -651,6 +651,48 @@ export const EncontrosReportDialog = ({
     };
   }, [encontros, encontrosAnterior]);
 
+  // Dados para os gráficos de colunas comparativos (período anterior x atual)
+  const comparativoCharts = useMemo(() => {
+    const prev = aggregateRaw(encontrosAnterior || []);
+    const cur = aggregateRaw(encontros || []);
+    const prevFreq = prev.encontros > 0 ? prev.presentes / prev.encontros : 0;
+    const curFreq = cur.encontros > 0 ? cur.presentes / cur.encontros : 0;
+    return [
+      {
+        title: "Arrecadação (R$)",
+        format: (v: number) => `R$ ${v.toFixed(2)}`,
+        data: [
+          { periodo: "Anterior", valor: prev.arrecadacao },
+          { periodo: "Atual", valor: cur.arrecadacao },
+        ],
+      },
+      {
+        title: "Frequência média",
+        format: (v: number) => v.toFixed(1),
+        data: [
+          { periodo: "Anterior", valor: prevFreq },
+          { periodo: "Atual", valor: curFreq },
+        ],
+      },
+      {
+        title: "Kilos arrecadados",
+        format: (v: number) => v.toFixed(1),
+        data: [
+          { periodo: "Anterior", valor: prev.kilos },
+          { periodo: "Atual", valor: cur.kilos },
+        ],
+      },
+      {
+        title: "Total de presentes",
+        format: (v: number) => String(Math.round(v)),
+        data: [
+          { periodo: "Anterior", valor: prev.presentes },
+          { periodo: "Atual", valor: cur.presentes },
+        ],
+      },
+    ];
+  }, [encontros, encontrosAnterior]);
+
   // Counts of casas in current scope
   const casasCounts = useMemo(() => {
     const rede = allCasas.length;
