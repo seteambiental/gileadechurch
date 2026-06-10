@@ -47,7 +47,7 @@ A mensagem deve:
 
 Retorne apenas a mensagem, sem explicações adicionais.`;
 
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) {
       return new Response(
         JSON.stringify({ mensagem: fallbackMensagem(nome, tipoConv) }),
@@ -55,20 +55,20 @@ Retorne apenas a mensagem, sem explicações adicionais.`;
       );
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [{ role: "user", content: prompt }],
       }),
     });
 
     if (!response.ok) {
-      console.error("Lovable AI error:", response.status, await response.text());
+      console.error("OpenAI error:", response.status, await response.text());
       return new Response(
         JSON.stringify({ mensagem: fallbackMensagem(nome, tipoConv) }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
