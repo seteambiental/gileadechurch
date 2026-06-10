@@ -45,8 +45,14 @@ const ConsolidacaoPage = () => {
     },
   });
 
-  const pendentes = convertidos.filter((c) => !c.tornou_membro);
-  const membros = convertidos.filter((c) => c.tornou_membro);
+  const convertidosConv = convertidos.filter((c) => (c as any).tipo_conversao !== "reconciliacao");
+  const reconciliados = convertidos.filter((c) => (c as any).tipo_conversao === "reconciliacao");
+
+  const pendentes = convertidosConv.filter((c) => !c.tornou_membro);
+  const membros = convertidosConv.filter((c) => c.tornou_membro);
+
+  const recPendentes = reconciliados.filter((c) => !c.tornou_membro);
+  const recMembros = reconciliados.filter((c) => c.tornou_membro);
 
   if (authLoading) {
     return (
