@@ -40,6 +40,7 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  ativo: boolean | null;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
 }
