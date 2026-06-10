@@ -58,6 +58,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ptBR } from "date-fns/locale";
 import ExcelJS from "exceljs";
 
