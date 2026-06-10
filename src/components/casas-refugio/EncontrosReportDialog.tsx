@@ -39,6 +39,16 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, differenceInCalendarDays, subDays } from "date-fns";
 import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
@@ -641,6 +651,48 @@ export const EncontrosReportDialog = ({
     };
   }, [encontros, encontrosAnterior]);
 
+  // Dados para os gráficos de colunas comparativos (período anterior x atual)
+  const comparativoCharts = useMemo(() => {
+    const prev = aggregateRaw(encontrosAnterior || []);
+    const cur = aggregateRaw(encontros || []);
+    const prevFreq = prev.encontros > 0 ? prev.presentes / prev.encontros : 0;
+    const curFreq = cur.encontros > 0 ? cur.presentes / cur.encontros : 0;
+    return [
+      {
+        title: "Arrecadação (R$)",
+        format: (v: number) => `R$ ${v.toFixed(2)}`,
+        data: [
+          { periodo: "Anterior", valor: prev.arrecadacao },
+          { periodo: "Atual", valor: cur.arrecadacao },
+        ],
+      },
+      {
+        title: "Frequência média",
+        format: (v: number) => v.toFixed(1),
+        data: [
+          { periodo: "Anterior", valor: prevFreq },
+          { periodo: "Atual", valor: curFreq },
+        ],
+      },
+      {
+        title: "Kilos arrecadados",
+        format: (v: number) => v.toFixed(1),
+        data: [
+          { periodo: "Anterior", valor: prev.kilos },
+          { periodo: "Atual", valor: cur.kilos },
+        ],
+      },
+      {
+        title: "Total de presentes",
+        format: (v: number) => String(Math.round(v)),
+        data: [
+          { periodo: "Anterior", valor: prev.presentes },
+          { periodo: "Atual", valor: cur.presentes },
+        ],
+      },
+    ];
+  }, [encontros, encontrosAnterior]);
+
   // Counts of casas in current scope
   const casasCounts = useMemo(() => {
     const rede = allCasas.length;
@@ -1004,6 +1056,40 @@ export const EncontrosReportDialog = ({
               </div>
             );
           })}
+        </div>
+
+        {/* Gráficos comparativos: período anterior x atual */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          {comparativoCharts.map((chart) => (
+            <div key={chart.title} className="rounded-lg border border-border bg-card p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">{chart.title}</p>
+              <div className="h-[160px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chart.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="periodo"
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={40} />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: 12,
+                      }}
+                      formatter={(value: number) => [chart.format(value), "Valor"]}
+                    />
+                    <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+                      <Cell fill="hsl(var(--muted-foreground))" />
+                      <Cell fill="hsl(var(--destructive))" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Quantidade de casas no escopo */}
