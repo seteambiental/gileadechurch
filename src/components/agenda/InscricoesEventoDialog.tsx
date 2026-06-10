@@ -673,6 +673,8 @@ export const InscricoesEventoDialog = ({
                     <TableHead>Tipo</TableHead>
                     <TableHead>Pagamento</TableHead>
                     <TableHead>Situação</TableHead>
+                    <TableHead className="text-center">Convertido</TableHead>
+                    <TableHead className="text-center">Reconciliado</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
