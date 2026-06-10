@@ -40,6 +40,7 @@ interface CasaRefugio {
   neighborhood: string | null;
   city: string | null;
   state: string | null;
+  ativo: boolean | null;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
 }
@@ -355,10 +356,14 @@ const CasasRefugioPage = () => {
           const semCR = Math.max(totalMembros - totalEmCR, 0);
           return (
             <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-3">
               <div className="bg-card border border-border rounded-lg p-4 text-center">
-                <p className="text-2xl font-bold text-foreground">{filteredCasas.length}</p>
-                <p className="text-xs text-muted-foreground">Casas</p>
+                <p className="text-2xl font-bold text-foreground">{filteredCasas.filter(c => c.ativo).length}</p>
+                <p className="text-xs text-muted-foreground">Ativas</p>
+              </div>
+              <div className="bg-card border border-border rounded-lg p-4 text-center">
+                <p className="text-2xl font-bold text-foreground">{filteredCasas.filter(c => !c.ativo).length}</p>
+                <p className="text-xs text-muted-foreground">Inativas</p>
               </div>
               <div className="bg-card border border-border rounded-lg p-4 text-center">
                 <p className="text-2xl font-bold text-foreground">{filteredCondominios.size}</p>
