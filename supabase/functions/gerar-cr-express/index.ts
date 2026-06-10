@@ -233,7 +233,13 @@ Todos os campos devem ser strings com o texto formatado.`;
       { role: "system", content: systemPrompt },
     ];
 
-    if (fileContent) {
+    if (docxText) {
+      // DOCX: send the extracted text directly
+      messages.push({
+        role: "user",
+        content: `RESUMA o conteúdo abaixo (extraído do documento da mensagem/pregação) para gerar o Casa Refúgio Express. Use APENAS o conteúdo fornecido, sem acrescentar informações externas. Tema: "${tema}", Pastor/Ministrador: "${pastor}", Texto Base: "${textoBase}".\n\n--- CONTEÚDO DO DOCUMENTO ---\n${docxText}`,
+      });
+    } else if (fileContent) {
       // Image files - send as multimodal
       if (fileContent.startsWith("data:image/")) {
       messages.push({
