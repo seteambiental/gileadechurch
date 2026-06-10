@@ -39,6 +39,16 @@ import {
 } from "@/components/ui/table";
 import { formatDateBR } from "@/lib/masks";
 import { exportGenericToExcel, exportGenericToPDF, ExportColumn, ExportRowStyle } from "@/lib/export";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, differenceInCalendarDays, subDays } from "date-fns";
 import { parseLocalDate, firstDayOfMonthStr } from "@/lib/date-utils";
 
