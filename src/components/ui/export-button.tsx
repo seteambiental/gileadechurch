@@ -36,7 +36,7 @@ export const ExportButton = ({
   title,
   disabled = false,
   sheetName = "Dados",
-  selectableColumns = false,
+  selectableColumns = true,
 }: ExportButtonProps) => {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pendingFormat, setPendingFormat] = useState<"excel" | "pdf" | null>(null);
