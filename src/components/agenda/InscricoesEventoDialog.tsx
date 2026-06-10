@@ -58,6 +58,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ptBR } from "date-fns/locale";
 import ExcelJS from "exceljs";
 
@@ -372,6 +373,32 @@ export const InscricoesEventoDialog = ({
     },
   });
 
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("inscricoes_eventos")
+        .update({ [field]: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, field, value }) => {
+      const key = ["inscricoes-evento", eventoId];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<any[]>(key);
+      if (prev) {
+        queryClient.setQueryData(key, prev.map((i: any) => (i.id === id ? { ...i, [field]: value } : i)));
+      }
+      return { prev };
+    },
+    onError: (error: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["inscricoes-evento", eventoId], ctx.prev);
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+    },
+  });
+
   const [editingObservacoes, setEditingObservacoes] = useState<{ id: string; value: string } | null>(null);
 
   const handleDelete = async () => {
@@ -646,6 +673,8 @@ export const InscricoesEventoDialog = ({
                     <TableHead>Tipo</TableHead>
                     <TableHead>Pagamento</TableHead>
                     <TableHead>Situação</TableHead>
+                    <TableHead className="text-center">Convertido</TableHead>
+                    <TableHead className="text-center">Reconciliado</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -742,6 +771,24 @@ export const InscricoesEventoDialog = ({
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={!!(inscricao as any).converteu}
+                          onCheckedChange={(v) =>
+                            toggleFlagMutation.mutate({ id: inscricao.id, field: "converteu", value: !!v })
+                          }
+                          aria-label="Convertido"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={!!(inscricao as any).reconciliou}
+                          onCheckedChange={(v) =>
+                            toggleFlagMutation.mutate({ id: inscricao.id, field: "reconciliou", value: !!v })
+                          }
+                          aria-label="Reconciliado"
+                        />
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">

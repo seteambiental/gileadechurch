@@ -45,8 +45,14 @@ const ConsolidacaoPage = () => {
     },
   });
 
-  const pendentes = convertidos.filter((c) => !c.tornou_membro);
-  const membros = convertidos.filter((c) => c.tornou_membro);
+  const convertidosConv = convertidos.filter((c) => (c as any).tipo_conversao !== "reconciliacao");
+  const reconciliados = convertidos.filter((c) => (c as any).tipo_conversao === "reconciliacao");
+
+  const pendentes = convertidosConv.filter((c) => !c.tornou_membro);
+  const membros = convertidosConv.filter((c) => c.tornou_membro);
+
+  const recPendentes = reconciliados.filter((c) => !c.tornou_membro);
+  const recMembros = reconciliados.filter((c) => c.tornou_membro);
 
   if (authLoading) {
     return (
@@ -123,6 +129,28 @@ const ConsolidacaoPage = () => {
           </TabsContent>
 
           <TabsContent value="eventos">
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Card className="bg-card border-border">
+                <CardContent className="pt-4 pb-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <Heart className="w-5 h-5 text-destructive" />
+                    <p className="text-2xl font-bold text-foreground">{recPendentes.length}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Em Trilho</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="pt-4 pb-4 text-center">
+                  <div className="flex items-center justify-center gap-2 mb-1">
+                    <UserCheck className="w-5 h-5 text-green-600" />
+                    <p className="text-2xl font-bold text-foreground">{recMembros.length}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Tornaram-se Membros</p>
+                </CardContent>
+              </Card>
+            </div>
+
             <ConsolidacaoEventosTab tipo="reconciliacao" includeManual />
           </TabsContent>
         </Tabs>

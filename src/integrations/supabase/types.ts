@@ -3494,6 +3494,7 @@ export type Database = {
           aprovado_em: string | null
           aprovado_por: string | null
           casa_refugio_id: string | null
+          converteu: boolean
           cpf: string | null
           created_at: string
           data_nascimento: string | null
@@ -3513,6 +3514,7 @@ export type Database = {
           novo_convertido_id: string | null
           observacoes: string | null
           preferencia_beliche: string | null
+          reconciliou: boolean
           rg: string | null
           status_pagamento: string | null
           telefone_contato: string
@@ -3529,6 +3531,7 @@ export type Database = {
           aprovado_em?: string | null
           aprovado_por?: string | null
           casa_refugio_id?: string | null
+          converteu?: boolean
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
@@ -3548,6 +3551,7 @@ export type Database = {
           novo_convertido_id?: string | null
           observacoes?: string | null
           preferencia_beliche?: string | null
+          reconciliou?: boolean
           rg?: string | null
           status_pagamento?: string | null
           telefone_contato: string
@@ -3564,6 +3568,7 @@ export type Database = {
           aprovado_em?: string | null
           aprovado_por?: string | null
           casa_refugio_id?: string | null
+          converteu?: boolean
           cpf?: string | null
           created_at?: string
           data_nascimento?: string | null
@@ -3583,6 +3588,7 @@ export type Database = {
           novo_convertido_id?: string | null
           observacoes?: string | null
           preferencia_beliche?: string | null
+          reconciliou?: boolean
           rg?: string | null
           status_pagamento?: string | null
           telefone_contato?: string
