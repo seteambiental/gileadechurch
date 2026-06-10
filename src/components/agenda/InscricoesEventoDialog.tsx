@@ -373,6 +373,32 @@ export const InscricoesEventoDialog = ({
     },
   });
 
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("inscricoes_eventos")
+        .update({ [field]: value })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, field, value }) => {
+      const key = ["inscricoes-evento", eventoId];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<any[]>(key);
+      if (prev) {
+        queryClient.setQueryData(key, prev.map((i: any) => (i.id === id ? { ...i, [field]: value } : i)));
+      }
+      return { prev };
+    },
+    onError: (error: any, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(["inscricoes-evento", eventoId], ctx.prev);
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+    },
+  });
+
   const [editingObservacoes, setEditingObservacoes] = useState<{ id: string; value: string } | null>(null);
 
   const handleDelete = async () => {
