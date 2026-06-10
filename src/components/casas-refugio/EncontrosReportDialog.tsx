@@ -1058,6 +1058,40 @@ export const EncontrosReportDialog = ({
           })}
         </div>
 
+        {/* Gráficos comparativos: período anterior x atual */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          {comparativoCharts.map((chart) => (
+            <div key={chart.title} className="rounded-lg border border-border bg-card p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-2">{chart.title}</p>
+              <div className="h-[160px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chart.data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis
+                      dataKey="periodo"
+                      tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} width={40} />
+                    <RechartsTooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: 12,
+                      }}
+                      formatter={(value: number) => [chart.format(value), "Valor"]}
+                    />
+                    <Bar dataKey="valor" radius={[4, 4, 0, 0]}>
+                      <Cell fill="hsl(var(--muted-foreground))" />
+                      <Cell fill="hsl(var(--destructive))" />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Quantidade de casas no escopo */}
         <div className="grid grid-cols-3 gap-3 mb-4">
           {[
