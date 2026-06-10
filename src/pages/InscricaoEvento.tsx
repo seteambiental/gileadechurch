@@ -461,7 +461,13 @@ const InscricaoEvento = () => {
         "criar_inscricao_evento_publica" as any,
         { payload: payload as any }
       );
-      if (error) throw error;
+      if (error) {
+        // Trava do banco contra inscrições duplicadas
+        if ((error as any).code === "23505" || /duplicate key|unique/i.test(error.message)) {
+          throw new Error("INSCRIÇÃO JÁ ENVIADA — esta pessoa já está inscrita neste evento.");
+        }
+        throw error;
+      }
       const inscricaoData = { id: novoId as unknown as string };
 
       // Mensagem inicial "Recebemos sua inscrição" + notifica o ADM (vai pela fila, com retentativa)
