@@ -772,6 +772,24 @@ export const InscricoesEventoDialog = ({
                           </SelectContent>
                         </Select>
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={!!(inscricao as any).converteu}
+                          onCheckedChange={(v) =>
+                            toggleFlagMutation.mutate({ id: inscricao.id, field: "converteu", value: !!v })
+                          }
+                          aria-label="Convertido"
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Checkbox
+                          checked={!!(inscricao as any).reconciliou}
+                          onCheckedChange={(v) =>
+                            toggleFlagMutation.mutate({ id: inscricao.id, field: "reconciliou", value: !!v })
+                          }
+                          aria-label="Reconciliado"
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
