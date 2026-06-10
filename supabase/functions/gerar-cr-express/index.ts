@@ -101,6 +101,7 @@ serve(async (req) => {
     });
 
     let fileContent = "";
+    let docxText = "";
     
     // If there's an uploaded file, download and encode it
     if (arquivoPath) {
@@ -114,7 +115,25 @@ serve(async (req) => {
       } else if (fileData) {
         const buffer = await fileData.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        
+        const ext0 = arquivoPath.split(".").pop()?.toLowerCase();
+
+        // DOCX: extract plain text (OpenAI cannot read .docx directly)
+        if (ext0 === "docx") {
+          try {
+            const zip = await JSZip.loadAsync(buffer);
+            const xml = await zip.file("word/document.xml")?.async("string") || "";
+            docxText = xml
+              .replace(/<\/w:p>/g, "\n")
+              .replace(/<[^>]+>/g, "")
+              .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            console.log("DOCX text extracted, length:", docxText.length);
+          } catch (e) {
+            console.error("Error extracting docx:", e);
+          }
+        }
+
         // Convert to base64 in chunks to avoid stack overflow
         const chunkSize = 8192;
         let binary = "";
