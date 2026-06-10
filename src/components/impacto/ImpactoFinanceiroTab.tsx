@@ -447,6 +447,45 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return acc;
   }, {} as Record<string, number>) || {};
 
+  // Quebra por categoria (Equipe x Participantes) e status de pagamento
+  const resumoCategorias = useMemo(() => {
+    const isEquipe = (i: any) => ["equipe", "ministrador"].includes(i.tipo_inscricao || "");
+    const acc = {
+      equipePagaQtd: 0,
+      equipePagaValor: 0,
+      equipeNaoPagaQtd: 0,
+      equipeNaoPagaValor: 0,
+      participantePagaQtd: 0,
+      participantePagaValor: 0,
+      participanteNaoPagaQtd: 0,
+      participanteNaoPagaValor: 0,
+    };
+    (inscricoes || []).forEach((i: any) => {
+      const pago = normalizeStatus(i.status_pagamento) === "pago";
+      const equipe = isEquipe(i);
+      const valorPago = i.valor_pago || 0;
+      const saldo = Math.max(0, (i.valor_inscricao || 0) - (i.valor_pago || 0));
+      if (equipe) {
+        if (pago) {
+          acc.equipePagaQtd += 1;
+          acc.equipePagaValor += valorPago;
+        } else {
+          acc.equipeNaoPagaQtd += 1;
+          acc.equipeNaoPagaValor += saldo;
+        }
+      } else {
+        if (pago) {
+          acc.participantePagaQtd += 1;
+          acc.participantePagaValor += valorPago;
+        } else {
+          acc.participanteNaoPagaQtd += 1;
+          acc.participanteNaoPagaValor += saldo;
+        }
+      }
+    });
+    return acc;
+  }, [inscricoes]);
+
   const formatFormaPagamentoComValor = (row: any) => {
     const pagamentosArr = row.pagamentos as Array<{ tipo: string; valor: string | number }> | null;
 
@@ -875,6 +914,51 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                 <p className="text-xs text-muted-foreground">
                   Receitas pagas − Despesas
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* Quebra por categoria e status */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Equipe Pagas</CardTitle>
+                <Check className="w-4 h-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{resumoCategorias.equipePagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.equipePagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Equipe Não Pagas</CardTitle>
+                <Clock className="w-4 h-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{resumoCategorias.equipeNaoPagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.equipeNaoPagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Participantes Pagos</CardTitle>
+                <Check className="w-4 h-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{resumoCategorias.participantePagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.participantePagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Participantes Não Pagos</CardTitle>
+                <Clock className="w-4 h-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{resumoCategorias.participanteNaoPagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.participanteNaoPagaValor)}</p>
               </CardContent>
             </Card>
 
