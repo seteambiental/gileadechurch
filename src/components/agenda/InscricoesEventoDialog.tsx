@@ -377,7 +377,7 @@ export const InscricoesEventoDialog = ({
     mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
       const { error } = await supabase
         .from("inscricoes_eventos")
-        .update({ [field]: value })
+        .update({ [field]: value } as any)
         .eq("id", id);
       if (error) throw error;
     },
