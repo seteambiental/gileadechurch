@@ -917,6 +917,51 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
               </CardContent>
             </Card>
 
+            {/* Quebra por categoria e status */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Equipe Pagas</CardTitle>
+                <Check className="w-4 h-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{resumoCategorias.equipePagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.equipePagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Equipe Não Pagas</CardTitle>
+                <Clock className="w-4 h-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{resumoCategorias.equipeNaoPagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.equipeNaoPagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Participantes Pagos</CardTitle>
+                <Check className="w-4 h-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">{resumoCategorias.participantePagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.participantePagaValor)}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Participantes Não Pagos</CardTitle>
+                <Clock className="w-4 h-4 text-yellow-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">{resumoCategorias.participanteNaoPagaQtd}</div>
+                <p className="text-xs text-muted-foreground">{formatCurrency(resumoCategorias.participanteNaoPagaValor)}</p>
+              </CardContent>
+            </Card>
+
             <Card className="md:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Previsão de Recebimentos</CardTitle>
