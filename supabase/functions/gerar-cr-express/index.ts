@@ -223,11 +223,20 @@ Todos os campos devem ser strings com o texto formatado.`;
             { type: "image_url", image_url: { url: fileContent } },
           ],
         });
-      } else {
-        // For documents, encode as text description
+      } else if (fileContent.startsWith("data:application/pdf")) {
+        // PDF files - OpenAI accepts them as a "file" content part
         messages.push({
           role: "user",
-          content: `O arquivo da mensagem foi anexado (formato: ${arquivoPath.split(".").pop()}). RESUMA o conteúdo deste arquivo para gerar o Casa Refúgio Express. NÃO acrescente informações externas, use APENAS o que está no material. Tema: "${tema}", Pastor/Ministrador: "${pastor}", Texto Base: "${textoBase}".`,
+          content: [
+            { type: "text", text: `RESUMA o conteúdo deste arquivo PDF da mensagem/pregação para gerar o Casa Refúgio Express. Use APENAS o conteúdo do arquivo, sem acrescentar informações externas. Tema: ${tema}, Pastor: ${pastor}, Texto Base: ${textoBase}` },
+            { type: "file", file: { filename: arquivoPath.split("/").pop() || "documento.pdf", file_data: fileContent } },
+          ],
+        });
+      } else {
+        // Other document formats (docx, pptx, etc.) cannot be read directly by OpenAI
+        messages.push({
+          role: "user",
+          content: `ATENÇÃO: o material foi enviado em formato ${arquivoPath.split(".").pop()}, que não pode ser lido automaticamente. Gere o Casa Refúgio Express com base no tema "${tema}", ministrado por "${pastor}", com texto base "${textoBase}", criando um conteúdo coerente e fiel ao tema.`,
         });
       }
     } else {
@@ -248,6 +257,7 @@ Todos os campos devem ser strings com o texto formatado.`;
         model: "gpt-4o",
         messages,
         temperature: 0.7,
+        max_tokens: 4096,
       }),
     });
 
