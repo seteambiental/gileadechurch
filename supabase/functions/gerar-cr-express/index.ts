@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import JSZip from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +101,7 @@ serve(async (req) => {
     });
 
     let fileContent = "";
+    let docxText = "";
     
     // If there's an uploaded file, download and encode it
     if (arquivoPath) {
@@ -113,7 +115,25 @@ serve(async (req) => {
       } else if (fileData) {
         const buffer = await fileData.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        
+        const ext0 = arquivoPath.split(".").pop()?.toLowerCase();
+
+        // DOCX: extract plain text (OpenAI cannot read .docx directly)
+        if (ext0 === "docx") {
+          try {
+            const zip = await JSZip.loadAsync(buffer);
+            const xml = await zip.file("word/document.xml")?.async("string") || "";
+            docxText = xml
+              .replace(/<\/w:p>/g, "\n")
+              .replace(/<[^>]+>/g, "")
+              .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            console.log("DOCX text extracted, length:", docxText.length);
+          } catch (e) {
+            console.error("Error extracting docx:", e);
+          }
+        }
+
         // Convert to base64 in chunks to avoid stack overflow
         const chunkSize = 8192;
         let binary = "";
@@ -213,7 +233,13 @@ Todos os campos devem ser strings com o texto formatado.`;
       { role: "system", content: systemPrompt },
     ];
 
-    if (fileContent) {
+    if (docxText) {
+      // DOCX: send the extracted text directly
+      messages.push({
+        role: "user",
+        content: `RESUMA o conteúdo abaixo (extraído do documento da mensagem/pregação) para gerar o Casa Refúgio Express. Use APENAS o conteúdo fornecido, sem acrescentar informações externas. Tema: "${tema}", Pastor/Ministrador: "${pastor}", Texto Base: "${textoBase}".\n\n--- CONTEÚDO DO DOCUMENTO ---\n${docxText}`,
+      });
+    } else if (fileContent) {
       // Image files - send as multimodal
       if (fileContent.startsWith("data:image/")) {
       messages.push({
@@ -223,11 +249,20 @@ Todos os campos devem ser strings com o texto formatado.`;
             { type: "image_url", image_url: { url: fileContent } },
           ],
         });
-      } else {
-        // For documents, encode as text description
+      } else if (fileContent.startsWith("data:application/pdf")) {
+        // PDF files - OpenAI accepts them as a "file" content part
         messages.push({
           role: "user",
-          content: `O arquivo da mensagem foi anexado (formato: ${arquivoPath.split(".").pop()}). RESUMA o conteúdo deste arquivo para gerar o Casa Refúgio Express. NÃO acrescente informações externas, use APENAS o que está no material. Tema: "${tema}", Pastor/Ministrador: "${pastor}", Texto Base: "${textoBase}".`,
+          content: [
+            { type: "text", text: `RESUMA o conteúdo deste arquivo PDF da mensagem/pregação para gerar o Casa Refúgio Express. Use APENAS o conteúdo do arquivo, sem acrescentar informações externas. Tema: ${tema}, Pastor: ${pastor}, Texto Base: ${textoBase}` },
+            { type: "file", file: { filename: arquivoPath.split("/").pop() || "documento.pdf", file_data: fileContent } },
+          ],
+        });
+      } else {
+        // Other document formats (docx, pptx, etc.) cannot be read directly by OpenAI
+        messages.push({
+          role: "user",
+          content: `ATENÇÃO: o material foi enviado em formato ${arquivoPath.split(".").pop()}, que não pode ser lido automaticamente. Gere o Casa Refúgio Express com base no tema "${tema}", ministrado por "${pastor}", com texto base "${textoBase}", criando um conteúdo coerente e fiel ao tema.`,
         });
       }
     } else {
@@ -248,6 +283,7 @@ Todos os campos devem ser strings com o texto formatado.`;
         model: "gpt-4o",
         messages,
         temperature: 0.7,
+        max_tokens: 4096,
       }),
     });
 
