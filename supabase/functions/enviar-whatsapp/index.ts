@@ -203,70 +203,16 @@ const versiculosReconciliacao = [
   { texto: "Assim vos digo que há alegria diante dos anjos de Deus por um pecador que se arrepende.", referencia: "Lucas 15:10" },
 ];
 
+// Envio de texto via WasenderAPI (mantém validação de placeholders).
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   validarPlaceholdersResolvidos(mensagem);
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  
-  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': EVOLUTION_API_KEY || '',
-    },
-    body: JSON.stringify({
-      number: phoneFormatted,
-      text: mensagem,
-    }),
-  });
-  
-  const result = await response.json();
-  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
-  
-  if (!response.ok) {
-    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
-    throw new Error(result.message || result.error || `Erro ao enviar mensagem: ${detail}`);
-  }
-  
-  return result;
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
+// Envio de imagem via WasenderAPI (mantém validação de placeholders na legenda).
 async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
   if (caption) validarPlaceholdersResolvidos(caption);
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  
-  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
-  
-  console.log(`Enviando imagem Evolution para: ${phoneFormatted}`);
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': EVOLUTION_API_KEY || '',
-    },
-    body: JSON.stringify({
-      number: phoneFormatted,
-      mediatype: 'image',
-      media: imageUrl,
-      caption: caption || '',
-    }),
-  });
-  
-  const result = await response.json();
-  console.log('Resposta Evolution imagem:', JSON.stringify(result).substring(0, 300));
-  
-  if (!response.ok) {
-    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
-    throw new Error(result.message || result.error || `Erro ao enviar imagem: ${detail}`);
-  }
-  
-  return result;
+  return await enviarImagemWhatsApp(telefone, imageUrl, caption || '');
 }
 
 async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
