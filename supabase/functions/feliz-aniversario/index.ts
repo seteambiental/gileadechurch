@@ -1,15 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enviarImagemComFallbackTexto } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 // Logo oficial enviada como imagem em mensagens importantes
 const LOGO_GILEADE_URL =
@@ -26,71 +22,8 @@ const versiculosAniversario = [
 ];
 
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-
-  // Descobrir o JID real no WhatsApp (alguns números brasileiros antigos não usam o 9)
-  let jidFinal = `${phoneFormatted}@s.whatsapp.net`;
-  try {
-    const checkUrl = `${EVOLUTION_API_URL}/chat/whatsappNumbers/${EVOLUTION_INSTANCE_NAME}`;
-    const variantes = new Set<string>([phoneFormatted]);
-    // Variante sem o 9 extra: 55 + DDD(2) + 9 + 8dígitos -> remover o 9
-    if (phoneFormatted.length === 13 && phoneFormatted.charAt(4) === "9") {
-      variantes.add(phoneFormatted.slice(0, 4) + phoneFormatted.slice(5));
-    }
-    // Variante com 9 extra
-    if (phoneFormatted.length === 12) {
-      variantes.add(phoneFormatted.slice(0, 4) + "9" + phoneFormatted.slice(4));
-    }
-
-    const checkResp = await fetch(checkUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": EVOLUTION_API_KEY || "",
-      },
-      body: JSON.stringify({ numbers: Array.from(variantes) }),
-    });
-    const checkData = await checkResp.json();
-    if (Array.isArray(checkData)) {
-      const valido = checkData.find((n: any) => n.exists === true && n.jid);
-      if (valido?.jid) {
-        jidFinal = valido.jid;
-        console.log(`JID resolvido: ${telefone} -> ${jidFinal}`);
-      } else {
-        throw new Error(`Número não existe no WhatsApp: ${phoneFormatted}`);
-      }
-    }
-  } catch (err) {
-    console.warn("Falha ao verificar JID, tentando formato padrão:", err);
-  }
-
   // Envia a logo da Igreja Gileade como imagem com a mensagem na legenda
-  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
-  console.log(`Enviando mensagem de aniversário (com logo) para: ${jidFinal}`);
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': EVOLUTION_API_KEY || '',
-    },
-    body: JSON.stringify({
-      number: jidFinal,
-      mediatype: 'image',
-      media: LOGO_GILEADE_URL,
-      caption: mensagem,
-    }),
-  });
-  
-  const result = await response.json();
-  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
-  
-  if (!response.ok) {
-    throw new Error(result.message || result.error || 'Erro ao enviar mensagem');
-  }
-  
-  return result;
+  return await enviarImagemComFallbackTexto(telefone, LOGO_GILEADE_URL, mensagem);
 }
 
 function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null) {
