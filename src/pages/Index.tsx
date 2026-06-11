@@ -168,31 +168,31 @@ const Index = () => {
     enabled: !programacaoCustom || programacaoCustom.length === 0,
   });
 
-  // Buscar eventos com flyer (próximos eventos especiais) - até 4
-  // Apenas eventos que ainda não passaram (data_fim ou data_evento >= hoje)
+  // Buscar próximos eventos especiais - até 4
+  // O evento continua aparecendo mesmo sem pôster (mostra um cartão com data/título)
   const { data: eventosComFlyer } = useQuery({
     queryKey: ["eventos-com-flyer-public"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, tipo_evento, flyer_url, data_evento, data_fim, limite_vagas, visibilidade")
+        .select("id, titulo, tipo_evento, flyer_url, data_evento, data_fim, hora_inicio, local, cor, necessita_inscricao, limite_vagas, visibilidade")
         .eq("ativo", true)
         .eq("recorrente", false)
         .eq("visibilidade", "publico")
         .eq("status", "aprovado")
         .neq("genero_alvo", "somente_convidados")
-        .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
-        .limit(8);
+        .limit(12);
       if (error) return [];
-      // Filtrar apenas flyers externos (não SVGs gerados pela IA)
-      const externosOnly = (data || []).filter((e: any) => {
+      // Mantém eventos que são "especiais": têm pôster (não-SVG) OU precisam de inscrição.
+      const proximos = (data || []).filter((e: any) => {
         const url = (e.flyer_url || "").toLowerCase();
-        return !url.endsWith(".svg");
+        const temPosterValido = !!url && !url.endsWith(".svg");
+        return temPosterValido || e.necessita_inscricao;
       });
-      return externosOnly.slice(0, 4);
+      return proximos.slice(0, 4);
     },
   });
 
@@ -597,20 +597,50 @@ const Index = () => {
                     Próximos Eventos
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {eventosComFlyer.map((evento, index) => (
-                      <Link
-                        key={evento.id}
-                        to={evento.tipo_evento === "apresentacao_criancas" ? `/inscricao/apresentacao/${evento.id}` : `/inscricao/${evento.id}`}
-                        className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
-                        style={{ animationDelay: `${index * 100}ms` }}
-                      >
-                        <img
-                          src={evento.flyer_url}
-                          alt={evento.titulo}
-                          className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-300"
-                        />
-                      </Link>
-                    ))}
+                    {eventosComFlyer.map((evento, index) => {
+                      const url = (evento.flyer_url || "").toLowerCase();
+                      const temPoster = !!url && !url.endsWith(".svg");
+                      const [ano, mes, dia] = (evento.data_evento || "").split("-").map(Number);
+                      const dataEvento = ano ? new Date(ano, (mes || 1) - 1, dia || 1) : null;
+                      return (
+                        <Link
+                          key={evento.id}
+                          to={evento.tipo_evento === "apresentacao_criancas" ? `/inscricao/apresentacao/${evento.id}` : `/inscricao/${evento.id}`}
+                          className="group block rounded-lg overflow-hidden border border-border hover:border-secondary transition-all animate-fade-in shadow-sm hover:shadow-md bg-card"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          {temPoster ? (
+                            <img
+                              src={evento.flyer_url}
+                              alt={evento.titulo}
+                              className="w-full h-auto object-contain group-hover:scale-[1.02] transition-transform duration-300"
+                            />
+                          ) : (
+                            <div
+                              className="aspect-[3/4] flex flex-col items-center justify-center gap-1 p-4 text-center"
+                              style={{ backgroundColor: evento.cor || "hsl(var(--secondary))", color: "#ffffff" }}
+                            >
+                              {dataEvento && (
+                                <span className="text-xs font-medium uppercase opacity-90">
+                                  {format(dataEvento, "dd 'de' MMM", { locale: ptBR })}
+                                </span>
+                              )}
+                              <span className="font-heading font-bold text-base leading-tight line-clamp-4">
+                                {evento.titulo}
+                              </span>
+                              {evento.hora_inicio && (
+                                <span className="text-xs opacity-90">{evento.hora_inicio.substring(0, 5)}</span>
+                              )}
+                              {evento.necessita_inscricao && (
+                                <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide bg-white/20 rounded px-2 py-0.5">
+                                  Inscrição
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </Link>
+                      );
+                    })}
                   </div>
                 </div>
               )}
