@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
+import {
+  enviarTextoWhatsApp,
+  enviarImagemWhatsApp,
+} from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 // Logo oficial enviada como imagem nas mensagens importantes
 // (boas-vindas, inscrição recebida, confirmação de inscrição, cadastro aprovado, aniversário).
