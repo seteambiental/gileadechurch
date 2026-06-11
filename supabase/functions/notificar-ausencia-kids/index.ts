@@ -203,11 +203,11 @@ Ministério Kids - Igreja Gileade`;
         continue;
       }
 
-      if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
+      if (!whatsappConfigurado()) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
           status: 'erro',
-          erro_mensagem: 'Evolution API não configurada',
+          erro_mensagem: 'WhatsApp (WasenderAPI) não configurado',
         });
         erros++;
         continue;
