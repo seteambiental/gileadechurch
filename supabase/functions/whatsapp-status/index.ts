@@ -4,12 +4,11 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const rawEvolutionUrl = Deno.env.get("EVOLUTION_API_URL") || "";
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
-  ? rawEvolutionUrl
-  : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
-const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
+const RAW_BASE = Deno.env.get("WASENDER_API_URL") || "https://www.wasenderapi.com";
+const WASENDER_API_URL = RAW_BASE.startsWith("http")
+  ? RAW_BASE.replace(/\/+$/, "")
+  : `https://${RAW_BASE.replace(/\/+$/, "")}`;
+const WASENDER_API_KEY = Deno.env.get("WASENDER_API_KEY");
 
 function publicHost(url: string) {
   try {
@@ -42,13 +41,11 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  const provider = "Evolution API";
+  const provider = "WasenderAPI";
   const startedAt = Date.now();
 
   const missing: string[] = [];
-  if (!EVOLUTION_API_URL) missing.push("EVOLUTION_API_URL");
-  if (!EVOLUTION_API_KEY) missing.push("EVOLUTION_API_KEY");
-  if (!EVOLUTION_INSTANCE_NAME) missing.push("EVOLUTION_INSTANCE_NAME");
+  if (!WASENDER_API_KEY) missing.push("WASENDER_API_KEY");
 
   if (missing.length > 0) {
     return new Response(
@@ -70,34 +67,25 @@ Deno.serve(async (req) => {
   try {
     const headers = {
       "Content-Type": "application/json",
-      apikey: EVOLUTION_API_KEY!,
+      "Authorization": `Bearer ${WASENDER_API_KEY}`,
     };
 
-    const stateUrl = `${EVOLUTION_API_URL}/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`;
-    const stateRes = await fetchJson(stateUrl, { headers });
+    const statusUrl = `${WASENDER_API_URL}/api/status`;
+    const stateRes = await fetchJson(statusUrl, { headers });
+
+    const body = stateRes.body || {};
+    const data = body.data ?? body.session ?? body;
     const state =
-      stateRes.body?.instance?.state ?? stateRes.body?.state ?? "unknown";
-    const connected = state === "open";
+      data?.status ?? data?.state ?? body?.status ?? "unknown";
+    const connected =
+      typeof state === "string" &&
+      ["connected", "open", "online"].includes(state.toLowerCase());
 
-    let ownerNumber: string | null = null;
-    let ownerName: string | null = null;
-    let profilePicUrl: string | null = null;
-
-    if (connected) {
-      const fetchInstUrl = `${EVOLUTION_API_URL}/instance/fetchInstances?instanceName=${encodeURIComponent(
-        EVOLUTION_INSTANCE_NAME!,
-      )}`;
-      const instRes = await fetchJson(fetchInstUrl, { headers });
-      const arr = Array.isArray(instRes.body) ? instRes.body : [];
-      const inst = arr[0]?.instance ?? arr[0] ?? instRes.body?.instance;
-      ownerNumber =
-        (inst?.owner ? String(inst.owner).replace("@s.whatsapp.net", "") : null) ||
-        inst?.number ||
-        inst?.wuid ||
-        null;
-      ownerName = inst?.profileName || inst?.name || null;
-      profilePicUrl = inst?.profilePictureUrl || inst?.profilePicUrl || null;
-    }
+    const ownerNumber =
+      data?.phone_number || data?.phoneNumber || data?.number || null;
+    const ownerName = data?.name || data?.profileName || null;
+    const profilePicUrl =
+      data?.profile_picture_url || data?.profilePictureUrl || null;
 
     return new Response(
       JSON.stringify({
@@ -105,8 +93,7 @@ Deno.serve(async (req) => {
         configured: true,
         connected,
         state,
-        instance_name: EVOLUTION_INSTANCE_NAME,
-        api_host: publicHost(EVOLUTION_API_URL),
+        api_host: publicHost(WASENDER_API_URL),
         owner_number: ownerNumber,
         owner_name: ownerName,
         profile_picture_url: profilePicUrl,
