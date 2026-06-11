@@ -1,16 +1,14 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  enviarTextoWhatsApp,
+  enviarMidiaWhatsApp,
+  whatsappConfigurado,
+} from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const rawEvolutionUrl = Deno.env.get("EVOLUTION_API_URL") || "";
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
-  ? rawEvolutionUrl
-  : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
-const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
 // Padrões caso a tabela whatsapp_config esteja indisponível
 const DEFAULTS = {
@@ -42,107 +40,8 @@ async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
-// Descobre o JID real no WhatsApp (alguns números brasileiros não usam o "9" extra).
-// Retorna o JID quando o número existe; caso contrário lança erro para sair da fila.
-async function resolverJid(telefone: string): Promise<string> {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  const variantes = new Set<string>([phoneFormatted]);
-  if (phoneFormatted.length === 13 && phoneFormatted.charAt(4) === "9") {
-    variantes.add(phoneFormatted.slice(0, 4) + phoneFormatted.slice(5));
-  }
-  if (phoneFormatted.length === 12) {
-    variantes.add(phoneFormatted.slice(0, 4) + "9" + phoneFormatted.slice(4));
-  }
-
-  try {
-    const checkUrl = `${EVOLUTION_API_URL}/chat/whatsappNumbers/${EVOLUTION_INSTANCE_NAME}`;
-    const resp = await fetch(checkUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-      body: JSON.stringify({ numbers: Array.from(variantes) }),
-    });
-    const data = await resp.json().catch(() => null);
-    if (Array.isArray(data)) {
-      const valido = data.find((n: any) => n?.exists === true && n?.jid);
-      if (valido?.jid) return valido.jid as string;
-      throw new Error(`Número não existe no WhatsApp: ${phoneFormatted}`);
-    }
-  } catch (err) {
-    // Se a verificação falhar por erro de rede, tenta o formato padrão como fallback
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.startsWith("Número não existe")) throw err;
-    console.warn("Falha ao verificar JID, usando formato padrão:", msg);
-  }
-  return `${phoneFormatted}@s.whatsapp.net`;
-}
-
 async function enviarTextoEvolution(telefone: string, mensagem: string) {
-  const jid = await resolverJid(telefone);
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-    body: JSON.stringify({
-      number: jid,
-      text: mensagem,
-    }),
-  });
-  const result = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
-    throw new Error(result?.message || result?.error || `HTTP ${resp.status}: ${detail}`);
-  }
-  return result;
-}
-
-function detectarMediaType(url: string): "image" | "video" | "document" {
-  const u = url.split("?")[0].toLowerCase();
-  if (/\.(jpe?g|png|webp|gif|bmp)$/.test(u)) return "image";
-  if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(u)) return "video";
-  return "document";
-}
-
-function fileNameDeUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    const base = u.pathname.split("/").pop() || "arquivo";
-    return decodeURIComponent(base);
-  } catch {
-    return "arquivo";
-  }
-}
-
-async function enviarMidiaEvolution(
-  telefone: string,
-  midiaUrl: string,
-  caption?: string,
-  fileName?: string,
-) {
-  const jid = await resolverJid(telefone);
-  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
-  const mediatype = detectarMediaType(midiaUrl);
-  const payload: Record<string, unknown> = {
-    number: jid,
-    mediatype,
-    media: midiaUrl,
-    caption: caption || "",
-  };
-  if (mediatype === "document") {
-    payload.fileName = fileName || fileNameDeUrl(midiaUrl);
-    payload.mimetype = undefined; // deixa Evolution inferir
-  }
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-    body: JSON.stringify(payload),
-  });
-  const result = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    const detail = typeof result === 'object' ? JSON.stringify(result).slice(0, 500) : String(result);
-    throw new Error(result?.message || result?.error || `HTTP ${resp.status}: ${detail}`);
-  }
-  return result;
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
 async function enviarMidiaComFallbackTexto(
@@ -152,11 +51,11 @@ async function enviarMidiaComFallbackTexto(
   fileName?: string,
 ) {
   try {
-    return await enviarMidiaEvolution(telefone, midiaUrl, caption, fileName);
+    return await enviarMidiaWhatsApp(telefone, midiaUrl, caption || "", undefined, fileName);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`Falha ao enviar mídia; tentando texto. Motivo: ${msg}`);
-    return await enviarTextoEvolution(telefone, caption);
+    return await enviarTextoWhatsApp(telefone, caption);
   }
 }
 
@@ -228,9 +127,9 @@ Deno.serve(async (req) => {
   );
 
   try {
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
+    if (!whatsappConfigurado()) {
       return new Response(
-        JSON.stringify({ success: false, error: "Evolution API não configurada" }),
+        JSON.stringify({ success: false, error: "WhatsApp (WasenderAPI) não configurado" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -98,9 +99,7 @@ serve(async (req) => {
       return turma?.turma || null;
     };
 
-    const evolutionApiUrl = Deno.env.get('EVOLUTION_API_URL');
-    const evolutionApiKey = Deno.env.get('EVOLUTION_API_KEY');
-    const evolutionInstanceName = Deno.env.get('EVOLUTION_INSTANCE_NAME');
+    const whatsappApiKey = Deno.env.get('WASENDER_API_KEY');
 
     const diaCulto = tipo_culto === 'domingo' ? 'amanhã no domingo' : 'amanhã na quarta-feira';
     const horario = tipo_culto === 'domingo' ? '09h' : '19h30';
@@ -176,51 +175,24 @@ Ministério Kids - Igreja Gileade`;
         continue;
       }
 
-      if (!evolutionApiUrl || !evolutionApiKey || !evolutionInstanceName) {
+      if (!whatsappApiKey) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,
           status: 'erro',
-          erro_mensagem: 'Evolution API não configurada',
+          erro_mensagem: 'WhatsApp (WasenderAPI) não configurado',
         });
         erros++;
         continue;
       }
 
       try {
-        const telefoneFormatado = formatarTelefone(data.responsavel.whatsapp);
-        
-        const response = await fetch(
-          `${evolutionApiUrl}/message/sendText/${evolutionInstanceName}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': evolutionApiKey,
-            },
-            body: JSON.stringify({
-              number: `${telefoneFormatado}@s.whatsapp.net`,
-              text: mensagem,
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (response.ok) {
-          await supabase.from('kids_notificacoes_log').insert({
-            ...logData,
-            status: 'enviada',
-          });
-          enviadas++;
-          console.log(`Lembrete enviado para ${data.responsavel.full_name}`);
-        } else {
-          await supabase.from('kids_notificacoes_log').insert({
-            ...logData,
-            status: 'erro',
-            erro_mensagem: result.message || 'Erro ao enviar',
-          });
-          erros++;
-        }
+        await enviarTextoWhatsApp(data.responsavel.whatsapp, mensagem);
+        await supabase.from('kids_notificacoes_log').insert({
+          ...logData,
+          status: 'enviada',
+        });
+        enviadas++;
+        console.log(`Lembrete enviado para ${data.responsavel.full_name}`);
       } catch (error: any) {
         await supabase.from('kids_notificacoes_log').insert({
           ...logData,

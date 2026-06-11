@@ -1,14 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 interface RequestBody {
   email: string;
@@ -19,33 +15,7 @@ interface RequestBody {
 }
 
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  
-  console.log(`Enviando mensagem Evolution para: ${phoneFormatted}`);
-  
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': EVOLUTION_API_KEY || '',
-    },
-    body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
-      text: mensagem,
-    }),
-  });
-  
-  const result = await response.json();
-  console.log('Resposta Evolution:', JSON.stringify(result).substring(0, 300));
-  
-  if (!response.ok) {
-    throw new Error(result.message || 'Erro ao enviar mensagem');
-  }
-  
-  return result;
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
 function gerarIniciais(nomeCompleto: string): string {

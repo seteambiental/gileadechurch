@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  enviarTextoWhatsApp,
+  whatsappConfigurado,
+} from "../_shared/whatsapp-sender.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const rawEvolutionUrl = Deno.env.get('EVOLUTION_API_URL') || '';
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith('http') ? rawEvolutionUrl : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY');
-const EVOLUTION_INSTANCE_NAME = Deno.env.get('EVOLUTION_INSTANCE_NAME');
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,38 +61,11 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 async function enviarWhatsApp(telefone: string, mensagem: string) {
-  if (!EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
-    console.log("Evolution API não configurada, pulando WhatsApp");
+  if (!whatsappConfigurado()) {
+    console.log("WhatsApp (WasenderAPI) não configurado, pulando WhatsApp");
     return null;
   }
-
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-
-  console.log(`Enviando WhatsApp Evolution para: ${phoneFormatted}`);
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": EVOLUTION_API_KEY || "",
-    },
-    body: JSON.stringify({
-      number: `${phoneFormatted}@s.whatsapp.net`,
-      text: mensagem,
-    }),
-  });
-
-  const result = await response.json();
-  console.log("Resposta Evolution:", JSON.stringify(result).substring(0, 300));
-
-  if (!response.ok) {
-    throw new Error(result.message || "Erro ao enviar WhatsApp");
-  }
-
-  return result;
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
 const handler = async (req: Request): Promise<Response> => {

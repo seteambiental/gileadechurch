@@ -1,18 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-const rawEvolutionUrl = Deno.env.get("EVOLUTION_API_URL") || "";
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
-  ? rawEvolutionUrl
-  : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
-const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
 function primeiroNomeDe(nome?: string | null) {
   return (nome || "").trim().split(/\s+/)[0] || "";
@@ -45,19 +39,7 @@ function formatarDataPt(data?: string | null) {
   }
 }
 async function enviarTexto(telefone: string, mensagem: string) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55")
-    ? phoneClean
-    : `55${phoneClean}`;
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  const r = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-    body: JSON.stringify({ number: phoneFormatted, text: mensagem }),
-  });
-  const j = await r.json();
-  if (!r.ok) throw new Error(j.message || j.error || `Falha (${r.status})`);
-  return j;
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
 function delayBulk() {

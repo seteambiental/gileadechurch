@@ -1,18 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  enviarTextoWhatsApp,
+  enviarMidiaWhatsApp,
+} from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-const rawEvolutionUrl = Deno.env.get("EVOLUTION_API_URL") || "";
-const EVOLUTION_API_URL = rawEvolutionUrl.startsWith("http")
-  ? rawEvolutionUrl
-  : `https://${rawEvolutionUrl}`;
-const EVOLUTION_API_KEY = Deno.env.get("EVOLUTION_API_KEY");
-const EVOLUTION_INSTANCE_NAME = Deno.env.get("EVOLUTION_INSTANCE_NAME");
 
 function primeiroNomeDe(nome?: string | null) {
   return (nome || "").trim().split(/\s+/)[0] || "";
@@ -57,43 +54,7 @@ function formatarDataPt(data?: string | null) {
 }
 
 async function enviarTexto(telefone: string, mensagem: string) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55")
-    ? phoneClean
-    : `55${phoneClean}`;
-  const url = `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE_NAME}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: EVOLUTION_API_KEY || "",
-    },
-    body: JSON.stringify({ number: phoneFormatted, text: mensagem }),
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(
-      result.message || result.error || `Falha (${response.status})`,
-    );
-  }
-  return result;
-}
-
-function detectarMediaType(url: string): "image" | "video" | "document" {
-  const u = url.split("?")[0].toLowerCase();
-  if (/\.(jpe?g|png|webp|gif|bmp)$/.test(u)) return "image";
-  if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(u)) return "video";
-  return "document";
-}
-
-function fileNameDeUrl(url: string): string {
-  try {
-    const u = new URL(url);
-    const base = u.pathname.split("/").pop() || "arquivo";
-    return decodeURIComponent(base);
-  } catch {
-    return "arquivo";
-  }
+  return await enviarTextoWhatsApp(telefone, mensagem);
 }
 
 async function enviarMidia(
@@ -102,29 +63,7 @@ async function enviarMidia(
   caption: string,
   fileName?: string,
 ) {
-  const phoneClean = telefone.replace(/\D/g, "");
-  const phoneFormatted = phoneClean.startsWith("55") ? phoneClean : `55${phoneClean}`;
-  const url = `${EVOLUTION_API_URL}/message/sendMedia/${EVOLUTION_INSTANCE_NAME}`;
-  const mediatype = detectarMediaType(midiaUrl);
-  const payload: Record<string, unknown> = {
-    number: phoneFormatted,
-    mediatype,
-    media: midiaUrl,
-    caption: caption || "",
-  };
-  if (mediatype === "document") {
-    payload.fileName = fileName || fileNameDeUrl(midiaUrl);
-  }
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", apikey: EVOLUTION_API_KEY || "" },
-    body: JSON.stringify(payload),
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    throw new Error(result.message || result.error || `Falha mídia (${response.status})`);
-  }
-  return result;
+  return await enviarMidiaWhatsApp(telefone, midiaUrl, caption || "", undefined, fileName);
 }
 
 async function buscarEvento(supabase: any, eventoId: string, eventoTipo: string) {
