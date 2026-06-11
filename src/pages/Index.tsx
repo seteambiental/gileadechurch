@@ -168,31 +168,31 @@ const Index = () => {
     enabled: !programacaoCustom || programacaoCustom.length === 0,
   });
 
-  // Buscar eventos com flyer (próximos eventos especiais) - até 4
-  // Apenas eventos que ainda não passaram (data_fim ou data_evento >= hoje)
+  // Buscar próximos eventos especiais - até 4
+  // O evento continua aparecendo mesmo sem pôster (mostra um cartão com data/título)
   const { data: eventosComFlyer } = useQuery({
     queryKey: ["eventos-com-flyer-public"],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
         .from("agenda_igreja")
-        .select("id, titulo, tipo_evento, flyer_url, data_evento, data_fim, limite_vagas, visibilidade")
+        .select("id, titulo, tipo_evento, flyer_url, data_evento, data_fim, hora_inicio, local, cor, necessita_inscricao, limite_vagas, visibilidade")
         .eq("ativo", true)
         .eq("recorrente", false)
         .eq("visibilidade", "publico")
         .eq("status", "aprovado")
         .neq("genero_alvo", "somente_convidados")
-        .not("flyer_url", "is", null)
         .or(`data_fim.gte.${today},and(data_fim.is.null,data_evento.gte.${today})`)
         .order("data_evento", { ascending: true })
-        .limit(8);
+        .limit(12);
       if (error) return [];
-      // Filtrar apenas flyers externos (não SVGs gerados pela IA)
-      const externosOnly = (data || []).filter((e: any) => {
+      // Mantém eventos que são "especiais": têm pôster (não-SVG) OU precisam de inscrição.
+      const proximos = (data || []).filter((e: any) => {
         const url = (e.flyer_url || "").toLowerCase();
-        return !url.endsWith(".svg");
+        const temPosterValido = !!url && !url.endsWith(".svg");
+        return temPosterValido || e.necessita_inscricao;
       });
-      return externosOnly.slice(0, 4);
+      return proximos.slice(0, 4);
     },
   });
 
