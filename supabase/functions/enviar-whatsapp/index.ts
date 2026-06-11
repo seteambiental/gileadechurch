@@ -1071,28 +1071,23 @@ serve(async (req) => {
     }
 
     if (action === 'teste_conexao') {
-      // Testar conexão com Evolution API
-      if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
+      // Testar conexão com WasenderAPI
+      if (!WASENDER_API_KEY) {
         return new Response(JSON.stringify({ 
           success: false, 
-          error: 'Variáveis da Evolution API não configuradas',
-          config: {
-            url: !!EVOLUTION_API_URL,
-            key: !!EVOLUTION_API_KEY,
-            instance: !!EVOLUTION_INSTANCE_NAME,
-          }
+          error: 'Chave do WasenderAPI não configurada',
+          config: { key: false },
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      const statusUrl = `${EVOLUTION_API_URL}/instance/connectionState/${EVOLUTION_INSTANCE_NAME}`;
+      const statusUrl = `${WASENDER_API_URL}/api/status`;
       const statusResp = await fetch(statusUrl, {
-        headers: { 'apikey': EVOLUTION_API_KEY },
+        headers: { 'Authorization': `Bearer ${WASENDER_API_KEY}` },
       });
-      const statusData = await statusResp.json();
+      const statusData = await statusResp.json().catch(() => ({}));
 
       return new Response(JSON.stringify({ 
         success: statusResp.ok, 
-        instance: EVOLUTION_INSTANCE_NAME,
         status: statusData,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
