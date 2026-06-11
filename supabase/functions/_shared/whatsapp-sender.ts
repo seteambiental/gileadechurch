@@ -81,3 +81,47 @@ export async function enviarImagemComFallbackTexto(telefone: string, imageUrl: s
     return await enviarTextoWhatsApp(telefone, caption);
   }
 }
+
+export type MediaType = "image" | "video" | "document";
+
+// Detecta o tipo de mídia pela extensão da URL.
+export function detectarMediaType(url: string): MediaType {
+  const u = (url || "").split("?")[0].toLowerCase();
+  if (/\.(jpe?g|png|webp|gif|bmp)$/.test(u)) return "image";
+  if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(u)) return "video";
+  return "document";
+}
+
+function fileNameDeUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const base = u.pathname.split("/").pop() || "arquivo";
+    return decodeURIComponent(base);
+  } catch {
+    return "arquivo";
+  }
+}
+
+// Envia mídia (imagem, vídeo ou documento) via URL pública, com legenda opcional.
+export async function enviarMidiaWhatsApp(
+  telefone: string,
+  midiaUrl: string,
+  caption = "",
+  mediatype?: MediaType,
+  fileName?: string,
+) {
+  const to = formatPhoneE164(telefone);
+  if (!to) throw new Error("Telefone inválido");
+  const tipo = mediatype || detectarMediaType(midiaUrl);
+  const payload: Record<string, unknown> = { to, text: caption };
+  if (tipo === "image") {
+    payload.imageUrl = midiaUrl;
+  } else if (tipo === "video") {
+    payload.videoUrl = midiaUrl;
+  } else {
+    payload.documentUrl = midiaUrl;
+    payload.fileName = fileName || fileNameDeUrl(midiaUrl);
+  }
+  console.log(`Enviando mídia (${tipo}) WasenderAPI para: ${to}`);
+  return await postSendMessage(payload);
+}
