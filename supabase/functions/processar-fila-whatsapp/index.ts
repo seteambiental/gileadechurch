@@ -127,9 +127,9 @@ Deno.serve(async (req) => {
   );
 
   try {
-    if (!EVOLUTION_API_URL || !EVOLUTION_API_KEY || !EVOLUTION_INSTANCE_NAME) {
+    if (!whatsappConfigurado()) {
       return new Response(
-        JSON.stringify({ success: false, error: "Evolution API não configurada" }),
+        JSON.stringify({ success: false, error: "WhatsApp (WasenderAPI) não configurado" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
