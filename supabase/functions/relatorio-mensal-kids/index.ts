@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { enviarTextoWhatsApp, whatsappConfigurado } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -111,11 +112,6 @@ serve(async (req) => {
       }
     });
 
-    // Preparar mensagens
-    const zapiToken = Deno.env.get('ZAPI_TOKEN');
-    const zapiInstanceId = Deno.env.get('ZAPI_INSTANCE_ID');
-    const zapiClientToken = Deno.env.get('ZAPI_CLIENT_TOKEN');
-
     const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
     const mesNome = meses[mesFiltro - 1];
@@ -180,7 +176,7 @@ Ministério Kids - Igreja Gileade`;
         continue;
       }
 
-      if (!zapiToken || !zapiInstanceId) {
+      if (!whatsappConfigurado()) {
         await supabase.from('kids_notificacoes_log').insert({
           crianca_member_id: resp.crianca_member_id,
           crianca_novo_convertido_id: resp.crianca_novo_convertido_id,
@@ -190,59 +186,26 @@ Ministério Kids - Igreja Gileade`;
           mensagem: mensagem,
           whatsapp_destino: resp.responsavel.whatsapp,
           status: 'erro',
-          erro_mensagem: 'Z-API não configurado',
+          erro_mensagem: 'WhatsApp (WasenderAPI) não configurado',
         });
         erros++;
         continue;
       }
 
       try {
-        const telefoneFormatado = formatarTelefone(resp.responsavel.whatsapp);
-        
-        const response = await fetch(
-          `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-text`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Client-Token': zapiClientToken || '',
-            },
-            body: JSON.stringify({
-              phone: telefoneFormatado,
-              message: mensagem,
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (response.ok) {
-          await supabase.from('kids_notificacoes_log').insert({
-            crianca_member_id: resp.crianca_member_id,
-            crianca_novo_convertido_id: resp.crianca_novo_convertido_id,
-            responsavel_member_id: resp.responsavel.id,
-            tipo_notificacao: 'relatorio_mensal',
-            turma: stats.turma,
-            mensagem: mensagem,
-            whatsapp_destino: resp.responsavel.whatsapp,
-            status: 'enviada',
-          });
-          enviadas++;
-          console.log(`Relatório enviado para ${resp.responsavel.full_name}`);
-        } else {
-          await supabase.from('kids_notificacoes_log').insert({
-            crianca_member_id: resp.crianca_member_id,
-            crianca_novo_convertido_id: resp.crianca_novo_convertido_id,
-            responsavel_member_id: resp.responsavel.id,
-            tipo_notificacao: 'relatorio_mensal',
-            turma: stats.turma,
-            mensagem: mensagem,
-            whatsapp_destino: resp.responsavel.whatsapp,
-            status: 'erro',
-            erro_mensagem: result.message || 'Erro ao enviar',
-          });
-          erros++;
-        }
+        await enviarTextoWhatsApp(resp.responsavel.whatsapp, mensagem);
+        await supabase.from('kids_notificacoes_log').insert({
+          crianca_member_id: resp.crianca_member_id,
+          crianca_novo_convertido_id: resp.crianca_novo_convertido_id,
+          responsavel_member_id: resp.responsavel.id,
+          tipo_notificacao: 'relatorio_mensal',
+          turma: stats.turma,
+          mensagem: mensagem,
+          whatsapp_destino: resp.responsavel.whatsapp,
+          status: 'enviada',
+        });
+        enviadas++;
+        console.log(`Relatório enviado para ${resp.responsavel.full_name}`);
       } catch (error: any) {
         await supabase.from('kids_notificacoes_log').insert({
           crianca_member_id: resp.crianca_member_id,
