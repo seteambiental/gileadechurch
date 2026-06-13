@@ -3,6 +3,7 @@ import {
   enviarTextoWhatsApp,
   enviarMidiaWhatsApp,
   whatsappConfigurado,
+  verificarConexaoWhatsApp,
 } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
@@ -131,6 +132,22 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: "WhatsApp (WasenderAPI) não configurado" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Verifica se a sessão está conectada ANTES de processar a fila.
+    // Se estiver caída, aborta sem consumir tentativas dos itens (eles permanecem pendentes).
+    const conexao = await verificarConexaoWhatsApp();
+    if (!conexao.conectado) {
+      console.warn(`Fila não processada: WhatsApp desconectado (estado=${conexao.estado})`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          conectado: false,
+          estado: conexao.estado,
+          error: `Sessão do WhatsApp desconectada (estado: ${conexao.estado}). Itens mantidos na fila.`,
+        }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
