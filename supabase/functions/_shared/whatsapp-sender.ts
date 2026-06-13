@@ -21,6 +21,57 @@ export function whatsappConfigFaltante(): string[] {
   return missing;
 }
 
+// Verifica se a sessão do WhatsApp (WasenderAPI) está conectada.
+// Retorna { conectado, estado, erro? }. Use antes de disparos em massa
+// para abortar cedo com mensagem clara quando a sessão estiver caída.
+export async function verificarConexaoWhatsApp(): Promise<{
+  conectado: boolean;
+  estado: string;
+  erro?: string;
+}> {
+  if (!WASENDER_API_KEY) {
+    return { conectado: false, estado: "nao_configurado", erro: "WASENDER_API_KEY ausente" };
+  }
+  try {
+    const ctrl = new AbortController();
+    const to = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(`${WASENDER_API_URL}/api/status`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${WASENDER_API_KEY}`,
+      },
+      signal: ctrl.signal,
+    });
+    clearTimeout(to);
+    const text = await res.text();
+    let body: any = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = { raw: text?.slice(0, 300) };
+    }
+    const data = body?.data ?? body?.session ?? body ?? {};
+    const estado = String(data?.status ?? data?.state ?? body?.status ?? "unknown");
+    const conectado = ["connected", "open", "online"].includes(estado.toLowerCase());
+    return { conectado, estado };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { conectado: false, estado: "erro", erro: msg };
+  }
+}
+
+// Lança erro se a sessão não estiver conectada. Atalho para disparos em massa.
+export async function exigirWhatsappConectado(): Promise<void> {
+  const status = await verificarConexaoWhatsApp();
+  if (!status.conectado) {
+    throw new Error(
+      `A sessão do WhatsApp não está conectada (estado: ${status.estado}). ` +
+      `Reconecte o WhatsApp antes de enviar mensagens em massa.` +
+      (status.erro ? ` Detalhe: ${status.erro}` : ""),
+    );
+  }
+}
+
 // Formata o telefone para o padrão E.164 exigido pelo WasenderAPI (+55...).
 export function formatPhoneE164(telefone: string): string {
   const clean = (telefone || "").replace(/\D/g, "");
