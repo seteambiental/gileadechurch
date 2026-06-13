@@ -7,14 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const formatarTelefone = (telefone: string): string => {
-  let numero = telefone.replace(/\D/g, '');
-  if (!numero.startsWith('55')) {
-    numero = '55' + numero;
-  }
-  return numero;
-};
-
 const getTurmaNome = (turma: string): string => {
   const nomes: Record<string, string> = {
     laranja: 'Laranja (4-5 anos)',
