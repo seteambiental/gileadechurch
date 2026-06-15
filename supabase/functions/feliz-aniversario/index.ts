@@ -26,6 +26,24 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   return await enviarImagemComFallbackTexto(telefone, LOGO_GILEADE_URL, mensagem);
 }
 
+// Extrai o código da mensagem (msgId) da resposta do provedor, quando existir.
+function extrairMessageId(resposta: any): string | null {
+  if (!resposta || typeof resposta !== "object") return null;
+  const d = resposta.data ?? resposta;
+  const id =
+    d?.msgId ?? d?.messageId ?? d?.id ?? d?.key?.id ?? resposta?.msgId ?? null;
+  return id != null ? String(id) : null;
+}
+
+// Resumo curto e seguro da resposta do provedor para guardar como "comprovante".
+function resumoResposta(resposta: any): string {
+  try {
+    return JSON.stringify(resposta).slice(0, 800);
+  } catch {
+    return String(resposta).slice(0, 800);
+  }
+}
+
 function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null) {
   const primeiroNome = nome.split(' ')[0];
   const versiculo = versiculosAniversario[Math.floor(Math.random() * versiculosAniversario.length)];
