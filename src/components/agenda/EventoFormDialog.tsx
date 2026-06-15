@@ -758,10 +758,27 @@ export const EventoFormDialog = ({
 
     setIsDeleting(true);
     try {
-      // Primeiro excluir registros dependentes
-      await supabase.from("inscricoes_eventos").delete().eq("evento_id", evento.id);
+      // Verifica se existem inscrições vinculadas. Se houver, NÃO exclui o evento
+      // (para não apagar inscrições por engano).
+      const [{ count: countInscricoes }, { count: countCriancas }] = await Promise.all([
+        supabase.from("inscricoes_eventos").select("id", { count: "exact", head: true }).eq("evento_id", evento.id),
+        supabase.from("apresentacao_criancas_inscricoes").select("id", { count: "exact", head: true }).eq("evento_id", evento.id),
+      ]);
+      const totalInscricoes = (countInscricoes || 0) + (countCriancas || 0);
+      if (totalInscricoes > 0) {
+        toast({
+          variant: "destructive",
+          title: "Não é possível excluir",
+          description: `Este evento possui ${totalInscricoes} inscrição(ões) e não pode ser excluído. Cancele as inscrições primeiro, se realmente precisar removê-lo.`,
+        });
+        setIsDeleting(false);
+        setShowDeleteConfirm(false);
+        return;
+      }
+
+      // Remove apenas os bloqueios de ambientes/salas (não são inscrições)
       await supabase.from("agenda_ambientes").delete().eq("agenda_id", evento.id);
-      
+
       const { error } = await supabase
         .from("agenda_igreja")
         .delete()
