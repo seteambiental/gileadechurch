@@ -183,12 +183,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(membro.full_name, mensagemTemplate);
-          await enviarMensagemEvolution(membro.whatsapp, mensagem);
-          
+          const resp = await enviarMensagemEvolution(membro.whatsapp, mensagem);
+
           await supabase.from('aniversarios_enviados').insert({
             member_id: membro.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
           
           enviados++;
