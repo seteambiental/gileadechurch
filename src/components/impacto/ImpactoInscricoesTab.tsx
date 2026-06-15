@@ -1030,6 +1030,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("status") && <TableHead><ColumnFilterPopover title="Status" options={STATUS_OPTIONS} selected={filtroStatus} onChange={setFiltroStatus} /></TableHead>}
                   {isCol("contato_emergencia") && <TableHead>Contato Emergência</TableHead>}
                   {isCol("telefone_emergencia") && <TableHead>Tel. Emergência</TableHead>}
+                 {isCol("converteu") && <TableHead className="text-center">Aceitou Jesus</TableHead>}
+                 {isCol("reconciliou") && <TableHead className="text-center">Reconciliou</TableHead>}
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
