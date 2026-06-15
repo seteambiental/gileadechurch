@@ -423,6 +423,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const deleteMutation = useMutation({
     mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
       const isAgenda = source === "agenda_inscricao";
+      // (placeholder to anchor patch)
       const evId = evento_id || selectedEventoId;
       const nomeNorm = nome?.trim();
 
