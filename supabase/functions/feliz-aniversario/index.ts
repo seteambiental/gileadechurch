@@ -226,12 +226,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(convertido.full_name, mensagemTemplate);
-          await enviarMensagemEvolution(convertido.whatsapp, mensagem);
-          
+          const resp = await enviarMensagemEvolution(convertido.whatsapp, mensagem);
+
           await supabase.from('aniversarios_enviados').insert({
             novo_convertido_id: convertido.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
           
           enviados++;
