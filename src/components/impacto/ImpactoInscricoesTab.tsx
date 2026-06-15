@@ -1156,6 +1156,34 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                               : "—"}
                           </TableCell>
                         )}
+                        {isCol("converteu") && (
+                          <TableCell className="text-center">
+                            {inscricao.source === "agenda_inscricao" ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <Checkbox
+                                checked={!!inscricao.converteu}
+                                onCheckedChange={(v) =>
+                                  toggleFlagMutation.mutate({ id: inscricao.id, field: "converteu", value: !!v })
+                                }
+                              />
+                            )}
+                          </TableCell>
+                        )}
+                        {isCol("reconciliou") && (
+                          <TableCell className="text-center">
+                            {inscricao.source === "agenda_inscricao" ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <Checkbox
+                                checked={!!inscricao.reconciliou}
+                                onCheckedChange={(v) =>
+                                  toggleFlagMutation.mutate({ id: inscricao.id, field: "reconciliou", value: !!v })
+                                }
+                              />
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex gap-1">
                             <Button
