@@ -35,6 +35,7 @@ type Envio = {
 
 const TIPO_LABELS: Record<string, string> = {
   inscricao_recebida: "Inscrição Recebida",
+  confirmacao_inscricao: "Inscrição Confirmada",
   cadastro_aprovado: "Cadastro Aprovado",
   flyer_homepage: "Flyer Homepage",
   segmentado: "Segmentado",
