@@ -420,10 +420,27 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     return raw != null ? parseFloat(String(raw)) : null;
   };
 
+  // Marca/desmarca "Aceitou Jesus" (converteu) ou "Reconciliou" diretamente na inscrição.
+  // Quando o evento é finalizado, esses marcados aparecem automaticamente na Consolidação.
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({ [field]: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-eventos"] });
+    },
+    onError: () => toast.error("Erro ao atualizar a marcação."),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
       const isAgenda = source === "agenda_inscricao";
-      // (placeholder to anchor patch)
       const evId = evento_id || selectedEventoId;
       const nomeNorm = nome?.trim();
 
