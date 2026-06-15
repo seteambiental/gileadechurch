@@ -100,6 +100,17 @@ serve(async (req) => {
         return sqlValue(row[col], isJsonb);
       }).join(", ")})`).join(",\n");
 
+      const ieColumns = [
+        "id", "evento_id", "member_id", "novo_convertido_id", "nome_participante", "genero",
+        "telefone_contato", "telefone_emergencia", "is_menor", "nome_responsavel", "telefone_responsavel",
+        "preferencia_beliche", "tem_alergia_alimentar", "descricao_alergia", "toma_medicamento",
+        "descricao_medicamento", "forma_pagamento", "status_pagamento", "observacoes", "created_at",
+        "updated_at", "lista_espera", "rg", "cpf", "casa_refugio_id", "igreja_congrega", "ministerio_igreja",
+        "tipo_inscricao", "valor_inscricao", "aprovado", "aprovado_em", "aprovado_por", "data_nascimento",
+        "converteu", "reconciliou",
+      ];
+      const ieValuesSql = inscricoesEventosRows.map((row: any) => `(${ieColumns.map((col) => sqlValue(row[col])).join(", ")})`).join(",\n");
+
       summaries.push({
         arquivo: file.name,
         criado_em: file.created_at || null,
@@ -117,6 +128,9 @@ serve(async (req) => {
         ...(incluir_linhas ? { linhas: impactoRows } : {}),
         ...(gerar_sql && valuesSql ? {
           sql: `INSERT INTO public.impacto_inscricoes (${columns.join(", ")})\nVALUES\n${valuesSql}\nON CONFLICT (id) DO NOTHING;`,
+        } : {}),
+        ...(gerar_sql && ieValuesSql ? {
+          sql_inscricoes_eventos: `INSERT INTO public.inscricoes_eventos (${ieColumns.join(", ")})\nVALUES\n${ieValuesSql}\nON CONFLICT (id) DO NOTHING;`,
         } : {}),
       });
     }
