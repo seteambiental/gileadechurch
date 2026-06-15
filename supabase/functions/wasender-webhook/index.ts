@@ -37,8 +37,6 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    // (cliente disponível para registrar/dar baixa em mensagens, se necessário)
-    void supabase;
 
     switch (evento) {
       case "messages.received":
@@ -63,8 +61,29 @@ Deno.serve(async (req) => {
 
       case "message.sent":
       case "messages.update": {
-        const status = data?.status ?? data?.update?.status;
-        console.log(`Status de mensagem atualizado: ${status}`);
+        const status = String(
+          data?.status ?? data?.update?.status ?? "",
+        ).toLowerCase();
+        const messageId = String(
+          data?.msgId ?? data?.messageId ?? data?.id ?? data?.key?.id ?? "",
+        );
+        console.log(`Status de mensagem atualizado: ${status} (msg ${messageId})`);
+
+        // Se o provedor avisar que a mensagem falhou, marca o aniversário como erro.
+        const falhou = ["failed", "error", "undelivered", "not_delivered"].includes(status);
+        const entregue = ["delivered", "read"].includes(status);
+        if (messageId && (falhou || entregue)) {
+          const { error: updErr } = await supabase
+            .from("aniversarios_enviados")
+            .update({
+              sucesso: !falhou,
+              erro_mensagem: falhou ? `Provedor informou status: ${status}` : null,
+            })
+            .eq("message_id", messageId);
+          if (updErr) {
+            console.warn("Falha ao atualizar status do aniversário:", updErr.message);
+          }
+        }
         break;
       }
 
