@@ -99,6 +99,8 @@ const ALL_COLUMNS = [
   { key: "status", label: "Status" },
   { key: "contato_emergencia", label: "Contato Emergência" },
   { key: "telefone_emergencia", label: "Tel. Emergência" },
+  { key: "converteu", label: "Aceitou Jesus" },
+  { key: "reconciliou", label: "Reconciliou" },
 ] as const;
 
 type ColumnKey = typeof ALL_COLUMNS[number]["key"];
@@ -418,6 +420,24 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     return raw != null ? parseFloat(String(raw)) : null;
   };
 
+  // Marca/desmarca "Aceitou Jesus" (converteu) ou "Reconciliou" diretamente na inscrição.
+  // Quando o evento é finalizado, esses marcados aparecem automaticamente na Consolidação.
+  const toggleFlagMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "converteu" | "reconciliou"; value: boolean }) => {
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({ [field]: value } as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", selectedEventoId] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-conversao-eventos"] });
+      queryClient.invalidateQueries({ queryKey: ["consolidacao-reconciliacao-eventos"] });
+    },
+    onError: () => toast.error("Erro ao atualizar a marcação."),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async ({ id, source, member_id, nome, evento_id }: { id: string; source?: string; member_id?: string | null; nome?: string; evento_id?: string }) => {
       const isAgenda = source === "agenda_inscricao";
@@ -736,6 +756,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         const t = row.telefone_emergencia || row.telefone_responsavel;
         return t ? formatPhone(t) : "—";
       }},
+      converteu: { header: "Aceitou Jesus", accessor: (row: any) => (row.converteu ? "Sim" : "Não") },
+      reconciliou: { header: "Reconciliou", accessor: (row: any) => (row.reconciliou ? "Sim" : "Não") },
     };
     return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((c) => allCols[c.key]);
   };
@@ -1010,6 +1032,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("status") && <TableHead><ColumnFilterPopover title="Status" options={STATUS_OPTIONS} selected={filtroStatus} onChange={setFiltroStatus} /></TableHead>}
                   {isCol("contato_emergencia") && <TableHead>Contato Emergência</TableHead>}
                   {isCol("telefone_emergencia") && <TableHead>Tel. Emergência</TableHead>}
+                 {isCol("converteu") && <TableHead className="text-center">Aceitou Jesus</TableHead>}
+                 {isCol("reconciliou") && <TableHead className="text-center">Reconciliou</TableHead>}
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -1132,6 +1156,34 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                             {(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
                               ? formatPhone(inscricao.telefone_emergencia || inscricao.telefone_responsavel)
                               : "—"}
+                          </TableCell>
+                        )}
+                        {isCol("converteu") && (
+                          <TableCell className="text-center">
+                            {inscricao.source === "agenda_inscricao" ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <Checkbox
+                                checked={!!inscricao.converteu}
+                                onCheckedChange={(v) =>
+                                  toggleFlagMutation.mutate({ id: inscricao.id, field: "converteu", value: !!v })
+                                }
+                              />
+                            )}
+                          </TableCell>
+                        )}
+                        {isCol("reconciliou") && (
+                          <TableCell className="text-center">
+                            {inscricao.source === "agenda_inscricao" ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <Checkbox
+                                checked={!!inscricao.reconciliou}
+                                onCheckedChange={(v) =>
+                                  toggleFlagMutation.mutate({ id: inscricao.id, field: "reconciliou", value: !!v })
+                                }
+                              />
+                            )}
                           </TableCell>
                         )}
                         <TableCell>
