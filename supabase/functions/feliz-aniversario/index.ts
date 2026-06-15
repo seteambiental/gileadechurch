@@ -26,6 +26,24 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
   return await enviarImagemComFallbackTexto(telefone, LOGO_GILEADE_URL, mensagem);
 }
 
+// Extrai o código da mensagem (msgId) da resposta do provedor, quando existir.
+function extrairMessageId(resposta: any): string | null {
+  if (!resposta || typeof resposta !== "object") return null;
+  const d = resposta.data ?? resposta;
+  const id =
+    d?.msgId ?? d?.messageId ?? d?.id ?? d?.key?.id ?? resposta?.msgId ?? null;
+  return id != null ? String(id) : null;
+}
+
+// Resumo curto e seguro da resposta do provedor para guardar como "comprovante".
+function resumoResposta(resposta: any): string {
+  try {
+    return JSON.stringify(resposta).slice(0, 800);
+  } catch {
+    return String(resposta).slice(0, 800);
+  }
+}
+
 function gerarMensagemAniversario(nome: string, mensagemTemplate: string | null) {
   const primeiroNome = nome.split(' ')[0];
   const versiculo = versiculosAniversario[Math.floor(Math.random() * versiculosAniversario.length)];
@@ -165,12 +183,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(membro.full_name, mensagemTemplate);
-          await enviarMensagemEvolution(membro.whatsapp, mensagem);
-          
+          const resp = await enviarMensagemEvolution(membro.whatsapp, mensagem);
+
           await supabase.from('aniversarios_enviados').insert({
             member_id: membro.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
           
           enviados++;
@@ -206,12 +226,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(convertido.full_name, mensagemTemplate);
-          await enviarMensagemEvolution(convertido.whatsapp, mensagem);
-          
+          const resp = await enviarMensagemEvolution(convertido.whatsapp, mensagem);
+
           await supabase.from('aniversarios_enviados').insert({
             novo_convertido_id: convertido.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
           
           enviados++;
@@ -246,12 +268,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(inscrito.nome, mensagemTemplate);
-          await enviarMensagemEvolution(inscrito.telefone!, mensagem);
+          const resp = await enviarMensagemEvolution(inscrito.telefone!, mensagem);
 
           await supabase.from('aniversarios_enviados').insert({
             inscricao_evento_id: inscrito.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
 
           enviados++;
