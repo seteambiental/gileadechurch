@@ -268,12 +268,14 @@ serve(async (req) => {
 
         try {
           const mensagem = gerarMensagemAniversario(inscrito.nome, mensagemTemplate);
-          await enviarMensagemEvolution(inscrito.telefone!, mensagem);
+          const resp = await enviarMensagemEvolution(inscrito.telefone!, mensagem);
 
           await supabase.from('aniversarios_enviados').insert({
             inscricao_evento_id: inscrito.id,
             data_envio: dataHoje,
             sucesso: true,
+            message_id: extrairMessageId(resp),
+            resposta_provedor: resumoResposta(resp),
           });
 
           enviados++;
