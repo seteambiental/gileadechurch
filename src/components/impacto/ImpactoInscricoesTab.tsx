@@ -99,6 +99,8 @@ const ALL_COLUMNS = [
   { key: "status", label: "Status" },
   { key: "contato_emergencia", label: "Contato Emergência" },
   { key: "telefone_emergencia", label: "Tel. Emergência" },
+  { key: "converteu", label: "Aceitou Jesus" },
+  { key: "reconciliou", label: "Reconciliou" },
 ] as const;
 
 type ColumnKey = typeof ALL_COLUMNS[number]["key"];
