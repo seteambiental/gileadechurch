@@ -577,7 +577,9 @@ export type Database = {
           id: string
           inscricao_evento_id: string | null
           member_id: string | null
+          message_id: string | null
           novo_convertido_id: string | null
+          resposta_provedor: string | null
           sucesso: boolean
         }
         Insert: {
@@ -587,7 +589,9 @@ export type Database = {
           id?: string
           inscricao_evento_id?: string | null
           member_id?: string | null
+          message_id?: string | null
           novo_convertido_id?: string | null
+          resposta_provedor?: string | null
           sucesso?: boolean
         }
         Update: {
@@ -597,7 +601,9 @@ export type Database = {
           id?: string
           inscricao_evento_id?: string | null
           member_id?: string | null
+          message_id?: string | null
           novo_convertido_id?: string | null
+          resposta_provedor?: string | null
           sucesso?: boolean
         }
         Relationships: [
