@@ -756,6 +756,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         const t = row.telefone_emergencia || row.telefone_responsavel;
         return t ? formatPhone(t) : "—";
       }},
+      converteu: { header: "Aceitou Jesus", accessor: (row: any) => (row.converteu ? "Sim" : "Não") },
+      reconciliou: { header: "Reconciliou", accessor: (row: any) => (row.reconciliou ? "Sim" : "Não") },
     };
     return ALL_COLUMNS.filter((c) => visibleColumns.has(c.key)).map((c) => allCols[c.key]);
   };
