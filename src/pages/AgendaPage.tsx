@@ -130,6 +130,16 @@ const AgendaPage = () => {
 
   const excluirEventoMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Não exclui o evento se houver inscrições vinculadas (para não apagar inscrições por engano)
+      const [{ count: countInscricoes }, { count: countCriancas }] = await Promise.all([
+        supabase.from("inscricoes_eventos").select("id", { count: "exact", head: true }).eq("evento_id", id),
+        supabase.from("apresentacao_criancas_inscricoes").select("id", { count: "exact", head: true }).eq("evento_id", id),
+      ]);
+      const totalInscricoes = (countInscricoes || 0) + (countCriancas || 0);
+      if (totalInscricoes > 0) {
+        throw new Error(`Este evento possui ${totalInscricoes} inscrição(ões) e não pode ser excluído.`);
+      }
+      await supabase.from("agenda_ambientes").delete().eq("agenda_id", id);
       const { error } = await supabase.from("agenda_igreja").delete().eq("id", id);
       if (error) throw error;
     },
@@ -140,8 +150,8 @@ const AgendaPage = () => {
       toast({ title: "Evento excluído com sucesso" });
       setEventoParaExcluir(null);
     },
-    onError: () => {
-      toast({ title: "Erro ao excluir evento", variant: "destructive" });
+    onError: (error: any) => {
+      toast({ title: "Não é possível excluir", description: error?.message || "Erro ao excluir evento", variant: "destructive" });
     },
   });
 
