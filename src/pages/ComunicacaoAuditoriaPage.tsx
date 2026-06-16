@@ -439,6 +439,7 @@ const ComunicacaoAuditoriaPage = () => {
                       <TableHead>Telefone</TableHead>
                       <TableHead>Conteúdo</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[160px]">Confirmação</TableHead>
                       <TableHead className="w-[100px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
