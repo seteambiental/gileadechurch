@@ -160,10 +160,12 @@ Deno.serve(async (req) => {
     const { data: cfgRow } = await supabase
       .from("whatsapp_config")
       .select(
-        "batch_size, delay_min_seconds, delay_max_seconds, max_tentativas, backoff_base_minutes, backoff_factor",
+        "batch_size, delay_min_seconds, delay_max_seconds, max_tentativas, backoff_base_minutes, backoff_factor, pedir_confirmacao",
       )
       .eq("id", true)
       .maybeSingle();
+
+    const pedirConfirmacao = cfgRow?.pedir_confirmacao ?? true;
 
     const cfg: FilaCfg = {
       batch_size: cfgRow?.batch_size ?? DEFAULTS.batch_size,
