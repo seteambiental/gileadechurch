@@ -159,8 +159,7 @@ const AcessosTab = () => {
   const openReset = (m: AcessoMembro) => {
     setResetTarget(m);
     setResetMode("manual");
-    const sugerida = gerarSenhaPadrao(m.full_name, m.cpf) || gerarSenhaAleatoria(12);
-    setNewPassword(sugerida);
+    setNewPassword("");
     setShowPwd(true);
   };
 
