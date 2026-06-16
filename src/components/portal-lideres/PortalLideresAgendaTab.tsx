@@ -60,6 +60,12 @@ export const PortalLideresAgendaTab = ({
 }: PortalLideresAgendaTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isStrictAdmin = useIsStrictAdmin();
+  // Apenas administradores e pastores podem criar eventos
+  const canCreate =
+    isStrictAdmin ||
+    portalAccess.role === "pastor_geral" ||
+    portalAccess.role === "pastor_auxiliar";
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<any>(null);
   const [formModeLocal, setFormModeLocal] = useState<"evento" | "compromisso">("evento");
