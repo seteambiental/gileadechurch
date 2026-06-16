@@ -161,7 +161,8 @@ const AcessosTab = () => {
       });
       setResetTarget(null);
     } catch (e: any) {
-      toast({ title: "Erro", description: e.message || "Falha ao redefinir senha", variant: "destructive" });
+      const msg = await extrairErro(e);
+      toast({ title: "Erro", description: msg, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
