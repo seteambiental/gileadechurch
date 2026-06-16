@@ -32,10 +32,9 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const {
-      data: { user },
-      error: authError,
-    } = await authClient.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: authError } = await authClient.auth.getClaims(token);
+    const user = claimsData?.claims ? { id: claimsData.claims.sub as string } : null;
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Não autorizado" }), {
