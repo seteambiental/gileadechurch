@@ -207,6 +207,8 @@ const ComunicacaoAuditoriaPage = () => {
       if (tipoFiltro !== "todos" && e.tipo !== tipoFiltro) return false;
       if (statusFiltro !== "todos" && (e.status || "") !== statusFiltro) return false;
       if (segmentoFiltro !== "todos" && (e.segmento || "") !== segmentoFiltro) return false;
+      if (confirmacaoFiltro === "confirmado" && !e.confirmado_em) return false;
+      if (confirmacaoFiltro === "aguardando" && (!e.confirmacao_solicitada || e.confirmado_em)) return false;
       if (q) {
         const haystack = [
           e.destinatario_nome,
@@ -222,7 +224,7 @@ const ComunicacaoAuditoriaPage = () => {
       }
       return true;
     });
-  }, [envios, busca, tipoFiltro, statusFiltro, segmentoFiltro]);
+  }, [envios, busca, tipoFiltro, statusFiltro, segmentoFiltro, confirmacaoFiltro]);
 
   const stats = useMemo(() => {
     const total = filtrados.length;
