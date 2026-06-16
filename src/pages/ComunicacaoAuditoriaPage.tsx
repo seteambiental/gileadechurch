@@ -405,6 +405,7 @@ const ComunicacaoAuditoriaPage = () => {
                   setTipoFiltro("todos");
                   setStatusFiltro("todos");
                   setSegmentoFiltro("todos");
+                  setConfirmacaoFiltro("todos");
                   setDataInicio("");
                   setDataFim("");
                 }}
