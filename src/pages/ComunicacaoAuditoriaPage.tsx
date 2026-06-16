@@ -69,6 +69,7 @@ const ComunicacaoAuditoriaPage = () => {
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [segmentoFiltro, setSegmentoFiltro] = useState<string>("todos");
+  const [confirmacaoFiltro, setConfirmacaoFiltro] = useState<string>("todos");
   const [dataInicio, setDataInicio] = useState<string>("");
   const [dataFim, setDataFim] = useState<string>("");
   const [processando, setProcessando] = useState(false);
