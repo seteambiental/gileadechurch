@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
