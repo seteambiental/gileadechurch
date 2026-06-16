@@ -21,6 +21,11 @@ const DEFAULTS = {
   backoff_factor: 5,
 };
 
+// Rodapé de pedido de confirmação de recebimento, adicionado a cada mensagem
+// quando o recurso está ligado em whatsapp_config.pedir_confirmacao.
+const RODAPE_CONFIRMACAO =
+  "\n\n———\n🙏 Pode confirmar o recebimento desta mensagem? Responda *OK* ou 👍";
+
 type FilaCfg = typeof DEFAULTS;
 
 function randomDelayMs(cfg: FilaCfg) {
