@@ -380,6 +380,14 @@ const ComunicacaoAuditoriaPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={confirmacaoFiltro} onValueChange={setConfirmacaoFiltro}>
+              <SelectTrigger><SelectValue placeholder="Confirmação" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Confirmação (todas)</SelectItem>
+                <SelectItem value="confirmado">Confirmado pelo destinatário</SelectItem>
+                <SelectItem value="aguardando">Aguardando confirmação</SelectItem>
+              </SelectContent>
+            </Select>
             <div>
               <label className="text-xs text-muted-foreground">De</label>
               <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
