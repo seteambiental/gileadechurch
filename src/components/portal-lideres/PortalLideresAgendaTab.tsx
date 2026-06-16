@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsStrictAdmin } from "@/hooks/useIsStrictAdmin";
 import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { EventoFormDialog } from "@/components/agenda/EventoFormDialog";
 import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
@@ -59,6 +60,12 @@ export const PortalLideresAgendaTab = ({
 }: PortalLideresAgendaTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isStrictAdmin = useIsStrictAdmin();
+  // Apenas administradores e pastores podem criar eventos
+  const canCreate =
+    isStrictAdmin ||
+    portalAccess.role === "pastor_geral" ||
+    portalAccess.role === "pastor_auxiliar";
   const [showEventoForm, setShowEventoForm] = useState(false);
   const [editingEvento, setEditingEvento] = useState<any>(null);
   const [formModeLocal, setFormModeLocal] = useState<"evento" | "compromisso">("evento");
@@ -206,10 +213,12 @@ export const PortalLideresAgendaTab = ({
             Agenda da igreja e criação de eventos
           </p>
         </div>
-        <Button onClick={() => setShowEventoForm(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Criar Agenda
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowEventoForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Criar Agenda
+          </Button>
+        )}
       </div>
 
       <SincronizarGoogleCalendarCard />
