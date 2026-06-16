@@ -476,6 +476,23 @@ const ComunicacaoAuditoriaPage = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {envio.confirmado_em ? (
+                            <div className="flex items-center gap-1.5" title={envio.confirmacao_resposta || ""}>
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <span className="text-xs text-green-700">
+                                {format(new Date(envio.confirmado_em), "dd/MM HH:mm", { locale: ptBR })}
+                              </span>
+                            </div>
+                          ) : envio.confirmacao_solicitada ? (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span className="text-xs">Aguardando</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {["erro", "falhou"].includes(envio.status || "") && (
                             <Button
                               size="sm"
