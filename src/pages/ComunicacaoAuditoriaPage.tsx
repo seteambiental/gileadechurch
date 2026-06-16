@@ -31,6 +31,9 @@ type Envio = {
   evento_id: string | null;
   iniciado_por: string | null;
   created_at: string;
+  confirmacao_solicitada?: boolean | null;
+  confirmado_em?: string | null;
+  confirmacao_resposta?: string | null;
 };
 
 const TIPO_LABELS: Record<string, string> = {
