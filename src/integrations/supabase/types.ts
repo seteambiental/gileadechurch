@@ -1624,6 +1624,9 @@ export type Database = {
       }
       comunicacao_envios: {
         Row: {
+          confirmacao_resposta: string | null
+          confirmacao_solicitada: boolean
+          confirmado_em: string | null
           conteudo: string | null
           created_at: string
           destinatario_member_id: string | null
@@ -1641,6 +1644,9 @@ export type Database = {
           tipo: string
         }
         Insert: {
+          confirmacao_resposta?: string | null
+          confirmacao_solicitada?: boolean
+          confirmado_em?: string | null
           conteudo?: string | null
           created_at?: string
           destinatario_member_id?: string | null
@@ -1658,6 +1664,9 @@ export type Database = {
           tipo: string
         }
         Update: {
+          confirmacao_resposta?: string | null
+          confirmacao_solicitada?: boolean
+          confirmado_em?: string | null
           conteudo?: string | null
           created_at?: string
           destinatario_member_id?: string | null
@@ -7070,6 +7079,7 @@ export type Database = {
           delay_min_seconds: number
           id: boolean
           max_tentativas: number
+          pedir_confirmacao: boolean
           updated_at: string
           updated_by: string | null
         }
@@ -7081,6 +7091,7 @@ export type Database = {
           delay_min_seconds?: number
           id?: boolean
           max_tentativas?: number
+          pedir_confirmacao?: boolean
           updated_at?: string
           updated_by?: string | null
         }
@@ -7092,6 +7103,7 @@ export type Database = {
           delay_min_seconds?: number
           id?: boolean
           max_tentativas?: number
+          pedir_confirmacao?: boolean
           updated_at?: string
           updated_by?: string | null
         }
