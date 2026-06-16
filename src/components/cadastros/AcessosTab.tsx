@@ -78,6 +78,27 @@ function gerarSenhaAleatoria(length = 12): string {
   return out.join("");
 }
 
+// Extrai a mensagem real de erro retornada por uma Edge Function.
+// O supabase-js encapsula respostas não-2xx em FunctionsHttpError com a
+// resposta crua em `error.context`, escondendo a mensagem do servidor.
+async function extrairErro(e: any): Promise<string> {
+  try {
+    const ctx = e?.context;
+    if (ctx && typeof ctx.json === "function") {
+      const body = await ctx.json();
+      const err = body?.error;
+      if (typeof err === "string") return err;
+      if (err && typeof err === "object") {
+        const msgs = Object.values(err).flat().filter(Boolean);
+        if (msgs.length) return msgs.join(" ");
+      }
+    }
+  } catch {
+    // ignora falha ao ler o corpo
+  }
+  return e?.message || "Falha na operação";
+}
+
 const AcessosTab = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
