@@ -55,6 +55,45 @@ Deno.serve(async (req) => {
             msg?.text ||
             "[mídia]";
           console.log(`Mensagem recebida de ${remetente}: ${texto}`);
+
+          // Tenta casar a resposta com o último envio que pediu confirmação
+          // de recebimento e ainda não foi confirmado (janela de 7 dias).
+          const digitos = remetente.replace(/\D/g, "");
+          // remove código do país (55) para casar com o formato armazenado (DDD+numero)
+          const semPais = digitos.startsWith("55") ? digitos.slice(2) : digitos;
+          const ultimos8 = semPais.slice(-8);
+          if (ultimos8.length === 8) {
+            const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+            const { data: candidatos, error: selErr } = await supabase
+              .from("comunicacao_envios")
+              .select("id, destinatario_telefone, created_at")
+              .eq("confirmacao_solicitada", true)
+              .is("confirmado_em", null)
+              .ilike("destinatario_telefone", `%${ultimos8}`)
+              .gte("created_at", seteDiasAtras)
+              .order("created_at", { ascending: false })
+              .limit(1);
+
+            if (selErr) {
+              console.warn("Erro ao buscar envio para confirmar:", selErr.message);
+            } else if (candidatos && candidatos.length > 0) {
+              const alvo = candidatos[0];
+              const { error: updErr } = await supabase
+                .from("comunicacao_envios")
+                .update({
+                  confirmado_em: new Date().toISOString(),
+                  confirmacao_resposta: String(texto).slice(0, 500),
+                })
+                .eq("id", alvo.id);
+              if (updErr) {
+                console.warn("Falha ao marcar confirmação de recebimento:", updErr.message);
+              } else {
+                console.log(`Confirmação de recebimento registrada para envio ${alvo.id}`);
+              }
+            } else {
+              console.log(`Nenhum envio pendente de confirmação para ${ultimos8}`);
+            }
+          }
         }
         break;
       }

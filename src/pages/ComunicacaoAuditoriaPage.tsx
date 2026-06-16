@@ -31,6 +31,9 @@ type Envio = {
   evento_id: string | null;
   iniciado_por: string | null;
   created_at: string;
+  confirmacao_solicitada?: boolean | null;
+  confirmado_em?: string | null;
+  confirmacao_resposta?: string | null;
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -66,6 +69,7 @@ const ComunicacaoAuditoriaPage = () => {
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [statusFiltro, setStatusFiltro] = useState<string>("todos");
   const [segmentoFiltro, setSegmentoFiltro] = useState<string>("todos");
+  const [confirmacaoFiltro, setConfirmacaoFiltro] = useState<string>("todos");
   const [dataInicio, setDataInicio] = useState<string>("");
   const [dataFim, setDataFim] = useState<string>("");
   const [processando, setProcessando] = useState(false);
@@ -203,6 +207,8 @@ const ComunicacaoAuditoriaPage = () => {
       if (tipoFiltro !== "todos" && e.tipo !== tipoFiltro) return false;
       if (statusFiltro !== "todos" && (e.status || "") !== statusFiltro) return false;
       if (segmentoFiltro !== "todos" && (e.segmento || "") !== segmentoFiltro) return false;
+      if (confirmacaoFiltro === "confirmado" && !e.confirmado_em) return false;
+      if (confirmacaoFiltro === "aguardando" && (!e.confirmacao_solicitada || e.confirmado_em)) return false;
       if (q) {
         const haystack = [
           e.destinatario_nome,
@@ -218,7 +224,7 @@ const ComunicacaoAuditoriaPage = () => {
       }
       return true;
     });
-  }, [envios, busca, tipoFiltro, statusFiltro, segmentoFiltro]);
+  }, [envios, busca, tipoFiltro, statusFiltro, segmentoFiltro, confirmacaoFiltro]);
 
   const stats = useMemo(() => {
     const total = filtrados.length;
@@ -374,6 +380,14 @@ const ComunicacaoAuditoriaPage = () => {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={confirmacaoFiltro} onValueChange={setConfirmacaoFiltro}>
+              <SelectTrigger><SelectValue placeholder="Confirmação" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Confirmação (todas)</SelectItem>
+                <SelectItem value="confirmado">Confirmado pelo destinatário</SelectItem>
+                <SelectItem value="aguardando">Aguardando confirmação</SelectItem>
+              </SelectContent>
+            </Select>
             <div>
               <label className="text-xs text-muted-foreground">De</label>
               <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
@@ -391,6 +405,7 @@ const ComunicacaoAuditoriaPage = () => {
                   setTipoFiltro("todos");
                   setStatusFiltro("todos");
                   setSegmentoFiltro("todos");
+                  setConfirmacaoFiltro("todos");
                   setDataInicio("");
                   setDataFim("");
                 }}
@@ -424,6 +439,7 @@ const ComunicacaoAuditoriaPage = () => {
                       <TableHead>Telefone</TableHead>
                       <TableHead>Conteúdo</TableHead>
                       <TableHead className="w-[120px]">Status</TableHead>
+                      <TableHead className="w-[160px]">Confirmação</TableHead>
                       <TableHead className="w-[100px]">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -458,6 +474,23 @@ const ComunicacaoAuditoriaPage = () => {
                               {envio.status || "—"}
                             </Badge>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {envio.confirmado_em ? (
+                            <div className="flex items-center gap-1.5" title={envio.confirmacao_resposta || ""}>
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <span className="text-xs text-green-700">
+                                {format(new Date(envio.confirmado_em), "dd/MM HH:mm", { locale: ptBR })}
+                              </span>
+                            </div>
+                          ) : envio.confirmacao_solicitada ? (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span className="text-xs">Aguardando</span>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           {["erro", "falhou"].includes(envio.status || "") && (

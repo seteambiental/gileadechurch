@@ -21,6 +21,11 @@ const DEFAULTS = {
   backoff_factor: 5,
 };
 
+// Rodapé de pedido de confirmação de recebimento, adicionado a cada mensagem
+// quando o recurso está ligado em whatsapp_config.pedir_confirmacao.
+const RODAPE_CONFIRMACAO =
+  "\n\n———\n🙏 Pode confirmar o recebimento desta mensagem? Responda *OK* ou 👍";
+
 type FilaCfg = typeof DEFAULTS;
 
 function randomDelayMs(cfg: FilaCfg) {
@@ -155,10 +160,12 @@ Deno.serve(async (req) => {
     const { data: cfgRow } = await supabase
       .from("whatsapp_config")
       .select(
-        "batch_size, delay_min_seconds, delay_max_seconds, max_tentativas, backoff_base_minutes, backoff_factor",
+        "batch_size, delay_min_seconds, delay_max_seconds, max_tentativas, backoff_base_minutes, backoff_factor, pedir_confirmacao",
       )
       .eq("id", true)
       .maybeSingle();
+
+    const pedirConfirmacao = cfgRow?.pedir_confirmacao ?? true;
 
     const cfg: FilaCfg = {
       batch_size: cfgRow?.batch_size ?? DEFAULTS.batch_size,
@@ -214,6 +221,10 @@ Deno.serve(async (req) => {
         const conteudoFinal = await prepararConteudoFila(supabase, item);
         validarPlaceholdersResolvidos(conteudoFinal);
         const conteudoOriginal = String(item.conteudo || "");
+        // Acrescenta o pedido de confirmação de recebimento (quando ligado).
+        const conteudoEnvio = pedirConfirmacao
+          ? conteudoFinal + RODAPE_CONFIRMACAO
+          : conteudoFinal;
         const houveSubstituicao = conteudoOriginal !== conteudoFinal;
         console.log(
           `[fila ${item.id}] tipo=${item.tipo} para=${item.destinatario_telefone} (${item.destinatario_nome || "sem nome"})\n` +
@@ -223,9 +234,9 @@ Deno.serve(async (req) => {
           `  substituiu_placeholders=${houveSubstituicao}`
         );
         if (item.midia_url) {
-          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
+          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoEnvio);
         } else {
-          await enviarTextoEvolution(item.destinatario_telefone, conteudoFinal);
+          await enviarTextoEvolution(item.destinatario_telefone, conteudoEnvio);
         }
 
         // Sucesso: marca enviado e registra em comunicacao_envios
@@ -246,13 +257,14 @@ Deno.serve(async (req) => {
           destinatario_telefone: item.destinatario_telefone,
           destinatario_nome: item.destinatario_nome,
           destinatario_member_id: item.destinatario_member_id,
-          conteudo: conteudoFinal,
+          conteudo: conteudoEnvio,
           midia_url: item.midia_url,
           evento_id: item.evento_id,
           iniciado_por: item.iniciado_por,
           status: "enviado",
           fila_id: item.id,
           tentativas: tentativaAtual,
+          confirmacao_solicitada: pedirConfirmacao,
         });
         enviados++;
       } catch (err) {
