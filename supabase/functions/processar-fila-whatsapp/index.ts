@@ -221,6 +221,10 @@ Deno.serve(async (req) => {
         const conteudoFinal = await prepararConteudoFila(supabase, item);
         validarPlaceholdersResolvidos(conteudoFinal);
         const conteudoOriginal = String(item.conteudo || "");
+        // Acrescenta o pedido de confirmação de recebimento (quando ligado).
+        const conteudoEnvio = pedirConfirmacao
+          ? conteudoFinal + RODAPE_CONFIRMACAO
+          : conteudoFinal;
         const houveSubstituicao = conteudoOriginal !== conteudoFinal;
         console.log(
           `[fila ${item.id}] tipo=${item.tipo} para=${item.destinatario_telefone} (${item.destinatario_nome || "sem nome"})\n` +
@@ -230,9 +234,9 @@ Deno.serve(async (req) => {
           `  substituiu_placeholders=${houveSubstituicao}`
         );
         if (item.midia_url) {
-          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoFinal);
+          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoEnvio);
         } else {
-          await enviarTextoEvolution(item.destinatario_telefone, conteudoFinal);
+          await enviarTextoEvolution(item.destinatario_telefone, conteudoEnvio);
         }
 
         // Sucesso: marca enviado e registra em comunicacao_envios
@@ -253,13 +257,14 @@ Deno.serve(async (req) => {
           destinatario_telefone: item.destinatario_telefone,
           destinatario_nome: item.destinatario_nome,
           destinatario_member_id: item.destinatario_member_id,
-          conteudo: conteudoFinal,
+          conteudo: conteudoEnvio,
           midia_url: item.midia_url,
           evento_id: item.evento_id,
           iniciado_por: item.iniciado_por,
           status: "enviado",
           fila_id: item.id,
           tentativas: tentativaAtual,
+          confirmacao_solicitada: pedirConfirmacao,
         });
         enviados++;
       } catch (err) {
