@@ -213,10 +213,12 @@ export const PortalLideresAgendaTab = ({
             Agenda da igreja e criação de eventos
           </p>
         </div>
-        <Button onClick={() => setShowEventoForm(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Criar Agenda
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowEventoForm(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Criar Agenda
+          </Button>
+        )}
       </div>
 
       <SincronizarGoogleCalendarCard />
