@@ -275,6 +275,8 @@ const MembrosTab = () => {
           action: 'mensagem_direta',
           telefone: member.whatsapp,
           mensagem,
+          nome: member.full_name,
+          memberId: member.id,
         },
       });
       
