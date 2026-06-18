@@ -314,7 +314,7 @@ const MembrosTab = () => {
       setBulkProgress({ sent: i, total: membersWithWhatsapp.length, current: member.full_name });
       try {
         const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada },
+          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada, nome: member.full_name, memberId: member.id },
         });
         if (error || !data?.success) { erros++; } else { enviados++; }
       } catch { erros++; }
