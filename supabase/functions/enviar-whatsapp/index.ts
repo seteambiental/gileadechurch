@@ -310,6 +310,18 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Carrega a preferência de pedir confirmação de recebimento (mesma flag da fila).
+    try {
+      const { data: cfgRow } = await supabase
+        .from('whatsapp_config')
+        .select('pedir_confirmacao')
+        .eq('id', true)
+        .maybeSingle();
+      pedirConfirmacaoGlobal = cfgRow?.pedir_confirmacao ?? true;
+    } catch (_e) {
+      pedirConfirmacaoGlobal = true;
+    }
+
     const body = await req.json();
     const { action, convertidoId, eventoId, flyerUrl, grupo, evento } = body;
     console.log(`Action: ${action}, ConvertidoId: ${convertidoId}`);
