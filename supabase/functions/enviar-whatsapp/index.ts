@@ -221,14 +221,16 @@ const versiculosReconciliacao = [
 
 // Envio de texto via WasenderAPI (mantém validação de placeholders).
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
-  validarPlaceholdersResolvidos(mensagem);
-  return await enviarTextoWhatsApp(telefone, mensagem);
+  const texto = comConfirmacao(mensagem);
+  validarPlaceholdersResolvidos(texto);
+  return await enviarTextoWhatsApp(telefone, texto);
 }
 
 // Envio de imagem via WasenderAPI (mantém validação de placeholders na legenda).
 async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
-  if (caption) validarPlaceholdersResolvidos(caption);
-  return await enviarImagemWhatsApp(telefone, imageUrl, caption || '');
+  const legenda = comConfirmacao(caption || '');
+  if (legenda) validarPlaceholdersResolvidos(legenda);
+  return await enviarImagemWhatsApp(telefone, imageUrl, legenda);
 }
 
 async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
