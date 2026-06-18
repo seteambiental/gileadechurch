@@ -13,6 +13,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rodapé de pedido de confirmação de recebimento, acrescentado a cada mensagem
+// quando o recurso está ligado em whatsapp_config.pedir_confirmacao.
+// Espelha o mesmo comportamento da fila (processar-fila-whatsapp).
+const RODAPE_CONFIRMACAO =
+  "\n\n———\n🙏 Pode confirmar o recebimento desta mensagem? Responda *OK* ou 👍";
+// Flag global definida no início de cada requisição a partir de whatsapp_config.
+let pedirConfirmacaoGlobal = true;
+function comConfirmacao(texto: string) {
+  if (!pedirConfirmacaoGlobal) return texto;
+  if (!texto) return texto;
+  if (texto.includes(RODAPE_CONFIRMACAO.trim())) return texto;
+  return texto + RODAPE_CONFIRMACAO;
+}
+
 // Logo oficial enviada como imagem nas mensagens importantes
 // (boas-vindas, inscrição recebida, confirmação de inscrição, cadastro aprovado, aniversário).
 // Mantida fora dos fluxos de massa (lembretes, vagas liberadas, escalas) para evitar spam.
@@ -207,14 +221,16 @@ const versiculosReconciliacao = [
 
 // Envio de texto via WasenderAPI (mantém validação de placeholders).
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
-  validarPlaceholdersResolvidos(mensagem);
-  return await enviarTextoWhatsApp(telefone, mensagem);
+  const texto = comConfirmacao(mensagem);
+  validarPlaceholdersResolvidos(texto);
+  return await enviarTextoWhatsApp(telefone, texto);
 }
 
 // Envio de imagem via WasenderAPI (mantém validação de placeholders na legenda).
 async function enviarImagemEvolution(telefone: string, imageUrl: string, caption?: string) {
-  if (caption) validarPlaceholdersResolvidos(caption);
-  return await enviarImagemWhatsApp(telefone, imageUrl, caption || '');
+  const legenda = comConfirmacao(caption || '');
+  if (legenda) validarPlaceholdersResolvidos(legenda);
+  return await enviarImagemWhatsApp(telefone, imageUrl, legenda);
 }
 
 async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, caption: string) {
@@ -293,6 +309,18 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Carrega a preferência de pedir confirmação de recebimento (mesma flag da fila).
+    try {
+      const { data: cfgRow } = await supabase
+        .from('whatsapp_config')
+        .select('pedir_confirmacao')
+        .eq('id', true)
+        .maybeSingle();
+      pedirConfirmacaoGlobal = cfgRow?.pedir_confirmacao ?? true;
+    } catch (_e) {
+      pedirConfirmacaoGlobal = true;
+    }
 
     const body = await req.json();
     const { action, convertidoId, eventoId, flyerUrl, grupo, evento } = body;
