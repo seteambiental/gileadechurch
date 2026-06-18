@@ -1123,12 +1123,27 @@ serve(async (req) => {
     }
 
     if (action === 'mensagem_direta' || action === 'mensagem_livre') {
-      const { telefone, mensagem } = body;
+      const { telefone, mensagem, nome, memberId } = body;
       if (!telefone || !mensagem) {
         throw new Error('Telefone e mensagem são obrigatórios');
       }
 
       await enviarMensagemEvolution(telefone, mensagem);
+
+      // Registra no histórico/auditoria (comunicacao_envios)
+      try {
+        await supabase.from('comunicacao_envios').insert({
+          tipo: 'individual',
+          destinatario_telefone: telefone,
+          destinatario_nome: nome || null,
+          destinatario_member_id: memberId || null,
+          conteudo: comConfirmacao(mensagem),
+          status: 'enviado',
+          confirmacao_solicitada: pedirConfirmacaoGlobal,
+        });
+      } catch (e) {
+        console.warn('Falha ao registrar envio direto em comunicacao_envios:', e);
+      }
 
       return new Response(JSON.stringify({ 
         success: true, 
