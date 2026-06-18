@@ -13,6 +13,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rodapé de pedido de confirmação de recebimento, acrescentado a cada mensagem
+// quando o recurso está ligado em whatsapp_config.pedir_confirmacao.
+// Espelha o mesmo comportamento da fila (processar-fila-whatsapp).
+const RODAPE_CONFIRMACAO =
+  "\n\n———\n🙏 Pode confirmar o recebimento desta mensagem? Responda *OK* ou 👍";
+// Flag global definida no início de cada requisição a partir de whatsapp_config.
+let pedirConfirmacaoGlobal = true;
+function comConfirmacao(texto: string) {
+  if (!pedirConfirmacaoGlobal) return texto;
+  if (!texto) return texto;
+  if (texto.includes(RODAPE_CONFIRMACAO.trim())) return texto;
+  return texto + RODAPE_CONFIRMACAO;
+}
+
 // Logo oficial enviada como imagem nas mensagens importantes
 // (boas-vindas, inscrição recebida, confirmação de inscrição, cadastro aprovado, aniversário).
 // Mantida fora dos fluxos de massa (lembretes, vagas liberadas, escalas) para evitar spam.
