@@ -173,20 +173,29 @@ serve(async (req) => {
     // Handle specific recipients (single or multiple)
     const telefones: string[] = destinatarioTelefones || (destinatarioTelefone ? [destinatarioTelefone] : []);
     if (action === 'whatsapp' && telefones.length > 0) {
-      for (let i = 0; i < telefones.length; i++) {
+      // Envio único e imediato; vários destinatários vão para a FILA (espaçamento 15-30s garantido pelo cron).
+      if (telefones.length === 1) {
         try {
-          await enviarMensagemEvolution(telefones[i], mensagemWhatsApp);
+          await enviarMensagemEvolution(telefones[0], mensagemWhatsApp);
           resultados.whatsapp.enviados++;
         } catch (err: any) {
-          console.error(`Erro WhatsApp para ${telefones[i]}:`, err);
+          console.error(`Erro WhatsApp para ${telefones[0]}:`, err);
           resultados.whatsapp.erros++;
         }
-        if (telefones.length > 1 && i < telefones.length - 1) {
-          // Intervalo aleatório entre 15-30s para evitar SPAM
-          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
+      } else {
+        let enfileirados = 0;
+        for (const tel of telefones) {
+          const r = await enfileirarComDedupe(supabase, {
+            tipo: 'cr_express',
+            destinatario_telefone: tel,
+            conteudo: mensagemWhatsApp,
+            iniciado_por: _authUser.id,
+          });
+          if (r.enfileirado) enfileirados++;
         }
+        resultados.whatsapp.enviados = enfileirados;
       }
-      return new Response(JSON.stringify({ success: true, resultados }), {
+      return new Response(JSON.stringify({ success: true, resultados, enfileirado: telefones.length > 1 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
