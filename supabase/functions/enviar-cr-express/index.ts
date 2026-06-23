@@ -269,18 +269,22 @@ serve(async (req) => {
     }
 
     if (action === 'whatsapp' || action === 'ambos') {
-      for (let i = 0; i < members.length; i++) {
-        const member = members[i];
+      // Envio em massa via FILA: o cron processar-fila-whatsapp despacha em lotes
+      // com espaçamento aleatório de 15-30s, evitando bloqueio por SPAM no WaSender.
+      for (const member of members) {
         if (!member.whatsapp) continue;
         try {
-          await enviarMensagemEvolution(member.whatsapp, mensagemWhatsApp);
-          resultados.whatsapp.enviados++;
-          if (i < members.length - 1) {
-            // Intervalo aleatório entre 15-30s para evitar SPAM
-            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
-          }
+          const r = await enfileirarComDedupe(supabase, {
+            tipo: 'cr_express',
+            destinatario_telefone: member.whatsapp,
+            destinatario_nome: member.full_name,
+            destinatario_member_id: member.id,
+            conteudo: mensagemWhatsApp,
+            iniciado_por: _authUser.id,
+          });
+          if (r.enfileirado) resultados.whatsapp.enviados++;
         } catch (err) {
-          console.error(`Erro WhatsApp para ${member.full_name}:`, err);
+          console.error(`Erro ao enfileirar WhatsApp para ${member.full_name}:`, err);
           resultados.whatsapp.erros++;
         }
       }
