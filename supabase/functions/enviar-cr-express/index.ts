@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
+import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -172,20 +173,29 @@ serve(async (req) => {
     // Handle specific recipients (single or multiple)
     const telefones: string[] = destinatarioTelefones || (destinatarioTelefone ? [destinatarioTelefone] : []);
     if (action === 'whatsapp' && telefones.length > 0) {
-      for (let i = 0; i < telefones.length; i++) {
+      // Envio único e imediato; vários destinatários vão para a FILA (espaçamento 15-30s garantido pelo cron).
+      if (telefones.length === 1) {
         try {
-          await enviarMensagemEvolution(telefones[i], mensagemWhatsApp);
+          await enviarMensagemEvolution(telefones[0], mensagemWhatsApp);
           resultados.whatsapp.enviados++;
         } catch (err: any) {
-          console.error(`Erro WhatsApp para ${telefones[i]}:`, err);
+          console.error(`Erro WhatsApp para ${telefones[0]}:`, err);
           resultados.whatsapp.erros++;
         }
-        if (telefones.length > 1 && i < telefones.length - 1) {
-          // Intervalo aleatório entre 15-30s para evitar SPAM
-          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
+      } else {
+        let enfileirados = 0;
+        for (const tel of telefones) {
+          const r = await enfileirarComDedupe(supabase, {
+            tipo: 'cr_express',
+            destinatario_telefone: tel,
+            conteudo: mensagemWhatsApp,
+            iniciado_por: _authUser.id,
+          });
+          if (r.enfileirado) enfileirados++;
         }
+        resultados.whatsapp.enviados = enfileirados;
       }
-      return new Response(JSON.stringify({ success: true, resultados }), {
+      return new Response(JSON.stringify({ success: true, resultados, enfileirado: telefones.length > 1 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -259,18 +269,22 @@ serve(async (req) => {
     }
 
     if (action === 'whatsapp' || action === 'ambos') {
-      for (let i = 0; i < members.length; i++) {
-        const member = members[i];
+      // Envio em massa via FILA: o cron processar-fila-whatsapp despacha em lotes
+      // com espaçamento aleatório de 15-30s, evitando bloqueio por SPAM no WaSender.
+      for (const member of members) {
         if (!member.whatsapp) continue;
         try {
-          await enviarMensagemEvolution(member.whatsapp, mensagemWhatsApp);
-          resultados.whatsapp.enviados++;
-          if (i < members.length - 1) {
-            // Intervalo aleatório entre 15-30s para evitar SPAM
-            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
-          }
+          const r = await enfileirarComDedupe(supabase, {
+            tipo: 'cr_express',
+            destinatario_telefone: member.whatsapp,
+            destinatario_nome: member.full_name,
+            destinatario_member_id: member.id,
+            conteudo: mensagemWhatsApp,
+            iniciado_por: _authUser.id,
+          });
+          if (r.enfileirado) resultados.whatsapp.enviados++;
         } catch (err) {
-          console.error(`Erro WhatsApp para ${member.full_name}:`, err);
+          console.error(`Erro ao enfileirar WhatsApp para ${member.full_name}:`, err);
           resultados.whatsapp.erros++;
         }
       }
