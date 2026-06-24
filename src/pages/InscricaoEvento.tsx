@@ -858,6 +858,24 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
+                    {showField("estado_civil") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Estado Civil</Label>
+                      <Select value={estadoCivil} onValueChange={setEstadoCivil}>
+                        <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="solteiro" className="text-base md:text-lg py-2 md:py-3">Solteiro(a)</SelectItem>
+                          <SelectItem value="casado" className="text-base md:text-lg py-2 md:py-3">Casado(a)</SelectItem>
+                          <SelectItem value="divorciado" className="text-base md:text-lg py-2 md:py-3">Divorciado(a)</SelectItem>
+                          <SelectItem value="viuvo" className="text-base md:text-lg py-2 md:py-3">Viúvo(a)</SelectItem>
+                          <SelectItem value="uniao_estavel" className="text-base md:text-lg py-2 md:py-3">União Estável</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    )}
+
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento *</Label>
                       {dataNascimentoLocked ? (
