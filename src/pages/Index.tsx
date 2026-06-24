@@ -426,12 +426,12 @@ const Index = () => {
                   loading="lazy"
                   decoding="async"
                 />
-                {/* Imagem principal centralizada sem corte */}
-                <div className="relative z-[1] w-full h-full py-5 sm:py-8">
+                {/* Imagem principal centralizada sem corte com faixas superior/inferior */}
+                <div className="absolute inset-0 z-[1] flex items-center justify-center">
                   <img
                     src={img.imagem_url}
                     alt={img.titulo}
-                    className="w-full h-full object-contain"
+                    className="w-full max-h-[92%] object-contain"
                     loading="lazy"
                     decoding="async"
                   />
