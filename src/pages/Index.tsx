@@ -427,7 +427,7 @@ const Index = () => {
                   decoding="async"
                 />
                 {/* Imagem principal centralizada sem corte */}
-                <div className="relative z-[1] w-full h-full py-4 sm:py-6">
+                <div className="relative z-[1] w-full h-full py-5 sm:py-8">
                   <img
                     src={img.imagem_url}
                     alt={img.titulo}
