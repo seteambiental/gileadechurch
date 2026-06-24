@@ -500,6 +500,14 @@ const InscricaoEvento = () => {
               birth_date: dataNascimento || null,
               whatsapp: telefoneContato ? telefoneContato.replace(/\D/g, "") : null,
               cpf: cpf ? cpf.replace(/\D/g, "") : null,
+              estado_civil: estadoCivil || null,
+              cep: cep ? cep.replace(/\D/g, "") : null,
+              address: rua || null,
+              number: numero || null,
+              complement: complemento || null,
+              neighborhood: bairro || null,
+              city: cidade || null,
+              state: estadoUf || null,
             } as any,
           });
         } catch (e) {
