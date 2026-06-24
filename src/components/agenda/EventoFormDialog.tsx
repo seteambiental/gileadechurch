@@ -661,7 +661,18 @@ export const EventoFormDialog = ({
         tipo_recorrencia: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente 
           ? (formData.data_fim ? "semanal" : formData.tipo_recorrencia || null) 
           : null,
-        dia_semana: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente && formData.dia_semana ? parseInt(formData.dia_semana) : null,
+        dia_semana: formData.tipo_evento === "apresentacao_criancas"
+          ? null
+          : formData.recorrente
+            ? (formData.dias_semana && formData.dias_semana.length > 0
+                ? parseInt(formData.dias_semana[0])
+                : (formData.dia_semana ? parseInt(formData.dia_semana) : null))
+            : null,
+        dias_semana: formData.tipo_evento === "apresentacao_criancas"
+          ? null
+          : formData.recorrente && formData.dias_semana && formData.dias_semana.length > 0
+            ? formData.dias_semana.map((d) => parseInt(d)).sort((a, b) => a - b)
+            : null,
         semana_mes: formData.tipo_evento === "apresentacao_criancas" ? null : formData.recorrente && !formData.data_fim && formData.semana_mes ? parseInt(formData.semana_mes) : null,
         observacoes: formData.observacoes || null,
         flyer_url: flyerUrl,
