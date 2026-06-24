@@ -894,7 +894,7 @@ export const EventoFormDialog = ({
                     onCheckedChange={(c) => setFormData({
                       ...formData,
                       recorrente: !!c,
-                      ...(!c ? { tipo_recorrencia: "", dia_semana: "", semana_mes: "" } : { tipo_recorrencia: formData.tipo_recorrencia || "semanal" }),
+                      ...(!c ? { tipo_recorrencia: "", dia_semana: "", dias_semana: [], semana_mes: "" } : { tipo_recorrencia: formData.tipo_recorrencia || "semanal" }),
                     })}
                   />
                   <Label htmlFor="recorrente" className="cursor-pointer font-medium">
