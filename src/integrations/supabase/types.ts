@@ -385,6 +385,7 @@ export type Database = {
           dias_semana: Json | null
           flyer_url: string | null
           genero_alvo: string | null
+          gerar_cadastro_membro: boolean
           hora_fim: string | null
           hora_inicio: string | null
           horarios_por_dia: Json | null
@@ -433,6 +434,7 @@ export type Database = {
           dias_semana?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
+          gerar_cadastro_membro?: boolean
           hora_fim?: string | null
           hora_inicio?: string | null
           horarios_por_dia?: Json | null
@@ -481,6 +483,7 @@ export type Database = {
           dias_semana?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
+          gerar_cadastro_membro?: boolean
           hora_fim?: string | null
           hora_inicio?: string | null
           horarios_por_dia?: Json | null
@@ -7228,6 +7231,10 @@ export type Database = {
       can_manage_member_requests: { Args: never; Returns: boolean }
       can_manage_ministry: { Args: { ministry_uuid: string }; Returns: boolean }
       criar_inscricao_evento_publica: {
+        Args: { payload: Json }
+        Returns: string
+      }
+      criar_solicitacao_membro_de_inscricao: {
         Args: { payload: Json }
         Returns: string
       }

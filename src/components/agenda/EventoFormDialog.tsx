@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -206,6 +207,7 @@ export const EventoFormDialog = ({
     limite_vagas: "",
     visibilidade: "publico",
     necessita_inscricao: false,
+    gerar_cadastro_membro: false,
     valor_membro: "",
     valor_nao_membro: "",
     valor_familia: "",
@@ -322,6 +324,7 @@ export const EventoFormDialog = ({
           limite_vagas: evento.limite_vagas?.toString() || "",
           visibilidade: (evento as any).visibilidade || "publico",
           necessita_inscricao: (evento as any).necessita_inscricao || false,
+          gerar_cadastro_membro: (evento as any).gerar_cadastro_membro || false,
           valor_membro: valoresPorTipo?.membro || "",
           valor_nao_membro: valoresPorTipo?.nao_membro || "",
           valor_familia: valoresPorTipo?.familia || "",
@@ -375,6 +378,7 @@ export const EventoFormDialog = ({
           limite_vagas: "",
           visibilidade: "publico",
           necessita_inscricao: false,
+          gerar_cadastro_membro: false,
           valor_membro: "",
           valor_nao_membro: "",
           valor_familia: "",
@@ -701,6 +705,7 @@ export const EventoFormDialog = ({
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
         necessita_inscricao: formData.necessita_inscricao,
+        gerar_cadastro_membro: formData.necessita_inscricao ? formData.gerar_cadastro_membro : false,
         link_grupo_whatsapp: formData.link_grupo_whatsapp?.trim()
           ? formData.link_grupo_whatsapp.trim()
           : null,
@@ -1501,6 +1506,24 @@ export const EventoFormDialog = ({
                   Necessita inscrição antecipada
                 </Label>
               </div>
+              {formData.necessita_inscricao && (
+                <div className="flex items-start gap-2 pt-2 border-t border-border/50">
+                  <Switch
+                    id="gerar_cadastro_membro"
+                    checked={formData.gerar_cadastro_membro}
+                    onCheckedChange={(c) => setFormData({ ...formData, gerar_cadastro_membro: c })}
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="gerar_cadastro_membro" className="cursor-pointer">
+                      Gerar cadastro de membro para aprovação
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quando ativado, cada inscrição cria também uma solicitação na aba de
+                      aprovação do Cadastro de Membros (não entra direto no cadastro).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Link de inscrição para Apresentação de Crianças */}
