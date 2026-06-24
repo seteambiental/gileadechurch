@@ -1505,6 +1505,24 @@ export const EventoFormDialog = ({
                   Necessita inscrição antecipada
                 </Label>
               </div>
+              {formData.necessita_inscricao && (
+                <div className="flex items-start gap-2 pt-2 border-t border-border/50">
+                  <Switch
+                    id="gerar_cadastro_membro"
+                    checked={formData.gerar_cadastro_membro}
+                    onCheckedChange={(c) => setFormData({ ...formData, gerar_cadastro_membro: c })}
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="gerar_cadastro_membro" className="cursor-pointer">
+                      Gerar cadastro de membro para aprovação
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quando ativado, cada inscrição cria também uma solicitação na aba de
+                      aprovação do Cadastro de Membros (não entra direto no cadastro).
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Link de inscrição para Apresentação de Crianças */}
