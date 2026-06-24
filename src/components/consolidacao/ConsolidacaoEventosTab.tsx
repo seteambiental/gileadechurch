@@ -180,7 +180,6 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         )
         .eq(flagField, true)
         .eq("virou_membro", false)
-        .eq("evento.finalizado", true)
         .order("nome");
       if (error) throw error;
       return (data || []) as any[];
