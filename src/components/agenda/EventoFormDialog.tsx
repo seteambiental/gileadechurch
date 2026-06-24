@@ -362,6 +362,7 @@ export const EventoFormDialog = ({
           recorrente: isCompromisso,
           tipo_recorrencia: isCompromisso ? "semanal" : "",
           dia_semana: "",
+          dias_semana: [],
           semana_mes: "",
           observacoes: "",
           idade_minima: "",
