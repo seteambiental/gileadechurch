@@ -82,6 +82,14 @@ const InscricaoEvento = () => {
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
+  const [estadoCivil, setEstadoCivil] = useState("");
+  const [cep, setCep] = useState("");
+  const [rua, setRua] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estadoUf, setEstadoUf] = useState("");
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
