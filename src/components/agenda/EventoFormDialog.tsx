@@ -193,6 +193,7 @@ export const EventoFormDialog = ({
     recorrente: false,
     tipo_recorrencia: "",
     dia_semana: "",
+    dias_semana: [] as string[],
     semana_mes: "",
     observacoes: "",
     idade_minima: "",
