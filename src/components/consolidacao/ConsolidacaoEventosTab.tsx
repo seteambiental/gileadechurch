@@ -180,7 +180,6 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         )
         .eq(flagField, true)
         .eq("virou_membro", false)
-        .eq("evento.finalizado", true)
         .order("nome");
       if (error) throw error;
       return (data || []) as any[];
@@ -450,7 +449,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados
+            Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos
             {includeManual ? " e cadastros manuais." : "."}
           </p>
         </>
