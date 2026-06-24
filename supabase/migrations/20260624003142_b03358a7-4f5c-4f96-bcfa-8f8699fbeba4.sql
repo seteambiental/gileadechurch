@@ -1,0 +1,1 @@
+ALTER TABLE public.agenda_igreja ADD COLUMN IF NOT EXISTS dias_semana jsonb;
