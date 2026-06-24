@@ -228,15 +228,24 @@ const CasasRefugioPage = () => {
     return Array.from(map.values()).sort();
   }, [casas, condominioFilter]);
 
-  // Reset supervisor filter when condomínio changes
+  // Reset supervisor/casa/status filter when condomínio changes
   useEffect(() => {
-    setSupervisorFilter("all");
-    setCasaFilter("all");
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete("sup");
+      newParams.delete("casa");
+      newParams.delete("status");
+      return newParams;
+    }, { replace: true });
   }, [condominioFilter]);
 
   // Reset casa filter when supervisor changes
   useEffect(() => {
-    setCasaFilter("all");
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete("casa");
+      return newParams;
+    }, { replace: true });
   }, [supervisorFilter]);
 
 
