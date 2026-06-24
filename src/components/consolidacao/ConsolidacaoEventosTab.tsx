@@ -449,7 +449,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos finalizados
+            Pessoas marcadas como {tipo === "conversao" ? "conversão" : "reconciliação"} nos eventos
             {includeManual ? " e cadastros manuais." : "."}
           </p>
         </>
