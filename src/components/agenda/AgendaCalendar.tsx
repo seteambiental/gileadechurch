@@ -43,7 +43,7 @@ interface Evento {
   cor: string | null;
   recorrente: boolean;
   dia_semana: number | null;
-  dias_semana: number[] | null;
+  dias_semana?: number[] | null;
   semana_mes: number | null;
   tipo_recorrencia: string | null;
   ativo: boolean;
@@ -95,7 +95,10 @@ interface AgendaCalendarProps {
 
     const eventosFiltrados = eventos.filter((evento) => {
         if (evento.recorrente) {
-          if (evento.dia_semana !== diaSemana) return false;
+          const diasArray = Array.isArray(evento.dias_semana) && evento.dias_semana.length > 0
+            ? evento.dias_semana.map((d) => Number(d))
+            : (evento.dia_semana !== null && evento.dia_semana !== undefined ? [evento.dia_semana] : []);
+          if (!diasArray.includes(diaSemana)) return false;
           // Verificar se a data está dentro do intervalo de início/fim da recorrência
           if (evento.data_evento && dateStr < evento.data_evento) return false;
           if (evento.data_fim && dateStr > evento.data_fim) return false;
