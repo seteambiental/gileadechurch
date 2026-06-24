@@ -477,6 +477,17 @@ const CasasRefugioPage = () => {
               </SelectContent>
             </Select>
 
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px] bg-card border-border">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ativa">Ativas</SelectItem>
+                <SelectItem value="inativa">Inativas</SelectItem>
+              </SelectContent>
+            </Select>
+
             {hasActiveFilters && (
               <Button
                 variant="ghost"
