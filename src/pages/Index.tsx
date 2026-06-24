@@ -411,32 +411,30 @@ const Index = () => {
 
           {/* Slides do carrossel (índices 1+) - Fullscreen esticado */}
           {carrosselImages && carrosselImages.map((img, index) => (
-            <div
-              key={img.id}
-              className={`absolute inset-0 transition-opacity duration-1000 ${
-                index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
-              }`}
-            >
-              {/* Camada de fundo: mesma imagem esticada e desfocada */}
-              <img
-                src={img.imagem_url}
-                alt=""
-                aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 brightness-75"
-                loading="lazy"
-                decoding="async"
-              />
-              {/* Imagem principal centralizada, maior dentro do container */}
-              <div className="absolute inset-0 z-[1] flex items-center justify-center p-4 sm:p-8">
+              <div
+                key={img.id}
+                className={`absolute inset-0 transition-opacity duration-1000 ${
+                  index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {/* Camada de fundo: mesma imagem esticada e desfocada */}
+                <img
+                  src={img.imagem_url}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 brightness-75"
+                  loading="lazy"
+                  decoding="async"
+                />
+                {/* Imagem principal centralizada sem corte */}
                 <img
                   src={img.imagem_url}
                   alt={img.titulo}
-                  className="max-w-[95%] max-h-[75%] object-contain object-center"
+                  className="relative w-full h-full object-contain z-[1]"
                   loading="lazy"
                   decoding="async"
                 />
               </div>
-            </div>
           ))}
 
           {/* Slide Contador de Cadastros */}
