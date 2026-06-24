@@ -51,7 +51,7 @@ import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface Evento {
@@ -199,12 +199,21 @@ const AgendaPage = () => {
 
   // Filtrar: apenas eventos reais (não compromissos) para exibir como cards
   // "outros" can be either - show as card if it has event features
+  // Arquivar (ocultar) eventos já encerrados: aparece somente até o dia do término.
+  // No dia seguinte ao término, o card deixa de aparecer.
+  const hojeStr = todayDateStr();
   const eventosParaCards = eventosUnicos.filter(
     (e) => {
       if (e.tipo_evento === "outros") {
-        return (e as any).necessita_inscricao || (e as any).flyer_url;
+        if (!((e as any).necessita_inscricao || (e as any).flyer_url)) return false;
+      } else if (TIPOS_COMPROMISSO.includes(e.tipo_evento)) {
+        return false;
       }
-      return !TIPOS_COMPROMISSO.includes(e.tipo_evento);
+      // Data final do evento (usa data_fim quando existir, senão a data de início)
+      const dataFinal = e.data_fim || e.data_evento;
+      if (!dataFinal) return true;
+      // Mantém eventos em andamento ou futuros (término hoje ou no futuro)
+      return dataFinal >= hojeStr;
     }
   );
 
