@@ -283,7 +283,7 @@ const CasasRefugioPage = () => {
     return map;
   }, [casas]);
   const hasActiveFilters =
-    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || searchTerm !== "";
+    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || statusFilter !== "all" || searchTerm !== "";
 
   const clearFilters = () => {
     setSearchParams({}, { replace: true });
