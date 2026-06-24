@@ -323,6 +323,7 @@ export const EventoFormDialog = ({
           limite_vagas: evento.limite_vagas?.toString() || "",
           visibilidade: (evento as any).visibilidade || "publico",
           necessita_inscricao: (evento as any).necessita_inscricao || false,
+          gerar_cadastro_membro: (evento as any).gerar_cadastro_membro || false,
           valor_membro: valoresPorTipo?.membro || "",
           valor_nao_membro: valoresPorTipo?.nao_membro || "",
           valor_familia: valoresPorTipo?.familia || "",
