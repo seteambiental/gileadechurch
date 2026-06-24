@@ -17,7 +17,8 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { formatPhone, formatCPF } from "@/lib/masks";
+import { formatPhone, formatCPF, formatCep } from "@/lib/masks";
+import { useCepLookup } from "@/hooks/useCepLookup";
 import { includesNormalized } from "@/lib/text-utils";
 import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
@@ -81,6 +82,14 @@ const InscricaoEvento = () => {
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
+  const [estadoCivil, setEstadoCivil] = useState("");
+  const [cep, setCep] = useState("");
+  const [rua, setRua] = useState("");
+  const [numero, setNumero] = useState("");
+  const [complemento, setComplemento] = useState("");
+  const [bairro, setBairro] = useState("");
+  const [cidade, setCidade] = useState("");
+  const [estadoUf, setEstadoUf] = useState("");
   const [casaRefugioId, setCasaRefugioId] = useState<string | null>(null);
   const [casaRefugioNome, setCasaRefugioNome] = useState<string | null>(null);
   const [tipoInscricao, setTipoInscricao] = useState("membro");
@@ -239,6 +248,15 @@ const InscricaoEvento = () => {
     if (!evento?.campos_formulario) return true;
     return evento.campos_formulario.includes(fieldKey);
   };
+
+  // Preenche endereço automaticamente pelo CEP
+  const handleCepResolved = useCallback((data: { address: string; neighborhood: string; city: string; state: string }) => {
+    if (data.address) setRua(data.address);
+    if (data.neighborhood) setBairro(data.neighborhood);
+    if (data.city) setCidade(data.city);
+    if (data.state) setEstadoUf(data.state);
+  }, []);
+  useCepLookup(cep, handleCepResolved);
 
   // Filter search results
   const searchResults = searchTerm.length >= 2 
@@ -482,6 +500,14 @@ const InscricaoEvento = () => {
               birth_date: dataNascimento || null,
               whatsapp: telefoneContato ? telefoneContato.replace(/\D/g, "") : null,
               cpf: cpf ? cpf.replace(/\D/g, "") : null,
+              estado_civil: estadoCivil || null,
+              cep: cep ? cep.replace(/\D/g, "") : null,
+              address: rua || null,
+              number: numero || null,
+              complement: complemento || null,
+              neighborhood: bairro || null,
+              city: cidade || null,
+              state: estadoUf || null,
             } as any,
           });
         } catch (e) {
@@ -840,6 +866,24 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
+                    {showField("estado_civil") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label className="text-base md:text-lg">Estado Civil</Label>
+                      <Select value={estadoCivil} onValueChange={setEstadoCivil}>
+                        <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="solteiro" className="text-base md:text-lg py-2 md:py-3">Solteiro(a)</SelectItem>
+                          <SelectItem value="casado" className="text-base md:text-lg py-2 md:py-3">Casado(a)</SelectItem>
+                          <SelectItem value="divorciado" className="text-base md:text-lg py-2 md:py-3">Divorciado(a)</SelectItem>
+                          <SelectItem value="viuvo" className="text-base md:text-lg py-2 md:py-3">Viúvo(a)</SelectItem>
+                          <SelectItem value="uniao_estavel" className="text-base md:text-lg py-2 md:py-3">União Estável</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    )}
+
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento *</Label>
                       {dataNascimentoLocked ? (
@@ -946,6 +990,86 @@ const InscricaoEvento = () => {
                           maxLength={14}
                         />
                       )}
+                    </div>
+                    )}
+
+                    {/* Endereço */}
+                    {showField("cep") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="cep" className="text-base md:text-lg">CEP</Label>
+                      <Input
+                        id="cep"
+                        value={cep}
+                        onChange={(e) => setCep(formatCep(e.target.value))}
+                        placeholder="00000-000"
+                        maxLength={9}
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("rua") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="rua" className="text-base md:text-lg">Rua / Logradouro</Label>
+                      <Input
+                        id="rua"
+                        value={rua}
+                        onChange={(e) => setRua(e.target.value)}
+                        placeholder="Nome da rua"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("numero") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="numero" className="text-base md:text-lg">Número</Label>
+                      <Input
+                        id="numero"
+                        value={numero}
+                        onChange={(e) => setNumero(e.target.value)}
+                        placeholder="Nº"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("complemento") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="complemento" className="text-base md:text-lg">Complemento</Label>
+                      <Input
+                        id="complemento"
+                        value={complemento}
+                        onChange={(e) => setComplemento(e.target.value)}
+                        placeholder="Apto, bloco, etc."
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("bairro") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="bairro" className="text-base md:text-lg">Bairro</Label>
+                      <Input
+                        id="bairro"
+                        value={bairro}
+                        onChange={(e) => setBairro(e.target.value)}
+                        placeholder="Bairro"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("cidade") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="cidade" className="text-base md:text-lg">Cidade</Label>
+                      <Input
+                        id="cidade"
+                        value={cidade}
+                        onChange={(e) => setCidade(e.target.value)}
+                        placeholder="Cidade"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
                     </div>
                     )}
 
