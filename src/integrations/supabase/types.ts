@@ -382,6 +382,7 @@ export type Database = {
           data_fim: string | null
           descricao: string | null
           dia_semana: number | null
+          dias_semana: Json | null
           flyer_url: string | null
           genero_alvo: string | null
           hora_fim: string | null
@@ -429,6 +430,7 @@ export type Database = {
           data_fim?: string | null
           descricao?: string | null
           dia_semana?: number | null
+          dias_semana?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
           hora_fim?: string | null
@@ -476,6 +478,7 @@ export type Database = {
           data_fim?: string | null
           descricao?: string | null
           dia_semana?: number | null
+          dias_semana?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
           hora_fim?: string | null
