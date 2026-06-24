@@ -61,6 +61,7 @@ const CasasRefugioPage = () => {
   const condominioFilter = searchParams.get("cond") || "all";
   const supervisorFilter = searchParams.get("sup") || "all";
   const casaFilter = searchParams.get("casa") || "all";
+  const statusFilter = searchParams.get("status") || "all";
 
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
@@ -82,6 +83,7 @@ const CasasRefugioPage = () => {
   const setCondominioFilter = (value: string) => updateSearchParams("cond", value);
   const setSupervisorFilter = (value: string) => updateSearchParams("sup", value);
   const setCasaFilter = (value: string) => updateSearchParams("casa", value);
+  const setStatusFilter = (value: string) => updateSearchParams("status", value);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
