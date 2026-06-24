@@ -470,6 +470,26 @@ const InscricaoEvento = () => {
       }
       const inscricaoData = { id: novoId as unknown as string };
 
+      // Se o evento estiver configurado para gerar cadastro de membro, cria uma
+      // solicitação na aba de aprovação do Cadastro de Membros (não entra direto).
+      // Não gera para quem já é membro do cadastro interno.
+      if ((evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member") {
+        try {
+          await supabase.rpc("criar_solicitacao_membro_de_inscricao" as any, {
+            payload: {
+              full_name: nomeParticipante,
+              genero: genero || null,
+              birth_date: dataNascimento || null,
+              whatsapp: telefoneContato ? telefoneContato.replace(/\D/g, "") : null,
+              cpf: cpf ? cpf.replace(/\D/g, "") : null,
+            } as any,
+          });
+        } catch (e) {
+          // Falha ao gerar cadastro não deve impedir a inscrição.
+          console.error("Erro ao gerar solicitação de cadastro de membro:", e);
+        }
+      }
+
       // Mensagem inicial "Recebemos sua inscrição" + notifica o ADM (vai pela fila, com retentativa)
       // A confirmação final (com link do grupo) será enviada DEPOIS que o ADM aprovar no painel.
       await dispararMensagemInscricaoRecebida({
