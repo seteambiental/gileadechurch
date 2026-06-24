@@ -206,6 +206,7 @@ export const EventoFormDialog = ({
     limite_vagas: "",
     visibilidade: "publico",
     necessita_inscricao: false,
+    gerar_cadastro_membro: false,
     valor_membro: "",
     valor_nao_membro: "",
     valor_familia: "",
