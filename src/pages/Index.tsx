@@ -431,7 +431,7 @@ const Index = () => {
                 <img
                   src={img.imagem_url}
                   alt={img.titulo}
-                  className="max-w-full max-h-full object-contain object-center"
+                  className="max-w-[90%] max-h-[80%] object-contain object-center"
                   loading="lazy"
                   decoding="async"
                 />
