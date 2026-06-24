@@ -51,7 +51,7 @@ import { AgendaCalendar } from "@/components/agenda/AgendaCalendar";
 import { SincronizarGoogleCalendarCard } from "@/components/agenda/SincronizarGoogleCalendarCard";
 import { AgendaReservasTab } from "@/components/agenda/AgendaReservasTab";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
 interface Evento {
