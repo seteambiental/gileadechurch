@@ -922,7 +922,7 @@ export const EventoFormDialog = ({
                         ? "Sem data de término: a recorrência começa na data de início e não tem fim."
                         : "Com início e término: a recorrência será aplicada apenas entre as datas informadas."}
                     </p>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label className="text-xs">Tipo</Label>
                         <Select
@@ -936,27 +936,6 @@ export const EventoFormDialog = ({
                             <SelectItem value="semanal">Semanal</SelectItem>
                             <SelectItem value="mensal">Mensal</SelectItem>
                             <SelectItem value="semestral">Semestral</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-xs">Dia da Semana</Label>
-                        <Select
-                          value={formData.dia_semana}
-                          onValueChange={(v) => setFormData({ ...formData, dia_semana: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="0">Domingo</SelectItem>
-                            <SelectItem value="1">Segunda</SelectItem>
-                            <SelectItem value="2">Terça</SelectItem>
-                            <SelectItem value="3">Quarta</SelectItem>
-                            <SelectItem value="4">Quinta</SelectItem>
-                            <SelectItem value="5">Sexta</SelectItem>
-                            <SelectItem value="6">Sábado</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -981,6 +960,40 @@ export const EventoFormDialog = ({
                           </Select>
                         </div>
                       )}
+                    </div>
+
+                    <div>
+                      <Label className="text-xs">Dia(s) da Semana</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-3 gap-y-2 mt-1.5">
+                        {[
+                          { value: "0", label: "Domingo" },
+                          { value: "1", label: "Segunda" },
+                          { value: "2", label: "Terça" },
+                          { value: "3", label: "Quarta" },
+                          { value: "4", label: "Quinta" },
+                          { value: "5", label: "Sexta" },
+                          { value: "6", label: "Sábado" },
+                        ].map((dia) => {
+                          const checked = formData.dias_semana.includes(dia.value);
+                          return (
+                            <label
+                              key={dia.value}
+                              className="flex items-center gap-2 cursor-pointer text-sm"
+                            >
+                              <Checkbox
+                                checked={checked}
+                                onCheckedChange={(c) => {
+                                  const next = c
+                                    ? [...formData.dias_semana, dia.value]
+                                    : formData.dias_semana.filter((d) => d !== dia.value);
+                                  setFormData({ ...formData, dias_semana: next, dia_semana: next[0] || "" });
+                                }}
+                              />
+                              {dia.label}
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}
