@@ -388,10 +388,10 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section - Altura reduzida para melhor ajuste aos banners */}
+      {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[40vh] min-h-[320px] sm:h-[50vh] md:h-[55vh] lg:h-[60vh] xl:h-[65vh] sm:min-h-[420px]"
+        className="relative w-full overflow-hidden h-[44vh] min-h-[360px] sm:h-[65vh] md:h-[70vh] lg:h-[75vh] xl:h-[78vh] sm:min-h-[560px]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -426,12 +426,12 @@ const Index = () => {
                 loading="lazy"
                 decoding="async"
               />
-              {/* Imagem principal ajustada ao container sem cortes */}
+              {/* Imagem principal reduzida dentro do container, sem cortes */}
               <div className="absolute inset-0 z-[1] flex items-center justify-center p-4 sm:p-8">
                 <img
                   src={img.imagem_url}
                   alt={img.titulo}
-                  className="max-w-[90%] max-h-[80%] object-contain object-center"
+                  className="max-w-[85%] max-h-[55%] object-contain object-center"
                   loading="lazy"
                   decoding="async"
                 />
