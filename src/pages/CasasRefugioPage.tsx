@@ -61,6 +61,7 @@ const CasasRefugioPage = () => {
   const condominioFilter = searchParams.get("cond") || "all";
   const supervisorFilter = searchParams.get("sup") || "all";
   const casaFilter = searchParams.get("casa") || "all";
+  const statusFilter = searchParams.get("status") || "all";
 
   const [encontroDialogOpen, setEncontroDialogOpen] = useState(false);
   const [selectedCasa, setSelectedCasa] = useState<CasaRefugio | null>(null);
@@ -82,6 +83,7 @@ const CasasRefugioPage = () => {
   const setCondominioFilter = (value: string) => updateSearchParams("cond", value);
   const setSupervisorFilter = (value: string) => updateSearchParams("sup", value);
   const setCasaFilter = (value: string) => updateSearchParams("casa", value);
+  const setStatusFilter = (value: string) => updateSearchParams("status", value);
 
   useEffect(() => {
     if (!authLoading && !user && !bypass) {
@@ -226,15 +228,24 @@ const CasasRefugioPage = () => {
     return Array.from(map.values()).sort();
   }, [casas, condominioFilter]);
 
-  // Reset supervisor filter when condomínio changes
+  // Reset supervisor/casa/status filter when condomínio changes
   useEffect(() => {
-    setSupervisorFilter("all");
-    setCasaFilter("all");
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete("sup");
+      newParams.delete("casa");
+      newParams.delete("status");
+      return newParams;
+    }, { replace: true });
   }, [condominioFilter]);
 
   // Reset casa filter when supervisor changes
   useEffect(() => {
-    setCasaFilter("all");
+    setSearchParams(prev => {
+      const newParams = new URLSearchParams(prev);
+      newParams.delete("casa");
+      return newParams;
+    }, { replace: true });
   }, [supervisorFilter]);
 
 
@@ -256,9 +267,14 @@ const CasasRefugioPage = () => {
       const matchesCasa =
         casaFilter === "all" || casa.id === casaFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "ativa" && casa.ativo !== false) ||
+        (statusFilter === "inativa" && casa.ativo === false);
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa && matchesStatus;
     });
-  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter]);
+  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter, statusFilter]);
 
   // Map for report dialog
   const casasNomesMap = useMemo(() => {
@@ -267,7 +283,7 @@ const CasasRefugioPage = () => {
     return map;
   }, [casas]);
   const hasActiveFilters =
-    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || searchTerm !== "";
+    condominioFilter !== "all" || supervisorFilter !== "all" || casaFilter !== "all" || statusFilter !== "all" || searchTerm !== "";
 
   const clearFilters = () => {
     setSearchParams({}, { replace: true });
@@ -458,6 +474,17 @@ const CasasRefugioPage = () => {
                     {casa.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px] bg-card border-border">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="ativa">Ativas</SelectItem>
+                <SelectItem value="inativa">Inativas</SelectItem>
               </SelectContent>
             </Select>
 
