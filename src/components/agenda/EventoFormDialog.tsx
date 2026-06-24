@@ -74,6 +74,7 @@ interface Evento {
   recorrente: boolean;
   tipo_recorrencia: string | null;
   dia_semana: number | null;
+  dias_semana?: number[] | null;
   semana_mes: number | null;
   flyer_url: string | null;
   observacoes: string | null;
