@@ -267,9 +267,14 @@ const CasasRefugioPage = () => {
       const matchesCasa =
         casaFilter === "all" || casa.id === casaFilter;
 
-      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "ativa" && casa.ativo !== false) ||
+        (statusFilter === "inativa" && casa.ativo === false);
+
+      return matchesSearch && matchesCondominio && matchesSupervisor && matchesCasa && matchesStatus;
     });
-  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter]);
+  }, [casas, searchTerm, condominioFilter, supervisorFilter, casaFilter, statusFilter]);
 
   // Map for report dialog
   const casasNomesMap = useMemo(() => {
