@@ -249,6 +249,15 @@ const InscricaoEvento = () => {
     return evento.campos_formulario.includes(fieldKey);
   };
 
+  // Preenche endereço automaticamente pelo CEP
+  const handleCepResolved = useCallback((data: { address: string; neighborhood: string; city: string; state: string }) => {
+    if (data.address) setRua(data.address);
+    if (data.neighborhood) setBairro(data.neighborhood);
+    if (data.city) setCidade(data.city);
+    if (data.state) setEstadoUf(data.state);
+  }, []);
+  useCepLookup(cep, handleCepResolved);
+
   // Filter search results
   const searchResults = searchTerm.length >= 2 
     ? pessoas.filter(p => includesNormalized(p.full_name, searchTerm))
