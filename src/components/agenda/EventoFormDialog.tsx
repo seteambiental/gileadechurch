@@ -704,6 +704,7 @@ export const EventoFormDialog = ({
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
         necessita_inscricao: formData.necessita_inscricao,
+        gerar_cadastro_membro: formData.necessita_inscricao ? formData.gerar_cadastro_membro : false,
         link_grupo_whatsapp: formData.link_grupo_whatsapp?.trim()
           ? formData.link_grupo_whatsapp.trim()
           : null,
