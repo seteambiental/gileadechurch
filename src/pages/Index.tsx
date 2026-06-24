@@ -426,16 +426,14 @@ const Index = () => {
                 loading="lazy"
                 decoding="async"
               />
-              {/* Imagem principal centralizada vertical e horizontalmente */}
-              <div className="relative z-[1] w-full h-full flex items-center justify-center p-0">
-                <img
-                  src={img.imagem_url}
-                  alt={img.titulo}
-                  className="max-w-full max-h-full object-contain"
-                  loading="lazy"
-                  decoding="async"
-                />
-              </div>
+              {/* Imagem principal ajustada sem cortes, centralizada */}
+              <img
+                src={img.imagem_url}
+                alt={img.titulo}
+                className="absolute inset-0 w-full h-full object-contain object-center z-[1]"
+                loading="lazy"
+                decoding="async"
+              />
             </div>
           ))}
 
