@@ -17,7 +17,8 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 import logoGileade from "@/assets/logo-gileade.jpeg";
-import { formatPhone, formatCPF } from "@/lib/masks";
+import { formatPhone, formatCPF, formatCep } from "@/lib/masks";
+import { useCepLookup } from "@/hooks/useCepLookup";
 import { includesNormalized } from "@/lib/text-utils";
 import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
