@@ -43,6 +43,7 @@ interface Evento {
   cor: string | null;
   recorrente: boolean;
   dia_semana: number | null;
+  dias_semana: number[] | null;
   semana_mes: number | null;
   tipo_recorrencia: string | null;
   ativo: boolean;
