@@ -307,6 +307,9 @@ export const EventoFormDialog = ({
           recorrente: evento.recorrente || false,
           tipo_recorrencia: evento.tipo_recorrencia || "",
           dia_semana: evento.dia_semana?.toString() || "",
+          dias_semana: Array.isArray((evento as any).dias_semana)
+            ? (evento as any).dias_semana.map((d: number) => d.toString())
+            : (evento.dia_semana !== null && evento.dia_semana !== undefined ? [evento.dia_semana.toString()] : []),
           semana_mes: evento.semana_mes?.toString() || "",
           observacoes: evento.observacoes || "",
           idade_minima: evento.idade_minima?.toString() || "",
