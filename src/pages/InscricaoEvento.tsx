@@ -985,6 +985,86 @@ const InscricaoEvento = () => {
                     </div>
                     )}
 
+                    {/* Endereço */}
+                    {showField("cep") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="cep" className="text-base md:text-lg">CEP</Label>
+                      <Input
+                        id="cep"
+                        value={cep}
+                        onChange={(e) => setCep(formatCep(e.target.value))}
+                        placeholder="00000-000"
+                        maxLength={9}
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("rua") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="rua" className="text-base md:text-lg">Rua / Logradouro</Label>
+                      <Input
+                        id="rua"
+                        value={rua}
+                        onChange={(e) => setRua(e.target.value)}
+                        placeholder="Nome da rua"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("numero") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="numero" className="text-base md:text-lg">Número</Label>
+                      <Input
+                        id="numero"
+                        value={numero}
+                        onChange={(e) => setNumero(e.target.value)}
+                        placeholder="Nº"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("complemento") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="complemento" className="text-base md:text-lg">Complemento</Label>
+                      <Input
+                        id="complemento"
+                        value={complemento}
+                        onChange={(e) => setComplemento(e.target.value)}
+                        placeholder="Apto, bloco, etc."
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("bairro") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="bairro" className="text-base md:text-lg">Bairro</Label>
+                      <Input
+                        id="bairro"
+                        value={bairro}
+                        onChange={(e) => setBairro(e.target.value)}
+                        placeholder="Bairro"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
+                    {showField("cidade") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="cidade" className="text-base md:text-lg">Cidade</Label>
+                      <Input
+                        id="cidade"
+                        value={cidade}
+                        onChange={(e) => setCidade(e.target.value)}
+                        placeholder="Cidade"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
+
                     {/* Membro de ministério - apenas para pessoas não cadastradas */}
                     {selectedPerson?.type === "novo" && showField("ministerio_igreja") && (
                       <>
