@@ -944,6 +944,7 @@ const InscricaoEvento = () => {
                     {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">
                       <Label htmlFor="emergencia" className="text-base md:text-lg">Telefone de Emergência</Label>
+                      {/* placeholder */}
                       {emergenciaLocked ? (
                         <div className="relative">
                           <Input
