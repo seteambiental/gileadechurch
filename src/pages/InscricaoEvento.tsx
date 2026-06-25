@@ -498,6 +498,7 @@ const InscricaoEvento = () => {
             payload: {
               full_name: nomeParticipante,
               genero: genero || null,
+              email: email || null,
               birth_date: dataNascimento || null,
               whatsapp: telefoneContato ? telefoneContato.replace(/\D/g, "") : null,
               cpf: cpf ? cpf.replace(/\D/g, "") : null,
