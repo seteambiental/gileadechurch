@@ -1523,7 +1523,15 @@ export const EventoFormDialog = ({
                   <Switch
                     id="gerar_cadastro_membro"
                     checked={formData.gerar_cadastro_membro}
-                    onCheckedChange={(c) => setFormData({ ...formData, gerar_cadastro_membro: c })}
+                    onCheckedChange={(c) => {
+                      setFormData({ ...formData, gerar_cadastro_membro: c });
+                      if (c) {
+                        // Pré-marca apenas os campos que coincidem com o Cadastro de Membros
+                        setCamposFormulario(
+                          ALL_CAMPOS_KEYS.filter((k) => CAMPOS_CADASTRO_MEMBRO.includes(k))
+                        );
+                      }
+                    }}
                   />
                   <div className="space-y-0.5">
                     <Label htmlFor="gerar_cadastro_membro" className="cursor-pointer">
