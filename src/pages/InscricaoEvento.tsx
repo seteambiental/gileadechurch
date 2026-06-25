@@ -579,7 +579,7 @@ const InscricaoEvento = () => {
       return;
     }
 
-    if (showField("forma_pagamento") && !formaPagamento) {
+    if (showField("forma_pagamento") && evento?.tem_custo && !formaPagamento) {
       toast({
         title: "Campo obrigatório",
         description: "Selecione a forma de pagamento.",
