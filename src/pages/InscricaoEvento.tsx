@@ -67,6 +67,7 @@ const InscricaoEvento = () => {
   const [genero, setGenero] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [telefoneContato, setTelefoneContato] = useState("");
+  const [email, setEmail] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [isMenor, setIsMenor] = useState(false);
   const [nomeResponsavel, setNomeResponsavel] = useState("");
