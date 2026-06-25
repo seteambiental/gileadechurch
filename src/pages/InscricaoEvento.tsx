@@ -67,6 +67,7 @@ const InscricaoEvento = () => {
   const [genero, setGenero] = useState("");
   const [dataNascimento, setDataNascimento] = useState("");
   const [telefoneContato, setTelefoneContato] = useState("");
+  const [email, setEmail] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [isMenor, setIsMenor] = useState(false);
   const [nomeResponsavel, setNomeResponsavel] = useState("");
@@ -497,6 +498,7 @@ const InscricaoEvento = () => {
             payload: {
               full_name: nomeParticipante,
               genero: genero || null,
+              email: email || null,
               birth_date: dataNascimento || null,
               whatsapp: telefoneContato ? telefoneContato.replace(/\D/g, "") : null,
               cpf: cpf ? cpf.replace(/\D/g, "") : null,
@@ -939,6 +941,20 @@ const InscricaoEvento = () => {
                         />
                       )}
                     </div>
+
+                    {showField("email") && (
+                    <div className="space-y-2 md:space-y-3">
+                      <Label htmlFor="email" className="text-base md:text-lg">E-mail</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="seu@email.com"
+                        className="h-10 md:h-14 text-base md:text-lg"
+                      />
+                    </div>
+                    )}
 
                     {showField("telefone_emergencia") && (
                     <div className="space-y-2 md:space-y-3">

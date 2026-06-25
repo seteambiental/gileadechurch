@@ -224,6 +224,7 @@ export const EventoFormDialog = ({
   const CAMPOS_FORMULARIO_OPTIONS = [
     { key: "nome", label: "Nome completo" },
     { key: "telefone", label: "Telefone / WhatsApp" },
+    { key: "email", label: "E-mail" },
     { key: "genero", label: "Gênero" },
     { key: "data_nascimento", label: "Data de Nascimento" },
     { key: "estado_civil", label: "Estado Civil" },
@@ -248,7 +249,7 @@ export const EventoFormDialog = ({
   const ALL_CAMPOS_KEYS = CAMPOS_FORMULARIO_OPTIONS.map(c => c.key);
   // Campos que coincidem com o Cadastro de Membros
   const CAMPOS_CADASTRO_MEMBRO = [
-    "nome", "telefone", "genero", "data_nascimento", "estado_civil",
+    "nome", "telefone", "email", "genero", "data_nascimento", "estado_civil",
     "cpf", "cep", "rua", "numero", "complemento", "bairro", "cidade",
   ];
   const [camposFormulario, setCamposFormulario] = useState<string[]>([...ALL_CAMPOS_KEYS]);
