@@ -467,7 +467,7 @@ const InscricaoEvento = () => {
         descricao_alergia: temAlergia ? descricaoAlergia : null,
         toma_medicamento: tomaMedicamento,
         descricao_medicamento: tomaMedicamento ? descricaoMedicamento : null,
-        forma_pagamento: formaPagamento,
+        forma_pagamento: formaPagamento || null,
         lista_espera: isListaEspera,
         observacoes: observacoesMinisterio || null,
         cpf: cpf ? cpf.replace(/\D/g, "") : null,
