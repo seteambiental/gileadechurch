@@ -23,9 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, UserPlus, Bell, Phone } from "lucide-react";
+import { Plus, Trash2, UserPlus, Bell, Phone, MessageCircle, Loader2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface TurmaConfig {
   id: string;
@@ -69,6 +71,14 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
   const [isPrincipal, setIsPrincipal] = useState(false);
   const [notificarAusencia, setNotificarAusencia] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Envio manual de mensagem
+  const [msgDialogOpen, setMsgDialogOpen] = useState(false);
+  const [mensagem, setMensagem] = useState("Olá {nome}! 👋\n\n");
+  const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
+  const [selectedDestinatarios, setSelectedDestinatarios] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Buscar responsáveis cadastrados
   const { data: responsaveis, isLoading } = useQuery({
@@ -206,6 +216,74 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
     });
   }, [responsaveis, searchTerm]);
 
+  // Responsáveis únicos com WhatsApp (para envio de mensagens)
+  const destinatarios = useMemo(() => {
+    const map = new Map<string, { id: string; nome: string; whatsapp: string }>();
+    responsaveis?.forEach((r) => {
+      const m = r.responsavel;
+      if (m?.id && m.whatsapp && !map.has(m.id)) {
+        map.set(m.id, { id: m.id, nome: m.full_name || "", whatsapp: m.whatsapp });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [responsaveis]);
+
+  const toggleDestinatario = (id: string) =>
+    setSelectedDestinatarios((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+
+  const toggleSelectAllDest = () =>
+    setSelectedDestinatarios((prev) =>
+      prev.length === destinatarios.length ? [] : destinatarios.map((d) => d.id)
+    );
+
+  const enviarMensagens = async () => {
+    if (!mensagem.trim()) {
+      toast({ variant: "destructive", title: "Digite uma mensagem" });
+      return;
+    }
+    const alvos = destinatarios.filter((d) => selectedDestinatarios.includes(d.id));
+    if (alvos.length === 0) {
+      toast({ variant: "destructive", title: "Selecione ao menos um responsável" });
+      return;
+    }
+    setIsSending(true);
+    setSendProgress({ current: 0, total: alvos.length });
+    let enviados = 0;
+    for (let i = 0; i < alvos.length; i++) {
+      const d = alvos[i];
+      const primeiroNome = (d.nome || "").trim().split(/\s+/)[0] || "";
+      const texto = mensagem.replace(/\{nome\}/gi, primeiroNome);
+      try {
+        await supabase.functions.invoke("enviar-whatsapp", {
+          body: {
+            action: "mensagem_direta",
+            telefone: d.whatsapp,
+            mensagem: texto,
+            midiaUrl: anexo?.url || null,
+            midiaFileName: anexo?.fileName || null,
+          },
+        });
+        enviados++;
+      } catch (err) {
+        console.warn("Falha ao enviar para", d.nome, err);
+      }
+      setSendProgress({ current: i + 1, total: alvos.length });
+      // Espaçamento aleatório 15-30s entre envios (anti-SPAM Evolution)
+      if (i < alvos.length - 1) {
+        await new Promise((r) => setTimeout(r, Math.floor(Math.random() * 15000) + 15000));
+      }
+    }
+    toast({ title: `Mensagem enviada para ${enviados} de ${alvos.length} responsável(is)!` });
+    setIsSending(false);
+    setSendProgress(null);
+    setSelectedDestinatarios([]);
+    setMensagem("Olá {nome}! 👋\n\n");
+    setAnexo(null);
+    setMsgDialogOpen(false);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -219,6 +297,76 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
             Vincule responsáveis às crianças para receber notificações de ausência
           </p>
         </div>
+
+        <div className="flex items-center gap-2">
+        <Dialog open={msgDialogOpen} onOpenChange={(o) => !isSending && setMsgDialogOpen(o)}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Enviar Mensagem
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Enviar Mensagem aos Responsáveis</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Destinatários ({selectedDestinatarios.length}/{destinatarios.length})</Label>
+                  <Button type="button" variant="ghost" size="sm" onClick={toggleSelectAllDest}>
+                    {selectedDestinatarios.length === destinatarios.length ? "Limpar" : "Selecionar todos"}
+                  </Button>
+                </div>
+                <div className="max-h-44 overflow-y-auto border rounded-md divide-y">
+                  {destinatarios.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-3">
+                      Nenhum responsável com WhatsApp cadastrado.
+                    </p>
+                  ) : (
+                    destinatarios.map((d) => (
+                      <label key={d.id} className="flex items-center gap-2 p-2 cursor-pointer hover:bg-muted/40">
+                        <Checkbox
+                          checked={selectedDestinatarios.includes(d.id)}
+                          onCheckedChange={() => toggleDestinatario(d.id)}
+                        />
+                        <span className="text-sm flex-1">{d.nome}</span>
+                        <span className="text-xs text-muted-foreground">{d.whatsapp}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Mensagem</Label>
+                <Textarea
+                  rows={5}
+                  placeholder="Digite a mensagem... Use {nome} para personalizar"
+                  value={mensagem}
+                  onChange={(e) => setMensagem(e.target.value)}
+                  disabled={isSending}
+                />
+              </div>
+              <WhatsappAnexoUpload value={anexo} onChange={setAnexo} disabled={isSending} />
+              {sendProgress && (
+                <p className="text-sm text-muted-foreground">
+                  Enviando {sendProgress.current} de {sendProgress.total}...
+                </p>
+              )}
+              <Button
+                className="w-full"
+                onClick={enviarMensagens}
+                disabled={isSending || selectedDestinatarios.length === 0 || !mensagem.trim()}
+              >
+                {isSending ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+                ) : (
+                  `Enviar para ${selectedDestinatarios.length} responsável(is)`
+                )}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -324,6 +472,7 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Lista de vínculos */}
