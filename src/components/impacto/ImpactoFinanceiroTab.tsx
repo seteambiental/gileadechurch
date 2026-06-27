@@ -376,19 +376,6 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
 
   const totalInscritos = inscricoes?.length || 0;
 
-  // Mantém apenas os ids selecionados que continuam visíveis na lista filtrada
-  useEffect(() => {
-    setSelectedIds((prev) => prev.filter((id) => inscricoesFiltradas.some((i) => i.id === id)));
-  }, [inscricoesFiltradas]);
-
-  const toggleSelectId = (id: string, checked: boolean) => {
-    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
-  };
-
-  const toggleSelectAll = (checked: boolean) => {
-    setSelectedIds(checked ? inscricoesFiltradas.map((i) => i.id) : []);
-  };
-
   // Normalize payment status across legacy/new values
   const normalizeStatus = (status: string | null | undefined): "pago" | "parcial" | "pendente" => {
     const s = String(status || "").toLowerCase().trim();
