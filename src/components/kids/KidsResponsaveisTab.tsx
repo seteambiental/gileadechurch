@@ -23,9 +23,11 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, UserPlus, Bell, Phone } from "lucide-react";
+import { Plus, Trash2, UserPlus, Bell, Phone, MessageCircle, Loader2 } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface TurmaConfig {
   id: string;
@@ -69,6 +71,14 @@ export const KidsResponsaveisTab = ({ turmasConfig, criancasPorTurma }: KidsResp
   const [isPrincipal, setIsPrincipal] = useState(false);
   const [notificarAusencia, setNotificarAusencia] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Envio manual de mensagem
+  const [msgDialogOpen, setMsgDialogOpen] = useState(false);
+  const [mensagem, setMensagem] = useState("Olá {nome}! 👋\n\n");
+  const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
+  const [selectedDestinatarios, setSelectedDestinatarios] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
 
   // Buscar responsáveis cadastrados
   const { data: responsaveis, isLoading } = useQuery({
