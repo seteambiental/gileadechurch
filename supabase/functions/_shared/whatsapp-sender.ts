@@ -129,6 +129,8 @@ export async function enviarImagemComFallbackTexto(telefone: string, imageUrl: s
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
+    // Espera para respeitar a proteção do provedor (1 msg a cada 5s) antes do fallback.
+    await new Promise((resolve) => setTimeout(resolve, 6000));
     return await enviarTextoWhatsApp(telefone, caption);
   }
 }
