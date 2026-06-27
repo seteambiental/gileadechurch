@@ -1183,6 +1183,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
           eventoId={selectedEventoId}
           eventoTipo={(impactoEventos || []).some((e) => e.id === selectedEventoId) ? "impacto" : "agenda"}
           eventoTitulo={selectedEvento?.titulo || ""}
+          idsIniciais={selectedIds}
         />
       )}
     </div>
