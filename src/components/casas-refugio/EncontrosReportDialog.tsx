@@ -214,6 +214,9 @@ export const EncontrosReportDialog = ({
   const [supervisorFilter, setSupervisorFilter] = useState("all");
   const [casaRefugioFilter, setCasaRefugioFilter] = useState("all");
 
+  // Active status filter (ativas / inativas / todas)
+  const [ativaFilter, setAtivaFilter] = useState<"ativas" | "inativas" | "todas">("ativas");
+
   // Status filter
   const [statusFilter, setStatusFilter] = useState<"todas" | "realizadas" | "pendentes">("todas");
 
