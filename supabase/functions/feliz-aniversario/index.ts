@@ -21,9 +21,47 @@ const versiculosAniversario = [
   { texto: "Tudo tem o seu tempo determinado, e há tempo para todo o propósito debaixo do céu.", referencia: "Eclesiastes 3:1" },
 ];
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Intervalo aleatório anti-SPAM entre destinatários (15-30s).
+const intervaloAntiSpam = () => Math.floor(Math.random() * 15000) + 15000;
+
+// Erros do provedor que valem nova tentativa após uma espera.
+function erroTemporario(msg: string): boolean {
+  const m = (msg || "").toLowerCase();
+  return (
+    m.includes("5 seconds") ||
+    m.includes("account protection") ||
+    m.includes("rate") ||
+    m.includes("too many") ||
+    m.includes("not connected") ||
+    m.includes("session") ||
+    m.includes("internal server error") ||
+    m.includes("status 5")
+  );
+}
+
 async function enviarMensagemEvolution(telefone: string, mensagem: string) {
-  // Envia a logo da Igreja Gileade como imagem com a mensagem na legenda
-  return await enviarImagemComFallbackTexto(telefone, LOGO_GILEADE_URL, mensagem);
+  // Envia a logo da Igreja Gileade como imagem com a mensagem na legenda.
+  // Faz até 3 tentativas, aguardando entre elas, para contornar a proteção
+  // do provedor (limite de 1 mensagem a cada 5s) e quedas momentâneas de sessão.
+  const maxTentativas = 3;
+  let ultimoErro: unknown = null;
+  for (let tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+    try {
+      return await enviarImagemComFallbackTexto(telefone, LOGO_GILEADE_URL, mensagem);
+    } catch (err) {
+      ultimoErro = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (tentativa < maxTentativas && erroTemporario(msg)) {
+        console.warn(`Tentativa ${tentativa} falhou (${msg}). Nova tentativa em 8s...`);
+        await sleep(8000);
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw ultimoErro instanceof Error ? ultimoErro : new Error(String(ultimoErro));
 }
 
 // Extrai o código da mensagem (msgId) da resposta do provedor, quando existir.
