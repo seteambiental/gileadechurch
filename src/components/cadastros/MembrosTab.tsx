@@ -813,6 +813,7 @@ const MembrosTab = () => {
         if (!open) {
           setWhatsappMember(null);
           setWhatsappMessage("");
+          setWhatsappAnexo(null);
         }
       }}>
         <AlertDialogContent className="bg-card border-border">
@@ -839,6 +840,7 @@ const MembrosTab = () => {
                 amostras={1}
               />
             )}
+            <WhatsappAnexoUpload value={whatsappAnexo} onChange={setWhatsappAnexo} disabled={sendWhatsappMutation.isPending} />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -847,7 +849,7 @@ const MembrosTab = () => {
               disabled={!whatsappMessage.trim() || sendWhatsappMutation.isPending}
               onClick={() => {
                 if (whatsappMember) {
-                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage });
+                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage, anexo: whatsappAnexo });
                 }
               }}
             >
