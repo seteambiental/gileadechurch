@@ -48,6 +48,7 @@ interface Props {
   eventoTipo: "impacto" | "agenda";
   eventoTitulo: string;
   mensagemInicial?: string;
+  idsIniciais?: string[];
 }
 
 export default function EnvioEmergenciaDialog({
@@ -57,6 +58,7 @@ export default function EnvioEmergenciaDialog({
   eventoTipo,
   eventoTitulo,
   mensagemInicial,
+  idsIniciais,
 }: Props) {
   const [destino, setDestino] = useState<"todos" | "um" | "selecionados">("todos");
   const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
@@ -79,6 +81,10 @@ export default function EnvioEmergenciaDialog({
     if (open) {
       setInscritosEventoId(eventoId);
       setInscritosEventoTipo(eventoTipo);
+      if (idsIniciais && idsIniciais.length > 0) {
+        setInscricaoIds(idsIniciais);
+        setDestino("selecionados");
+      }
     }
   }, [open, eventoId, eventoTipo]);
 
