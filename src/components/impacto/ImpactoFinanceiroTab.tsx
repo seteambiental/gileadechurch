@@ -563,6 +563,19 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return resultado;
   }, [inscricoesPreFiltradas, columnFilters, columnUniqueValues, getColumnValue]);
 
+  // Mantém apenas os ids selecionados que continuam visíveis na lista filtrada
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => inscricoesFiltradas.some((i) => i.id === id)));
+  }, [inscricoesFiltradas]);
+
+  const toggleSelectId = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? inscricoesFiltradas.map((i) => i.id) : []);
+  };
+
   const getStatusBadge = (status: string | null) => {
     const normalized = normalizeStatus(status);
     if (normalized === "pago") {
