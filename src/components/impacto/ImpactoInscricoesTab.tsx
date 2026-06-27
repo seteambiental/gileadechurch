@@ -1262,6 +1262,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
           eventoId={selectedEventoId}
           eventoTipo={selectedEventoSource === "agenda" ? "agenda" : "impacto"}
           eventoTitulo={eventos?.find((e) => e.id === selectedEventoId)?.titulo || ""}
+          idsIniciais={selectedIds}
         />
       )}
     </div>

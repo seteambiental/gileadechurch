@@ -65,6 +65,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
   const setSelectedEventoId = (id: string) => {
     setSelectedEventoIdLocal(id);
+    setSelectedIds([]);
     onEventoChange?.(id);
   };
   const [searchNome, setSearchNome] = useState("");
@@ -73,6 +74,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [dataPrevisao, setDataPrevisao] = useState("");
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortRefDir, setSortRefDir] = useState<"asc" | "desc" | null>(null);
   const toggleSortRef = () => {
     setSortRefDir((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
@@ -562,6 +564,19 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return resultado;
   }, [inscricoesPreFiltradas, columnFilters, columnUniqueValues, getColumnValue]);
 
+  // Mantém apenas os ids selecionados que continuam visíveis na lista filtrada
+  useEffect(() => {
+    setSelectedIds((prev) => prev.filter((id) => inscricoesFiltradas.some((i) => i.id === id)));
+  }, [inscricoesFiltradas]);
+
+  const toggleSelectId = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => (checked ? [...prev, id] : prev.filter((x) => x !== id)));
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds(checked ? inscricoesFiltradas.map((i) => i.id) : []);
+  };
+
   const getStatusBadge = (status: string | null) => {
     const normalized = normalizeStatus(status);
     if (normalized === "pago") {
@@ -1041,6 +1056,13 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   <Table className="min-w-max">
                     <TableHeader className="sticky top-0 z-10 bg-card">
                        <TableRow>
+                         <TableHead className="w-12">
+                           <Checkbox
+                             checked={inscricoesFiltradas.length > 0 && selectedIds.length === inscricoesFiltradas.length}
+                             onCheckedChange={(v) => toggleSelectAll(!!v)}
+                             aria-label="Selecionar todos"
+                           />
+                         </TableHead>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={columnUniqueValues["tipo"] || []} selected={columnFilters["tipo"] || new Set(columnUniqueValues["tipo"] || [])} onChange={(s) => setColumnFilter("tipo", s)} /></TableHead>}
                          {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={columnUniqueValues["genero"] || []} selected={columnFilters["genero"] || new Set(columnUniqueValues["genero"] || [])} onChange={(s) => setColumnFilter("genero", s)} /></TableHead>}
@@ -1083,6 +1105,13 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                         const temPrevisao = previsoes && Array.isArray(previsoes) && previsoes.length > 0;
                         return (
                           <TableRow key={inscricao.id} className={normalizeStatus(inscricao.status_pagamento) === "pendente" ? "bg-yellow-50 hover:bg-yellow-100" : ""}>
+                            <TableCell className="w-12">
+                              <Checkbox
+                                checked={selectedIds.includes(inscricao.id)}
+                                onCheckedChange={(v) => toggleSelectId(inscricao.id, !!v)}
+                                aria-label={`Selecionar ${inscricao.nome}`}
+                              />
+                            </TableCell>
                             {isCol("nome") && (
                               <TableCell className="font-medium">
                                 <span className="flex items-center gap-1.5">
@@ -1155,6 +1184,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
           eventoId={selectedEventoId}
           eventoTipo={(impactoEventos || []).some((e) => e.id === selectedEventoId) ? "impacto" : "agenda"}
           eventoTitulo={selectedEvento?.titulo || ""}
+          idsIniciais={selectedIds}
         />
       )}
     </div>
