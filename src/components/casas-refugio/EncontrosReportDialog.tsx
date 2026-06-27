@@ -271,7 +271,7 @@ export const EncontrosReportDialog = ({
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [condominioFilter, supervisorFilter, casaRefugioFilter, appliedStartDate, appliedEndDate]);
+  }, [condominioFilter, supervisorFilter, casaRefugioFilter, ativaFilter, appliedStartDate, appliedEndDate]);
 
   // Fetch all casas refugio for filters
   const getFirstName = (fullName: string | null | undefined): string => {
