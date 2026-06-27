@@ -59,6 +59,7 @@ interface CasaRefugioData {
   dias: string | null;
   frequencia: string | null;
   data_inicio_cr: string | null;
+  ativo?: boolean | null;
   supervisor?: { full_name: string } | null;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
