@@ -312,11 +312,16 @@ export const EncontroFormDialog = ({
         if (error) throw error;
         encontroId = editingEncontro.id;
       } else {
-        // Insert new
-        const { data: insertedData, error } = await supabase.from("encontros_casa_refugio").insert({
-          ...payload,
-          casa_refugio_id: casa.id,
-        }).select("id").single();
+        // Insert new (upsert evita duplicatas para a mesma casa + data;
+        // se já existir relatório nesse dia, ele é atualizado)
+        const { data: insertedData, error } = await supabase
+          .from("encontros_casa_refugio")
+          .upsert(
+            { ...payload, casa_refugio_id: casa.id },
+            { onConflict: "casa_refugio_id,data_encontro" }
+          )
+          .select("id")
+          .single();
         if (error) throw error;
         encontroId = insertedData.id;
       }
