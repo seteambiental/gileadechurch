@@ -1104,6 +1104,13 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                         const temPrevisao = previsoes && Array.isArray(previsoes) && previsoes.length > 0;
                         return (
                           <TableRow key={inscricao.id} className={normalizeStatus(inscricao.status_pagamento) === "pendente" ? "bg-yellow-50 hover:bg-yellow-100" : ""}>
+                            <TableCell className="w-12">
+                              <Checkbox
+                                checked={selectedIds.includes(inscricao.id)}
+                                onCheckedChange={(v) => toggleSelectId(inscricao.id, !!v)}
+                                aria-label={`Selecionar ${inscricao.nome}`}
+                              />
+                            </TableCell>
                             {isCol("nome") && (
                               <TableCell className="font-medium">
                                 <span className="flex items-center gap-1.5">
