@@ -59,6 +59,7 @@ interface CasaRefugioData {
   dias: string | null;
   frequencia: string | null;
   data_inicio_cr: string | null;
+  ativo?: boolean | null;
   supervisor?: { full_name: string } | null;
   lider?: { full_name: string } | null;
   lider_esposa?: { full_name: string } | null;
@@ -213,6 +214,9 @@ export const EncontrosReportDialog = ({
   const [supervisorFilter, setSupervisorFilter] = useState("all");
   const [casaRefugioFilter, setCasaRefugioFilter] = useState("all");
 
+  // Active status filter (ativas / inativas / todas)
+  const [ativaFilter, setAtivaFilter] = useState<"ativas" | "inativas" | "todas">("ativas");
+
   // Status filter
   const [statusFilter, setStatusFilter] = useState<"todas" | "realizadas" | "pendentes">("todas");
 
@@ -267,7 +271,7 @@ export const EncontrosReportDialog = ({
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [condominioFilter, supervisorFilter, casaRefugioFilter, appliedStartDate, appliedEndDate]);
+  }, [condominioFilter, supervisorFilter, casaRefugioFilter, ativaFilter, appliedStartDate, appliedEndDate]);
 
   // Fetch all casas refugio for filters
   const getFirstName = (fullName: string | null | undefined): string => {
@@ -295,6 +299,7 @@ export const EncontrosReportDialog = ({
           dias,
           frequencia,
           data_inicio_cr,
+          ativo,
           supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
           lider:members!casas_refugio_lider_id_fkey(full_name),
           lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
@@ -358,8 +363,13 @@ export const EncontrosReportDialog = ({
     if (supervisorFilter !== "all") {
       filtered = filtered.filter((c) => c.supervisor?.full_name === supervisorFilter);
     }
+    if (ativaFilter === "ativas") {
+      filtered = filtered.filter((c) => c.ativo !== false);
+    } else if (ativaFilter === "inativas") {
+      filtered = filtered.filter((c) => c.ativo === false);
+    }
     return filtered;
-  }, [allCasas, condominioFilter, supervisorFilter]);
+  }, [allCasas, condominioFilter, supervisorFilter, ativaFilter]);
 
   // Final filtered casa IDs for query
   const filteredCasaIds = useMemo(() => {
@@ -920,6 +930,31 @@ export const EncontrosReportDialog = ({
 
           {/* Status + Column Visibility + Date Range */}
           <div className="flex flex-wrap items-end gap-4">
+            {/* Atividade filter (ativas / inativas / todas) */}
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Home className="w-3 h-3" /> Atividade
+              </label>
+              <div className="flex rounded-md border border-border overflow-hidden">
+                {([
+                  { key: "ativas", label: "Ativas" },
+                  { key: "inativas", label: "Inativas" },
+                  { key: "todas", label: "Todas" },
+                ] as const).map((opt) => (
+                  <Button
+                    key={opt.key}
+                    type="button"
+                    size="sm"
+                    variant={ativaFilter === opt.key ? "default" : "ghost"}
+                    className="rounded-none h-9"
+                    onClick={() => setAtivaFilter(opt.key)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             {/* Status filter */}
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground flex items-center gap-1">
