@@ -65,6 +65,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [selectedEventoId, setSelectedEventoIdLocal] = useState(eventoSelecionado || "");
   const setSelectedEventoId = (id: string) => {
     setSelectedEventoIdLocal(id);
+    setSelectedIds([]);
     onEventoChange?.(id);
   };
   const [searchNome, setSearchNome] = useState("");
