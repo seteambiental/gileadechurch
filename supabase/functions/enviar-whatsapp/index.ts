@@ -1140,12 +1140,12 @@ serve(async (req) => {
     }
 
     if (action === 'mensagem_direta' || action === 'mensagem_livre') {
-      const { telefone, mensagem, nome, memberId } = body;
+      const { telefone, mensagem, nome, memberId, midiaUrl, midiaFileName } = body;
       if (!telefone || !mensagem) {
         throw new Error('Telefone e mensagem são obrigatórios');
       }
 
-      await enviarMensagemEvolution(telefone, mensagem);
+      await enviarMensagemComAnexoEvolution(telefone, mensagem, midiaUrl, midiaFileName);
 
       // Registra no histórico/auditoria (comunicacao_envios)
       try {
