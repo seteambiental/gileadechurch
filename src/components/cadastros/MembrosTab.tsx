@@ -135,6 +135,7 @@ const MembrosTab = () => {
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
   const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [whatsappAnexo, setWhatsappAnexo] = useState<WhatsappAnexo | null>(null);
   const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
   const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
   const [showSegmentado, setShowSegmentado] = useState(false);
