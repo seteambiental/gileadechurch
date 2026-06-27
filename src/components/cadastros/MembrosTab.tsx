@@ -24,6 +24,7 @@ import {
 import MemberFormDialog from "./MemberFormDialog";
 import WhatsappSegmentadoDialog from "./WhatsappSegmentadoDialog";
 import WhatsappMensagemPreview from "./WhatsappMensagemPreview";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 import {
   AlertDialog,
   AlertDialogAction,
