@@ -234,9 +234,6 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: membro.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${membro.full_name}`);
-          
-          // Intervalo aleatório entre 15-30s para evitar SPAM
-          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -253,6 +250,8 @@ serve(async (req) => {
           resultados.push({ nome: membro.full_name, sucesso: false, erro: errorMsg });
           console.error(`❌ Erro ao enviar para ${membro.full_name}:`, err);
         }
+        // Intervalo anti-SPAM entre destinatários (após sucesso OU falha).
+        await sleep(intervaloAntiSpam());
       }
 
       for (const convertido of aniversariantesConvertidos) {
@@ -276,9 +275,6 @@ serve(async (req) => {
           
           enviados++;
           resultados.push({ nome: convertido.full_name, sucesso: true });
-          
-          // Intervalo aleatório entre 15-30s para evitar SPAM
-          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -294,6 +290,7 @@ serve(async (req) => {
           
           resultados.push({ nome: convertido.full_name, sucesso: false, erro: errorMsg });
         }
+        await sleep(intervaloAntiSpam());
       }
 
       // Envio para inscritos de eventos (não membros)
@@ -319,8 +316,6 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: true });
           console.log(`✅ Mensagem (não-membro) enviada para ${inscrito.nome}`);
-
-          await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 15000) + 15000));
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -336,6 +331,7 @@ serve(async (req) => {
 
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: false, erro: errorMsg });
         }
+        await sleep(intervaloAntiSpam());
       }
 
       return new Response(JSON.stringify({
