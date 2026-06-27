@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, MessageCircle, Users, Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "@/lib/masks";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface EventoOption {
   id: string;
@@ -49,6 +50,7 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
   const queryClient = useQueryClient();
   const [msgOpen, setMsgOpen] = useState(false);
   const [mensagem, setMensagem] = useState("");
+  const [anexo, setAnexo] = useState<WhatsappAnexo | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [editingRow, setEditingRow] = useState<RowData | null>(null);
   const [editForm, setEditForm] = useState({ crianca_nome: "", crianca_data_nascimento: "", crianca_genero: "", observacoes: "" });
@@ -211,7 +213,7 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
       const telefone = telefonesUnicos[i];
       try {
         const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-          body: { action: "mensagem_direta", telefone, mensagem },
+          body: { action: "mensagem_direta", telefone, mensagem, midiaUrl: anexo?.url || null, midiaFileName: anexo?.fileName || null },
         });
         if (error || !data?.success) fail++;
         else ok++;
@@ -226,6 +228,7 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
     }
     setEnviando(false);
     setMsgOpen(false);
+    setAnexo(null);
     toast.success(`${ok} enviada(s). ${fail > 0 ? fail + " falharam." : ""}`);
   };
 
@@ -336,6 +339,7 @@ const ApresentacaoCriancasInscricoesPanel = ({ eventos, selectedEventoId, onEven
             rows={6}
             placeholder="Digite a mensagem..."
           />
+          <WhatsappAnexoUpload value={anexo} onChange={setAnexo} disabled={enviando} />
           <DialogFooter>
             <Button variant="outline" onClick={() => setMsgOpen(false)} disabled={enviando}>Cancelar</Button>
             <Button onClick={enviar} disabled={enviando} className="bg-green-600 hover:bg-green-700 text-white">

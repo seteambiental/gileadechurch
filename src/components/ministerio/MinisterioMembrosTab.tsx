@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { VisitanteFormDialog } from "./VisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { includesNormalized } from "@/lib/text-utils";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface MinisterioMembrosTabProps {
   ministerioSlug: string;
@@ -69,6 +70,7 @@ export const MinisterioMembrosTab = ({
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [mensagem, setMensagem] = useState("");
+  const [anexoLote, setAnexoLote] = useState<WhatsappAnexo | null>(null);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkSearch, setBulkSearch] = useState("");
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
@@ -246,6 +248,8 @@ export const MinisterioMembrosTab = ({
               action: "mensagem_direta",
               telefone: membro.whatsapp,
               mensagem: mensagemPersonalizada,
+              midiaUrl: anexoLote?.url || null,
+              midiaFileName: anexoLote?.fileName || null,
             },
           });
           enviados++;
@@ -263,6 +267,7 @@ export const MinisterioMembrosTab = ({
       toast.success(`Mensagem enviada para ${enviados} de ${total} pessoa(s)!`);
       setSelectedMembers([]);
       setMensagem("");
+      setAnexoLote(null);
       setBulkDialogOpen(false);
     } catch (error) {
       console.error("Erro ao enviar mensagens:", error);
@@ -620,6 +625,8 @@ export const MinisterioMembrosTab = ({
               onChange={(e) => setMensagem(e.target.value)}
               rows={5}
             />
+
+            <WhatsappAnexoUpload value={anexoLote} onChange={setAnexoLote} disabled={isSending} />
 
             {sendProgress && (
               <div className="text-sm text-muted-foreground">

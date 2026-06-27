@@ -24,6 +24,7 @@ import {
 import MemberFormDialog from "./MemberFormDialog";
 import WhatsappSegmentadoDialog from "./WhatsappSegmentadoDialog";
 import WhatsappMensagemPreview from "./WhatsappMensagemPreview";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -134,6 +135,7 @@ const MembrosTab = () => {
   const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null);
   const [whatsappMember, setWhatsappMember] = useState<Member | null>(null);
   const [whatsappMessage, setWhatsappMessage] = useState("");
+  const [whatsappAnexo, setWhatsappAnexo] = useState<WhatsappAnexo | null>(null);
   const [showWhatsappChoice, setShowWhatsappChoice] = useState(false);
   const [whatsappBulkMode, setWhatsappBulkMode] = useState(false);
   const [showSegmentado, setShowSegmentado] = useState(false);
@@ -266,7 +268,7 @@ const MembrosTab = () => {
   });
 
   const sendWhatsappMutation = useMutation({
-    mutationFn: async ({ member, mensagem }: { member: Member; mensagem: string }) => {
+    mutationFn: async ({ member, mensagem, anexo }: { member: Member; mensagem: string; anexo?: WhatsappAnexo | null }) => {
       if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
       if (!mensagem.trim()) throw new Error("Digite uma mensagem");
       
@@ -277,6 +279,8 @@ const MembrosTab = () => {
           mensagem,
           nome: member.full_name,
           memberId: member.id,
+          midiaUrl: anexo?.url || null,
+          midiaFileName: anexo?.fileName || null,
         },
       });
       
@@ -288,6 +292,7 @@ const MembrosTab = () => {
       toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
       setWhatsappMember(null);
       setWhatsappMessage("");
+      setWhatsappAnexo(null);
     },
     onError: (err: any) => {
       toast({ 
@@ -298,7 +303,7 @@ const MembrosTab = () => {
     },
   });
 
-  const sendBulkWhatsapp = async (mensagem: string) => {
+  const sendBulkWhatsapp = async (mensagem: string, anexo?: WhatsappAnexo | null) => {
     const membersWithWhatsapp = filteredMembers.filter(m => m.whatsapp);
     if (membersWithWhatsapp.length === 0) {
       toast({ variant: "destructive", title: "Nenhum membro com WhatsApp na lista filtrada" });
@@ -314,7 +319,7 @@ const MembrosTab = () => {
       setBulkProgress({ sent: i, total: membersWithWhatsapp.length, current: member.full_name });
       try {
         const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada, nome: member.full_name, memberId: member.id },
+          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada, nome: member.full_name, memberId: member.id, midiaUrl: anexo?.url || null, midiaFileName: anexo?.fileName || null },
         });
         if (error || !data?.success) { erros++; } else { enviados++; }
       } catch { erros++; }
@@ -327,6 +332,7 @@ const MembrosTab = () => {
     setBulkProgress({ sent: 0, total: 0, current: "" });
     setWhatsappBulkMode(false);
     setWhatsappMessage("");
+    setWhatsappAnexo(null);
     toast({
       title: `Envio concluído: ${enviados} enviadas, ${erros} erros`,
       description: `Total: ${membersWithWhatsapp.length} membros`,
@@ -807,6 +813,7 @@ const MembrosTab = () => {
         if (!open) {
           setWhatsappMember(null);
           setWhatsappMessage("");
+          setWhatsappAnexo(null);
         }
       }}>
         <AlertDialogContent className="bg-card border-border">
@@ -833,6 +840,7 @@ const MembrosTab = () => {
                 amostras={1}
               />
             )}
+            <WhatsappAnexoUpload value={whatsappAnexo} onChange={setWhatsappAnexo} disabled={sendWhatsappMutation.isPending} />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -841,7 +849,7 @@ const MembrosTab = () => {
               disabled={!whatsappMessage.trim() || sendWhatsappMutation.isPending}
               onClick={() => {
                 if (whatsappMember) {
-                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage });
+                  sendWhatsappMutation.mutate({ member: whatsappMember, mensagem: whatsappMessage, anexo: whatsappAnexo });
                 }
               }}
             >
@@ -930,6 +938,7 @@ const MembrosTab = () => {
         if (!open && !bulkSending) {
           setWhatsappBulkMode(false);
           setWhatsappMessage("");
+          setWhatsappAnexo(null);
         }
       }}>
         <AlertDialogContent className="bg-card border-border">
@@ -967,6 +976,7 @@ const MembrosTab = () => {
                   whatsapp: m.whatsapp,
                 }))}
               />
+              <WhatsappAnexoUpload value={whatsappAnexo} onChange={setWhatsappAnexo} disabled={bulkSending} />
             </div>
           )}
           <AlertDialogFooter>
@@ -975,7 +985,7 @@ const MembrosTab = () => {
               <AlertDialogAction
                 className="bg-green-600 text-white hover:bg-green-700"
                 disabled={!whatsappMessage.trim()}
-                onClick={() => sendBulkWhatsapp(whatsappMessage)}
+                onClick={() => sendBulkWhatsapp(whatsappMessage, whatsappAnexo)}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Enviar para todos

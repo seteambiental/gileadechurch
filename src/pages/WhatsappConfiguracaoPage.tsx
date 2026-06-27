@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import EmergenciaConfigCard from "@/components/configuracoes/EmergenciaConfigCard";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface StatusResponse {
   provider: string;
@@ -83,6 +84,7 @@ export default function WhatsappConfiguracaoPage() {
     "🔧 Teste de conexão Gileade Church.\n\nSe você recebeu esta mensagem, a integração está funcionando! ✅",
   );
   const [testando, setTestando] = useState(false);
+  const [testAnexo, setTestAnexo] = useState<WhatsappAnexo | null>(null);
   const [historico, setHistorico] = useState<
     { ok: boolean; at: string; message: string }[]
   >([]);
@@ -194,7 +196,7 @@ export default function WhatsappConfiguracaoPage() {
     const startedAt = new Date().toISOString();
     try {
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-        body: { action: "mensagem_direta", telefone, mensagem: testMensagem },
+        body: { action: "mensagem_direta", telefone, mensagem: testMensagem, midiaUrl: testAnexo?.url || null, midiaFileName: testAnexo?.fileName || null },
       });
       if (error) throw error;
       const ok = !!data?.success;
@@ -511,6 +513,9 @@ export default function WhatsappConfiguracaoPage() {
                   value={testMensagem}
                   onChange={(e) => setTestMensagem(e.target.value)}
                 />
+              </div>
+              <div className="md:col-span-2">
+                <WhatsappAnexoUpload value={testAnexo} onChange={setTestAnexo} disabled={testando} />
               </div>
             </div>
             <div className="flex justify-end">

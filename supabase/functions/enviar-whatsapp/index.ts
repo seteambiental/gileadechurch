@@ -4,6 +4,7 @@ import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
 import {
   enviarTextoWhatsApp,
   enviarImagemWhatsApp,
+  enviarMidiaWhatsApp,
   WASENDER_API_URL,
   WASENDER_API_KEY,
 } from "../_shared/whatsapp-sender.ts";
@@ -241,6 +242,22 @@ async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, 
     console.warn(`Falha ao enviar imagem; tentando texto. Motivo: ${msg}`);
     return await enviarMensagemEvolution(telefone, caption);
   }
+}
+
+// Envio de mensagem manual com anexo opcional (imagem, vídeo ou documento).
+// Quando houver mídia, a mensagem digitada acompanha o arquivo como legenda.
+async function enviarMensagemComAnexoEvolution(
+  telefone: string,
+  mensagem: string,
+  midiaUrl?: string | null,
+  midiaFileName?: string | null,
+) {
+  if (midiaUrl) {
+    const legenda = comConfirmacao(mensagem || '');
+    if (legenda) validarPlaceholdersResolvidos(legenda);
+    return await enviarMidiaWhatsApp(telefone, midiaUrl, legenda, undefined, midiaFileName || undefined);
+  }
+  return await enviarMensagemEvolution(telefone, mensagem);
 }
 
 function gerarMensagemBoasVindas(nome: string, tipoConversao: string) {
@@ -1123,12 +1140,12 @@ serve(async (req) => {
     }
 
     if (action === 'mensagem_direta' || action === 'mensagem_livre') {
-      const { telefone, mensagem, nome, memberId } = body;
+      const { telefone, mensagem, nome, memberId, midiaUrl, midiaFileName } = body;
       if (!telefone || !mensagem) {
         throw new Error('Telefone e mensagem são obrigatórios');
       }
 
-      await enviarMensagemEvolution(telefone, mensagem);
+      await enviarMensagemComAnexoEvolution(telefone, mensagem, midiaUrl, midiaFileName);
 
       // Registra no histórico/auditoria (comunicacao_envios)
       try {
