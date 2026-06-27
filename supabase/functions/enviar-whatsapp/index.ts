@@ -244,6 +244,22 @@ async function enviarImagemComFallbackTexto(telefone: string, imageUrl: string, 
   }
 }
 
+// Envio de mensagem manual com anexo opcional (imagem, vídeo ou documento).
+// Quando houver mídia, a mensagem digitada acompanha o arquivo como legenda.
+async function enviarMensagemComAnexoEvolution(
+  telefone: string,
+  mensagem: string,
+  midiaUrl?: string | null,
+  midiaFileName?: string | null,
+) {
+  if (midiaUrl) {
+    const legenda = comConfirmacao(mensagem || '');
+    if (legenda) validarPlaceholdersResolvidos(legenda);
+    return await enviarMidiaWhatsApp(telefone, midiaUrl, legenda, undefined, midiaFileName || undefined);
+  }
+  return await enviarMensagemEvolution(telefone, mensagem);
+}
+
 function gerarMensagemBoasVindas(nome: string, tipoConversao: string) {
   const primeiroNome = nome.split(' ')[0];
   const versiculos = tipoConversao === 'reconciliacao' ? versiculosReconciliacao : versiculosBoasVindas;
