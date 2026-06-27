@@ -268,7 +268,7 @@ const MembrosTab = () => {
   });
 
   const sendWhatsappMutation = useMutation({
-    mutationFn: async ({ member, mensagem }: { member: Member; mensagem: string }) => {
+    mutationFn: async ({ member, mensagem, anexo }: { member: Member; mensagem: string; anexo?: WhatsappAnexo | null }) => {
       if (!member.whatsapp) throw new Error("Membro não possui WhatsApp cadastrado");
       if (!mensagem.trim()) throw new Error("Digite uma mensagem");
       
@@ -279,6 +279,8 @@ const MembrosTab = () => {
           mensagem,
           nome: member.full_name,
           memberId: member.id,
+          midiaUrl: anexo?.url || null,
+          midiaFileName: anexo?.fileName || null,
         },
       });
       
@@ -290,6 +292,7 @@ const MembrosTab = () => {
       toast({ title: "Mensagem WhatsApp enviada com sucesso!" });
       setWhatsappMember(null);
       setWhatsappMessage("");
+      setWhatsappAnexo(null);
     },
     onError: (err: any) => {
       toast({ 
@@ -300,7 +303,7 @@ const MembrosTab = () => {
     },
   });
 
-  const sendBulkWhatsapp = async (mensagem: string) => {
+  const sendBulkWhatsapp = async (mensagem: string, anexo?: WhatsappAnexo | null) => {
     const membersWithWhatsapp = filteredMembers.filter(m => m.whatsapp);
     if (membersWithWhatsapp.length === 0) {
       toast({ variant: "destructive", title: "Nenhum membro com WhatsApp na lista filtrada" });
@@ -316,7 +319,7 @@ const MembrosTab = () => {
       setBulkProgress({ sent: i, total: membersWithWhatsapp.length, current: member.full_name });
       try {
         const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada, nome: member.full_name, memberId: member.id },
+          body: { action: "mensagem_direta", telefone: member.whatsapp, mensagem: msgPersonalizada, nome: member.full_name, memberId: member.id, midiaUrl: anexo?.url || null, midiaFileName: anexo?.fileName || null },
         });
         if (error || !data?.success) { erros++; } else { enviados++; }
       } catch { erros++; }
@@ -329,6 +332,7 @@ const MembrosTab = () => {
     setBulkProgress({ sent: 0, total: 0, current: "" });
     setWhatsappBulkMode(false);
     setWhatsappMessage("");
+    setWhatsappAnexo(null);
     toast({
       title: `Envio concluído: ${enviados} enviadas, ${erros} erros`,
       description: `Total: ${membersWithWhatsapp.length} membros`,
