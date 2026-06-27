@@ -658,9 +658,10 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
               rows={6}
               placeholder="Escolha um modelo, gere com IA ou digite a mensagem..."
             />
+            <WhatsappAnexoUpload value={whatsAnexo} onChange={setWhatsAnexo} disabled={sendingWhats} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); }} disabled={sendingWhats}>
+            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); setWhatsAnexo(null); }} disabled={sendingWhats}>
               Cancelar
             </Button>
             <Button onClick={enviarWhats} disabled={sendingWhats || !whatsMsg.trim()} className="bg-green-600 hover:bg-green-700">
