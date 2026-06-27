@@ -84,6 +84,7 @@ export default function WhatsappConfiguracaoPage() {
     "🔧 Teste de conexão Gileade Church.\n\nSe você recebeu esta mensagem, a integração está funcionando! ✅",
   );
   const [testando, setTestando] = useState(false);
+  const [testAnexo, setTestAnexo] = useState<WhatsappAnexo | null>(null);
   const [historico, setHistorico] = useState<
     { ok: boolean; at: string; message: string }[]
   >([]);
