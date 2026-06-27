@@ -60,6 +60,7 @@ import { formatEventoPeriodo, parseLocalDate } from "@/lib/date-utils";
 import { exportRowsToExcel, exportRowsToPDF } from "@/lib/export";
 import { ConverterMembroDialog, type InscricaoConsolidacao } from "./ConverterMembroDialog";
 import { NovoConvertidoFormDialog } from "./NovoConvertidoFormDialog";
+import WhatsappAnexoUpload, { type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
 
 interface ConsolidacaoEventosTabProps {
   tipo: "conversao" | "reconciliacao";
@@ -156,6 +157,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   const [isDeleting, setIsDeleting] = useState(false);
   const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
   const [whatsMsg, setWhatsMsg] = useState("");
+  const [whatsAnexo, setWhatsAnexo] = useState<WhatsappAnexo | null>(null);
   const [sendingWhats, setSendingWhats] = useState(false);
   const [gerandoIA, setGerandoIA] = useState(false);
 
@@ -326,13 +328,14 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     setSendingWhats(true);
     try {
       const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim() },
+        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim(), midiaUrl: whatsAnexo?.url || null, midiaFileName: whatsAnexo?.fileName || null },
       });
       if (error) throw error;
       if (data && data.success === false) throw new Error(data.error || "Falha no envio");
       toast({ title: "Mensagem enviada!", description: `Enviada para ${whatsTarget.nome}.` });
       setWhatsTarget(null);
       setWhatsMsg("");
+      setWhatsAnexo(null);
     } catch (err: any) {
       toast({ variant: "destructive", title: "Erro ao enviar", description: err.message });
     } finally {
