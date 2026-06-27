@@ -4,6 +4,7 @@ import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
 import {
   enviarTextoWhatsApp,
   enviarImagemWhatsApp,
+  enviarMidiaWhatsApp,
   WASENDER_API_URL,
   WASENDER_API_KEY,
 } from "../_shared/whatsapp-sender.ts";
