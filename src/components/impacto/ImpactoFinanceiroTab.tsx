@@ -1055,6 +1055,13 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                   <Table className="min-w-max">
                     <TableHeader className="sticky top-0 z-10 bg-card">
                        <TableRow>
+                         <TableHead className="w-12">
+                           <Checkbox
+                             checked={inscricoesFiltradas.length > 0 && selectedIds.length === inscricoesFiltradas.length}
+                             onCheckedChange={(v) => toggleSelectAll(!!v)}
+                             aria-label="Selecionar todos"
+                           />
+                         </TableHead>
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={columnUniqueValues["tipo"] || []} selected={columnFilters["tipo"] || new Set(columnUniqueValues["tipo"] || [])} onChange={(s) => setColumnFilter("tipo", s)} /></TableHead>}
                          {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={columnUniqueValues["genero"] || []} selected={columnFilters["genero"] || new Set(columnUniqueValues["genero"] || [])} onChange={(s) => setColumnFilter("genero", s)} /></TableHead>}
