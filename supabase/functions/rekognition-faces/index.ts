@@ -9,6 +9,7 @@ const corsHeaders = {
 const AWS_ACCESS_KEY_ID = (Deno.env.get("AWS_ACCESS_KEY_ID") ?? "").trim();
 const AWS_SECRET_ACCESS_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") ?? "").trim();
 const AWS_REGION = (Deno.env.get("AWS_REGION") || "us-east-1").trim();
+const AWS_SESSION_TOKEN = (Deno.env.get("AWS_SESSION_TOKEN") ?? "").trim();
 const COLLECTION_ID = "gileade-faces";
 
 // Helper to convert ArrayBuffer to base64 without stack overflow
@@ -143,6 +144,12 @@ async function callRekognition(action: string, payload: object) {
     "content-type": "application/x-amz-json-1.1",
     "x-amz-target": `RekognitionService.${action}`,
   };
+
+  // When using temporary STS credentials, the session token MUST be part of
+  // the signed request, otherwise AWS rejects it with an invalid signature error.
+  if (AWS_SESSION_TOKEN) {
+    headers["x-amz-security-token"] = AWS_SESSION_TOKEN;
+  }
   
   const signedHeaders = await createAWSSignature(
     "POST",
