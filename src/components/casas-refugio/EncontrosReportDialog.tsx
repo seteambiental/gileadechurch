@@ -363,8 +363,13 @@ export const EncontrosReportDialog = ({
     if (supervisorFilter !== "all") {
       filtered = filtered.filter((c) => c.supervisor?.full_name === supervisorFilter);
     }
+    if (ativaFilter === "ativas") {
+      filtered = filtered.filter((c) => c.ativo !== false);
+    } else if (ativaFilter === "inativas") {
+      filtered = filtered.filter((c) => c.ativo === false);
+    }
     return filtered;
-  }, [allCasas, condominioFilter, supervisorFilter]);
+  }, [allCasas, condominioFilter, supervisorFilter, ativaFilter]);
 
   // Final filtered casa IDs for query
   const filteredCasaIds = useMemo(() => {
