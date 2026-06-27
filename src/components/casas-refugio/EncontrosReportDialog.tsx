@@ -930,6 +930,31 @@ export const EncontrosReportDialog = ({
 
           {/* Status + Column Visibility + Date Range */}
           <div className="flex flex-wrap items-end gap-4">
+            {/* Atividade filter (ativas / inativas / todas) */}
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Home className="w-3 h-3" /> Atividade
+              </label>
+              <div className="flex rounded-md border border-border overflow-hidden">
+                {([
+                  { key: "ativas", label: "Ativas" },
+                  { key: "inativas", label: "Inativas" },
+                  { key: "todas", label: "Todas" },
+                ] as const).map((opt) => (
+                  <Button
+                    key={opt.key}
+                    type="button"
+                    size="sm"
+                    variant={ativaFilter === opt.key ? "default" : "ghost"}
+                    className="rounded-none h-9"
+                    onClick={() => setAtivaFilter(opt.key)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             {/* Status filter */}
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground flex items-center gap-1">
