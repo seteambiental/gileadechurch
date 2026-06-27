@@ -938,6 +938,7 @@ const MembrosTab = () => {
         if (!open && !bulkSending) {
           setWhatsappBulkMode(false);
           setWhatsappMessage("");
+          setWhatsappAnexo(null);
         }
       }}>
         <AlertDialogContent className="bg-card border-border">
@@ -975,6 +976,7 @@ const MembrosTab = () => {
                   whatsapp: m.whatsapp,
                 }))}
               />
+              <WhatsappAnexoUpload value={whatsappAnexo} onChange={setWhatsappAnexo} disabled={bulkSending} />
             </div>
           )}
           <AlertDialogFooter>
@@ -983,7 +985,7 @@ const MembrosTab = () => {
               <AlertDialogAction
                 className="bg-green-600 text-white hover:bg-green-700"
                 disabled={!whatsappMessage.trim()}
-                onClick={() => sendBulkWhatsapp(whatsappMessage)}
+                onClick={() => sendBulkWhatsapp(whatsappMessage, whatsappAnexo)}
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 Enviar para todos
