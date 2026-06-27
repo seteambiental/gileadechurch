@@ -299,6 +299,7 @@ export const EncontrosReportDialog = ({
           dias,
           frequencia,
           data_inicio_cr,
+          ativo,
           supervisor:members!casas_refugio_supervisor_id_fkey(full_name),
           lider:members!casas_refugio_lider_id_fkey(full_name),
           lider_esposa:members!casas_refugio_lider_esposa_id_fkey(full_name)
