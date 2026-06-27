@@ -73,6 +73,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   const [dataPrevisao, setDataPrevisao] = useState("");
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [emergenciaOpen, setEmergenciaOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sortRefDir, setSortRefDir] = useState<"asc" | "desc" | null>(null);
   const toggleSortRef = () => {
     setSortRefDir((prev) => (prev === null ? "asc" : prev === "asc" ? "desc" : null));
