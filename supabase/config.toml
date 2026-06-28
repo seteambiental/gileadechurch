@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.wasender-webhook]
 verify_jwt = false
+
+[functions.contagem-culto]
+verify_jwt = false
