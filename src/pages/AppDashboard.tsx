@@ -120,6 +120,7 @@ const GESTAO_COLORS: Record<string, string> = {
   "Indicadores": "#b45309",
   "Auditoria WhatsApp": "#0e7490",
   "Conexão WhatsApp": "#047857",
+  "Contagem de Cultos": "#0d9488",
 };
 
 // Outros módulos - serão filtrados por permissão
@@ -135,6 +136,7 @@ const allOtherModules = [
   { icon: Shield, title: "Contingência", description: "Backups, incidentes e recuperação", path: "/contingencia", adminOnly: true, moduleKey: "contingencia" },
   { icon: MessageSquare, title: "Auditoria WhatsApp", description: "Histórico de envios", path: "/comunicacao/auditoria", adminOnly: true, moduleKey: "cadastros" },
   { icon: Settings2, title: "Conexão WhatsApp", description: "Provedor, fila e teste", path: "/comunicacao/whatsapp", adminOnly: true, moduleKey: "cadastros" },
+  { icon: Users, title: "Contagem de Cultos", description: "Contador ao vivo para o telão", path: "/contagem-cultos", adminOnly: true, moduleKey: "cadastros" },
 ];
 
 const AppDashboard = () => {
