@@ -1816,6 +1816,51 @@ export type Database = {
           },
         ]
       }
+      contagem_cultos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          data: string
+          entradas: number
+          id: string
+          meta: number | null
+          saidas: number
+          tipo_culto: string
+          titulo: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          entradas?: number
+          id?: string
+          meta?: number | null
+          saidas?: number
+          tipo_culto?: string
+          titulo?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          entradas?: number
+          id?: string
+          meta?: number | null
+          saidas?: number
+          tipo_culto?: string
+          titulo?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contingencia_acoes: {
         Row: {
           created_at: string
