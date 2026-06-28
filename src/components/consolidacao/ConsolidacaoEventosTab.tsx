@@ -281,7 +281,7 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   }, [rows, search, fNome, fOrigem, fTelefone, fEmail, fGenero, fNasc, columnOptions]);
 
   const Icone = tipo === "conversao" ? Heart : HeartHandshake;
-  const titulo = tipo === "conversao" ? "Convertidos em Eventos" : "Reconciliações";
+  const titulo = tipo === "conversao" ? "Novos Convertidos" : "Reconciliações";
 
   const whatsappHref = (telefone?: string | null) => {
     const num = onlyDigits(telefone);
