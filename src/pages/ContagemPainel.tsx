@@ -68,7 +68,7 @@ const ContagemPainel = () => {
   const pessoas = Math.max(0, (sessao.entradas ?? 0) - (sessao.saidas ?? 0));
 
   return (
-    <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <CounterDisplay pessoas={pessoas} titulo={sessao.titulo} />
     </div>
   );
