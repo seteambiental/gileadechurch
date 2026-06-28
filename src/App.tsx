@@ -38,6 +38,8 @@ import InscricaoJiuJitsu from "./pages/InscricaoJiuJitsu";
 import ContingenciaPage from "./pages/ContingenciaPage";
 import ComunicacaoAuditoriaPage from "./pages/ComunicacaoAuditoriaPage";
 import WhatsappConfiguracaoPage from "./pages/WhatsappConfiguracaoPage";
+import ContagemCultosPage from "./pages/ContagemCultosPage";
+import ContagemPainel from "./pages/ContagemPainel";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +84,8 @@ const App = () => (
             <Route path="/contingencia" element={<ContingenciaPage />} />
             <Route path="/comunicacao/auditoria" element={<ComunicacaoAuditoriaPage />} />
             <Route path="/comunicacao/whatsapp" element={<WhatsappConfiguracaoPage />} />
+            <Route path="/contagem-cultos" element={<ContagemCultosPage />} />
+            <Route path="/contagem/painel" element={<ContagemPainel />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
