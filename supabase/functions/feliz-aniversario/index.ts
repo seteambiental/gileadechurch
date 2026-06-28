@@ -334,6 +334,57 @@ serve(async (req) => {
         await sleep(intervaloAntiSpam());
       }
 
+      // ===== Aviso ao administrador (contato principal da igreja) =====
+      let adminNotificado = false;
+      let adminErro: string | null = null;
+      try {
+        const todosNomes = [
+          ...aniversariantes.map((m) => m.full_name),
+          ...aniversariantesConvertidos.map((c) => c.full_name),
+          ...aniversariantesEventos.map((i) => i.nome),
+        ].filter(Boolean) as string[];
+
+        if (todosNomes.length > 0) {
+          const { data: igreja } = await supabase
+            .from('igreja_config')
+            .select('celular, telefone, nome_fantasia')
+            .limit(1)
+            .maybeSingle();
+
+          const telAdmin = (igreja?.celular || igreja?.telefone || '').replace(/\D/g, '');
+
+          if (telAdmin && telAdmin.length >= 10) {
+            const lista = todosNomes.map((n) => `• ${n}`).join('\n');
+            const dataBR = `${diaAtual}/${mesAtual}/${hoje.getFullYear()}`;
+            const msgAdmin = [
+              `🎂 *Aniversariantes de hoje (${dataBR})*`,
+              ``,
+              lista,
+              ``,
+              `Total: ${todosNomes.length} aniversariante(s).`,
+              `As mensagens de felicitações foram disparadas automaticamente.`,
+              ``,
+              `_${igreja?.nome_fantasia || 'Gileade Church'}_`,
+            ].join('\n');
+
+            try {
+              await enviarMensagemEvolution(telAdmin, msgAdmin);
+              adminNotificado = true;
+              console.log(`✅ Resumo enviado ao administrador (${telAdmin})`);
+            } catch (err) {
+              adminErro = err instanceof Error ? err.message : String(err);
+              console.error('❌ Falha ao avisar administrador:', adminErro);
+            }
+          } else {
+            adminErro = 'Telefone principal da igreja não configurado';
+            console.warn(adminErro);
+          }
+        }
+      } catch (err) {
+        adminErro = err instanceof Error ? err.message : String(err);
+        console.error('Erro no aviso ao administrador:', adminErro);
+      }
+
       return new Response(JSON.stringify({
         success: true,
         message: `Mensagens de aniversário: ${enviados} enviadas, ${ignorados} já enviadas antes, ${erros} falhas`,
@@ -343,6 +394,8 @@ serve(async (req) => {
         erros,
         total: aniversariantes.length + aniversariantesConvertidos.length + aniversariantesEventos.length,
         resultados,
+        adminNotificado,
+        adminErro,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
