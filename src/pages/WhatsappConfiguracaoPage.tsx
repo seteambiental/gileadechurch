@@ -55,9 +55,9 @@ interface FilaConfig {
 }
 
 const DEFAULTS: FilaConfig = {
-  batch_size: 6,
-  delay_min_seconds: 5,
-  delay_max_seconds: 15,
+  batch_size: 1,
+  delay_min_seconds: 15,
+  delay_max_seconds: 30,
   max_tentativas: 3,
   backoff_base_minutes: 1,
   backoff_factor: 5,
@@ -158,8 +158,8 @@ export default function WhatsappConfiguracaoPage() {
         throw new Error("Delays devem estar entre 1 e 120 segundos");
       if (cfg.delay_max_seconds < cfg.delay_min_seconds)
         throw new Error("Delay máximo não pode ser menor que o mínimo");
-      if (cfg.batch_size < 1 || cfg.batch_size > 50)
-        throw new Error("Lote deve estar entre 1 e 50");
+      if (cfg.batch_size < 1 || cfg.batch_size > 10)
+        throw new Error("Lote deve estar entre 1 e 10");
       if (cfg.max_tentativas < 1 || cfg.max_tentativas > 10)
         throw new Error("Tentativas: 1 a 10");
 
@@ -234,7 +234,7 @@ export default function WhatsappConfiguracaoPage() {
       );
       if (error) throw error;
       toast.success(
-        `Processados: ${data?.processados ?? 0} (enviados: ${data?.enviados ?? 0}, erros: ${data?.erros_reagendados ?? 0}, descartados: ${data?.descartados ?? 0})`,
+        `Processados: ${data?.processados ?? 0} (aceitos pela API: ${data?.enviados ?? 0}, erros: ${data?.erros_reagendados ?? 0}, descartados: ${data?.descartados ?? 0})`,
       );
     } catch (err: any) {
       toast.error(err?.message || "Erro ao processar fila");
@@ -404,10 +404,10 @@ export default function WhatsappConfiguracaoPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <NumberField
                 label="Lote por execução"
-                hint="Quantas mensagens enviar por ciclo (1–50)"
+                hint="Quantas mensagens enviar por ciclo (1–10)"
                 value={cfg.batch_size}
                 min={1}
-                max={50}
+                max={10}
                 onChange={(v) => setCfg({ ...cfg, batch_size: v })}
               />
               <NumberField
@@ -461,6 +461,9 @@ export default function WhatsappConfiguracaoPage() {
                   {cfg.delay_min_seconds}–{cfg.delay_max_seconds}s
                 </strong>{" "}
                 entre cada uma.
+              </p>
+              <p className="text-muted-foreground">
+                “Aceito pela API” não significa entregue: a entrega aparece como Entregue/Lido quando o WhatsApp confirmar.
               </p>
               <p className="text-muted-foreground">
                 Em caso de falha, as próximas tentativas acontecem em:{" "}
