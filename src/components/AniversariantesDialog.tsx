@@ -43,7 +43,6 @@ const versiculosAniversario = [
 ];
 
 const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProps) => {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [envioAlvo, setEnvioAlvo] = useState<Aniversariante | null>(null);
   const [mensagemEnvio, setMensagemEnvio] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -195,18 +194,6 @@ _Igreja Gileade_ 💙🙏`;
       .replace(/{NOME}/g, primeiroNome)
       .replace(/{VERSICULO}/g, versiculoObj.versiculo)
       .replace(/{REFERENCIA}/g, versiculoObj.referencia);
-  };
-
-  const handleCopiar = async (aniversariante: Aniversariante) => {
-    const mensagem = gerarMensagem(aniversariante);
-    try {
-      await navigator.clipboard.writeText(mensagem);
-      setCopiedId(aniversariante.id);
-      toast.success("Mensagem copiada!");
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      toast.error("Erro ao copiar");
-    }
   };
 
   const abrirEnvio = (aniversariante: Aniversariante) => {
