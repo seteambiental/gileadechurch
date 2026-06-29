@@ -29,15 +29,35 @@ function extrairMessageId(data: any) {
 
 async function atualizarEntrega(supabase: any, data: any) {
   const statusRaw = data?.status ?? data?.update?.status ?? data?.data?.status ?? "";
-  const statusCode = typeof statusRaw === "number" ? statusRaw : Number.isFinite(Number(statusRaw)) ? Number(statusRaw) : null;
+  // IMPORTANTE: só tratar como código numérico quando realmente houver um número.
+  // Antes, um status vazio ("") era convertido por Number("") => 0, e o código 0
+  // está mapeado como "failed", marcando entregas válidas como erro.
+  const statusStr = typeof statusRaw === "string" ? statusRaw.trim() : statusRaw;
+  const statusCode =
+    typeof statusStr === "number" && Number.isFinite(statusStr)
+      ? statusStr
+      : typeof statusStr === "string" && /^\d+$/.test(statusStr)
+        ? Number(statusStr)
+        : null;
   const mapped = statusCode !== null
     ? statusEntregaPorCodigo(statusCode)
-    : statusEntregaPorTexto(String(statusRaw || ""));
+    : statusEntregaPorTexto(String(statusStr || ""));
   const messageId = extrairMessageId(data);
 
-  console.log(`Status de mensagem atualizado: ${mapped.providerStatus || statusRaw || "unknown"} (msg ${messageId})`);
+  console.log(`Status de mensagem atualizado: ${mapped.providerStatus || statusStr || "unknown"} (msg ${messageId})`);
 
   if (!messageId) return;
+
+  // Não rebaixar um status já avançado: se a mensagem já está entregue/lida,
+  // ignorar atualizações neutras (aceito_provedor) que possam chegar fora de ordem.
+  if (mapped.status === "aceito_provedor") {
+    const { data: atual } = await supabase
+      .from("comunicacao_envios")
+      .select("status")
+      .eq("provider_message_id", messageId)
+      .maybeSingle();
+    if (atual && ["entregue", "lido"].includes(atual.status)) return;
+  }
 
   const patch: Record<string, unknown> = {
     status: mapped.status,
