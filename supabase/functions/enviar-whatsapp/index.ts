@@ -5,6 +5,7 @@ import {
   enviarTextoWhatsApp,
   enviarImagemWhatsApp,
   enviarMidiaWhatsApp,
+  normalizarWasenderEnvio,
   WASENDER_API_URL,
   WASENDER_API_KEY,
 } from "../_shared/whatsapp-sender.ts";
@@ -1145,7 +1146,8 @@ serve(async (req) => {
         throw new Error('Telefone e mensagem são obrigatórios');
       }
 
-      await enviarMensagemComAnexoEvolution(telefone, mensagem, midiaUrl, midiaFileName);
+      const envioResult = await enviarMensagemComAnexoEvolution(telefone, mensagem, midiaUrl, midiaFileName);
+      const recibo = normalizarWasenderEnvio(envioResult);
 
       // Registra no histórico/auditoria (comunicacao_envios)
       try {
@@ -1155,8 +1157,12 @@ serve(async (req) => {
           destinatario_nome: nome || null,
           destinatario_member_id: memberId || null,
           conteudo: comConfirmacao(mensagem),
-          status: 'enviado',
+          status: 'aceito_provedor',
           confirmacao_solicitada: pedirConfirmacaoGlobal,
+          provider_message_id: recibo.msgId,
+          provider_status: recibo.providerStatus,
+          provider_status_code: recibo.providerStatusCode,
+          provider_response: recibo.raw,
         });
       } catch (e) {
         console.warn('Falha ao registrar envio direto em comunicacao_envios:', e);
@@ -1164,7 +1170,9 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         success: true, 
-        message: 'Mensagem enviada com sucesso',
+        message: 'Mensagem aceita pelo provedor. A entrega será confirmada pelo status do WhatsApp.',
+        provider_status: recibo.providerStatus,
+        provider_message_id: recibo.msgId,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
