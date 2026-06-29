@@ -1,0 +1,1 @@
+CREATE POLICY "Admin/pastores podem atualizar envios" ON public.comunicacao_envios FOR UPDATE USING (has_full_access()) WITH CHECK (has_full_access());
