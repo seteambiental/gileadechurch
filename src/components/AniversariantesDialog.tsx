@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
-import { Copy, Cake, Loader2, Check } from "lucide-react";
+import { Copy, Cake, Loader2, Check, Send, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
@@ -42,7 +43,10 @@ const versiculosAniversario = [
 ];
 
 const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProps) => {
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [envioAlvo, setEnvioAlvo] = useState<Aniversariante | null>(null);
+  const [mensagemEnvio, setMensagemEnvio] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [copiadoEnvio, setCopiadoEnvio] = useState(false);
 
   // Buscar configuração da mensagem
   const { data: homepageConfig } = useQuery({
@@ -192,15 +196,54 @@ _Igreja Gileade_ 💙🙏`;
       .replace(/{REFERENCIA}/g, versiculoObj.referencia);
   };
 
-  const handleCopiar = async (aniversariante: Aniversariante) => {
-    const mensagem = gerarMensagem(aniversariante);
+  const abrirEnvio = (aniversariante: Aniversariante) => {
+    setEnvioAlvo(aniversariante);
+    setMensagemEnvio(gerarMensagem(aniversariante));
+    setCopiadoEnvio(false);
+  };
+
+  const handleCopiarEnvio = async () => {
     try {
-      await navigator.clipboard.writeText(mensagem);
-      setCopiedId(aniversariante.id);
+      await navigator.clipboard.writeText(mensagemEnvio);
+      setCopiadoEnvio(true);
       toast.success("Mensagem copiada!");
-      setTimeout(() => setCopiedId(null), 2000);
+      setTimeout(() => setCopiadoEnvio(false), 2000);
     } catch {
       toast.error("Erro ao copiar");
+    }
+  };
+
+  const handleEnviar = async () => {
+    if (!envioAlvo) return;
+    const tel = (envioAlvo.whatsapp || "").replace(/\D/g, "");
+    if (!tel || tel.length < 10) {
+      toast.error("Este aniversariante não tem um número de WhatsApp válido");
+      return;
+    }
+    if (!mensagemEnvio.trim()) {
+      toast.error("A mensagem não pode estar vazia");
+      return;
+    }
+    setEnviando(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+        body: {
+          action: "mensagem_direta",
+          telefone: tel,
+          mensagem: mensagemEnvio,
+          nome: envioAlvo.full_name,
+          memberId: envioAlvo.id.startsWith("m-") ? envioAlvo.id.slice(2) : null,
+        },
+      });
+      if (error) throw error;
+      if (data && data.success === false) throw new Error(data.error || "Falha no envio");
+      toast.success("Mensagem enviada! A entrega será confirmada pelo status do WhatsApp.");
+      setEnvioAlvo(null);
+    } catch (err: any) {
+      console.error("[aniversario] falha ao enviar:", err);
+      toast.error(err?.message || "Erro ao enviar mensagem");
+    } finally {
+      setEnviando(false);
     }
   };
 
@@ -260,20 +303,11 @@ _Igreja Gileade_ 💙🙏`;
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleCopiar(aniv)}
+                    onClick={() => abrirEnvio(aniv)}
                     className="gap-2"
                   >
-                    {copiedId === aniv.id ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        Copiado
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        Copiar Mensagem
-                      </>
-                    )}
+                    <MessageCircle className="w-4 h-4" />
+                    Enviar Mensagem
                   </Button>
                 </div>
               ))}
@@ -282,9 +316,55 @@ _Igreja Gileade_ 💙🙏`;
         )}
 
         <div className="text-xs text-muted-foreground text-center pt-4 border-t">
-          Copie a mensagem e envie via WhatsApp
+          Envio automático diário às 08:00 (intercalado). Use "Enviar Mensagem" para envio manual.
         </div>
       </DialogContent>
+
+      {/* Janela de envio/edição da mensagem */}
+      <Dialog open={!!envioAlvo} onOpenChange={(o) => !o && setEnvioAlvo(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cake className="w-5 h-5 text-secondary" />
+              Enviar para {envioAlvo?.full_name.split(" ")[0]}
+            </DialogTitle>
+          </DialogHeader>
+
+          {envioAlvo && (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                {envioAlvo.whatsapp ? (
+                  <span>WhatsApp: <span className="font-medium text-foreground">{envioAlvo.whatsapp}</span></span>
+                ) : (
+                  <span className="text-destructive">Sem número de WhatsApp cadastrado</span>
+                )}
+              </div>
+
+              <Textarea
+                value={mensagemEnvio}
+                onChange={(e) => setMensagemEnvio(e.target.value)}
+                rows={14}
+                className="resize-none text-sm"
+              />
+
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <Button variant="outline" onClick={handleCopiarEnvio} className="gap-2">
+                  {copiadoEnvio ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copiadoEnvio ? "Copiado" : "Copiar"}
+                </Button>
+                <Button
+                  onClick={handleEnviar}
+                  disabled={enviando || !envioAlvo.whatsapp}
+                  className="gap-2"
+                >
+                  {enviando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  {enviando ? "Enviando..." : "Enviar via WhatsApp"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
