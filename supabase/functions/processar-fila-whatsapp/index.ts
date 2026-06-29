@@ -130,7 +130,7 @@ async function atualizarStatusMensagensRecentes(supabase: any) {
   const desde = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: pendentes, error } = await supabase
     .from("comunicacao_envios")
-    .select("id, fila_id, provider_message_id")
+    .select("id, fila_id, provider_message_id, provider_response")
     .not("provider_message_id", "is", null)
     .in("status", ["aceito_provedor", "enviado"])
     .gte("created_at", desde)
@@ -145,7 +145,32 @@ async function atualizarStatusMensagensRecentes(supabase: any) {
   let atualizadas = 0;
   for (const envio of pendentes || []) {
     try {
-      const recibo = await consultarMensagemWasender(String(envio.provider_message_id));
+      const possiveisIds = Array.from(new Set([
+        envio.provider_message_id,
+        envio.provider_response?.data?.id,
+        envio.provider_response?.data?.key?.id,
+        envio.provider_response?.data?.result?.key?.id,
+        envio.provider_response?.result?.key?.id,
+      ]
+        .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
+        .map((id) => String(id))));
+
+      let recibo = null;
+      const falhas: string[] = [];
+      for (const idConsulta of possiveisIds) {
+        try {
+          recibo = await consultarMensagemWasender(idConsulta);
+          break;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          falhas.push(`${idConsulta}: ${msg}`);
+        }
+      }
+
+      if (!recibo) {
+        throw new Error(falhas.join(" | ") || "Nenhum ID de mensagem disponível para consulta");
+      }
+
       const mapped = recibo.providerStatusCode !== null
         ? statusEntregaPorCodigo(recibo.providerStatusCode)
         : statusEntregaPorTexto(recibo.providerStatus);
