@@ -61,15 +61,15 @@ async function buscarEnviosPorMessageId(supabase: any, messageId: string) {
 }
 
 async function atualizarEntrega(supabase: any, data: any) {
-  const statusRaw =
-    data?.success === false ? "failed" :
-    data?.status ??
-    data?.update?.status ??
-    data?.data?.status ??
-    data?.result?.status ??
-    data?.result?.ack ??
-    data?.result?.message?.status ??
-    "";
+  const statusRaw = data?.success === false
+    ? "failed"
+    : data?.status ??
+      data?.update?.status ??
+      data?.data?.status ??
+      data?.result?.status ??
+      data?.result?.ack ??
+      data?.result?.message?.status ??
+      "";
   // IMPORTANTE: só tratar como código numérico quando realmente houver um número.
   // Antes, um status vazio ("") era convertido por Number("") => 0, e o código 0
   // está mapeado como "failed", marcando entregas válidas como erro.
