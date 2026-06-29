@@ -17,9 +17,9 @@ const corsHeaders = {
 
 // Padrões caso a tabela whatsapp_config esteja indisponível
 const DEFAULTS = {
-  batch_size: 6,
-  delay_min_seconds: 5,
-  delay_max_seconds: 15,
+  batch_size: 1,
+  delay_min_seconds: 15,
+  delay_max_seconds: 30,
   max_tentativas: 3,
   backoff_base_minutes: 1,
   backoff_factor: 5,
