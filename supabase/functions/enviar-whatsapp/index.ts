@@ -1294,7 +1294,7 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({
         success: true,
-        message: `${enfileirados} envio(s) na fila. ${duplicados} duplicado(s) ignorado(s). O processamento ocorre automaticamente com pausa de 5 a 15 segundos entre mensagens.`,
+        message: `${enfileirados} envio(s) na fila. ${duplicados} duplicado(s) ignorado(s). O processamento ocorre automaticamente com pausa de 15 a 30 segundos entre mensagens.`,
         enfileirados,
         duplicados,
         total: (membros || []).length,
@@ -1433,7 +1433,7 @@ serve(async (req) => {
         enfileirados,
         duplicados,
         total: destinatarios?.length || 0,
-        message: `${enfileirados} mensagem(ns) na fila. ${duplicados} duplicado(s) ignorado(s). O envio é gradual (5–15s entre mensagens).`,
+        message: `${enfileirados} mensagem(ns) na fila. ${duplicados} duplicado(s) ignorado(s). O envio é gradual (15–30s entre mensagens).`,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
