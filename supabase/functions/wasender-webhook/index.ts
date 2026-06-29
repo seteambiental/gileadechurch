@@ -19,16 +19,57 @@ function extrairMessageId(data: any) {
     data?.messageId ??
     data?.id ??
     data?.key?.id ??
+    data?.update?.key?.id ??
+    data?.data?.key?.id ??
+    data?.result?.msgId ??
+    data?.result?.messageId ??
+    data?.result?.id ??
+    data?.result?.key?.id ??
     msg?.msgId ??
     msg?.messageId ??
     msg?.id ??
     msg?.key?.id ??
+    msg?.message?.key?.id ??
     "";
   return raw === null || raw === undefined ? "" : String(raw);
 }
 
+async function buscarEnviosPorMessageId(supabase: any, messageId: string) {
+  const { data: porProvider, error: providerErr } = await supabase
+    .from("comunicacao_envios")
+    .select("id, fila_id")
+    .eq("provider_message_id", messageId);
+
+  if (providerErr) {
+    console.warn("Falha ao buscar envio pelo provider_message_id:", providerErr.message);
+    return [];
+  }
+
+  if (porProvider && porProvider.length > 0) return porProvider;
+
+  const { data: porChave, error: chaveErr } = await supabase
+    .from("comunicacao_envios")
+    .select("id, fila_id")
+    .or(`provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`);
+
+  if (chaveErr) {
+    console.warn("Falha ao buscar envio pelo id interno da mensagem:", chaveErr.message);
+    return [];
+  }
+
+  return porChave || [];
+}
+
 async function atualizarEntrega(supabase: any, data: any) {
-  const statusRaw = data?.status ?? data?.update?.status ?? data?.data?.status ?? "";
+  const statusRaw = data?.success === false
+    ? "failed"
+    : data?.status ??
+      data?.update?.status ??
+      data?.data?.status ??
+      data?.result?.status ??
+      data?.result?.ack ??
+      data?.result?.message?.status ??
+      "";
   // IMPORTANTE: só tratar como código numérico quando realmente houver um número.
   // Antes, um status vazio ("") era convertido por Number("") => 0, e o código 0
   // está mapeado como "failed", marcando entregas válidas como erro.
@@ -54,9 +95,9 @@ async function atualizarEntrega(supabase: any, data: any) {
     const { data: atual } = await supabase
       .from("comunicacao_envios")
       .select("status")
-      .eq("provider_message_id", messageId)
-      .maybeSingle();
-    if (atual && ["entregue", "lido"].includes(atual.status)) return;
+      .or(`provider_message_id.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`)
+      .limit(1);
+    if (atual?.[0] && ["entregue", "lido"].includes(atual[0].status)) return;
   }
 
   const patch: Record<string, unknown> = {
@@ -72,18 +113,24 @@ async function atualizarEntrega(supabase: any, data: any) {
   }
   if (mapped.status === "erro") patch.erro_mensagem = "Provedor informou falha na entrega";
 
-  const { data: atualizados, error: updErr } = await supabase
+  const envios = await buscarEnviosPorMessageId(supabase, messageId);
+  if (envios.length === 0) {
+    console.warn(`Nenhum envio encontrado para mensagem ${messageId}`);
+    return;
+  }
+
+  const ids = envios.map((envio: any) => envio.id);
+  const { error: updErr } = await supabase
     .from("comunicacao_envios")
     .update(patch)
-    .eq("provider_message_id", messageId)
-    .select("id, fila_id");
+    .in("id", ids);
 
   if (updErr) {
     console.warn("Falha ao atualizar status em comunicacao_envios:", updErr.message);
     return;
   }
 
-  for (const envio of atualizados || []) {
+  for (const envio of envios) {
     if (envio.fila_id && ["entregue", "lido", "erro"].includes(mapped.status)) {
       await supabase.from("comunicacao_fila").update({ status: mapped.status }).eq("id", envio.fila_id);
     }
