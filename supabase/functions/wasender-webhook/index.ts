@@ -1,4 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  statusEntregaPorCodigo,
+  statusEntregaPorTexto,
+} from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,6 +11,64 @@ const corsHeaders = {
 };
 
 const WEBHOOK_SECRET = Deno.env.get("WASENDER_WEBHOOK_SECRET") || "";
+
+function extrairMessageId(data: any) {
+  const msg = data?.messages ?? data?.message ?? data;
+  const raw =
+    data?.msgId ??
+    data?.messageId ??
+    data?.id ??
+    data?.key?.id ??
+    msg?.msgId ??
+    msg?.messageId ??
+    msg?.id ??
+    msg?.key?.id ??
+    "";
+  return raw === null || raw === undefined ? "" : String(raw);
+}
+
+async function atualizarEntrega(supabase: any, data: any) {
+  const statusRaw = data?.status ?? data?.update?.status ?? data?.data?.status ?? "";
+  const statusCode = typeof statusRaw === "number" ? statusRaw : Number.isFinite(Number(statusRaw)) ? Number(statusRaw) : null;
+  const mapped = statusCode !== null
+    ? statusEntregaPorCodigo(statusCode)
+    : statusEntregaPorTexto(String(statusRaw || ""));
+  const messageId = extrairMessageId(data);
+
+  console.log(`Status de mensagem atualizado: ${mapped.providerStatus || statusRaw || "unknown"} (msg ${messageId})`);
+
+  if (!messageId) return;
+
+  const patch: Record<string, unknown> = {
+    status: mapped.status,
+    provider_status: mapped.providerStatus || String(statusRaw || ""),
+    provider_status_code: statusCode,
+  };
+  const agora = new Date().toISOString();
+  if (mapped.status === "entregue") patch.entregue_em = agora;
+  if (mapped.status === "lido") {
+    patch.entregue_em = agora;
+    patch.lido_em = agora;
+  }
+  if (mapped.status === "erro") patch.erro_mensagem = "Provedor informou falha na entrega";
+
+  const { data: atualizados, error: updErr } = await supabase
+    .from("comunicacao_envios")
+    .update(patch)
+    .eq("provider_message_id", messageId)
+    .select("id, fila_id");
+
+  if (updErr) {
+    console.warn("Falha ao atualizar status em comunicacao_envios:", updErr.message);
+    return;
+  }
+
+  for (const envio of atualizados || []) {
+    if (envio.fila_id && ["entregue", "lido", "erro"].includes(mapped.status)) {
+      await supabase.from("comunicacao_fila").update({ status: mapped.status }).eq("id", envio.fila_id);
+    }
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -50,6 +112,8 @@ Deno.serve(async (req) => {
               .toString()
               .replace("@s.whatsapp.net", "");
           const texto =
+            msg?.messageBody ||
+            msg?.body ||
             msg?.message?.conversation ||
             msg?.message?.extendedTextMessage?.text ||
             msg?.text ||
@@ -99,18 +163,21 @@ Deno.serve(async (req) => {
       }
 
       case "message.sent":
+      case "message.delivered":
+      case "message.read":
+      case "message.failed":
+      case "messages.sent":
+      case "messages.delivered":
+      case "messages.read":
+      case "messages.failed":
       case "messages.update": {
-        const status = String(
-          data?.status ?? data?.update?.status ?? "",
-        ).toLowerCase();
-        const messageId = String(
-          data?.msgId ?? data?.messageId ?? data?.id ?? data?.key?.id ?? "",
-        );
-        console.log(`Status de mensagem atualizado: ${status} (msg ${messageId})`);
+        await atualizarEntrega(supabase, data);
 
         // Se o provedor avisar que a mensagem falhou, marca o aniversário como erro.
-        const falhou = ["failed", "error", "undelivered", "not_delivered"].includes(status);
-        const entregue = ["delivered", "read"].includes(status);
+        const status = String(data?.status ?? data?.update?.status ?? "").toLowerCase();
+        const messageId = extrairMessageId(data);
+        const falhou = ["failed", "error", "undelivered", "not_delivered", "0"].includes(status);
+        const entregue = ["delivered", "read", "3", "4", "5"].includes(status);
         if (messageId && (falhou || entregue)) {
           const { error: updErr } = await supabase
             .from("aniversarios_enviados")
