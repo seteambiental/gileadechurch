@@ -192,6 +192,26 @@ const ComunicacaoAuditoriaPage = () => {
   };
 
   const processarAgora = async () => {
+    return processarAgoraImpl();
+  };
+
+  const confirmarManualmente = async (envio: Envio) => {
+    const { error } = await supabase
+      .from("comunicacao_envios")
+      .update({
+        confirmado_em: new Date().toISOString(),
+        confirmacao_resposta: "Confirmado manualmente pelo operador",
+      })
+      .eq("id", envio.id);
+    if (error) {
+      toast({ title: "Erro ao confirmar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Confirmação registrada", description: `Mensagem para ${envio.destinatario_nome || envio.destinatario_telefone} marcada como confirmada.` });
+    refetch();
+  };
+
+  const processarAgoraImpl = async () => {
     setProcessando(true);
     try {
       const { error } = await supabase.functions.invoke("processar-fila-whatsapp", { body: {} });
@@ -522,9 +542,20 @@ const ComunicacaoAuditoriaPage = () => {
                               </span>
                             </div>
                           ) : envio.confirmacao_solicitada ? (
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span className="text-xs">Aguardando</span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-xs">Aguardando</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => confirmarManualmente(envio)}
+                                className="text-xs h-6 px-2 w-fit"
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Confirmar
+                              </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
