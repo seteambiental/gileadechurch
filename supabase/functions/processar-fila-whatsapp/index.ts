@@ -1,8 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  consultarMensagemWasender,
   enviarTextoWhatsApp,
   enviarMidiaWhatsApp,
   normalizarWasenderEnvio,
+  statusEntregaPorCodigo,
+  statusEntregaPorTexto,
   whatsappConfigurado,
   verificarConexaoWhatsApp,
 } from "../_shared/whatsapp-sender.ts";
@@ -123,6 +126,56 @@ export function validarPlaceholdersResolvidos(texto: string) {
 }
 export { preencherTemplate, prepararConteudoFila };
 
+async function atualizarStatusMensagensRecentes(supabase: any) {
+  const desde = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: pendentes, error } = await supabase
+    .from("comunicacao_envios")
+    .select("id, fila_id, provider_message_id")
+    .not("provider_message_id", "is", null)
+    .in("status", ["aceito_provedor", "enviado"])
+    .gte("created_at", desde)
+    .order("created_at", { ascending: false })
+    .limit(25);
+
+  if (error) {
+    console.warn("Falha ao buscar mensagens para atualizar status:", error.message);
+    return { consultadas: 0, atualizadas: 0 };
+  }
+
+  let atualizadas = 0;
+  for (const envio of pendentes || []) {
+    try {
+      const recibo = await consultarMensagemWasender(String(envio.provider_message_id));
+      const mapped = recibo.providerStatusCode !== null
+        ? statusEntregaPorCodigo(recibo.providerStatusCode)
+        : statusEntregaPorTexto(recibo.providerStatus);
+      const patch: Record<string, unknown> = {
+        status: mapped.status,
+        provider_status: mapped.providerStatus ?? recibo.providerStatus,
+        provider_status_code: recibo.providerStatusCode,
+        provider_response: recibo.raw,
+      };
+      if (mapped.status === "entregue") patch.entregue_em = new Date().toISOString();
+      if (mapped.status === "lido") {
+        patch.entregue_em = new Date().toISOString();
+        patch.lido_em = new Date().toISOString();
+      }
+      if (mapped.status === "erro") patch.erro_mensagem = "Provedor informou falha na entrega";
+
+      await supabase.from("comunicacao_envios").update(patch).eq("id", envio.id);
+      if (envio.fila_id && ["entregue", "lido", "erro"].includes(mapped.status)) {
+        await supabase.from("comunicacao_fila").update({ status: mapped.status }).eq("id", envio.fila_id);
+      }
+      atualizadas++;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`Falha ao consultar status Wasender msg ${envio.provider_message_id}: ${msg}`);
+    }
+  }
+
+  return { consultadas: pendentes?.length || 0, atualizadas };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -140,6 +193,8 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    const statusSync = await atualizarStatusMensagensRecentes(supabase);
 
     // Verifica se a sessão está conectada ANTES de processar a fila.
     // Se estiver caída, aborta sem consumir tentativas dos itens (eles permanecem pendentes).
@@ -334,6 +389,7 @@ Deno.serve(async (req) => {
         erros_reagendados: erros,
         descartados,
         config: cfg,
+        status_sync: statusSync,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
