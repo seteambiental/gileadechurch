@@ -247,7 +247,12 @@ Deno.serve(async (req) => {
 
     if (!itens || itens.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, processados: 0, message: "Nada a processar" }),
+        JSON.stringify({
+          success: true,
+          processados: 0,
+          message: "Nada a processar",
+          status_sync: statusSync,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
