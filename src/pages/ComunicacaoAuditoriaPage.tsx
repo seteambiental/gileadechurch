@@ -34,6 +34,11 @@ type Envio = {
   confirmacao_solicitada?: boolean | null;
   confirmado_em?: string | null;
   confirmacao_resposta?: string | null;
+  provider_message_id?: string | null;
+  provider_status?: string | null;
+  provider_status_code?: number | null;
+  entregue_em?: string | null;
+  lido_em?: string | null;
 };
 
 const TIPO_LABELS: Record<string, string> = {
@@ -54,9 +59,23 @@ const TIPO_LABELS: Record<string, string> = {
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   enviado: "default",
   sucesso: "default",
+  aceito_provedor: "secondary",
+  entregue: "default",
+  lido: "default",
   erro: "destructive",
   falhou: "destructive",
   pendente: "secondary",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  aceito_provedor: "Aceito pela API",
+  enviado: "Aceito pela API",
+  sucesso: "Aceito pela API",
+  entregue: "Entregue",
+  lido: "Lido",
+  erro: "Erro",
+  falhou: "Falhou",
+  pendente: "Pendente",
 };
 
 const ComunicacaoAuditoriaPage = () => {
@@ -116,7 +135,8 @@ const ComunicacaoAuditoriaPage = () => {
     return {
       pendente: fila.filter((f) => f.status === "pendente").length,
       processando: fila.filter((f) => f.status === "processando").length,
-      enviado: fila.filter((f) => f.status === "enviado").length,
+      enviado: fila.filter((f) => ["enviado", "aceito_provedor"].includes(f.status)).length,
+      entregue: fila.filter((f) => ["entregue", "lido"].includes(f.status)).length,
       descartado: fila.filter((f) => f.status === "descartado").length,
     };
   }, [fila]);
@@ -228,10 +248,11 @@ const ComunicacaoAuditoriaPage = () => {
 
   const stats = useMemo(() => {
     const total = filtrados.length;
-    const sucesso = filtrados.filter((e) => ["enviado", "sucesso"].includes(e.status || "")).length;
+    const aceito = filtrados.filter((e) => ["enviado", "sucesso", "aceito_provedor"].includes(e.status || "")).length;
+    const entregue = filtrados.filter((e) => ["entregue", "lido"].includes(e.status || "")).length;
     const erro = filtrados.filter((e) => ["erro", "falhou"].includes(e.status || "")).length;
     const pendente = filtrados.filter((e) => e.status === "pendente").length;
-    return { total, sucesso, erro, pendente };
+    return { total, aceito, entregue, erro, pendente };
   }, [filtrados]);
 
   if (authLoading || accessLoading) {
@@ -256,7 +277,8 @@ const ComunicacaoAuditoriaPage = () => {
   }
 
   const renderStatusIcon = (status: string | null) => {
-    if (["enviado", "sucesso"].includes(status || "")) return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    if (["entregue", "lido"].includes(status || "")) return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+    if (["enviado", "sucesso", "aceito_provedor"].includes(status || "")) return <Clock className="h-4 w-4 text-muted-foreground" />;
     if (["erro", "falhou"].includes(status || "")) return <XCircle className="h-4 w-4 text-destructive" />;
     return <Clock className="h-4 w-4 text-muted-foreground" />;
   };
@@ -316,20 +338,20 @@ const ComunicacaoAuditoriaPage = () => {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Enviados</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sucesso}</p>
+              <p className="text-xs text-muted-foreground">Aceitos pela API</p>
+              <p className="text-2xl font-bold text-muted-foreground">{stats.aceito}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">Entregues/Lidos</p>
+              <p className="text-2xl font-bold text-green-600">{stats.entregue}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Erros</p>
               <p className="text-2xl font-bold text-destructive">{stats.erro}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Pendentes</p>
-              <p className="text-2xl font-bold text-muted-foreground">{stats.pendente}</p>
             </CardContent>
           </Card>
         </div>
@@ -364,7 +386,10 @@ const ComunicacaoAuditoriaPage = () => {
               <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
-                <SelectItem value="enviado">Enviado</SelectItem>
+                <SelectItem value="aceito_provedor">Aceito pela API</SelectItem>
+                <SelectItem value="entregue">Entregue</SelectItem>
+                <SelectItem value="lido">Lido</SelectItem>
+                <SelectItem value="enviado">Aceito pela API (antigo)</SelectItem>
                 <SelectItem value="sucesso">Sucesso</SelectItem>
                 <SelectItem value="erro">Erro</SelectItem>
                 <SelectItem value="falhou">Falhou</SelectItem>
@@ -471,9 +496,14 @@ const ComunicacaoAuditoriaPage = () => {
                           <div className="flex items-center gap-1.5">
                             {renderStatusIcon(envio.status)}
                             <Badge variant={STATUS_VARIANT[envio.status || ""] || "outline"} className="text-xs">
-                              {envio.status || "—"}
+                              {STATUS_LABELS[envio.status || ""] || envio.status || "—"}
                             </Badge>
                           </div>
+                          {envio.provider_status && (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Wasender: {envio.provider_status}
+                            </p>
+                          )}
                         </TableCell>
                         <TableCell>
                           {envio.confirmado_em ? (
@@ -531,7 +561,7 @@ const ComunicacaoAuditoriaPage = () => {
               </Card>
               <Card>
                 <CardContent className="pt-4">
-                  <p className="text-xs text-muted-foreground">Enviados</p>
+                  <p className="text-xs text-muted-foreground">Aceitos pela API</p>
                   <p className="text-2xl font-bold text-green-600">{filaStats.enviado}</p>
                 </CardContent>
               </Card>
@@ -598,12 +628,14 @@ const ComunicacaoAuditoriaPage = () => {
                               <Badge
                                 variant={
                                   item.status === "enviado" ? "default" :
+                                  item.status === "aceito_provedor" ? "secondary" :
+                                  ["entregue", "lido"].includes(item.status) ? "default" :
                                   item.status === "descartado" ? "destructive" :
                                   item.status === "processando" ? "secondary" : "outline"
                                 }
                                 className="text-xs"
                               >
-                                {item.status}
+                                {STATUS_LABELS[item.status] || item.status}
                               </Badge>
                             </TableCell>
                             <TableCell>
