@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   enviarTextoWhatsApp,
   enviarMidiaWhatsApp,
+  normalizarWasenderEnvio,
   whatsappConfigurado,
   verificarConexaoWhatsApp,
 } from "../_shared/whatsapp-sender.ts";
@@ -233,17 +234,17 @@ Deno.serve(async (req) => {
           `  FINAL    (${conteudoFinal.length} chars): ${JSON.stringify(conteudoFinal).slice(0, 600)}\n` +
           `  substituiu_placeholders=${houveSubstituicao}`
         );
-        if (item.midia_url) {
-          await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoEnvio);
-        } else {
-          await enviarTextoEvolution(item.destinatario_telefone, conteudoEnvio);
-        }
+        const envioResult = item.midia_url
+          ? await enviarMidiaComFallbackTexto(item.destinatario_telefone, item.midia_url, conteudoEnvio)
+          : await enviarTextoEvolution(item.destinatario_telefone, conteudoEnvio);
+        const recibo = normalizarWasenderEnvio(envioResult);
 
-        // Sucesso: marca enviado e registra em comunicacao_envios
+        // Sucesso aqui significa apenas que o provedor aceitou a mensagem.
+        // Entrega/leitura real será atualizada por webhook ou consulta posterior.
         await supabase
           .from("comunicacao_fila")
           .update({
-            status: "enviado",
+            status: "aceito_provedor",
             tentativas: tentativaAtual,
             enviado_em: new Date().toISOString(),
             ultimo_erro: null,
@@ -261,10 +262,14 @@ Deno.serve(async (req) => {
           midia_url: item.midia_url,
           evento_id: item.evento_id,
           iniciado_por: item.iniciado_por,
-          status: "enviado",
+          status: "aceito_provedor",
           fila_id: item.id,
           tentativas: tentativaAtual,
           confirmacao_solicitada: pedirConfirmacao,
+          provider_message_id: recibo.msgId,
+          provider_status: recibo.providerStatus,
+          provider_status_code: recibo.providerStatusCode,
+          provider_response: recibo.raw,
         });
         enviados++;
       } catch (err) {
