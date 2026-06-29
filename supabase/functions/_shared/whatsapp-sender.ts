@@ -9,6 +9,62 @@ export const WASENDER_API_URL = RAW_BASE.startsWith("http")
   : `https://${RAW_BASE.replace(/\/+$/, "")}`;
 export const WASENDER_API_KEY = Deno.env.get("WASENDER_API_KEY") || "";
 
+export type WasenderReceipt = {
+  msgId: string | null;
+  providerStatus: string | null;
+  providerStatusCode: number | null;
+  raw: unknown;
+};
+
+export function normalizarWasenderEnvio(result: any): WasenderReceipt {
+  const data = result?.data ?? result ?? {};
+  const msgIdRaw = data?.msgId ?? data?.messageId ?? data?.id ?? data?.key?.id ?? null;
+  return {
+    msgId: msgIdRaw === null || msgIdRaw === undefined ? null : String(msgIdRaw),
+    providerStatus: data?.status === undefined || data?.status === null ? null : String(data.status),
+    providerStatusCode: typeof data?.status === "number" ? data.status : null,
+    raw: result,
+  };
+}
+
+export function statusEntregaPorCodigo(statusCode: number | null | undefined): {
+  status: string;
+  providerStatus: string | null;
+} {
+  switch (statusCode) {
+    case 0:
+      return { status: "erro", providerStatus: "failed" };
+    case 3:
+      return { status: "entregue", providerStatus: "delivered" };
+    case 4:
+      return { status: "lido", providerStatus: "read" };
+    case 5:
+      return { status: "lido", providerStatus: "played" };
+    case 1:
+      return { status: "aceito_provedor", providerStatus: "pending" };
+    case 2:
+      return { status: "aceito_provedor", providerStatus: "sent" };
+    default:
+      return { status: "aceito_provedor", providerStatus: null };
+  }
+}
+
+export function statusEntregaPorTexto(status?: string | null): {
+  status: string;
+  providerStatus: string | null;
+} {
+  const s = String(status || "").toLowerCase();
+  if (["failed", "error", "undelivered", "not_delivered"].includes(s)) {
+    return { status: "erro", providerStatus: s };
+  }
+  if (["delivered"].includes(s)) return { status: "entregue", providerStatus: s };
+  if (["read", "played"].includes(s)) return { status: "lido", providerStatus: s };
+  if (["pending", "sent", "in_progress", "queued"].includes(s)) {
+    return { status: "aceito_provedor", providerStatus: s };
+  }
+  return { status: "aceito_provedor", providerStatus: s || null };
+}
+
 // true quando a chave do provedor está configurada.
 export function whatsappConfigurado(): boolean {
   return !!WASENDER_API_KEY;
@@ -104,6 +160,31 @@ async function postSendMessage(payload: Record<string, unknown>) {
   }
 
   return result;
+}
+
+export async function consultarMensagemWasender(msgId: string): Promise<WasenderReceipt> {
+  if (!WASENDER_API_KEY) throw new Error("WASENDER_API_KEY ausente");
+  const res = await fetch(`${WASENDER_API_URL}/api/messages/${encodeURIComponent(msgId)}/info`, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${WASENDER_API_KEY}`,
+    },
+  });
+
+  const text = await res.text();
+  let result: any = null;
+  try {
+    result = text ? JSON.parse(text) : null;
+  } catch {
+    result = { raw: text?.slice(0, 500) };
+  }
+
+  if (!res.ok || result?.success === false) {
+    const detail = typeof result === "object" ? JSON.stringify(result).slice(0, 500) : String(result);
+    throw new Error(result?.message || result?.error || `Erro ao consultar mensagem (status ${res.status}): ${detail}`);
+  }
+
+  return normalizarWasenderEnvio(result);
 }
 
 // Envia uma mensagem de texto simples.
