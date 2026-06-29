@@ -542,9 +542,20 @@ const ComunicacaoAuditoriaPage = () => {
                               </span>
                             </div>
                           ) : envio.confirmacao_solicitada ? (
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span className="text-xs">Aguardando</span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-xs">Aguardando</span>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => confirmarManualmente(envio)}
+                                className="text-xs h-6 px-2 w-fit"
+                              >
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Confirmar
+                              </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
