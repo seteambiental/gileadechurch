@@ -225,7 +225,12 @@ const ComunicacaoAuditoriaPage = () => {
     const q = busca.trim().toLowerCase();
     return envios.filter((e) => {
       if (tipoFiltro !== "todos" && e.tipo !== tipoFiltro) return false;
-      if (statusFiltro !== "todos" && (e.status || "") !== statusFiltro) return false;
+      if (statusFiltro !== "todos") {
+        const status = e.status || "";
+        if (statusFiltro === "aceito_provedor") {
+          if (!["aceito_provedor", "enviado", "sucesso"].includes(status)) return false;
+        } else if (status !== statusFiltro) return false;
+      }
       if (segmentoFiltro !== "todos" && (e.segmento || "") !== segmentoFiltro) return false;
       if (confirmacaoFiltro === "confirmado" && !e.confirmado_em) return false;
       if (confirmacaoFiltro === "aguardando" && (!e.confirmacao_solicitada || e.confirmado_em)) return false;
@@ -562,7 +567,7 @@ const ComunicacaoAuditoriaPage = () => {
               <Card>
                 <CardContent className="pt-4">
                   <p className="text-xs text-muted-foreground">Aceitos pela API</p>
-                  <p className="text-2xl font-bold text-green-600">{filaStats.enviado}</p>
+                  <p className="text-2xl font-bold text-muted-foreground">{filaStats.enviado}</p>
                 </CardContent>
               </Card>
               <Card>
@@ -627,8 +632,7 @@ const ComunicacaoAuditoriaPage = () => {
                             <TableCell>
                               <Badge
                                 variant={
-                                  item.status === "enviado" ? "default" :
-                                  item.status === "aceito_provedor" ? "secondary" :
+                                  ["enviado", "aceito_provedor"].includes(item.status) ? "secondary" :
                                   ["entregue", "lido"].includes(item.status) ? "default" :
                                   item.status === "descartado" ? "destructive" :
                                   item.status === "processando" ? "secondary" : "outline"
