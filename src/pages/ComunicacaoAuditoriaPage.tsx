@@ -192,6 +192,26 @@ const ComunicacaoAuditoriaPage = () => {
   };
 
   const processarAgora = async () => {
+    return processarAgoraImpl();
+  };
+
+  const confirmarManualmente = async (envio: Envio) => {
+    const { error } = await supabase
+      .from("comunicacao_envios")
+      .update({
+        confirmado_em: new Date().toISOString(),
+        confirmacao_resposta: "Confirmado manualmente pelo operador",
+      })
+      .eq("id", envio.id);
+    if (error) {
+      toast({ title: "Erro ao confirmar", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Confirmação registrada", description: `Mensagem para ${envio.destinatario_nome || envio.destinatario_telefone} marcada como confirmada.` });
+    refetch();
+  };
+
+  const processarAgoraImpl = async () => {
     setProcessando(true);
     try {
       const { error } = await supabase.functions.invoke("processar-fila-whatsapp", { body: {} });
