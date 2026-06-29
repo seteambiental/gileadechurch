@@ -197,17 +197,6 @@ Deno.serve(async (req) => {
   // consultas de status e do espaçamento entre envios, então rodamos em
   // segundo plano e respondemos imediatamente para o cliente não dar timeout
   // ("Failed to fetch").
-  const processar = async () => {
-    try {
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    } catch {
-      return new Response(null);
-    }
-  };
-
   // Trabalho pesado em segundo plano.
   const trabalho = (async () => {
     const statusSync = await atualizarStatusMensagensRecentes(supabase);
