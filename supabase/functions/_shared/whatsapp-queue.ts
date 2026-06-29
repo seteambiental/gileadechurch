@@ -49,13 +49,13 @@ export async function enfileirarComDedupe(
   const hash = dedupeHash(item);
   const desde = new Date(Date.now() - janelaHoras * 3600_000).toISOString();
 
-  // Verifica duplicata recente (pendente, processando, enviado)
+  // Verifica duplicata recente (pendente, processando ou já aceita/entregue pelo provedor)
   const { data: existente } = await supabase
     .from("comunicacao_fila")
     .select("id, status")
     .eq("dedupe_hash", hash)
     .gte("created_at", desde)
-    .in("status", ["pendente", "processando", "enviado"])
+    .in("status", ["pendente", "processando", "enviado", "aceito_provedor", "entregue", "lido"])
     .limit(1)
     .maybeSingle();
 

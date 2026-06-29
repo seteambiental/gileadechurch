@@ -1638,12 +1638,18 @@ export type Database = {
           destinatario_member_id: string | null
           destinatario_nome: string | null
           destinatario_telefone: string | null
+          entregue_em: string | null
           erro_mensagem: string | null
           evento_id: string | null
           fila_id: string | null
           id: string
           iniciado_por: string | null
+          lido_em: string | null
           midia_url: string | null
+          provider_message_id: string | null
+          provider_response: Json | null
+          provider_status: string | null
+          provider_status_code: number | null
           segmento: string | null
           status: string
           tentativas: number
@@ -1658,12 +1664,18 @@ export type Database = {
           destinatario_member_id?: string | null
           destinatario_nome?: string | null
           destinatario_telefone?: string | null
+          entregue_em?: string | null
           erro_mensagem?: string | null
           evento_id?: string | null
           fila_id?: string | null
           id?: string
           iniciado_por?: string | null
+          lido_em?: string | null
           midia_url?: string | null
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          provider_status?: string | null
+          provider_status_code?: number | null
           segmento?: string | null
           status?: string
           tentativas?: number
@@ -1678,12 +1690,18 @@ export type Database = {
           destinatario_member_id?: string | null
           destinatario_nome?: string | null
           destinatario_telefone?: string | null
+          entregue_em?: string | null
           erro_mensagem?: string | null
           evento_id?: string | null
           fila_id?: string | null
           id?: string
           iniciado_por?: string | null
+          lido_em?: string | null
           midia_url?: string | null
+          provider_message_id?: string | null
+          provider_response?: Json | null
+          provider_status?: string | null
+          provider_status_code?: number | null
           segmento?: string | null
           status?: string
           tentativas?: number
