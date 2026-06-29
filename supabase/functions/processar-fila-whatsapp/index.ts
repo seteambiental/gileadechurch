@@ -186,14 +186,19 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  try {
-    if (!whatsappConfigurado()) {
-      return new Response(
-        JSON.stringify({ success: false, error: "WhatsApp (WasenderAPI) não configurado" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+  if (!whatsappConfigurado()) {
+    return new Response(
+      JSON.stringify({ success: false, error: "WhatsApp (WasenderAPI) não configurado" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
 
+  // Processamento real da fila. Pode levar dezenas de segundos por causa das
+  // consultas de status e do espaçamento entre envios, então rodamos em
+  // segundo plano e respondemos imediatamente para o cliente não dar timeout
+  // ("Failed to fetch").
+  // Trabalho pesado em segundo plano.
+  const trabalho = (async () => {
     const statusSync = await atualizarStatusMensagensRecentes(supabase);
 
     // Verifica se a sessão está conectada ANTES de processar a fila.
@@ -201,15 +206,7 @@ Deno.serve(async (req) => {
     const conexao = await verificarConexaoWhatsApp();
     if (!conexao.conectado) {
       console.warn(`Fila não processada: WhatsApp desconectado (estado=${conexao.estado})`);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          conectado: false,
-          estado: conexao.estado,
-          error: `Sessão do WhatsApp desconectada (estado: ${conexao.estado}). Itens mantidos na fila.`,
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return;
     }
 
     // 0) Carregar configuração dinâmica da fila
@@ -246,15 +243,8 @@ Deno.serve(async (req) => {
     if (selError) throw selError;
 
     if (!itens || itens.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          processados: 0,
-          message: "Nada a processar",
-          status_sync: statusSync,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      console.log("Nada a processar", statusSync);
+      return;
     }
 
     // 2) Reservar (marcar como processando) atomicamente um a um
@@ -386,24 +376,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processados: reservados.length,
-        enviados,
-        erros_reagendados: erros,
-        descartados,
-        config: cfg,
-        status_sync: statusSync,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    console.log(
+      `Fila processada: processados=${reservados.length} enviados=${enviados} reagendados=${erros} descartados=${descartados}`,
     );
-  } catch (error) {
+  })().catch((error) => {
     const msg = error instanceof Error ? error.message : "Erro desconhecido";
     console.error("processar-fila-whatsapp erro:", msg);
-    return new Response(
-      JSON.stringify({ success: false, error: msg }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+  });
+
+  // @ts-ignore EdgeRuntime existe no runtime do Supabase
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    // @ts-ignore
+    EdgeRuntime.waitUntil(trabalho);
   }
+
+  return new Response(
+    JSON.stringify({ success: true, iniciado: true, message: "Processamento iniciado em segundo plano" }),
+    { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+  );
 });

@@ -194,14 +194,17 @@ const ComunicacaoAuditoriaPage = () => {
   const processarAgora = async () => {
     setProcessando(true);
     try {
-      const { data, error } = await supabase.functions.invoke("processar-fila-whatsapp", { body: {} });
+      const { error } = await supabase.functions.invoke("processar-fila-whatsapp", { body: {} });
       if (error) throw error;
       toast({
-        title: "Fila processada",
-        description: `Enviados: ${data?.enviados ?? 0} | Reagendados: ${data?.erros_reagendados ?? 0} | Descartados: ${data?.descartados ?? 0}`,
+        title: "Processamento iniciado",
+        description: "A fila está sendo processada em segundo plano. Atualize em alguns instantes para ver o resultado.",
       });
-      refetchFila();
-      refetch();
+      // Dá um tempo para o envio escalonado acontecer antes de atualizar.
+      setTimeout(() => {
+        refetchFila();
+        refetch();
+      }, 6000);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message || "Falha ao processar", variant: "destructive" });
     } finally {

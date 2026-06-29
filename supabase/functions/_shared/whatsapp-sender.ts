@@ -164,12 +164,20 @@ async function postSendMessage(payload: Record<string, unknown>) {
 
 export async function consultarMensagemWasender(msgId: string): Promise<WasenderReceipt> {
   if (!WASENDER_API_KEY) throw new Error("WASENDER_API_KEY ausente");
-  const res = await fetch(`${WASENDER_API_URL}/api/messages/${encodeURIComponent(msgId)}/info`, {
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${WASENDER_API_KEY}`,
-    },
-  });
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 8000);
+  let res: Response;
+  try {
+    res = await fetch(`${WASENDER_API_URL}/api/messages/${encodeURIComponent(msgId)}/info`, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${WASENDER_API_KEY}`,
+      },
+      signal: ctrl.signal,
+    });
+  } finally {
+    clearTimeout(to);
+  }
 
   const text = await res.text();
   let result: any = null;
