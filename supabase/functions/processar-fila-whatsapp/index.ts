@@ -147,13 +147,16 @@ async function atualizarStatusMensagensRecentes(supabase: any) {
     try {
       const possiveisIds = Array.from(new Set([
         envio.provider_message_id,
+        envio.provider_response?.data?.msgId,
+        envio.provider_response?.data?.messageId,
         envio.provider_response?.data?.id,
         envio.provider_response?.data?.key?.id,
         envio.provider_response?.data?.result?.key?.id,
         envio.provider_response?.result?.key?.id,
       ]
         .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
-        .map((id) => String(id))));
+        .map((id) => String(id))))
+        .sort((a, b) => Number(/^\d+$/.test(b)) - Number(/^\d+$/.test(a)));
 
       let recibo = null;
       const falhas: string[] = [];

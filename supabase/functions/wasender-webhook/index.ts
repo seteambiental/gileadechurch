@@ -15,21 +15,22 @@ const WEBHOOK_SECRET = Deno.env.get("WASENDER_WEBHOOK_SECRET") || "";
 function extrairMessageId(data: any) {
   const msg = data?.messages ?? data?.message ?? data;
   const raw =
-    data?.msgId ??
-    data?.messageId ??
-    data?.id ??
     data?.key?.id ??
     data?.update?.key?.id ??
     data?.data?.key?.id ??
-    data?.result?.msgId ??
-    data?.result?.messageId ??
-    data?.result?.id ??
     data?.result?.key?.id ??
-    msg?.msgId ??
-    msg?.messageId ??
-    msg?.id ??
     msg?.key?.id ??
     msg?.message?.key?.id ??
+    data?.id ??
+    data?.data?.id ??
+    data?.result?.id ??
+    msg?.id ??
+    data?.msgId ??
+    data?.messageId ??
+    data?.result?.msgId ??
+    data?.result?.messageId ??
+    msg?.msgId ??
+    msg?.messageId ??
     "";
   return raw === null || raw === undefined ? "" : String(raw);
 }
@@ -50,7 +51,7 @@ async function buscarEnviosPorMessageId(supabase: any, messageId: string) {
   const { data: porChave, error: chaveErr } = await supabase
     .from("comunicacao_envios")
     .select("id, fila_id")
-    .or(`provider_response->data->>id.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`);
+    .or(`provider_response->data->>id.eq.${messageId},provider_response->data->>msgId.eq.${messageId},provider_response->data->>messageId.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`);
 
   if (chaveErr) {
     console.warn("Falha ao buscar envio pelo id interno da mensagem:", chaveErr.message);
@@ -95,7 +96,7 @@ async function atualizarEntrega(supabase: any, data: any) {
     const { data: atual } = await supabase
       .from("comunicacao_envios")
       .select("status")
-      .or(`provider_message_id.eq.${messageId},provider_response->data->>id.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`)
+      .or(`provider_message_id.eq.${messageId},provider_response->data->>id.eq.${messageId},provider_response->data->>msgId.eq.${messageId},provider_response->data->>messageId.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`)
       .limit(1);
     if (atual?.[0] && ["entregue", "lido"].includes(atual[0].status)) return;
   }
