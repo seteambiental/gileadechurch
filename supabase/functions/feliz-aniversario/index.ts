@@ -365,7 +365,7 @@ serve(async (req) => {
         }
 
         try {
-          const mensagem = gerarMensagemAniversario(inscrito.nome, mensagemTemplate);
+          const mensagem = comConfirmacao(gerarMensagemAniversario(inscrito.nome, mensagemTemplate), pedirConfirmacao);
           const resp = await enviarMensagemEvolution(inscrito.telefone!, mensagem);
 
           await supabase.from('aniversarios_enviados').insert({
