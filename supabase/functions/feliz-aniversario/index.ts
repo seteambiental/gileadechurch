@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { enviarImagemComFallbackTexto } from "../_shared/whatsapp-sender.ts";
+import { enviarImagemComFallbackTexto, normalizarWasenderEnvio } from "../_shared/whatsapp-sender.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +22,9 @@ const versiculosAniversario = [
 ];
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const RODAPE_CONFIRMACAO =
+  "\n\n———\n🙏 Pode confirmar o recebimento desta mensagem? Responda *OK* ou 👍";
 
 // Intervalo aleatório anti-SPAM entre destinatários (15-30s).
 const intervaloAntiSpam = () => Math.floor(Math.random() * 15000) + 15000;
@@ -66,11 +69,13 @@ async function enviarMensagemEvolution(telefone: string, mensagem: string) {
 
 // Extrai o código da mensagem (msgId) da resposta do provedor, quando existir.
 function extrairMessageId(resposta: any): string | null {
-  if (!resposta || typeof resposta !== "object") return null;
-  const d = resposta.data ?? resposta;
-  const id =
-    d?.msgId ?? d?.messageId ?? d?.id ?? d?.key?.id ?? resposta?.msgId ?? null;
-  return id != null ? String(id) : null;
+  return normalizarWasenderEnvio(resposta).msgId;
+}
+
+function comConfirmacao(texto: string, pedirConfirmacao: boolean) {
+  if (!pedirConfirmacao || !texto) return texto;
+  if (texto.includes(RODAPE_CONFIRMACAO.trim())) return texto;
+  return texto + RODAPE_CONFIRMACAO;
 }
 
 // Resumo curto e seguro da resposta do provedor para guardar como "comprovante".
@@ -130,7 +135,10 @@ async function registrarEnvioAuditoria(
       conteudo: params.conteudo,
       status: params.sucesso ? "aceito_provedor" : "falhou",
       erro_mensagem: params.erro ?? null,
+      confirmacao_solicitada: params.sucesso,
       provider_message_id: params.sucesso ? extrairMessageId(params.resp) : null,
+      provider_status: params.sucesso ? normalizarWasenderEnvio(params.resp).providerStatus : null,
+      provider_status_code: params.sucesso ? normalizarWasenderEnvio(params.resp).providerStatusCode : null,
       provider_response: params.resp ?? null,
     });
   } catch (e) {
@@ -165,6 +173,13 @@ serve(async (req) => {
         .maybeSingle();
       
       const mensagemTemplate = homepageConfig?.mensagem_aniversario || null;
+
+      const { data: cfgRow } = await supabase
+        .from("whatsapp_config")
+        .select("pedir_confirmacao")
+        .eq("id", true)
+        .maybeSingle();
+      const pedirConfirmacao = cfgRow?.pedir_confirmacao ?? true;
 
       const { data: membros, error: membrosError } = await supabase
         .from('members')
@@ -252,7 +267,7 @@ serve(async (req) => {
         }
 
         try {
-          const mensagem = gerarMensagemAniversario(membro.full_name, mensagemTemplate);
+          const mensagem = comConfirmacao(gerarMensagemAniversario(membro.full_name, mensagemTemplate), pedirConfirmacao);
           const resp = await enviarMensagemEvolution(membro.whatsapp, mensagem);
 
           await supabase.from('aniversarios_enviados').insert({
@@ -302,7 +317,7 @@ serve(async (req) => {
         }
 
         try {
-          const mensagem = gerarMensagemAniversario(convertido.full_name, mensagemTemplate);
+          const mensagem = comConfirmacao(gerarMensagemAniversario(convertido.full_name, mensagemTemplate), pedirConfirmacao);
           const resp = await enviarMensagemEvolution(convertido.whatsapp, mensagem);
 
           await supabase.from('aniversarios_enviados').insert({
