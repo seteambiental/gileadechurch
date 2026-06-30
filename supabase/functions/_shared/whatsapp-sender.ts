@@ -138,11 +138,88 @@ export async function exigirWhatsappConectado(): Promise<void> {
 }
 
 // Formata o telefone para o padrão E.164 exigido pelo WasenderAPI (+55...).
-export function formatPhoneE164(telefone: string): string {
+export function candidatosPhoneE164(telefone: string): string[] {
   const clean = (telefone || "").replace(/\D/g, "");
-  if (!clean) return "";
-  const withCountry = clean.startsWith("55") ? clean : `55${clean}`;
-  return `+${withCountry}`;
+  if (!clean) return [];
+
+  let nacional = clean.startsWith("55") ? clean.slice(2) : clean;
+  while (nacional.startsWith("0") && nacional.length > 11) {
+    nacional = nacional.slice(1);
+  }
+
+  const candidatos: string[] = [];
+  const add = (digits: string) => {
+    if (digits.length >= 10 && digits.length <= 11) candidatos.push(`+55${digits}`);
+  };
+
+  // Preferência do Wasender/WhatsApp Brasil: +55 DDD 9XXXX XXXX.
+  if (nacional.length === 10) {
+    add(`${nacional.slice(0, 2)}9${nacional.slice(2)}`);
+    add(nacional);
+  } else {
+    add(nacional);
+    // Alguns JIDs de WhatsApp ainda aparecem sem o nono dígito; testar como fallback.
+    if (nacional.length === 11 && nacional[2] === "9") {
+      add(`${nacional.slice(0, 2)}${nacional.slice(3)}`);
+    }
+  }
+
+  return Array.from(new Set(candidatos));
+}
+
+export function formatPhoneE164(telefone: string): string {
+  return candidatosPhoneE164(telefone)[0] || "";
+}
+
+async function numeroExisteNoWhatsApp(phoneE164: string): Promise<boolean> {
+  const res = await fetch(`${WASENDER_API_URL}/api/on-whatsapp/${encodeURIComponent(phoneE164)}`, {
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${WASENDER_API_KEY}`,
+    },
+  });
+  const text = await res.text();
+  let result: any = null;
+  try {
+    result = text ? JSON.parse(text) : null;
+  } catch {
+    result = { raw: text?.slice(0, 300) };
+  }
+
+  if (!res.ok || result?.success === false) {
+    const detail = typeof result === "object" ? JSON.stringify(result).slice(0, 300) : String(result);
+    throw new Error(result?.message || result?.error || `Erro ao validar número (status ${res.status}): ${detail}`);
+  }
+
+  return Boolean(result?.data?.exists ?? result?.exists);
+}
+
+async function resolverTelefoneWhatsApp(telefone: string): Promise<string> {
+  const candidatos = candidatosPhoneE164(telefone);
+  if (candidatos.length === 0) throw new Error("Telefone inválido");
+
+  let validacaoRespondeu = false;
+  const erros: string[] = [];
+  for (const candidato of candidatos) {
+    try {
+      const existe = await numeroExisteNoWhatsApp(candidato);
+      validacaoRespondeu = true;
+      if (existe) return candidato;
+    } catch (err) {
+      erros.push(`${candidato}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (validacaoRespondeu) {
+    throw new Error(`Número não encontrado no WhatsApp: ${candidatos.join(" ou ")}`);
+  }
+
+  // Se a validação estiver temporariamente indisponível, não bloqueia o envio;
+  // o próprio send-message ainda retornará erro definitivo se o JID não existir.
+  if (erros.length > 0) {
+    console.warn(`Falha ao validar número no WasenderAPI; seguindo com ${candidatos[0]}. ${erros.join(" | ")}`);
+  }
+  return candidatos[0];
 }
 
 async function postSendMessage(payload: Record<string, unknown>) {
@@ -206,16 +283,14 @@ export async function consultarMensagemWasender(msgId: string): Promise<Wasender
 
 // Envia uma mensagem de texto simples.
 export async function enviarTextoWhatsApp(telefone: string, mensagem: string) {
-  const to = formatPhoneE164(telefone);
-  if (!to) throw new Error("Telefone inválido");
+  const to = await resolverTelefoneWhatsApp(telefone);
   console.log(`Enviando texto WasenderAPI para: ${to}`);
   return await postSendMessage({ to, text: mensagem });
 }
 
 // Envia uma imagem (via URL pública) com legenda opcional.
 export async function enviarImagemWhatsApp(telefone: string, imageUrl: string, caption = "") {
-  const to = formatPhoneE164(telefone);
-  if (!to) throw new Error("Telefone inválido");
+  const to = await resolverTelefoneWhatsApp(telefone);
   console.log(`Enviando imagem WasenderAPI para: ${to}`);
   return await postSendMessage({ to, text: caption, imageUrl });
 }
@@ -261,8 +336,7 @@ export async function enviarMidiaWhatsApp(
   mediatype?: MediaType,
   fileName?: string,
 ) {
-  const to = formatPhoneE164(telefone);
-  if (!to) throw new Error("Telefone inválido");
+  const to = await resolverTelefoneWhatsApp(telefone);
   const tipo = mediatype || detectarMediaType(midiaUrl);
   const payload: Record<string, unknown> = { to, text: caption };
   if (tipo === "image") {
