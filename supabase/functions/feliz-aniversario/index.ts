@@ -106,6 +106,38 @@ Com carinho,
 _Igreja Gileade_ 💙🙏`;
 }
 
+// Registra o envio na auditoria (comunicacao_envios) para aparecer no histórico.
+async function registrarEnvioAuditoria(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  params: {
+    telefone: string;
+    nome: string;
+    member_id?: string | null;
+    conteudo: string;
+    sucesso: boolean;
+    erro?: string | null;
+    resp?: any;
+  },
+) {
+  try {
+    await supabase.from("comunicacao_envios").insert({
+      tipo: "aniversario",
+      segmento: "aniversariantes",
+      destinatario_telefone: params.telefone,
+      destinatario_nome: params.nome,
+      destinatario_member_id: params.member_id ?? null,
+      conteudo: params.conteudo,
+      status: params.sucesso ? "aceito_provedor" : "falhou",
+      erro_mensagem: params.erro ?? null,
+      provider_message_id: params.sucesso ? extrairMessageId(params.resp) : null,
+      provider_response: params.resp ?? null,
+    });
+  } catch (e) {
+    console.error("Falha ao registrar envio na auditoria:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -234,6 +266,10 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: membro.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${membro.full_name}`);
+          await registrarEnvioAuditoria(supabase, {
+            telefone: membro.whatsapp, nome: membro.full_name, member_id: membro.id,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -246,7 +282,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-          
+          await registrarEnvioAuditoria(supabase, {
+            telefone: membro.whatsapp, nome: membro.full_name, member_id: membro.id,
+            conteudo: gerarMensagemAniversario(membro.full_name, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: membro.full_name, sucesso: false, erro: errorMsg });
           console.error(`❌ Erro ao enviar para ${membro.full_name}:`, err);
         }
@@ -275,6 +315,10 @@ serve(async (req) => {
           
           enviados++;
           resultados.push({ nome: convertido.full_name, sucesso: true });
+          await registrarEnvioAuditoria(supabase, {
+            telefone: convertido.whatsapp, nome: convertido.full_name,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -287,7 +331,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-          
+          await registrarEnvioAuditoria(supabase, {
+            telefone: convertido.whatsapp, nome: convertido.full_name,
+            conteudo: gerarMensagemAniversario(convertido.full_name, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: convertido.full_name, sucesso: false, erro: errorMsg });
         }
         await sleep(intervaloAntiSpam());
@@ -316,6 +364,10 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: true });
           console.log(`✅ Mensagem (não-membro) enviada para ${inscrito.nome}`);
+          await registrarEnvioAuditoria(supabase, {
+            telefone: inscrito.telefone!, nome: inscrito.nome,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -328,7 +380,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-
+          await registrarEnvioAuditoria(supabase, {
+            telefone: inscrito.telefone!, nome: inscrito.nome,
+            conteudo: gerarMensagemAniversario(inscrito.nome, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: false, erro: errorMsg });
         }
         await sleep(intervaloAntiSpam());
