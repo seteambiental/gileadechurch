@@ -96,7 +96,7 @@ async function atualizarEntrega(supabase: any, data: any) {
     const { data: atual } = await supabase
       .from("comunicacao_envios")
       .select("status")
-      .or(`provider_message_id.eq.${messageId},provider_response->data->>id.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`)
+      .or(`provider_message_id.eq.${messageId},provider_response->data->>id.eq.${messageId},provider_response->data->>msgId.eq.${messageId},provider_response->data->>messageId.eq.${messageId},provider_response->data->key->>id.eq.${messageId},provider_response->data->result->key->>id.eq.${messageId},provider_response->result->key->>id.eq.${messageId}`)
       .limit(1);
     if (atual?.[0] && ["entregue", "lido"].includes(atual[0].status)) return;
   }
