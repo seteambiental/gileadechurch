@@ -35,6 +35,110 @@ function extrairMessageId(data: any) {
   return raw === null || raw === undefined ? "" : String(raw);
 }
 
+function somenteDigitos(valor?: string | null) {
+  return String(valor || "").replace(/\D/g, "");
+}
+
+function normalizarTelefoneBrasil(valor?: string | null) {
+  let digitos = somenteDigitos(valor);
+  if (!digitos) return "";
+  if (digitos.startsWith("55") && digitos.length >= 12) digitos = digitos.slice(2);
+  return digitos;
+}
+
+function variantesTelefoneBrasil(valor?: string | null) {
+  const nacional = normalizarTelefoneBrasil(valor);
+  if (!nacional) return [];
+
+  const variantes = new Set<string>([nacional]);
+  if (nacional.length === 10) {
+    variantes.add(`${nacional.slice(0, 2)}9${nacional.slice(2)}`);
+  }
+  if (nacional.length === 11 && nacional[2] === "9") {
+    variantes.add(`${nacional.slice(0, 2)}${nacional.slice(3)}`);
+  }
+  variantes.add(nacional.slice(-8));
+  return Array.from(variantes).filter(Boolean);
+}
+
+function extrairTelefonesRemetente(msg: any) {
+  const key = msg?.key ?? {};
+  const candidatos = [
+    key.cleanedSenderPn,
+    msg?.cleanedSenderPn,
+    key.senderPn,
+    msg?.senderPn,
+    key.participant,
+    msg?.participant,
+    key.remoteJid,
+    msg?.from,
+    msg?.remoteJid,
+  ];
+
+  const telefones: string[] = [];
+  for (const candidato of candidatos) {
+    const texto = String(candidato || "");
+    // Endereços @lid não carregam telefone. Quando existir senderPn/cleanedSenderPn,
+    // eles já terão sido avaliados acima; não use o LID para casar confirmação.
+    if (!texto || texto.includes("@lid")) continue;
+    const normalizado = normalizarTelefoneBrasil(texto.replace("@s.whatsapp.net", ""));
+    if (normalizado) telefones.push(normalizado);
+  }
+
+  return Array.from(new Set(telefones));
+}
+
+async function marcarConfirmacaoRecebimento(supabase: any, telefonesRemetente: string[], texto: string) {
+  const variantesRemetente = new Set<string>();
+  for (const telefone of telefonesRemetente) {
+    for (const variante of variantesTelefoneBrasil(telefone)) variantesRemetente.add(variante);
+  }
+
+  if (variantesRemetente.size === 0) {
+    console.log("Mensagem recebida sem telefone numérico confiável para confirmação");
+    return;
+  }
+
+  const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: candidatos, error: selErr } = await supabase
+    .from("comunicacao_envios")
+    .select("id, destinatario_telefone, created_at")
+    .eq("confirmacao_solicitada", true)
+    .is("confirmado_em", null)
+    .gte("created_at", seteDiasAtras)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (selErr) {
+    console.warn("Erro ao buscar envio para confirmar:", selErr.message);
+    return;
+  }
+
+  const alvo = (candidatos || []).find((envio: any) => {
+    const variantesDestino = variantesTelefoneBrasil(envio.destinatario_telefone);
+    return variantesDestino.some((variante) => variantesRemetente.has(variante));
+  });
+
+  if (!alvo) {
+    console.log(`Nenhum envio pendente de confirmação para ${Array.from(variantesRemetente).join("/")}`);
+    return;
+  }
+
+  const { error: updErr } = await supabase
+    .from("comunicacao_envios")
+    .update({
+      confirmado_em: new Date().toISOString(),
+      confirmacao_resposta: String(texto).slice(0, 500),
+    })
+    .eq("id", alvo.id);
+
+  if (updErr) {
+    console.warn("Falha ao marcar confirmação de recebimento:", updErr.message);
+  } else {
+    console.log(`Confirmação de recebimento registrada para envio ${alvo.id}`);
+  }
+}
+
 async function buscarEnviosPorMessageId(supabase: any, messageId: string) {
   const { data: porProvider, error: providerErr } = await supabase
     .from("comunicacao_envios")
@@ -175,10 +279,8 @@ Deno.serve(async (req) => {
         const msg = data?.messages ?? data;
         const fromMe = msg?.key?.fromMe ?? msg?.fromMe ?? false;
         if (fromMe === false) {
-          const remetente =
-            (msg?.key?.remoteJid || msg?.from || "")
-              .toString()
-              .replace("@s.whatsapp.net", "");
+          const telefonesRemetente = extrairTelefonesRemetente(msg);
+          const remetente = telefonesRemetente[0] || String(msg?.key?.remoteJid || msg?.from || "");
           const texto =
             msg?.messageBody ||
             msg?.body ||
@@ -188,44 +290,7 @@ Deno.serve(async (req) => {
             "[mídia]";
           console.log(`Mensagem recebida de ${remetente}: ${texto}`);
 
-          // Tenta casar a resposta com o último envio que pediu confirmação
-          // de recebimento e ainda não foi confirmado (janela de 7 dias).
-          const digitos = remetente.replace(/\D/g, "");
-          // remove código do país (55) para casar com o formato armazenado (DDD+numero)
-          const semPais = digitos.startsWith("55") ? digitos.slice(2) : digitos;
-          const ultimos8 = semPais.slice(-8);
-          if (ultimos8.length === 8) {
-            const seteDiasAtras = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-            const { data: candidatos, error: selErr } = await supabase
-              .from("comunicacao_envios")
-              .select("id, destinatario_telefone, created_at")
-              .eq("confirmacao_solicitada", true)
-              .is("confirmado_em", null)
-              .ilike("destinatario_telefone", `%${ultimos8}`)
-              .gte("created_at", seteDiasAtras)
-              .order("created_at", { ascending: false })
-              .limit(1);
-
-            if (selErr) {
-              console.warn("Erro ao buscar envio para confirmar:", selErr.message);
-            } else if (candidatos && candidatos.length > 0) {
-              const alvo = candidatos[0];
-              const { error: updErr } = await supabase
-                .from("comunicacao_envios")
-                .update({
-                  confirmado_em: new Date().toISOString(),
-                  confirmacao_resposta: String(texto).slice(0, 500),
-                })
-                .eq("id", alvo.id);
-              if (updErr) {
-                console.warn("Falha ao marcar confirmação de recebimento:", updErr.message);
-              } else {
-                console.log(`Confirmação de recebimento registrada para envio ${alvo.id}`);
-              }
-            } else {
-              console.log(`Nenhum envio pendente de confirmação para ${ultimos8}`);
-            }
-          }
+          await marcarConfirmacaoRecebimento(supabase, telefonesRemetente, String(texto));
         }
         break;
       }
