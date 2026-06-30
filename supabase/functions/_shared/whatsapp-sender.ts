@@ -11,6 +11,8 @@ export const WASENDER_API_KEY = Deno.env.get("WASENDER_API_KEY") || "";
 
 export type WasenderReceipt = {
   msgId: string | null;
+  apiMsgId: string | null;
+  messageKeyId: string | null;
   providerStatus: string | null;
   providerStatusCode: number | null;
   raw: unknown;
@@ -18,9 +20,16 @@ export type WasenderReceipt = {
 
 export function normalizarWasenderEnvio(result: any): WasenderReceipt {
   const data = result?.data ?? result ?? {};
-  const msgIdRaw = data?.msgId ?? data?.messageId ?? data?.id ?? data?.key?.id ?? null;
+  const apiMsgIdRaw = data?.msgId ?? data?.messageId ?? null;
+  const messageKeyIdRaw = data?.key?.id ?? data?.id ?? data?.result?.key?.id ?? null;
+  // O Wasender retorna dois identificadores: msgId numérico para consulta na API
+  // e key.id alfanumérico nos webhooks de entrega/leitura. Para auditoria e webhook,
+  // guardamos o key.id como identificador principal quando ele existir.
+  const msgIdRaw = messageKeyIdRaw ?? apiMsgIdRaw;
   return {
     msgId: msgIdRaw === null || msgIdRaw === undefined ? null : String(msgIdRaw),
+    apiMsgId: apiMsgIdRaw === null || apiMsgIdRaw === undefined ? null : String(apiMsgIdRaw),
+    messageKeyId: messageKeyIdRaw === null || messageKeyIdRaw === undefined ? null : String(messageKeyIdRaw),
     providerStatus: data?.status === undefined || data?.status === null ? null : String(data.status),
     providerStatusCode: typeof data?.status === "number" ? data.status : null,
     raw: result,
