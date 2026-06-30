@@ -266,6 +266,10 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: membro.full_name, sucesso: true });
           console.log(`✅ Mensagem enviada para ${membro.full_name}`);
+          await registrarEnvioAuditoria(supabase, {
+            telefone: membro.whatsapp, nome: membro.full_name, member_id: membro.id,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -278,7 +282,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-          
+          await registrarEnvioAuditoria(supabase, {
+            telefone: membro.whatsapp, nome: membro.full_name, member_id: membro.id,
+            conteudo: gerarMensagemAniversario(membro.full_name, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: membro.full_name, sucesso: false, erro: errorMsg });
           console.error(`❌ Erro ao enviar para ${membro.full_name}:`, err);
         }
@@ -307,6 +315,10 @@ serve(async (req) => {
           
           enviados++;
           resultados.push({ nome: convertido.full_name, sucesso: true });
+          await registrarEnvioAuditoria(supabase, {
+            telefone: convertido.whatsapp, nome: convertido.full_name,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -319,7 +331,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-          
+          await registrarEnvioAuditoria(supabase, {
+            telefone: convertido.whatsapp, nome: convertido.full_name,
+            conteudo: gerarMensagemAniversario(convertido.full_name, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: convertido.full_name, sucesso: false, erro: errorMsg });
         }
         await sleep(intervaloAntiSpam());
@@ -348,6 +364,10 @@ serve(async (req) => {
           enviados++;
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: true });
           console.log(`✅ Mensagem (não-membro) enviada para ${inscrito.nome}`);
+          await registrarEnvioAuditoria(supabase, {
+            telefone: inscrito.telefone!, nome: inscrito.nome,
+            conteudo: mensagem, sucesso: true, resp,
+          });
         } catch (err) {
           erros++;
           const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
@@ -360,7 +380,11 @@ serve(async (req) => {
               erro_mensagem: errorMsg,
             });
           } catch {}
-
+          await registrarEnvioAuditoria(supabase, {
+            telefone: inscrito.telefone!, nome: inscrito.nome,
+            conteudo: gerarMensagemAniversario(inscrito.nome, mensagemTemplate),
+            sucesso: false, erro: errorMsg,
+          });
           resultados.push({ nome: `${inscrito.nome} (não-membro)`, sucesso: false, erro: errorMsg });
         }
         await sleep(intervaloAntiSpam());
