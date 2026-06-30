@@ -303,6 +303,8 @@ Deno.serve(async (req) => {
       case "messages.delivered":
       case "messages.read":
       case "messages.failed":
+      case "message-receipt.update":
+      case "message.update":
       case "messages.update": {
         await atualizarEntrega(supabase, data);
 
