@@ -106,6 +106,38 @@ Com carinho,
 _Igreja Gileade_ 💙🙏`;
 }
 
+// Registra o envio na auditoria (comunicacao_envios) para aparecer no histórico.
+async function registrarEnvioAuditoria(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  params: {
+    telefone: string;
+    nome: string;
+    member_id?: string | null;
+    conteudo: string;
+    sucesso: boolean;
+    erro?: string | null;
+    resp?: any;
+  },
+) {
+  try {
+    await supabase.from("comunicacao_envios").insert({
+      tipo: "aniversario",
+      segmento: "aniversariantes",
+      destinatario_telefone: params.telefone,
+      destinatario_nome: params.nome,
+      destinatario_member_id: params.member_id ?? null,
+      conteudo: params.conteudo,
+      status: params.sucesso ? "aceito_provedor" : "falhou",
+      erro_mensagem: params.erro ?? null,
+      provider_message_id: params.sucesso ? extrairMessageId(params.resp) : null,
+      provider_response: params.resp ?? null,
+    });
+  } catch (e) {
+    console.error("Falha ao registrar envio na auditoria:", e);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
