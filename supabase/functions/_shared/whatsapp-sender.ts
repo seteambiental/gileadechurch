@@ -52,7 +52,7 @@ export function statusEntregaPorCodigo(statusCode: number | null | undefined): {
     case 1:
       return { status: "aceito_provedor", providerStatus: "pending" };
     case 2:
-      return { status: "aceito_provedor", providerStatus: "sent" };
+      return { status: "enviado", providerStatus: "sent" };
     default:
       return { status: "aceito_provedor", providerStatus: null };
   }
@@ -68,7 +68,8 @@ export function statusEntregaPorTexto(status?: string | null): {
   }
   if (["delivered"].includes(s)) return { status: "entregue", providerStatus: s };
   if (["read", "played"].includes(s)) return { status: "lido", providerStatus: s };
-  if (["pending", "sent", "in_progress", "queued"].includes(s)) {
+  if (["sent"].includes(s)) return { status: "enviado", providerStatus: s };
+  if (["pending", "in_progress", "queued"].includes(s)) {
     return { status: "aceito_provedor", providerStatus: s };
   }
   return { status: "aceito_provedor", providerStatus: s || null };
