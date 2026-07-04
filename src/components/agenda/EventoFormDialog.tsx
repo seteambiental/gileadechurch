@@ -833,6 +833,19 @@ export const EventoFormDialog = ({
         }
       }
 
+      // Salvar acessos de inscrições (somente leitura no Portal do Líder)
+      if (agendaId) {
+        await supabase.from("evento_inscricoes_acessos").delete().eq("evento_id", agendaId);
+        if (acessoAtivado && acessoMemberIds.length > 0) {
+          const acessos = [...new Set(acessoMemberIds)].map((memberId) => ({
+            evento_id: agendaId!,
+            member_id: memberId,
+          }));
+          const { error: acessoError } = await supabase.from("evento_inscricoes_acessos").insert(acessos);
+          if (acessoError) console.error("Erro ao salvar acessos de inscrições:", acessoError);
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ["agenda-recorrentes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-eventos"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-igreja"] });
