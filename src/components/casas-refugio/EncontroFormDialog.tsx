@@ -751,17 +751,15 @@ export const EncontroFormDialog = ({
                         type="text"
                         inputMode="decimal"
                         placeholder=""
-                        value={field.value === 0 ? "" : field.value}
+                        value={kilosText}
                         onChange={(e) => {
-                          const raw = e.target.value.replace(",", ".");
-                          if (raw === "" || raw === "0") {
-                            field.onChange(0);
-                            return;
-                          }
-                          if (/^\d*\.?\d*$/.test(raw)) {
-                            const parsed = parseFloat(raw);
-                            field.onChange(isNaN(parsed) ? 0 : parsed);
-                          }
+                          const input = e.target.value;
+                          // Permite apenas dígitos e um único separador (, ou .)
+                          if (!/^\d*[.,]?\d*$/.test(input)) return;
+                          setKilosText(input);
+                          const normalized = input.replace(",", ".");
+                          const parsed = parseFloat(normalized);
+                          field.onChange(isNaN(parsed) ? 0 : parsed);
                         }}
                         className="[appearance:textfield]"
                       />
