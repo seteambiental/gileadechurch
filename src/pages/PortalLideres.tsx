@@ -123,6 +123,21 @@ const PortalLideres = () => {
     enabled: !!memberProfile?.id,
   });
 
+  // Detect if member has any event inscription access granted
+  const { data: temAcessoInscricoes = false } = useQuery({
+    queryKey: ["portal-lideres-tem-acesso-inscricoes", memberProfile?.id],
+    queryFn: async () => {
+      if (!memberProfile?.id) return false;
+      const { count, error } = await supabase
+        .from("evento_inscricoes_acessos")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberProfile.id);
+      if (error) throw error;
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Fetch PG ministry info
   const { data: pgMinistry } = useQuery({
     queryKey: ["portal-lideres-pg-ministry"],
