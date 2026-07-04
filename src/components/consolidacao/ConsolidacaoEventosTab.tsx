@@ -156,7 +156,9 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
+  const [whatsRecipients, setWhatsRecipients] = useState<{ nome: string; telefone: string }[] | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sendProgress, setSendProgress] = useState<{ done: number; total: number } | null>(null);
   const [whatsMsg, setWhatsMsg] = useState("");
   const [whatsAnexo, setWhatsAnexo] = useState<WhatsappAnexo | null>(null);
   const [sendingWhats, setSendingWhats] = useState(false);
