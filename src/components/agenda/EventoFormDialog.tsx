@@ -290,6 +290,23 @@ export const EventoFormDialog = ({
     },
   });
 
+  // Nomes dos membros com acesso concedido (para exibir chips de "outras pessoas")
+  const { data: extrasNomes = {} } = useQuery({
+    queryKey: ["acesso-membros-nomes", acessoMemberIds],
+    queryFn: async () => {
+      if (acessoMemberIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("members_safe" as any)
+        .select("id, full_name")
+        .in("id", acessoMemberIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((m: any) => { map[m.id] = m.full_name; });
+      return map;
+    },
+    enabled: acessoMemberIds.length > 0,
+  });
+
   const { data: ambientes = [] } = useQuery({
     queryKey: ["ambientes-ativos"],
     queryFn: async () => {
