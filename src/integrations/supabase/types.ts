@@ -2893,6 +2893,49 @@ export type Database = {
         }
         Relationships: []
       }
+      evento_inscricoes_acessos: {
+        Row: {
+          created_at: string
+          evento_id: string
+          id: string
+          member_id: string
+        }
+        Insert: {
+          created_at?: string
+          evento_id: string
+          id?: string
+          member_id: string
+        }
+        Update: {
+          created_at?: string
+          evento_id?: string
+          id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evento_inscricoes_acessos_evento_id_fkey"
+            columns: ["evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_inscricoes_acessos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evento_inscricoes_acessos_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homepage_avisos: {
         Row: {
           ativo: boolean
