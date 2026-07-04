@@ -676,11 +676,20 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         invalidateKeys={[eventosKey, manualKey]}
       />
 
-      <Dialog open={!!whatsTarget} onOpenChange={(o) => { if (!o) { setWhatsTarget(null); setWhatsMsg(""); } }}>
+      <Dialog open={!!whatsRecipients} onOpenChange={(o) => { if (!o && !sendingWhats) { setWhatsRecipients(null); setWhatsMsg(""); setWhatsAnexo(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
+            <DialogTitle>
+              {whatsRecipients && whatsRecipients.length > 1
+                ? `Enviar WhatsApp para ${whatsRecipients.length} pessoas`
+                : `Enviar WhatsApp ${whatsRecipients?.[0] ? `para ${whatsRecipients[0].nome}` : ""}`}
+            </DialogTitle>
           </DialogHeader>
+          {whatsRecipients && whatsRecipients.length > 1 && (
+            <p className="text-xs text-muted-foreground">
+              Use <code className="font-mono">{"{nome}"}</code> na mensagem para inserir o primeiro nome de cada pessoa automaticamente.
+            </p>
+          )}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <Select onValueChange={aplicarModelo}>
