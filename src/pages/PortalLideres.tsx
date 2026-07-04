@@ -281,6 +281,17 @@ const PortalLideres = () => {
     color: "hsl(280, 70%, 55%)",
   });
 
+  // Inscrições de Eventos (acesso concedido em eventos específicos)
+  if (temAcessoInscricoes) {
+    menuItems.push({
+      id: "inscricoes-eventos",
+      label: "Inscrições de Eventos",
+      subtitle: "Acompanhar inscrições",
+      icon: Ticket,
+      color: "hsl(200, 70%, 45%)",
+    });
+  }
+
   // Ministries
   allMinistries.forEach((ministry) => {
     const slug = ministry.name.toLowerCase()
