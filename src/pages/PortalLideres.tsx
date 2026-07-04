@@ -587,7 +587,7 @@ const PortalLideres = () => {
 
             {/* Menu Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <Card
                   key={item.id}
                   className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
