@@ -386,6 +386,11 @@ const PortalLideres = () => {
     color: "hsl(0, 0%, 45%)",
   });
 
+  // Restrict menu to only "Inscrições de Eventos" for members granted event access only
+  const visibleMenuItems = onlyInscricoesAccess
+    ? menuItems.filter((m) => m.id === "inscricoes-eventos")
+    : menuItems;
+
   // Render section content
   const renderSectionContent = () => {
     if (!activeSection) return null;
