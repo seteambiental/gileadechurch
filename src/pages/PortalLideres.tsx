@@ -208,7 +208,10 @@ const PortalLideres = () => {
 
   // Check access - also allow kids_lideres members
   const hasKidsAccess = !!kidsLiderInfo;
-  if (!portalAccess || (!LEADER_ROLES.includes(portalAccess.role) && !hasKidsAccess)) {
+  const hasLeaderRole = !!portalAccess && LEADER_ROLES.includes(portalAccess.role);
+  // Members without a leader role but with granted event access get restricted entry
+  const onlyInscricoesAccess = !hasLeaderRole && !hasKidsAccess && temAcessoInscricoes;
+  if (!portalAccess || (!hasLeaderRole && !hasKidsAccess && !temAcessoInscricoes)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
