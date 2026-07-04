@@ -259,6 +259,36 @@ export const EventoFormDialog = ({
 
   const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
 
+  // Acesso de líderes/pessoas às inscrições (somente leitura no Portal do Líder)
+  const [acessoAtivado, setAcessoAtivado] = useState(false);
+  const [acessoMemberIds, setAcessoMemberIds] = useState<string[]>([]);
+
+  // Líderes de ministério (constam nos cards de ministério)
+  const { data: lideresMinisterio = [] } = useQuery({
+    queryKey: ["lideres-ministerio-acesso"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_functions")
+        .select("member_id, members(id, full_name), ministries(id, name)")
+        .eq("function_type", "lider_ministerio");
+      if (error) throw error;
+      const map = new Map<string, { member_id: string; full_name: string; ministerios: string[] }>();
+      (data || []).forEach((row: any) => {
+        const mid = row.member_id;
+        const nome = row.members?.full_name;
+        if (!mid || !nome) return;
+        const min = row.ministries?.name;
+        const existing = map.get(mid);
+        if (existing) {
+          if (min && !existing.ministerios.includes(min)) existing.ministerios.push(min);
+        } else {
+          map.set(mid, { member_id: mid, full_name: nome, ministerios: min ? [min] : [] });
+        }
+      });
+      return Array.from(map.values()).sort((a, b) => a.full_name.localeCompare(b.full_name, "pt-BR"));
+    },
+  });
+
   const { data: ambientes = [] } = useQuery({
     queryKey: ["ambientes-ativos"],
     queryFn: async () => {
