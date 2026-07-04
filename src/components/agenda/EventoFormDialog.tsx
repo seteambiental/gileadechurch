@@ -305,6 +305,15 @@ export const EventoFormDialog = ({
     if (open) {
       // Load extra ambientes for existing events
       if (evento?.id) {
+        // Load existing inscrição access grants
+        supabase.from("evento_inscricoes_acessos")
+          .select("member_id")
+          .eq("evento_id", evento.id)
+          .then(({ data }) => {
+            const ids = (data || []).map((d: any) => d.member_id);
+            setAcessoMemberIds(ids);
+            setAcessoAtivado(ids.length > 0);
+          });
         supabase.from("agenda_ambientes")
           .select("ambiente_id, bloqueio_inicio, bloqueio_fim")
           .eq("agenda_id", evento.id)
