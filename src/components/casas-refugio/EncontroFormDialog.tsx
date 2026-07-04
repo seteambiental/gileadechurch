@@ -222,6 +222,7 @@ export const EncontroFormDialog = ({
         });
         setPhoto(null);
         setPhotoPreview(null);
+        setKilosText("");
       }
       if (!isEditing) {
         setPresencas({});
