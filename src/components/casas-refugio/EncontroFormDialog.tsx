@@ -199,6 +199,11 @@ export const EncontroFormDialog = ({
           ofertas_pix: ofertasPixValue,
           observacoes: editingEncontro.observacoes || "",
         });
+        setKilosText(
+          editingEncontro.kilos_arrecadados
+            ? String(editingEncontro.kilos_arrecadados).replace(".", ",")
+            : ""
+        );
         if (editingEncontro.photo_url) {
           setPhotoPreview(editingEncontro.photo_url);
         }
