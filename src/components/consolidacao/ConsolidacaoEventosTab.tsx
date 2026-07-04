@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Send } from "lucide-react";
 import {
   Loader2,
@@ -155,7 +156,9 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   } | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [whatsTarget, setWhatsTarget] = useState<{ nome: string; telefone: string } | null>(null);
+  const [whatsRecipients, setWhatsRecipients] = useState<{ nome: string; telefone: string }[] | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sendProgress, setSendProgress] = useState<{ done: number; total: number } | null>(null);
   const [whatsMsg, setWhatsMsg] = useState("");
   const [whatsAnexo, setWhatsAnexo] = useState<WhatsappAnexo | null>(null);
   const [sendingWhats, setSendingWhats] = useState(false);
@@ -295,21 +298,54 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     if (!num) return;
     const full = num.startsWith("55") ? num : `55${num}`;
     const primeiroNome = (nome || "").split(" ")[0] || "";
-    setWhatsTarget({ nome, telefone: full });
+    setWhatsRecipients([{ nome, telefone: full }]);
     setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
   };
 
+  const rowKey = (r: UnifiedRow) => `${r.source}-${r.id}`;
+
+  const toggleSelect = (key: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const openWhatsBulk = () => {
+    const recips = filtradas
+      .filter((r) => selectedIds.has(rowKey(r)))
+      .map((r) => {
+        const num = onlyDigits(r.telefone);
+        if (!num) return null;
+        const full = num.startsWith("55") ? num : `55${num}`;
+        return { nome: r.nome, telefone: full };
+      })
+      .filter(Boolean) as { nome: string; telefone: string }[];
+    if (recips.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum selecionado com telefone válido" });
+      return;
+    }
+    setWhatsRecipients(recips);
+    setWhatsMsg("Olá {nome}, tudo bem? Aqui é da Igreja Gileade. ");
+  };
+
   const aplicarModelo = (texto: string) => {
-    const primeiroNome = (whatsTarget?.nome || "").split(" ")[0] || "";
-    setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+    if (whatsRecipients && whatsRecipients.length === 1) {
+      const primeiroNome = (whatsRecipients[0].nome || "").split(" ")[0] || "";
+      setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+    } else {
+      setWhatsMsg(texto);
+    }
   };
 
   const gerarMensagemIA = async () => {
-    if (!whatsTarget) return;
+    if (!whatsRecipients || whatsRecipients.length === 0) return;
     setGerandoIA(true);
     try {
       const { data, error } = await supabase.functions.invoke("gerar-mensagem-consolidacao", {
-        body: { nome: whatsTarget.nome, tipo },
+        body: { nome: whatsRecipients.length === 1 ? whatsRecipients[0].nome : "{nome}", tipo },
       });
       if (error) throw error;
       if (data?.mensagem) {
@@ -324,22 +360,44 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   };
 
   const enviarWhats = async () => {
-    if (!whatsTarget || !whatsMsg.trim()) return;
+    if (!whatsRecipients || whatsRecipients.length === 0 || !whatsMsg.trim()) return;
+    const recipients = whatsRecipients;
     setSendingWhats(true);
+    let enviados = 0;
+    let falhas = 0;
     try {
-      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim(), midiaUrl: whatsAnexo?.url || null, midiaFileName: whatsAnexo?.fileName || null },
+      for (let idx = 0; idx < recipients.length; idx++) {
+        const r = recipients[idx];
+        const primeiroNome = (r.nome || "").split(" ")[0] || "";
+        const msgFinal = whatsMsg.replace(/\{nome\}/gi, primeiroNome).trim();
+        try {
+          const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+            body: { action: "mensagem_direta", telefone: r.telefone, mensagem: msgFinal, midiaUrl: whatsAnexo?.url || null, midiaFileName: whatsAnexo?.fileName || null },
+          });
+          if (error) throw error;
+          if (data && data.success === false) throw new Error(data.error || "Falha no envio");
+          enviados++;
+        } catch {
+          falhas++;
+        }
+        setSendProgress({ done: idx + 1, total: recipients.length });
+        // Delay anti-SPAM aleatório entre mensagens (não após a última)
+        if (recipients.length > 1 && idx < recipients.length - 1) {
+          const delay = Math.floor(Math.random() * 15000) + 15000;
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      }
+      toast({
+        title: "Envio concluído",
+        description: `${enviados} enviada(s)${falhas ? `, ${falhas} falha(s)` : ""}.`,
       });
-      if (error) throw error;
-      if (data && data.success === false) throw new Error(data.error || "Falha no envio");
-      toast({ title: "Mensagem enviada!", description: `Enviada para ${whatsTarget.nome}.` });
-      setWhatsTarget(null);
+      setWhatsRecipients(null);
       setWhatsMsg("");
       setWhatsAnexo(null);
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Erro ao enviar", description: err.message });
+      setSelectedIds(new Set());
     } finally {
       setSendingWhats(false);
+      setSendProgress(null);
     }
   };
 
@@ -486,6 +544,23 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
 
       <SearchInput placeholder="Buscar por nome..." value={search} onChange={setSearch} className="w-full sm:max-w-sm" />
 
+      {(() => {
+        const selCount = filtradas.filter((r) => selectedIds.has(rowKey(r))).length;
+        if (selCount === 0) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg">
+            <span className="text-sm text-muted-foreground">{selCount} selecionado(s)</span>
+            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={openWhatsBulk}>
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Enviar WhatsApp
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              Limpar seleção
+            </Button>
+          </div>
+        );
+      })()}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-destructive animate-spin" />
@@ -502,6 +577,25 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    {(() => {
+                      const selectableKeys = filtradas
+                        .filter((r) => onlyDigits(r.telefone))
+                        .map(rowKey);
+                      const allSelected =
+                        selectableKeys.length > 0 &&
+                        selectableKeys.every((k) => selectedIds.has(k));
+                      return (
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={(c) =>
+                            setSelectedIds(c ? new Set(selectableKeys) : new Set())
+                          }
+                          aria-label="Selecionar todos"
+                        />
+                      );
+                    })()}
+                  </TableHead>
                   <TableHead>
                     <ColumnFilterPopover title="Nome" options={columnOptions.nome} selected={fNome} onChange={setFNome} />
                   </TableHead>
@@ -526,6 +620,14 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
               <TableBody>
                 {filtradas.map((r) => (
                   <TableRow key={`${r.source}-${r.id}`}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(rowKey(r))}
+                        disabled={!onlyDigits(r.telefone)}
+                        onCheckedChange={(c) => toggleSelect(rowKey(r), !!c)}
+                        aria-label={`Selecionar ${r.nome}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {r.nome}
                       {r.source === "manual" && (
@@ -618,11 +720,20 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
         invalidateKeys={[eventosKey, manualKey]}
       />
 
-      <Dialog open={!!whatsTarget} onOpenChange={(o) => { if (!o) { setWhatsTarget(null); setWhatsMsg(""); } }}>
+      <Dialog open={!!whatsRecipients} onOpenChange={(o) => { if (!o && !sendingWhats) { setWhatsRecipients(null); setWhatsMsg(""); setWhatsAnexo(null); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Enviar WhatsApp {whatsTarget ? `para ${whatsTarget.nome}` : ""}</DialogTitle>
+            <DialogTitle>
+              {whatsRecipients && whatsRecipients.length > 1
+                ? `Enviar WhatsApp para ${whatsRecipients.length} pessoas`
+                : `Enviar WhatsApp ${whatsRecipients?.[0] ? `para ${whatsRecipients[0].nome}` : ""}`}
+            </DialogTitle>
           </DialogHeader>
+          {whatsRecipients && whatsRecipients.length > 1 && (
+            <p className="text-xs text-muted-foreground">
+              Use <code className="font-mono">{"{nome}"}</code> na mensagem para inserir o primeiro nome de cada pessoa automaticamente.
+            </p>
+          )}
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <Select onValueChange={aplicarModelo}>
@@ -661,12 +772,16 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             <WhatsappAnexoUpload value={whatsAnexo} onChange={setWhatsAnexo} disabled={sendingWhats} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); setWhatsAnexo(null); }} disabled={sendingWhats}>
+            <Button variant="outline" onClick={() => { setWhatsRecipients(null); setWhatsMsg(""); setWhatsAnexo(null); }} disabled={sendingWhats}>
               Cancelar
             </Button>
             <Button onClick={enviarWhats} disabled={sendingWhats || !whatsMsg.trim()} className="bg-green-600 hover:bg-green-700">
               {sendingWhats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Enviar
+              {sendingWhats && sendProgress
+                ? `Enviando ${sendProgress.done}/${sendProgress.total}`
+                : whatsRecipients && whatsRecipients.length > 1
+                ? `Enviar (${whatsRecipients.length})`
+                : "Enviar"}
             </Button>
           </DialogFooter>
         </DialogContent>
