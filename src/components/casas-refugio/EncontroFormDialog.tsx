@@ -108,6 +108,7 @@ export const EncontroFormDialog = ({
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isRotating, setIsRotating] = useState(false);
   const [presencas, setPresencas] = useState<Record<string, boolean>>({});
+  const [kilosText, setKilosText] = useState("");
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Camera state removed - now using native file input with capture attribute
