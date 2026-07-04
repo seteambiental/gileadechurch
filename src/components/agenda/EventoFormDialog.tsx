@@ -451,6 +451,8 @@ export const EventoFormDialog = ({
         setFlyerUrl(null);
         setFlyerPendente(null);
         setTextoCompartilhamento(null);
+        setAcessoAtivado(false);
+        setAcessoMemberIds([]);
       }
     }
   }, [open, evento, selectedDate, mode]);
