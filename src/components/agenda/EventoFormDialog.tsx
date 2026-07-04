@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getCorPorTipo } from "@/lib/event-colors";
+import { MemberSelect } from "@/components/ui/member-select";
 import {
   Dialog,
   DialogContent,
