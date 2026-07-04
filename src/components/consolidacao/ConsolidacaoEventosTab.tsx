@@ -577,6 +577,25 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    {(() => {
+                      const selectableKeys = filtradas
+                        .filter((r) => onlyDigits(r.telefone))
+                        .map(rowKey);
+                      const allSelected =
+                        selectableKeys.length > 0 &&
+                        selectableKeys.every((k) => selectedIds.has(k));
+                      return (
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={(c) =>
+                            setSelectedIds(c ? new Set(selectableKeys) : new Set())
+                          }
+                          aria-label="Selecionar todos"
+                        />
+                      );
+                    })()}
+                  </TableHead>
                   <TableHead>
                     <ColumnFilterPopover title="Nome" options={columnOptions.nome} selected={fNome} onChange={setFNome} />
                   </TableHead>
@@ -601,6 +620,14 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
               <TableBody>
                 {filtradas.map((r) => (
                   <TableRow key={`${r.source}-${r.id}`}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedIds.has(rowKey(r))}
+                        disabled={!onlyDigits(r.telefone)}
+                        onCheckedChange={(c) => toggleSelect(rowKey(r), !!c)}
+                        aria-label={`Selecionar ${r.nome}`}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">
                       {r.nome}
                       {r.source === "manual" && (
