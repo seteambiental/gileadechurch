@@ -544,6 +544,23 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
 
       <SearchInput placeholder="Buscar por nome..." value={search} onChange={setSearch} className="w-full sm:max-w-sm" />
 
+      {(() => {
+        const selCount = filtradas.filter((r) => selectedIds.has(rowKey(r))).length;
+        if (selCount === 0) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-2 p-3 bg-muted rounded-lg">
+            <span className="text-sm text-muted-foreground">{selCount} selecionado(s)</span>
+            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={openWhatsBulk}>
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Enviar WhatsApp
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              Limpar seleção
+            </Button>
+          </div>
+        );
+      })()}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 text-destructive animate-spin" />
