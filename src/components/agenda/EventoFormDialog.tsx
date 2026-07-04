@@ -1589,12 +1589,105 @@ export const EventoFormDialog = ({
               )}
             </div>
 
+            {/* Disponibilizar acesso às inscrições */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="acesso_inscricoes"
+                  checked={acessoAtivado}
+                  onCheckedChange={(c) => {
+                    setAcessoAtivado(!!c);
+                    if (!c) setAcessoMemberIds([]);
+                  }}
+                />
+                <Label htmlFor="acesso_inscricoes" className="cursor-pointer flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Disponibilizar inscrições ao líder
+                </Label>
+              </div>
+              {acessoAtivado && (
+                <div className="space-y-3 pt-2 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    Selecione quem poderá <strong>visualizar</strong> as inscrições deste evento
+                    (somente leitura) no Portal do Líder.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Líderes de ministério</Label>
+                    <div className="max-h-44 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/40">
+                      {lideresMinisterio.length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">Nenhum líder de ministério encontrado.</p>
+                      )}
+                      {lideresMinisterio.map((lider) => (
+                        <label
+                          key={lider.member_id}
+                          className="flex items-start gap-2 p-2 cursor-pointer hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            checked={acessoMemberIds.includes(lider.member_id)}
+                            onCheckedChange={(c) => {
+                              setAcessoMemberIds((prev) =>
+                                c
+                                  ? [...new Set([...prev, lider.member_id])]
+                                  : prev.filter((id) => id !== lider.member_id)
+                              );
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm leading-tight truncate">{lider.full_name}</p>
+                            {lider.ministerios.length > 0 && (
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {lider.ministerios.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Adicionar outras pessoas</Label>
+                    <MemberSelect
+                      value={null}
+                      onChange={(id) => {
+                        if (id) setAcessoMemberIds((prev) => [...new Set([...prev, id])]);
+                      }}
+                      placeholder="Buscar membro para adicionar..."
+                    />
+                    {(() => {
+                      const liderIds = new Set(lideresMinisterio.map((l) => l.member_id));
+                      const extras = acessoMemberIds.filter((id) => !liderIds.has(id));
+                      if (extras.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {extras.map((id) => {
+                            const nome = extrasNomes[id] || "Membro";
+                            return (
+                              <Badge key={id} variant="secondary" className="gap-1">
+                                {nome}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAcessoMemberIds((prev) => prev.filter((x) => x !== id))
+                                  }
+                                  className="hover:text-destructive"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Link de inscrição para Apresentação de Crianças */}
             {formData.tipo_evento === "apresentacao_criancas" && evento?.id && (
-
-            {/* placeholder */}
-            <></>
-            }
               <div className="p-3 bg-secondary/10 border border-secondary/30 rounded-lg space-y-2">
                 <Label className="text-sm flex items-center gap-2 font-medium">
                   <LinkIcon className="w-4 h-4" />
