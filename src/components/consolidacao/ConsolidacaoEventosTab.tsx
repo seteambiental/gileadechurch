@@ -728,12 +728,16 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
             <WhatsappAnexoUpload value={whatsAnexo} onChange={setWhatsAnexo} disabled={sendingWhats} />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setWhatsTarget(null); setWhatsMsg(""); setWhatsAnexo(null); }} disabled={sendingWhats}>
+            <Button variant="outline" onClick={() => { setWhatsRecipients(null); setWhatsMsg(""); setWhatsAnexo(null); }} disabled={sendingWhats}>
               Cancelar
             </Button>
             <Button onClick={enviarWhats} disabled={sendingWhats || !whatsMsg.trim()} className="bg-green-600 hover:bg-green-700">
               {sendingWhats ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-              Enviar
+              {sendingWhats && sendProgress
+                ? `Enviando ${sendProgress.done}/${sendProgress.total}`
+                : whatsRecipients && whatsRecipients.length > 1
+                ? `Enviar (${whatsRecipients.length})`
+                : "Enviar"}
             </Button>
           </DialogFooter>
         </DialogContent>
