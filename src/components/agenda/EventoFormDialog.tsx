@@ -1591,6 +1591,10 @@ export const EventoFormDialog = ({
 
             {/* Link de inscrição para Apresentação de Crianças */}
             {formData.tipo_evento === "apresentacao_criancas" && evento?.id && (
+
+            {/* placeholder */}
+            <></>
+            }
               <div className="p-3 bg-secondary/10 border border-secondary/30 rounded-lg space-y-2">
                 <Label className="text-sm flex items-center gap-2 font-medium">
                   <LinkIcon className="w-4 h-4" />
