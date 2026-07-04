@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { getCorPorTipo } from "@/lib/event-colors";
+import { MemberSelect } from "@/components/ui/member-select";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +29,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign, CalendarIcon } from "lucide-react";
+import { Loader2, Trash2, Upload, Sparkles, X, Download, Send, Check, RotateCcw, Plus, Utensils, DollarSign, CalendarIcon, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Copy, MessageSquare, Link as LinkIcon } from "lucide-react";
 import {
   AlertDialog,
@@ -258,6 +260,53 @@ export const EventoFormDialog = ({
 
   const [horariosPorDia, setHorariosPorDia] = useState<HorarioDia[]>([]);
 
+  // Acesso de líderes/pessoas às inscrições (somente leitura no Portal do Líder)
+  const [acessoAtivado, setAcessoAtivado] = useState(false);
+  const [acessoMemberIds, setAcessoMemberIds] = useState<string[]>([]);
+
+  // Líderes de ministério (constam nos cards de ministério)
+  const { data: lideresMinisterio = [] } = useQuery({
+    queryKey: ["lideres-ministerio-acesso"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("member_functions")
+        .select("member_id, members(id, full_name), ministries(id, name)")
+        .eq("function_type", "lider_ministerio");
+      if (error) throw error;
+      const map = new Map<string, { member_id: string; full_name: string; ministerios: string[] }>();
+      (data || []).forEach((row: any) => {
+        const mid = row.member_id;
+        const nome = row.members?.full_name;
+        if (!mid || !nome) return;
+        const min = row.ministries?.name;
+        const existing = map.get(mid);
+        if (existing) {
+          if (min && !existing.ministerios.includes(min)) existing.ministerios.push(min);
+        } else {
+          map.set(mid, { member_id: mid, full_name: nome, ministerios: min ? [min] : [] });
+        }
+      });
+      return Array.from(map.values()).sort((a, b) => a.full_name.localeCompare(b.full_name, "pt-BR"));
+    },
+  });
+
+  // Nomes dos membros com acesso concedido (para exibir chips de "outras pessoas")
+  const { data: extrasNomes = {} } = useQuery({
+    queryKey: ["acesso-membros-nomes", acessoMemberIds],
+    queryFn: async () => {
+      if (acessoMemberIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from("members_safe" as any)
+        .select("id, full_name")
+        .in("id", acessoMemberIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((m: any) => { map[m.id] = m.full_name; });
+      return map;
+    },
+    enabled: acessoMemberIds.length > 0,
+  });
+
   const { data: ambientes = [] } = useQuery({
     queryKey: ["ambientes-ativos"],
     queryFn: async () => {
@@ -274,6 +323,15 @@ export const EventoFormDialog = ({
     if (open) {
       // Load extra ambientes for existing events
       if (evento?.id) {
+        // Load existing inscrição access grants
+        supabase.from("evento_inscricoes_acessos")
+          .select("member_id")
+          .eq("evento_id", evento.id)
+          .then(({ data }) => {
+            const ids = (data || []).map((d: any) => d.member_id);
+            setAcessoMemberIds(ids);
+            setAcessoAtivado(ids.length > 0);
+          });
         supabase.from("agenda_ambientes")
           .select("ambiente_id, bloqueio_inicio, bloqueio_fim")
           .eq("agenda_id", evento.id)
@@ -411,6 +469,8 @@ export const EventoFormDialog = ({
         setFlyerUrl(null);
         setFlyerPendente(null);
         setTextoCompartilhamento(null);
+        setAcessoAtivado(false);
+        setAcessoMemberIds([]);
       }
     }
   }, [open, evento, selectedDate, mode]);
@@ -770,6 +830,19 @@ export const EventoFormDialog = ({
             const { error: extError } = await supabase.from("agenda_ambientes").insert(extras);
             if (extError) console.error("Erro ao salvar ambientes extras:", extError);
           }
+        }
+      }
+
+      // Salvar acessos de inscrições (somente leitura no Portal do Líder)
+      if (agendaId) {
+        await supabase.from("evento_inscricoes_acessos").delete().eq("evento_id", agendaId);
+        if (acessoAtivado && acessoMemberIds.length > 0) {
+          const acessos = [...new Set(acessoMemberIds)].map((memberId) => ({
+            evento_id: agendaId!,
+            member_id: memberId,
+          }));
+          const { error: acessoError } = await supabase.from("evento_inscricoes_acessos").insert(acessos);
+          if (acessoError) console.error("Erro ao salvar acessos de inscrições:", acessoError);
         }
       }
 
@@ -1542,6 +1615,103 @@ export const EventoFormDialog = ({
                       Quando ativado, cada inscrição cria também uma solicitação na aba de
                       aprovação do Cadastro de Membros (não entra direto no cadastro).
                     </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Disponibilizar acesso às inscrições */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="acesso_inscricoes"
+                  checked={acessoAtivado}
+                  onCheckedChange={(c) => {
+                    setAcessoAtivado(!!c);
+                    if (!c) setAcessoMemberIds([]);
+                  }}
+                />
+                <Label htmlFor="acesso_inscricoes" className="cursor-pointer flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Disponibilizar inscrições ao líder
+                </Label>
+              </div>
+              {acessoAtivado && (
+                <div className="space-y-3 pt-2 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground">
+                    Selecione quem poderá <strong>visualizar</strong> as inscrições deste evento
+                    (somente leitura) no Portal do Líder.
+                  </p>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Líderes de ministério</Label>
+                    <div className="max-h-44 overflow-y-auto rounded-md border border-border/50 divide-y divide-border/40">
+                      {lideresMinisterio.length === 0 && (
+                        <p className="text-xs text-muted-foreground p-2">Nenhum líder de ministério encontrado.</p>
+                      )}
+                      {lideresMinisterio.map((lider) => (
+                        <label
+                          key={lider.member_id}
+                          className="flex items-start gap-2 p-2 cursor-pointer hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            checked={acessoMemberIds.includes(lider.member_id)}
+                            onCheckedChange={(c) => {
+                              setAcessoMemberIds((prev) =>
+                                c
+                                  ? [...new Set([...prev, lider.member_id])]
+                                  : prev.filter((id) => id !== lider.member_id)
+                              );
+                            }}
+                          />
+                          <div className="min-w-0">
+                            <p className="text-sm leading-tight truncate">{lider.full_name}</p>
+                            {lider.ministerios.length > 0 && (
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {lider.ministerios.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium">Adicionar outras pessoas</Label>
+                    <MemberSelect
+                      value={null}
+                      onChange={(id) => {
+                        if (id) setAcessoMemberIds((prev) => [...new Set([...prev, id])]);
+                      }}
+                      placeholder="Buscar membro para adicionar..."
+                    />
+                    {(() => {
+                      const liderIds = new Set(lideresMinisterio.map((l) => l.member_id));
+                      const extras = acessoMemberIds.filter((id) => !liderIds.has(id));
+                      if (extras.length === 0) return null;
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {extras.map((id) => {
+                            const nome = extrasNomes[id] || "Membro";
+                            return (
+                              <Badge key={id} variant="secondary" className="gap-1">
+                                {nome}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAcessoMemberIds((prev) => prev.filter((x) => x !== id))
+                                  }
+                                  className="hover:text-destructive"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}

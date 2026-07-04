@@ -20,6 +20,7 @@ import {
   HandHelping,
   Swords,
 } from "lucide-react";
+import { Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -47,6 +48,7 @@ import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLider
 import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 import { PortalLideresCandidaturaServico } from "@/components/portal-lideres/PortalLideresCandidaturaServico";
 import SistemaTab from "@/components/cadastros/SistemaTab";
+import { PortalLideresInscricoesEventos } from "@/components/portal-lideres/PortalLideresInscricoesEventos";
 
 // Roles que têm acesso ao portal de líderes
 const LEADER_ROLES: PortalRole[] = [
@@ -121,6 +123,21 @@ const PortalLideres = () => {
     enabled: !!memberProfile?.id,
   });
 
+  // Detect if member has any event inscription access granted
+  const { data: temAcessoInscricoes = false } = useQuery({
+    queryKey: ["portal-lideres-tem-acesso-inscricoes", memberProfile?.id],
+    queryFn: async () => {
+      if (!memberProfile?.id) return false;
+      const { count, error } = await supabase
+        .from("evento_inscricoes_acessos")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberProfile.id);
+      if (error) throw error;
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Fetch PG ministry info
   const { data: pgMinistry } = useQuery({
     queryKey: ["portal-lideres-pg-ministry"],
@@ -191,7 +208,10 @@ const PortalLideres = () => {
 
   // Check access - also allow kids_lideres members
   const hasKidsAccess = !!kidsLiderInfo;
-  if (!portalAccess || (!LEADER_ROLES.includes(portalAccess.role) && !hasKidsAccess)) {
+  const hasLeaderRole = !!portalAccess && LEADER_ROLES.includes(portalAccess.role);
+  // Members without a leader role but with granted event access get restricted entry
+  const onlyInscricoesAccess = !hasLeaderRole && !hasKidsAccess && temAcessoInscricoes;
+  if (!portalAccess || (!hasLeaderRole && !hasKidsAccess && !temAcessoInscricoes)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center max-w-md">
@@ -263,6 +283,17 @@ const PortalLideres = () => {
     icon: BarChart3,
     color: "hsl(280, 70%, 55%)",
   });
+
+  // Inscrições de Eventos (acesso concedido em eventos específicos)
+  if (temAcessoInscricoes) {
+    menuItems.push({
+      id: "inscricoes-eventos",
+      label: "Inscrições de Eventos",
+      subtitle: "Acompanhar inscrições",
+      icon: Ticket,
+      color: "hsl(200, 70%, 45%)",
+    });
+  }
 
   // Ministries
   allMinistries.forEach((ministry) => {
@@ -355,6 +386,11 @@ const PortalLideres = () => {
     color: "hsl(0, 0%, 45%)",
   });
 
+  // Restrict menu to only "Inscrições de Eventos" for members granted event access only
+  const visibleMenuItems = onlyInscricoesAccess
+    ? menuItems.filter((m) => m.id === "inscricoes-eventos")
+    : menuItems;
+
   // Render section content
   const renderSectionContent = () => {
     if (!activeSection) return null;
@@ -364,6 +400,13 @@ const PortalLideres = () => {
         return <PortalLideresAgendaTab portalAccess={portalAccess!} memberId={memberProfile.id} />;
       case "indicadores":
         return <PortalLideresIndicadores portalAccess={portalAccess!} />;
+      case "inscricoes-eventos":
+        return (
+          <PortalLideresInscricoesEventos
+            memberId={memberProfile.id}
+            onSubNavChange={handleSubNavChange}
+          />
+        );
       case "casas-refugio":
         return (
           <PortalLideresCasaRefugio
@@ -544,7 +587,7 @@ const PortalLideres = () => {
 
             {/* Menu Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {menuItems.map((item) => (
+              {visibleMenuItems.map((item) => (
                 <Card
                   key={item.id}
                   className="cursor-pointer active:scale-[0.97] hover:shadow-md transition-all duration-150 border-border/60 overflow-hidden group"
