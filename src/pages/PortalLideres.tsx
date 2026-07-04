@@ -392,6 +392,13 @@ const PortalLideres = () => {
         return <PortalLideresAgendaTab portalAccess={portalAccess!} memberId={memberProfile.id} />;
       case "indicadores":
         return <PortalLideresIndicadores portalAccess={portalAccess!} />;
+      case "inscricoes-eventos":
+        return (
+          <PortalLideresInscricoesEventos
+            memberId={memberProfile.id}
+            onSubNavChange={handleSubNavChange}
+          />
+        );
       case "casas-refugio":
         return (
           <PortalLideresCasaRefugio
