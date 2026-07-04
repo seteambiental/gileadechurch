@@ -47,6 +47,7 @@ import { PortalLideresAprovacoes } from "@/components/portal-lideres/PortalLider
 import { PortalFinancasTab } from "@/components/portal/PortalFinancasTab";
 import { PortalLideresCandidaturaServico } from "@/components/portal-lideres/PortalLideresCandidaturaServico";
 import SistemaTab from "@/components/cadastros/SistemaTab";
+import { PortalLideresInscricoesEventos } from "@/components/portal-lideres/PortalLideresInscricoesEventos";
 
 // Roles que têm acesso ao portal de líderes
 const LEADER_ROLES: PortalRole[] = [
