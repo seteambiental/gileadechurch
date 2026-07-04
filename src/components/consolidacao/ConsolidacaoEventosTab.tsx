@@ -298,21 +298,54 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
     if (!num) return;
     const full = num.startsWith("55") ? num : `55${num}`;
     const primeiroNome = (nome || "").split(" ")[0] || "";
-    setWhatsTarget({ nome, telefone: full });
+    setWhatsRecipients([{ nome, telefone: full }]);
     setWhatsMsg(`Olá ${primeiroNome}, tudo bem? Aqui é da Igreja Gileade. `);
   };
 
+  const rowKey = (r: UnifiedRow) => `${r.source}-${r.id}`;
+
+  const toggleSelect = (key: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  };
+
+  const openWhatsBulk = () => {
+    const recips = filtradas
+      .filter((r) => selectedIds.has(rowKey(r)))
+      .map((r) => {
+        const num = onlyDigits(r.telefone);
+        if (!num) return null;
+        const full = num.startsWith("55") ? num : `55${num}`;
+        return { nome: r.nome, telefone: full };
+      })
+      .filter(Boolean) as { nome: string; telefone: string }[];
+    if (recips.length === 0) {
+      toast({ variant: "destructive", title: "Nenhum selecionado com telefone válido" });
+      return;
+    }
+    setWhatsRecipients(recips);
+    setWhatsMsg("Olá {nome}, tudo bem? Aqui é da Igreja Gileade. ");
+  };
+
   const aplicarModelo = (texto: string) => {
-    const primeiroNome = (whatsTarget?.nome || "").split(" ")[0] || "";
-    setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+    if (whatsRecipients && whatsRecipients.length === 1) {
+      const primeiroNome = (whatsRecipients[0].nome || "").split(" ")[0] || "";
+      setWhatsMsg(texto.replace(/\{nome\}/gi, primeiroNome));
+    } else {
+      setWhatsMsg(texto);
+    }
   };
 
   const gerarMensagemIA = async () => {
-    if (!whatsTarget) return;
+    if (!whatsRecipients || whatsRecipients.length === 0) return;
     setGerandoIA(true);
     try {
       const { data, error } = await supabase.functions.invoke("gerar-mensagem-consolidacao", {
-        body: { nome: whatsTarget.nome, tipo },
+        body: { nome: whatsRecipients.length === 1 ? whatsRecipients[0].nome : "{nome}", tipo },
       });
       if (error) throw error;
       if (data?.mensagem) {
@@ -327,22 +360,44 @@ export const ConsolidacaoEventosTab = ({ tipo, includeManual = false, hideTitle 
   };
 
   const enviarWhats = async () => {
-    if (!whatsTarget || !whatsMsg.trim()) return;
+    if (!whatsRecipients || whatsRecipients.length === 0 || !whatsMsg.trim()) return;
+    const recipients = whatsRecipients;
     setSendingWhats(true);
+    let enviados = 0;
+    let falhas = 0;
     try {
-      const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
-        body: { action: "mensagem_direta", telefone: whatsTarget.telefone, mensagem: whatsMsg.trim(), midiaUrl: whatsAnexo?.url || null, midiaFileName: whatsAnexo?.fileName || null },
+      for (let idx = 0; idx < recipients.length; idx++) {
+        const r = recipients[idx];
+        const primeiroNome = (r.nome || "").split(" ")[0] || "";
+        const msgFinal = whatsMsg.replace(/\{nome\}/gi, primeiroNome).trim();
+        try {
+          const { data, error } = await supabase.functions.invoke("enviar-whatsapp", {
+            body: { action: "mensagem_direta", telefone: r.telefone, mensagem: msgFinal, midiaUrl: whatsAnexo?.url || null, midiaFileName: whatsAnexo?.fileName || null },
+          });
+          if (error) throw error;
+          if (data && data.success === false) throw new Error(data.error || "Falha no envio");
+          enviados++;
+        } catch {
+          falhas++;
+        }
+        setSendProgress({ done: idx + 1, total: recipients.length });
+        // Delay anti-SPAM aleatório entre mensagens (não após a última)
+        if (recipients.length > 1 && idx < recipients.length - 1) {
+          const delay = Math.floor(Math.random() * 15000) + 15000;
+          await new Promise((res) => setTimeout(res, delay));
+        }
+      }
+      toast({
+        title: "Envio concluído",
+        description: `${enviados} enviada(s)${falhas ? `, ${falhas} falha(s)` : ""}.`,
       });
-      if (error) throw error;
-      if (data && data.success === false) throw new Error(data.error || "Falha no envio");
-      toast({ title: "Mensagem enviada!", description: `Enviada para ${whatsTarget.nome}.` });
-      setWhatsTarget(null);
+      setWhatsRecipients(null);
       setWhatsMsg("");
       setWhatsAnexo(null);
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Erro ao enviar", description: err.message });
+      setSelectedIds(new Set());
     } finally {
       setSendingWhats(false);
+      setSendProgress(null);
     }
   };
 
