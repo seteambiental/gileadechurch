@@ -314,30 +314,24 @@ const InscricaoApresentacaoPublica = () => {
         }
       }
 
-      // Mensagem de agradecimento aos pais/contato (best-effort)
+      // Mensagem de agradecimento aos pais/contato + aviso à igreja (best-effort)
       if (insertedId) {
         await dispararMensagemApresentacaoPais({ apresentacaoId: insertedId, tipo: "recebida" });
       }
-
-      // Aviso de recebimento para o WhatsApp da igreja (best-effort)
-      const responsavel = ehMembro
-        ? paiMembro?.full_name || maeMembro?.full_name || null
-        : paiNome.trim() || maeNome.trim() || null;
-      await dispararAvisoApresentacaoRecebida({
-        criancaNome: formatNameField(nome),
-        responsavel,
-        membro: ehMembro,
-      });
     },
     onSuccess: () => {
       setEnviado(true);
       toast({ title: "Inscrição enviada!", description: "Recebemos os dados da apresentação." });
     },
-    onError: (err) => {
+    onError: (err: any) => {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : err?.message || err?.error_description || err?.details || "Não foi possível enviar a inscrição. Tente novamente.";
       toast({
         variant: "destructive",
         title: "Erro ao enviar",
-        description: err instanceof Error ? err.message : String(err),
+        description: msg,
       });
     },
   });
