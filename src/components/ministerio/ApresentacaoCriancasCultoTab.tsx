@@ -6,6 +6,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -16,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Baby, Copy, Trash2, Calendar, MapPin, User, Check, Award, Clock } from "lucide-react";
+import { Loader2, Baby, Copy, Trash2, Calendar, MapPin, User, Check, Award, Clock, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -48,6 +72,7 @@ const ApresentacaoCriancasCultoTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [certInscricao, setCertInscricao] = useState<Apresentacao | null>(null);
+  const [editInscricao, setEditInscricao] = useState<Apresentacao | null>(null);
 
   const linkPublico = `${window.location.origin}/apresentacao-de-criancas`;
 
@@ -99,6 +124,32 @@ const ApresentacaoCriancasCultoTab = () => {
     },
     onError: (err) =>
       toast({ variant: "destructive", title: "Erro ao excluir", description: err instanceof Error ? err.message : String(err) }),
+  });
+
+  const editarMutation = useMutation({
+    mutationFn: async (i: Apresentacao) => {
+      const { error } = await (supabase as any)
+        .from("apresentacao_criancas")
+        .update({
+          crianca_nome: i.crianca_nome,
+          crianca_genero: i.crianca_genero,
+          crianca_data_nascimento: i.crianca_data_nascimento,
+          pai_nome: i.pai_nome,
+          pai_nao_identificado: i.pai_nao_identificado,
+          mae_nome: i.mae_nome,
+          mae_nao_identificado: i.mae_nao_identificado,
+          data_apresentacao: i.data_apresentacao,
+        })
+        .eq("id", i.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      setEditInscricao(null);
+      toast({ title: "Dados atualizados" });
+    },
+    onError: (err) =>
+      toast({ variant: "destructive", title: "Erro ao salvar", description: err instanceof Error ? err.message : String(err) }),
   });
 
   const copiarLink = () => {
@@ -198,6 +249,87 @@ const ApresentacaoCriancasCultoTab = () => {
     </Card>
   );
 
+  const TabelaApresentadas = ({ itens }: { itens: Apresentacao[] }) => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (itens.length === 0) {
+      return <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma criança apresentada ainda.</p>;
+    }
+    const nomePai = (i: Apresentacao) => (i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—");
+    const nomeMae = (i: Apresentacao) => (i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—");
+    return (
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Criança</TableHead>
+              <TableHead>Gênero</TableHead>
+              <TableHead>Nascimento</TableHead>
+              <TableHead>Pai</TableHead>
+              <TableHead>Mãe</TableHead>
+              <TableHead>Apresentação</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {itens.map((i) => (
+              <TableRow key={i.id}>
+                <TableCell className="font-medium">{i.crianca_nome}</TableCell>
+                <TableCell className="capitalize">{i.crianca_genero || "—"}</TableCell>
+                <TableCell>
+                  {i.crianca_data_nascimento
+                    ? format(parseLocalDate(i.crianca_data_nascimento), "dd/MM/yyyy", { locale: ptBR })
+                    : "—"}
+                </TableCell>
+                <TableCell>{nomePai(i)}</TableCell>
+                <TableCell>{nomeMae(i)}</TableCell>
+                <TableCell>
+                  {i.data_apresentacao
+                    ? format(parseLocalDate(i.data_apresentacao), "dd/MM/yyyy", { locale: ptBR })
+                    : "—"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">
+                    <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" title="Certificado" onClick={() => setCertInscricao(i)}>
+                      <Award className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="text-destructive" title="Excluir">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            O registro de <strong>{i.crianca_nome}</strong> será removido permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>Excluir</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    );
+  };
+
   const Lista = ({ itens, aprovada, vazio }: { itens: Apresentacao[]; aprovada: boolean; vazio: string }) => {
     if (isLoading) {
       return (
@@ -256,7 +388,7 @@ const ApresentacaoCriancasCultoTab = () => {
           <Lista itens={pendentes} aprovada={false} vazio="Nenhuma inscrição pendente." />
         </TabsContent>
         <TabsContent value="apresentadas" className="mt-4">
-          <Lista itens={apresentadas} aprovada vazio="Nenhuma criança apresentada ainda." />
+          <TabelaApresentadas itens={apresentadas} />
         </TabsContent>
       </Tabs>
 
@@ -265,6 +397,98 @@ const ApresentacaoCriancasCultoTab = () => {
         onOpenChange={(open) => !open && setCertInscricao(null)}
         inscricao={certInscricao}
       />
+
+      <Dialog open={!!editInscricao} onOpenChange={(open) => !open && setEditInscricao(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar dados da criança</DialogTitle>
+          </DialogHeader>
+          {editInscricao && (
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Nome da criança</Label>
+                <Input
+                  value={editInscricao.crianca_nome}
+                  onChange={(e) => setEditInscricao({ ...editInscricao, crianca_nome: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Gênero</Label>
+                  <Select
+                    value={editInscricao.crianca_genero || "__none__"}
+                    onValueChange={(v) => setEditInscricao({ ...editInscricao, crianca_genero: v === "__none__" ? null : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">—</SelectItem>
+                      <SelectItem value="masculino">Masculino</SelectItem>
+                      <SelectItem value="feminino">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Nascimento</Label>
+                  <Input
+                    type="date"
+                    value={editInscricao.crianca_data_nascimento || ""}
+                    onChange={(e) => setEditInscricao({ ...editInscricao, crianca_data_nascimento: e.target.value || null })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Pai</Label>
+                <Input
+                  value={editInscricao.pai_nome || ""}
+                  disabled={editInscricao.pai_nao_identificado}
+                  onChange={(e) => setEditInscricao({ ...editInscricao, pai_nome: e.target.value })}
+                />
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={editInscricao.pai_nao_identificado}
+                    onChange={(e) => setEditInscricao({ ...editInscricao, pai_nao_identificado: e.target.checked })}
+                  />
+                  Não identificado
+                </label>
+              </div>
+              <div className="space-y-1">
+                <Label>Mãe</Label>
+                <Input
+                  value={editInscricao.mae_nome || ""}
+                  disabled={editInscricao.mae_nao_identificado}
+                  onChange={(e) => setEditInscricao({ ...editInscricao, mae_nome: e.target.value })}
+                />
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={editInscricao.mae_nao_identificado}
+                    onChange={(e) => setEditInscricao({ ...editInscricao, mae_nao_identificado: e.target.checked })}
+                  />
+                  Não identificado
+                </label>
+              </div>
+              <div className="space-y-1">
+                <Label>Data da apresentação</Label>
+                <Input
+                  type="date"
+                  value={editInscricao.data_apresentacao || ""}
+                  onChange={(e) => setEditInscricao({ ...editInscricao, data_apresentacao: e.target.value || null })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditInscricao(null)}>Cancelar</Button>
+            <Button onClick={() => editInscricao && editarMutation.mutate(editInscricao)} disabled={editarMutation.isPending}>
+              {editarMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
