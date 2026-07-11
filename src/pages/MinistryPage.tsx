@@ -626,6 +626,12 @@ const MinistryPage = () => {
                     <BarChart3 className="w-4 h-4" />
                     <span className="hidden sm:inline">Estatísticas</span>
                   </TabsTrigger>
+                  {isOrganizacaoCulto && (
+                    <TabsTrigger value="apresentacao" className="flex items-center gap-2">
+                      <Baby className="w-4 h-4" />
+                      <span className="hidden sm:inline">Apresentação</span>
+                    </TabsTrigger>
+                  )}
                 </>
               )}
               {ministryFromDb?.id && (
