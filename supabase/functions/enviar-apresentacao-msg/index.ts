@@ -4,6 +4,7 @@ import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CHURCH_WHATSAPP = "41998406740";
 
 function formatarDataBR(iso: string | null): string {
   if (!iso) return "";
@@ -60,6 +61,27 @@ Deno.serve(async (req) => {
     }
 
     const nome = insc.crianca_nome || "sua criança";
+
+    // Aviso para o WhatsApp da igreja (somente na inscrição recebida) — best-effort.
+    if (tipo === "recebida") {
+      try {
+        const responsavel =
+          insc.pai_nome || insc.mae_nome || null;
+        const linhas = [
+          "🍼 *Nova inscrição de Apresentação de Criança*",
+          "",
+          `👶 Criança: ${nome}`,
+          responsavel ? `👪 Responsável: ${responsavel}` : null,
+          `⛪ Família membro da Gileade: ${insc.familia_membro ? "Sim" : "Não"}`,
+          "",
+          "Acesse o módulo *Organização de Culto* para conferir e aprovar.",
+        ].filter(Boolean);
+        await enviarTextoWhatsApp(CHURCH_WHATSAPP, linhas.join("\n"));
+      } catch (e) {
+        console.warn("[enviar-apresentacao-msg] falha aviso igreja:", e);
+      }
+    }
+
     let mensagem = "";
     if (tipo === "recebida") {
       mensagem =
