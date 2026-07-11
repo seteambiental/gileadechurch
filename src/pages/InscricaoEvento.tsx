@@ -570,6 +570,18 @@ const InscricaoEvento = () => {
       return;
     }
 
+    // Regra Impacto Jovem — participante precisa completar 16 anos no ano do evento
+    const isImpactoJovem = /impacto/i.test(evento?.titulo || "") && /jovem|jovens/i.test(evento?.titulo || "");
+    if (isImpactoJovem && evento?.data_evento) {
+      const anoEvento = parseLocalDate(evento.data_evento).getFullYear();
+      const anoNascimento = parseLocalDate(dataNascimento).getFullYear();
+      if (anoEvento - anoNascimento < 16) {
+        setIdadeBloqueada(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
     if (tipoInscricao === "membro" && selectedPerson?.type !== "member") {
       toast({
