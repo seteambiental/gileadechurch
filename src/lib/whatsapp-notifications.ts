@@ -126,3 +126,41 @@ export async function dispararEnvioSegmentado(params: {
     },
   });
 }
+/**
+ * Número de WhatsApp da igreja (aparelho conectado ao envio de mensagens).
+ * Recebe o aviso de recebimento de novas inscrições de apresentação de crianças.
+ */
+export const CHURCH_WHATSAPP = "41998406740";
+
+/**
+ * Envia (best-effort) um aviso simples para o WhatsApp da igreja informando
+ * que uma nova inscrição de apresentação de criança foi recebida.
+ */
+export async function dispararAvisoApresentacaoRecebida(params: {
+  criancaNome: string;
+  responsavel?: string | null;
+  membro?: boolean;
+}) {
+  try {
+    const linhas = [
+      "🍼 *Nova inscrição de Apresentação de Criança*",
+      "",
+      `👶 Criança: ${params.criancaNome}`,
+      params.responsavel ? `👪 Responsável: ${params.responsavel}` : null,
+      `⛪ Família membro da Gileade: ${params.membro ? "Sim" : "Não"}`,
+      "",
+      "Acesse o módulo *Organização de Culto* para conferir e aprovar.",
+    ].filter(Boolean);
+
+    await supabase.functions.invoke("enviar-whatsapp", {
+      body: {
+        action: "mensagem_direta",
+        telefone: CHURCH_WHATSAPP,
+        nome: "Igreja Gileade",
+        mensagem: linhas.join("\n"),
+      },
+    });
+  } catch (err) {
+    console.warn("[whatsapp] falha ao enviar aviso apresentacao:", err);
+  }
+}

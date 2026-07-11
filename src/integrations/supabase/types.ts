@@ -640,6 +640,7 @@ export type Database = {
         Row: {
           address: string | null
           cep: string | null
+          certificado_emitido: boolean
           city: string | null
           complement: string | null
           created_at: string
@@ -649,6 +650,7 @@ export type Database = {
           crianca_nome: string
           crianca_photo_url: string | null
           crianca_rg: string | null
+          data_apresentacao: string | null
           familia_membro: boolean
           id: string
           mae_member_id: string | null
@@ -668,6 +670,7 @@ export type Database = {
         Insert: {
           address?: string | null
           cep?: string | null
+          certificado_emitido?: boolean
           city?: string | null
           complement?: string | null
           created_at?: string
@@ -677,6 +680,7 @@ export type Database = {
           crianca_nome: string
           crianca_photo_url?: string | null
           crianca_rg?: string | null
+          data_apresentacao?: string | null
           familia_membro?: boolean
           id?: string
           mae_member_id?: string | null
@@ -696,6 +700,7 @@ export type Database = {
         Update: {
           address?: string | null
           cep?: string | null
+          certificado_emitido?: boolean
           city?: string | null
           complement?: string | null
           created_at?: string
@@ -705,6 +710,7 @@ export type Database = {
           crianca_nome?: string
           crianca_photo_url?: string | null
           crianca_rg?: string | null
+          data_apresentacao?: string | null
           familia_membro?: boolean
           id?: string
           mae_member_id?: string | null
