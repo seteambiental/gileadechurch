@@ -1,8 +1,8 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { formatPhone, formatCep, formatCPF, formatCNPJ, formatRG } from "@/lib/masks";
+import { formatPhone, formatCep, formatCPF, formatCNPJ, formatRG, formatDateInput } from "@/lib/masks";
 
-export type MaskType = "phone" | "cep" | "cpf" | "cnpj" | "rg";
+export type MaskType = "phone" | "cep" | "cpf" | "cnpj" | "rg" | "date";
 
 interface MaskedInputProps extends Omit<React.ComponentProps<"input">, "onChange"> {
   mask: MaskType;
@@ -16,6 +16,7 @@ const maskFunctions: Record<MaskType, (value: string) => string> = {
   cpf: formatCPF,
   cnpj: formatCNPJ,
   rg: formatRG,
+  date: formatDateInput,
 };
 
 const maxLengths: Record<MaskType, number> = {
@@ -24,6 +25,7 @@ const maxLengths: Record<MaskType, number> = {
   cpf: 14,
   cnpj: 18,
   rg: 12,
+  date: 10,
 };
 
 const placeholders: Record<MaskType, string> = {
@@ -32,6 +34,7 @@ const placeholders: Record<MaskType, string> = {
   cpf: "000.000.000-00",
   cnpj: "00.000.000/0000-00",
   rg: "00.000.000-0",
+  date: "dd/mm/aaaa",
 };
 
 const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
@@ -57,7 +60,7 @@ const MaskedInput = React.forwardRef<HTMLInputElement, MaskedInputProps>(
         onChange={handleChange}
         placeholder={placeholder ?? defaultPlaceholder}
         maxLength={maxLength ?? defaultMaxLength}
-        inputMode={mask === "phone" || mask === "cep" || mask === "cpf" || mask === "cnpj" ? "numeric" : "text"}
+        inputMode={mask === "phone" || mask === "cep" || mask === "cpf" || mask === "cnpj" || mask === "date" ? "numeric" : "text"}
         {...props}
       />
     );
