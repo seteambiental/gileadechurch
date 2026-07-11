@@ -16,6 +16,8 @@ import { parseLocalDate } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import logoGileade from "@/assets/logo-gileade.jpeg";
+import certBg from "@/assets/certificado-apresentacao-bg.jpg";
+import assinaturaPastor from "@/assets/assinatura-pastor.png.asset.json";
 
 interface Props {
   open: boolean;
@@ -27,6 +29,7 @@ interface Props {
     pai_nao_identificado: boolean;
     mae_nome: string | null;
     mae_nao_identificado: boolean;
+    crianca_data_nascimento: string | null;
     data_apresentacao: string | null;
   } | null;
 }
@@ -40,7 +43,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
 
   const pai = inscricao.pai_nao_identificado ? null : inscricao.pai_nome;
   const mae = inscricao.mae_nao_identificado ? null : inscricao.mae_nome;
-  const pais = [pai, mae].filter(Boolean).join(" e ");
+  const pais = [pai, mae].filter(Boolean).join(" & ") || "Não identificado";
+  const nascimento = inscricao.crianca_data_nascimento
+    ? format(parseLocalDate(inscricao.crianca_data_nascimento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : "—";
   const dataApres = inscricao.data_apresentacao
     ? format(parseLocalDate(inscricao.data_apresentacao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
@@ -69,7 +75,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>Certificado de Apresentação</DialogTitle>
         </DialogHeader>
@@ -80,50 +86,88 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
           </Button>
         </div>
 
-        <div
-          ref={certRef}
-          className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 rounded-lg border-8 border-double border-amber-600"
-          style={{ aspectRatio: "297/210" }}
-        >
-          <div className="h-full flex flex-col items-center justify-center text-center space-y-5">
-            <img src={logoGileade} alt="Gileade" className="w-16 h-16 rounded-full object-cover" crossOrigin="anonymous" />
-            <div className="text-amber-800">
-              <h1 className="text-4xl font-serif font-bold tracking-wide">CERTIFICADO</h1>
-              <p className="text-lg mt-1">de Apresentação de Criança</p>
+        <div className="w-full overflow-x-auto">
+          <div
+            ref={certRef}
+            style={{
+              width: 1000,
+              height: 707,
+              backgroundImage: `url(${certBg})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              position: "relative",
+              fontFamily: "'Segoe UI', system-ui, sans-serif",
+            }}
+          >
+            {/* Logo topo direito */}
+            <img
+              src={logoGileade}
+              alt="Gileade"
+              crossOrigin="anonymous"
+              style={{ position: "absolute", top: 48, right: 60, width: 90, height: 90, borderRadius: "50%", objectFit: "cover" }}
+            />
+
+            {/* Área de texto */}
+            <div style={{ position: "absolute", top: 70, left: 355, right: 60 }}>
+              <h1
+                style={{
+                  color: "#3b2ecc",
+                  fontWeight: 800,
+                  fontSize: 52,
+                  lineHeight: 1.05,
+                  margin: 0,
+                  letterSpacing: "-1px",
+                }}
+              >
+                Certificado de<br />Apresentação
+              </h1>
+
+              <div style={{ marginTop: 26 }}>
+                <p
+                  style={{
+                    fontFamily: "'Dancing Script', cursive",
+                    fontSize: 46,
+                    fontWeight: 700,
+                    color: "#1f2937",
+                    margin: 0,
+                    lineHeight: 1,
+                    borderBottom: "2px solid #9ca3af",
+                    paddingBottom: 6,
+                    display: "inline-block",
+                    minWidth: "90%",
+                  }}
+                >
+                  {inscricao.crianca_nome}
+                </p>
+              </div>
+
+              <div style={{ marginTop: 22, color: "#374151", fontSize: 19 }}>
+                <p style={{ margin: "0 0 6px" }}>
+                  Filho(a) de <strong>{pais}</strong>
+                </p>
+                <p style={{ margin: 0 }}>
+                  Nascido(a) em: <strong>{nascimento}</strong>
+                </p>
+              </div>
+
+              <p style={{ marginTop: 22, color: "#4b5563", fontSize: 18, lineHeight: 1.5, maxWidth: 560 }}>
+                Foi apresentado(a) ao Senhor, em nome do Pai, do Filho e do
+                Espírito Santo, conforme o mandamento do Senhor Jesus Cristo,
+                à luz do relato do Evangelho de Lucas 2:22–40.
+              </p>
             </div>
 
-            <div className="w-32 h-1 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-400 rounded-full" />
-
-            <p className="text-lg text-gray-700">A Igreja Gileade apresentou ao Senhor a criança</p>
-
-            <h2 className="text-3xl font-serif font-bold text-amber-900">
-              {inscricao.crianca_nome}
-            </h2>
-
-            {pais && (
-              <p className="text-lg text-gray-700 max-w-2xl">
-                filho(a) de <strong>{pais}</strong>
-              </p>
-            )}
-
-            <p className="text-base text-gray-600 max-w-2xl italic">
-              "Deixai vir a mim os pequeninos, e não os impeçais, porque dos tais é o Reino de Deus." — Marcos 10:14
-            </p>
-
-            <div className="w-24 h-1 bg-gradient-to-r from-amber-400 via-amber-600 to-amber-400 rounded-full" />
-
-            <div className="pt-2 space-y-6 w-full max-w-lg">
-              <p className="text-gray-600">{dataApres}</p>
-              <div className="flex justify-center gap-16 pt-2">
-                <div className="text-center">
-                  <div className="w-40 border-b border-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Liderança</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-40 border-b border-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Pastor</p>
-                </div>
-              </div>
+            {/* Local, data e assinatura */}
+            <div style={{ position: "absolute", bottom: 60, left: 355, right: 60, color: "#374151", fontSize: 18 }}>
+              <img
+                src={assinaturaPastor.url}
+                alt="Assinatura"
+                crossOrigin="anonymous"
+                style={{ height: 70, marginBottom: -8, marginLeft: 4 }}
+              />
+              <p style={{ margin: 0, fontWeight: 600 }}>Pastor Adalberto Derzette</p>
+              <p style={{ margin: "2px 0 0", fontSize: 15, color: "#6b7280" }}>Pastor Sênior Gileade Church</p>
+              <p style={{ margin: "10px 0 0" }}>Curitiba, dia {dataApres}</p>
             </div>
           </div>
         </div>
