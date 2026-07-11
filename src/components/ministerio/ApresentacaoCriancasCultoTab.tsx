@@ -74,7 +74,7 @@ const ApresentacaoCriancasCultoTab = () => {
   const [certInscricao, setCertInscricao] = useState<Apresentacao | null>(null);
   const [editInscricao, setEditInscricao] = useState<Apresentacao | null>(null);
 
-  const linkPublico = `${window.location.origin}/apresentacao`;
+  const linkPublico = "https://gileadechurch.lovable.app/apresentacao";
 
   const { data: inscricoes = [], isLoading } = useQuery({
     queryKey: ["apresentacao-criancas-culto"],
