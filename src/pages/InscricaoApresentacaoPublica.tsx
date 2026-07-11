@@ -260,6 +260,7 @@ const InscricaoApresentacaoPublica = () => {
       }
 
       const payload = {
+        id: crypto.randomUUID(),
         familia_membro: ehMembro,
         pai_member_id: ehMembro ? paiMembro?.id ?? null : null,
         pai_nome: ehMembro ? paiMembro?.full_name ?? null : (paiNome.trim() ? formatNameField(paiNome) : null),
@@ -284,12 +285,11 @@ const InscricaoApresentacaoPublica = () => {
         observacoes: observacoes.trim() || null,
       };
 
-      const { data: inserted, error } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from("apresentacao_criancas")
-        .insert(payload)
-        .select("id")
-        .single();
+        .insert(payload);
       if (error) throw error;
+      const insertedId = payload.id;
 
       // Se for família membro, cria solicitação de novo membro (criança) pendente de aprovação
       if (ehMembro) {
@@ -315,8 +315,8 @@ const InscricaoApresentacaoPublica = () => {
       }
 
       // Mensagem de agradecimento aos pais/contato (best-effort)
-      if (inserted?.id) {
-        await dispararMensagemApresentacaoPais({ apresentacaoId: inserted.id, tipo: "recebida" });
+      if (insertedId) {
+        await dispararMensagemApresentacaoPais({ apresentacaoId: insertedId, tipo: "recebida" });
       }
 
       // Aviso de recebimento para o WhatsApp da igreja (best-effort)
