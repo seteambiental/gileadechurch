@@ -122,7 +122,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 Certificado de<br />Apresentação
               </h1>
 
-              <div style={{ marginTop: 26 }}>
+              <div style={{ marginTop: 26, width: "90%" }}>
                 <p
                   style={{
                     fontFamily: "'Dancing Script', cursive",
@@ -130,15 +130,13 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                     fontWeight: 700,
                     color: "#1f2937",
                     margin: 0,
-                    lineHeight: 1,
-                    borderBottom: "2px solid #9ca3af",
-                    paddingBottom: 6,
-                    display: "inline-block",
-                    minWidth: "90%",
+                    lineHeight: 1.4,
+                    paddingBottom: 8,
                   }}
                 >
                   {inscricao.crianca_nome}
                 </p>
+                <div style={{ height: 2, backgroundColor: "#9ca3af", width: "100%" }} />
               </div>
 
               <div style={{ marginTop: 22, color: "#374151", fontSize: 19 }}>
