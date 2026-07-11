@@ -71,6 +71,7 @@ const App = () => (
             <Route path="/ministerio/acao-social" element={<AcaoSocialPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/inscricao/apresentacao/:eventoId" element={<InscricaoApresentacaoCriancas />} />
+            <Route path="/apresentacao" element={<InscricaoApresentacaoPublica />} />
             <Route path="/apresentacao-de-criancas" element={<InscricaoApresentacaoPublica />} />
             <Route path="/inscricao/:eventoId" element={<InscricaoEvento />} />
             <Route path="/inscricao-casais" element={<InscricaoCasais />} />
