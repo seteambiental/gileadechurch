@@ -447,6 +447,13 @@ const InscricaoApresentacaoPublica = () => {
                       naoIdentificado={maeNaoId}
                       onNaoIdentificado={setMaeNaoId}
                     />
+                    <div className="space-y-2">
+                      <Label className="font-semibold">WhatsApp para contato *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Neste número você receberá a confirmação da inscrição e, depois, a confirmação da data da apresentação.
+                      </p>
+                      <MaskedInput mask="phone" value={contatoWhatsapp} onChange={setContatoWhatsapp} />
+                    </div>
                   </>
                 )}
               </CardContent>
@@ -470,8 +477,11 @@ const InscricaoApresentacaoPublica = () => {
                   <CameraPhotoInput
                     onPhotoCapture={handlePhoto}
                     photoPreview={photoPreview}
-                    buttonLabel="Foto da criança"
+                    buttonLabel="Foto da criança *"
                   />
+                  {!photoPreview && (
+                    <p className="text-xs text-muted-foreground">A foto da criança é obrigatória.</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -493,7 +503,7 @@ const InscricaoApresentacaoPublica = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Data de nascimento</Label>
-                    <Input type="date" value={dataNasc} onChange={(e) => setDataNasc(e.target.value)} />
+                    <MaskedInput mask="date" value={dataNasc} onChange={setDataNasc} />
                   </div>
                   <div className="space-y-2">
                     <Label>Gênero</Label>
