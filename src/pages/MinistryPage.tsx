@@ -834,6 +834,12 @@ const MinistryPage = () => {
                 <TabsContent value="estatisticas">
                   <MinisterioEstatisticasTab ministryId={ministryFromDb!.id} />
                 </TabsContent>
+
+                {isOrganizacaoCulto && (
+                  <TabsContent value="apresentacao">
+                    <ApresentacaoCriancasCultoTab />
+                  </TabsContent>
+                )}
               </>
             )}
 
