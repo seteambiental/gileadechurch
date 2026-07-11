@@ -23,6 +23,7 @@ import { useCepLookup } from "@/hooks/useCepLookup";
 import { formatCep, unformatCep } from "@/lib/masks";
 import { toTitleCase, formatNameField } from "@/lib/text-utils";
 import { resizeKeepAspect } from "@/lib/image-resize";
+import { dispararAvisoApresentacaoRecebida } from "@/lib/whatsapp-notifications";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface MembroBusca {
@@ -274,6 +275,16 @@ const InscricaoApresentacaoPublica = () => {
         .from("apresentacao_criancas")
         .insert(payload);
       if (error) throw error;
+
+      // Aviso de recebimento para o WhatsApp da igreja (best-effort)
+      const responsavel = ehMembro
+        ? paiMembro?.full_name || maeMembro?.full_name || null
+        : paiNome.trim() || maeNome.trim() || null;
+      await dispararAvisoApresentacaoRecebida({
+        criancaNome: formatNameField(nome),
+        responsavel,
+        membro: ehMembro,
+      });
     },
     onSuccess: () => {
       setEnviado(true);
