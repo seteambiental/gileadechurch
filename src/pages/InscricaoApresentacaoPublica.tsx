@@ -20,10 +20,10 @@ import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { Loader2, Check, Home, Search, Baby, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCepLookup } from "@/hooks/useCepLookup";
-import { formatCep, unformatCep } from "@/lib/masks";
+import { formatCep, unformatCep, dateInputToISO } from "@/lib/masks";
 import { toTitleCase, formatNameField } from "@/lib/text-utils";
 import { resizeKeepAspect } from "@/lib/image-resize";
-import { dispararAvisoApresentacaoRecebida } from "@/lib/whatsapp-notifications";
+import { dispararAvisoApresentacaoRecebida, dispararMensagemApresentacaoPais } from "@/lib/whatsapp-notifications";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface MembroBusca {
@@ -183,6 +183,8 @@ const InscricaoApresentacaoPublica = () => {
   const [maeNome, setMaeNome] = useState("");
   const [paiNaoId, setPaiNaoId] = useState(false);
   const [maeNaoId, setMaeNaoId] = useState(false);
+
+  const [contatoWhatsapp, setContatoWhatsapp] = useState("");
 
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
