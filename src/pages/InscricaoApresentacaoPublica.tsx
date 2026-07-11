@@ -20,10 +20,10 @@ import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 import { Loader2, Check, Home, Search, Baby, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCepLookup } from "@/hooks/useCepLookup";
-import { formatCep, unformatCep } from "@/lib/masks";
+import { formatCep, unformatCep, dateInputToISO } from "@/lib/masks";
 import { toTitleCase, formatNameField } from "@/lib/text-utils";
 import { resizeKeepAspect } from "@/lib/image-resize";
-import { dispararAvisoApresentacaoRecebida } from "@/lib/whatsapp-notifications";
+import { dispararAvisoApresentacaoRecebida, dispararMensagemApresentacaoPais } from "@/lib/whatsapp-notifications";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface MembroBusca {
@@ -184,6 +184,8 @@ const InscricaoApresentacaoPublica = () => {
   const [paiNaoId, setPaiNaoId] = useState(false);
   const [maeNaoId, setMaeNaoId] = useState(false);
 
+  const [contatoWhatsapp, setContatoWhatsapp] = useState("");
+
   const [nome, setNome] = useState("");
   const [cpf, setCpf] = useState("");
   const [rg, setRg] = useState("");
@@ -232,6 +234,16 @@ const InscricaoApresentacaoPublica = () => {
         throw new Error("Informe ao menos um dos responsáveis (pai ou mãe)");
       }
 
+      if (!photoFile) throw new Error("A foto da criança é obrigatória");
+
+      const dataNascISO = dataNasc ? dateInputToISO(dataNasc) : null;
+      if (dataNasc && !dataNascISO) throw new Error("Data de nascimento inválida (use dd/mm/aaaa)");
+
+      const whatsappContato = contatoWhatsapp.replace(/\D/g, "");
+      if (!ehMembro && whatsappContato.length < 10) {
+        throw new Error("Informe um número de WhatsApp válido para contato");
+      }
+
       // Upload da foto
       let photoUrl: string | null = null;
       if (photoFile) {
@@ -258,9 +270,10 @@ const InscricaoApresentacaoPublica = () => {
         crianca_nome: formatNameField(nome),
         crianca_cpf: cpf.replace(/\D/g, "") || null,
         crianca_rg: rg.replace(/\D/g, "") || null,
-        crianca_data_nascimento: dataNasc || null,
+        crianca_data_nascimento: dataNascISO,
         crianca_genero: genero || null,
         crianca_photo_url: photoUrl,
+        contato_whatsapp: ehMembro ? null : whatsappContato,
         cep: cep ? unformatCep(cep) : null,
         address: address ? toTitleCase(address) : null,
         number: number || null,
@@ -271,10 +284,40 @@ const InscricaoApresentacaoPublica = () => {
         observacoes: observacoes.trim() || null,
       };
 
-      const { error } = await (supabase as any)
+      const { data: inserted, error } = await (supabase as any)
         .from("apresentacao_criancas")
-        .insert(payload);
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Se for família membro, cria solicitação de novo membro (criança) pendente de aprovação
+      if (ehMembro) {
+        try {
+          await (supabase as any).rpc("criar_solicitacao_membro_de_inscricao", {
+            payload: {
+              full_name: formatNameField(nome),
+              genero: genero || null,
+              birth_date: dataNascISO,
+              cpf: cpf.replace(/\D/g, "") || null,
+              cep: cep ? unformatCep(cep) : null,
+              address: address ? toTitleCase(address) : null,
+              number: number || null,
+              complement: complement || null,
+              neighborhood: neighborhood ? toTitleCase(neighborhood) : null,
+              city: city ? toTitleCase(city) : null,
+              state: state ? state.toUpperCase() : null,
+            },
+          });
+        } catch (e) {
+          console.warn("[apresentacao] falha ao criar solicitacao de membro:", e);
+        }
+      }
+
+      // Mensagem de agradecimento aos pais/contato (best-effort)
+      if (inserted?.id) {
+        await dispararMensagemApresentacaoPais({ apresentacaoId: inserted.id, tipo: "recebida" });
+      }
 
       // Aviso de recebimento para o WhatsApp da igreja (best-effort)
       const responsavel = ehMembro
@@ -404,6 +447,13 @@ const InscricaoApresentacaoPublica = () => {
                       naoIdentificado={maeNaoId}
                       onNaoIdentificado={setMaeNaoId}
                     />
+                    <div className="space-y-2">
+                      <Label className="font-semibold">WhatsApp para contato *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Neste número você receberá a confirmação da inscrição e, depois, a confirmação da data da apresentação.
+                      </p>
+                      <MaskedInput mask="phone" value={contatoWhatsapp} onChange={setContatoWhatsapp} />
+                    </div>
                   </>
                 )}
               </CardContent>
@@ -427,8 +477,11 @@ const InscricaoApresentacaoPublica = () => {
                   <CameraPhotoInput
                     onPhotoCapture={handlePhoto}
                     photoPreview={photoPreview}
-                    buttonLabel="Foto da criança"
+                    buttonLabel="Foto da criança *"
                   />
+                  {!photoPreview && (
+                    <p className="text-xs text-muted-foreground">A foto da criança é obrigatória.</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -450,7 +503,7 @@ const InscricaoApresentacaoPublica = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Data de nascimento</Label>
-                    <Input type="date" value={dataNasc} onChange={(e) => setDataNasc(e.target.value)} />
+                    <MaskedInput mask="date" value={dataNasc} onChange={setDataNasc} />
                   </div>
                   <div className="space-y-2">
                     <Label>Gênero</Label>

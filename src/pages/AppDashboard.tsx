@@ -195,6 +195,18 @@ const AppDashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pendingApresentacoes = 0 } = useQuery({
+    queryKey: ["pending-apresentacoes-dashboard"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("apresentacao_criancas")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "aprovado");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   // Buscar líderes dos ministérios
   const { data: ministriesData = [] } = useQuery({
     queryKey: ["ministries-leaders-dashboard"],
@@ -378,7 +390,7 @@ const AppDashboard = () => {
         {/* Outros Módulos */}
 
         {/* Alertas de pendências */}
-        {(pendingCadastros > 0 || pendingInscricoes > 0) && (
+        {(pendingCadastros > 0 || pendingInscricoes > 0 || pendingApresentacoes > 0) && (
           <div className="mb-6 flex flex-col sm:flex-row gap-3">
             {pendingCadastros > 0 && (
               <button
@@ -403,6 +415,20 @@ const AppDashboard = () => {
                 <div className="text-left">
                   <span className="font-heading font-bold text-destructive text-sm">
                     Nova Inscrição ({pendingInscricoes})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+            {pendingApresentacoes > 0 && (
+              <button
+                onClick={() => navigate("/ministerio/organizacao-culto?tab=apresentacao")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors animate-pulse"
+              >
+                <Baby className="w-5 h-5 text-secondary flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-secondary text-sm">
+                    Nova Apresentação ({pendingApresentacoes})
                   </span>
                   <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
                 </div>

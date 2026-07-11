@@ -164,3 +164,21 @@ export async function dispararAvisoApresentacaoRecebida(params: {
     console.warn("[whatsapp] falha ao enviar aviso apresentacao:", err);
   }
 }
+
+/**
+ * Dispara a mensagem aos pais/contato de uma inscrição de apresentação.
+ * tipo "recebida" = agradecimento pela inscrição; "confirmacao" = data confirmada.
+ * Best-effort: falhas são silenciadas.
+ */
+export async function dispararMensagemApresentacaoPais(params: {
+  apresentacaoId: string;
+  tipo: "recebida" | "confirmacao";
+}) {
+  try {
+    return await supabase.functions.invoke("enviar-apresentacao-msg", {
+      body: { apresentacaoId: params.apresentacaoId, tipo: params.tipo },
+    });
+  } catch (err) {
+    console.warn("[whatsapp] falha ao enviar mensagem apresentacao pais:", err);
+  }
+}

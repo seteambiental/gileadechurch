@@ -85,6 +85,36 @@ export const formatCurrency = (value: number | null | undefined): string => {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
+// Máscara de data digitável dd/mm/aaaa
+export const formatDateInput = (value: string): string => {
+  const d = value.replace(/\D/g, "").slice(0, 8);
+  let out = d.slice(0, 2);
+  if (d.length >= 3) out += "/" + d.slice(2, 4);
+  if (d.length >= 5) out += "/" + d.slice(4, 8);
+  return out;
+};
+
+// Converte dd/mm/aaaa -> aaaa-mm-dd (ISO). Retorna null se incompleto/inválido.
+export const dateInputToISO = (value: string): string | null => {
+  const d = value.replace(/\D/g, "");
+  if (d.length !== 8) return null;
+  const dd = d.slice(0, 2);
+  const mm = d.slice(2, 4);
+  const yyyy = d.slice(4, 8);
+  const dayN = Number(dd);
+  const monN = Number(mm);
+  if (dayN < 1 || dayN > 31 || monN < 1 || monN > 12) return null;
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+// Converte aaaa-mm-dd (ISO) -> dd/mm/aaaa para exibição em input.
+export const isoToDateInput = (iso: string | null | undefined): string => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}/${m}/${y}`;
+};
+
 // Parse date string (YYYY-MM-DD) without timezone issues
 export const formatDateBR = (dateString: string | null): string => {
   if (!dateString) return "-";

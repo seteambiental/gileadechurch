@@ -1,0 +1,1 @@
+ALTER TABLE public.apresentacao_criancas ADD COLUMN IF NOT EXISTS contato_whatsapp text;
