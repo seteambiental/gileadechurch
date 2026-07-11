@@ -80,6 +80,7 @@ const InscricaoEvento = () => {
   const [formaPagamento, setFormaPagamento] = useState("");
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
+  const [idadeBloqueada, setIdadeBloqueada] = useState(false);
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
