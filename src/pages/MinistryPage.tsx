@@ -421,6 +421,7 @@ const MinistryPage = () => {
   const isServico = ministry.isServico;
   const hasEscalasServico = ministry.hasEscalasServico && ministryFromDb?.id;
   const isMinisterioEspecifico = isFlow || isGT || isHomens || isMulheres;
+  const isOrganizacaoCulto = slug === "organizacao-culto";
 
   return (
     <div className="min-h-screen bg-background">
