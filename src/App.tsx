@@ -20,6 +20,7 @@ import ConsolidacaoPage from "./pages/ConsolidacaoPage";
 import AgendaPage from "./pages/AgendaPage";
 import InscricaoEvento from "./pages/InscricaoEvento";
 import InscricaoApresentacaoCriancas from "./pages/InscricaoApresentacaoCriancas";
+import InscricaoApresentacaoPublica from "./pages/InscricaoApresentacaoPublica";
 import InscricaoCasais from "./pages/InscricaoCasais";
 import KidsPage from "./pages/KidsPage";
 import KidsCheckinPage from "./pages/KidsCheckinPage";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/ministerio/acao-social" element={<AcaoSocialPage />} />
             <Route path="/agenda" element={<AgendaPage />} />
             <Route path="/inscricao/apresentacao/:eventoId" element={<InscricaoApresentacaoCriancas />} />
+            <Route path="/apresentacao-de-criancas" element={<InscricaoApresentacaoPublica />} />
             <Route path="/inscricao/:eventoId" element={<InscricaoEvento />} />
             <Route path="/inscricao-casais" element={<InscricaoCasais />} />
             <Route path="/inscricao-jiujitsu" element={<InscricaoJiuJitsu />} />

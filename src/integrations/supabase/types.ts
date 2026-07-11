@@ -636,6 +636,136 @@ export type Database = {
           },
         ]
       }
+      apresentacao_criancas: {
+        Row: {
+          address: string | null
+          cep: string | null
+          city: string | null
+          complement: string | null
+          created_at: string
+          crianca_cpf: string | null
+          crianca_data_nascimento: string | null
+          crianca_genero: string | null
+          crianca_nome: string
+          crianca_photo_url: string | null
+          crianca_rg: string | null
+          familia_membro: boolean
+          id: string
+          mae_member_id: string | null
+          mae_nao_identificado: boolean
+          mae_nome: string | null
+          member_id: string | null
+          neighborhood: string | null
+          number: string | null
+          observacoes: string | null
+          pai_member_id: string | null
+          pai_nao_identificado: boolean
+          pai_nome: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          crianca_cpf?: string | null
+          crianca_data_nascimento?: string | null
+          crianca_genero?: string | null
+          crianca_nome: string
+          crianca_photo_url?: string | null
+          crianca_rg?: string | null
+          familia_membro?: boolean
+          id?: string
+          mae_member_id?: string | null
+          mae_nao_identificado?: boolean
+          mae_nome?: string | null
+          member_id?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          observacoes?: string | null
+          pai_member_id?: string | null
+          pai_nao_identificado?: boolean
+          pai_nome?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cep?: string | null
+          city?: string | null
+          complement?: string | null
+          created_at?: string
+          crianca_cpf?: string | null
+          crianca_data_nascimento?: string | null
+          crianca_genero?: string | null
+          crianca_nome?: string
+          crianca_photo_url?: string | null
+          crianca_rg?: string | null
+          familia_membro?: boolean
+          id?: string
+          mae_member_id?: string | null
+          mae_nao_identificado?: boolean
+          mae_nome?: string | null
+          member_id?: string | null
+          neighborhood?: string | null
+          number?: string | null
+          observacoes?: string | null
+          pai_member_id?: string | null
+          pai_nao_identificado?: boolean
+          pai_nome?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "apresentacao_criancas_mae_member_id_fkey"
+            columns: ["mae_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_mae_member_id_fkey"
+            columns: ["mae_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_pai_member_id_fkey"
+            columns: ["pai_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "apresentacao_criancas_pai_member_id_fkey"
+            columns: ["pai_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       apresentacao_criancas_inscricoes: {
         Row: {
           created_at: string
