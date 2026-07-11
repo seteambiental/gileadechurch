@@ -234,6 +234,16 @@ const InscricaoApresentacaoPublica = () => {
         throw new Error("Informe ao menos um dos responsáveis (pai ou mãe)");
       }
 
+      if (!photoFile) throw new Error("A foto da criança é obrigatória");
+
+      const dataNascISO = dataNasc ? dateInputToISO(dataNasc) : null;
+      if (dataNasc && !dataNascISO) throw new Error("Data de nascimento inválida (use dd/mm/aaaa)");
+
+      const whatsappContato = contatoWhatsapp.replace(/\D/g, "");
+      if (!ehMembro && whatsappContato.length < 10) {
+        throw new Error("Informe um número de WhatsApp válido para contato");
+      }
+
       // Upload da foto
       let photoUrl: string | null = null;
       if (photoFile) {
@@ -260,9 +270,10 @@ const InscricaoApresentacaoPublica = () => {
         crianca_nome: formatNameField(nome),
         crianca_cpf: cpf.replace(/\D/g, "") || null,
         crianca_rg: rg.replace(/\D/g, "") || null,
-        crianca_data_nascimento: dataNasc || null,
+        crianca_data_nascimento: dataNascISO,
         crianca_genero: genero || null,
         crianca_photo_url: photoUrl,
+        contato_whatsapp: ehMembro ? null : whatsappContato,
         cep: cep ? unformatCep(cep) : null,
         address: address ? toTitleCase(address) : null,
         number: number || null,
@@ -273,10 +284,40 @@ const InscricaoApresentacaoPublica = () => {
         observacoes: observacoes.trim() || null,
       };
 
-      const { error } = await (supabase as any)
+      const { data: inserted, error } = await (supabase as any)
         .from("apresentacao_criancas")
-        .insert(payload);
+        .insert(payload)
+        .select("id")
+        .single();
       if (error) throw error;
+
+      // Se for família membro, cria solicitação de novo membro (criança) pendente de aprovação
+      if (ehMembro) {
+        try {
+          await (supabase as any).rpc("criar_solicitacao_membro_de_inscricao", {
+            payload: {
+              full_name: formatNameField(nome),
+              genero: genero || null,
+              birth_date: dataNascISO,
+              cpf: cpf.replace(/\D/g, "") || null,
+              cep: cep ? unformatCep(cep) : null,
+              address: address ? toTitleCase(address) : null,
+              number: number || null,
+              complement: complement || null,
+              neighborhood: neighborhood ? toTitleCase(neighborhood) : null,
+              city: city ? toTitleCase(city) : null,
+              state: state ? state.toUpperCase() : null,
+            },
+          });
+        } catch (e) {
+          console.warn("[apresentacao] falha ao criar solicitacao de membro:", e);
+        }
+      }
+
+      // Mensagem de agradecimento aos pais/contato (best-effort)
+      if (inserted?.id) {
+        await dispararMensagemApresentacaoPais({ apresentacaoId: inserted.id, tipo: "recebida" });
+      }
 
       // Aviso de recebimento para o WhatsApp da igreja (best-effort)
       const responsavel = ehMembro
