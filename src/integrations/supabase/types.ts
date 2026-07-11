@@ -643,6 +643,7 @@ export type Database = {
           certificado_emitido: boolean
           city: string | null
           complement: string | null
+          contato_whatsapp: string | null
           created_at: string
           crianca_cpf: string | null
           crianca_data_nascimento: string | null
@@ -673,6 +674,7 @@ export type Database = {
           certificado_emitido?: boolean
           city?: string | null
           complement?: string | null
+          contato_whatsapp?: string | null
           created_at?: string
           crianca_cpf?: string | null
           crianca_data_nascimento?: string | null
@@ -703,6 +705,7 @@ export type Database = {
           certificado_emitido?: boolean
           city?: string | null
           complement?: string | null
+          contato_whatsapp?: string | null
           created_at?: string
           crianca_cpf?: string | null
           crianca_data_nascimento?: string | null
