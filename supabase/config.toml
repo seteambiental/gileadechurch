@@ -3,6 +3,9 @@ project_id = "jwjmseeyjemfwgyizumk"
 [functions.enviar-whatsapp]
 verify_jwt = false
 
+[functions.enviar-apresentacao-msg]
+verify_jwt = false
+
 [functions.gerar-flyer]
 verify_jwt = false
 
