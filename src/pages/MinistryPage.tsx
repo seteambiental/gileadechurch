@@ -67,6 +67,7 @@ import { ServicoTarefasTab } from "@/components/servico/ServicoTarefasTab";
 import { ServicoMembrosTab } from "@/components/servico/ServicoMembrosTab";
 import { EvangelizacaoAgendaTab } from "@/components/evangelizacao/EvangelizacaoAgendaTab";
 import { EscalasServicoTab } from "@/components/ministerio/EscalasServicoTab";
+import ApresentacaoCriancasCultoTab from "@/components/ministerio/ApresentacaoCriancasCultoTab";
 
 interface MinistryInfo {
   title: string;
