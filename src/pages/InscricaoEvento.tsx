@@ -634,6 +634,36 @@ const InscricaoEvento = () => {
   }
 
   if (inscricaoRealizada) {
+    return null; // handled below alongside idadeBloqueada order preserved
+  }
+
+  if (idadeBloqueada) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto text-3xl">
+              💛
+            </div>
+            <h2 className="text-xl font-bold">Ainda não é a sua vez 💛</h2>
+            <p className="text-muted-foreground">
+              O <strong>{evento.titulo}</strong> é para jovens que completam{" "}
+              <strong>16 anos até 31/12/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
+            </p>
+            <p className="text-muted-foreground">
+              Pela sua data de nascimento, você ainda vai completar 16 anos depois dessa data.
+              Mas não fique triste: guardamos o seu lugar para o próximo ano! Continue crescendo com a gente. 🙏
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => setIdadeBloqueada(false)}>
+              Voltar
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (false && inscricaoRealizada) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
