@@ -195,6 +195,18 @@ const AppDashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pendingApresentacoes = 0 } = useQuery({
+    queryKey: ["pending-apresentacoes-dashboard"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("apresentacao_criancas")
+        .select("id", { count: "exact", head: true })
+        .neq("status", "aprovado");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   // Buscar líderes dos ministérios
   const { data: ministriesData = [] } = useQuery({
     queryKey: ["ministries-leaders-dashboard"],
