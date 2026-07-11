@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,11 +16,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Baby, Copy, Trash2, Calendar, MapPin, User } from "lucide-react";
+import { Loader2, Baby, Copy, Trash2, Calendar, MapPin, User, Check, Award, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
+import ApresentacaoCertificadoDialog from "./ApresentacaoCertificadoDialog";
 
 interface Apresentacao {
   id: string;
@@ -36,12 +38,16 @@ interface Apresentacao {
   neighborhood: string | null;
   city: string | null;
   observacoes: string | null;
+  status: string;
+  data_apresentacao: string | null;
+  certificado_emitido: boolean;
   created_at: string;
 }
 
 const ApresentacaoCriancasCultoTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [certInscricao, setCertInscricao] = useState<Apresentacao | null>(null);
 
   const linkPublico = `${window.location.origin}/apresentacao-de-criancas`;
 
@@ -57,6 +63,28 @@ const ApresentacaoCriancasCultoTab = () => {
     },
   });
 
+  const pendentes = inscricoes.filter((i) => i.status !== "aprovado");
+  const apresentadas = inscricoes.filter((i) => i.status === "aprovado");
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["apresentacao-criancas-culto"] });
+
+  const aprovarMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("apresentacao_criancas")
+        .update({ status: "aprovado", data_apresentacao: todayDateStr() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Inscrição aprovada", description: "A criança foi movida para Apresentadas." });
+    },
+    onError: (err) =>
+      toast({ variant: "destructive", title: "Erro ao aprovar", description: err instanceof Error ? err.message : String(err) }),
+  });
+
   const excluirMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await (supabase as any)
@@ -66,16 +94,11 @@ const ApresentacaoCriancasCultoTab = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["apresentacao-criancas-culto"] });
+      invalidate();
       toast({ title: "Inscrição excluída" });
     },
-    onError: (err) => {
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir",
-        description: err instanceof Error ? err.message : String(err),
-      });
-    },
+    onError: (err) =>
+      toast({ variant: "destructive", title: "Erro ao excluir", description: err instanceof Error ? err.message : String(err) }),
   });
 
   const copiarLink = () => {
@@ -83,22 +106,132 @@ const ApresentacaoCriancasCultoTab = () => {
     toast({ title: "Link copiado!", description: linkPublico });
   };
 
+  const Cartao = ({ i, aprovada }: { i: Apresentacao; aprovada: boolean }) => (
+    <Card>
+      <CardContent className="pt-5 space-y-3">
+        <div className="flex items-start gap-3">
+          {i.crianca_photo_url ? (
+            <img src={i.crianca_photo_url} alt={i.crianca_nome} className="w-14 h-14 rounded-full object-cover border" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+              <Baby className="w-6 h-6 text-muted-foreground" />
+            </div>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold truncate">{i.crianca_nome}</p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              <Badge variant={i.familia_membro ? "default" : "outline"} className="text-[10px]">
+                {i.familia_membro ? "Membro Gileade" : "Não membro"}
+              </Badge>
+              {i.crianca_genero && (
+                <Badge variant="secondary" className="text-[10px] capitalize">{i.crianca_genero}</Badge>
+              )}
+              {aprovada && i.certificado_emitido && (
+                <Badge className="text-[10px] bg-green-600 hover:bg-green-600">Certificado emitido</Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-sm text-muted-foreground space-y-1">
+          {i.crianca_data_nascimento && (
+            <p className="flex items-center gap-2">
+              <Calendar className="w-3.5 h-3.5" />
+              {format(parseLocalDate(i.crianca_data_nascimento), "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+          )}
+          <p className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5" />
+            Pai: {i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—"}
+          </p>
+          <p className="flex items-center gap-2">
+            <User className="w-3.5 h-3.5" />
+            Mãe: {i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—"}
+          </p>
+          {(i.neighborhood || i.city) && (
+            <p className="flex items-center gap-2">
+              <MapPin className="w-3.5 h-3.5" />
+              {[i.neighborhood, i.city].filter(Boolean).join(", ")}
+            </p>
+          )}
+          {aprovada && i.data_apresentacao && (
+            <p className="flex items-center gap-2 text-green-700">
+              <Check className="w-3.5 h-3.5" />
+              Apresentada em {format(parseLocalDate(i.data_apresentacao), "dd/MM/yyyy", { locale: ptBR })}
+            </p>
+          )}
+          {i.observacoes && <p className="text-xs italic pt-1">"{i.observacoes}"</p>}
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2 pt-1">
+          {!aprovada && (
+            <Button size="sm" onClick={() => aprovarMutation.mutate(i.id)} disabled={aprovarMutation.isPending}>
+              <Check className="w-4 h-4 mr-1" /> Aprovar
+            </Button>
+          )}
+          {aprovada && (
+            <Button size="sm" variant="outline" onClick={() => setCertInscricao(i)}>
+              <Award className="w-4 h-4 mr-1" /> Certificado
+            </Button>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive">
+                <Trash2 className="w-4 h-4 mr-1" /> Excluir
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir inscrição?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  A inscrição de <strong>{i.crianca_nome}</strong> será removida permanentemente.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>Excluir</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const Lista = ({ itens, aprovada, vazio }: { itens: Apresentacao[]; aprovada: boolean; vazio: string }) => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center py-10">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (itens.length === 0) {
+      return <p className="text-sm text-muted-foreground py-6 text-center">{vazio}</p>;
+    }
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        {itens.map((i) => (
+          <Cartao key={i.id} i={i} aprovada={aprovada} />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Baby className="w-5 h-5" /> Link de inscrição
+            <Baby className="w-5 h-5" /> Link de inscrição para apresentação
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Compartilhe este link para que as famílias inscrevam suas crianças para apresentação.
+            Compartilhe este link com as famílias ou cole-o no campo de link de inscrição ao criar um evento.
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
-            <code className="flex-1 px-3 py-2 rounded-md bg-muted text-xs break-all">
-              {linkPublico}
-            </code>
+            <code className="flex-1 px-3 py-2 rounded-md bg-muted text-xs break-all">{linkPublico}</code>
             <Button onClick={copiarLink} variant="outline">
               <Copy className="w-4 h-4 mr-2" /> Copiar link
             </Button>
@@ -106,107 +239,32 @@ const ApresentacaoCriancasCultoTab = () => {
         </CardContent>
       </Card>
 
-      <div>
-        <h3 className="font-heading font-semibold text-lg mb-3 flex items-center gap-2">
-          Inscrições recebidas
-          <Badge variant="secondary">{inscricoes.length}</Badge>
-        </h3>
+      <Tabs defaultValue="pendentes">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="pendentes" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Pendentes
+            {pendentes.length > 0 && <Badge variant="destructive" className="ml-1">{pendentes.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="apresentadas" className="flex items-center gap-2">
+            <Award className="w-4 h-4" />
+            Apresentadas
+            {apresentadas.length > 0 && <Badge variant="secondary" className="ml-1">{apresentadas.length}</Badge>}
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="pendentes" className="mt-4">
+          <Lista itens={pendentes} aprovada={false} vazio="Nenhuma inscrição pendente." />
+        </TabsContent>
+        <TabsContent value="apresentadas" className="mt-4">
+          <Lista itens={apresentadas} aprovada vazio="Nenhuma criança apresentada ainda." />
+        </TabsContent>
+      </Tabs>
 
-        {isLoading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : inscricoes.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-6 text-center">
-            Nenhuma inscrição recebida ainda.
-          </p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {inscricoes.map((i) => (
-              <Card key={i.id}>
-                <CardContent className="pt-5 space-y-3">
-                  <div className="flex items-start gap-3">
-                    {i.crianca_photo_url ? (
-                      <img
-                        src={i.crianca_photo_url}
-                        alt={i.crianca_nome}
-                        className="w-14 h-14 rounded-full object-cover border"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                        <Baby className="w-6 h-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{i.crianca_nome}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant={i.familia_membro ? "default" : "outline"} className="text-[10px]">
-                          {i.familia_membro ? "Membro Gileade" : "Não membro"}
-                        </Badge>
-                        {i.crianca_genero && (
-                          <Badge variant="secondary" className="text-[10px] capitalize">
-                            {i.crianca_genero}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-muted-foreground space-y-1">
-                    {i.crianca_data_nascimento && (
-                      <p className="flex items-center gap-2">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {format(parseLocalDate(i.crianca_data_nascimento), "dd/MM/yyyy", { locale: ptBR })}
-                      </p>
-                    )}
-                    <p className="flex items-center gap-2">
-                      <User className="w-3.5 h-3.5" />
-                      Pai: {i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—"}
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <User className="w-3.5 h-3.5" />
-                      Mãe: {i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—"}
-                    </p>
-                    {(i.neighborhood || i.city) && (
-                      <p className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5" />
-                        {[i.neighborhood, i.city].filter(Boolean).join(", ")}
-                      </p>
-                    )}
-                    {i.observacoes && (
-                      <p className="text-xs italic pt-1">"{i.observacoes}"</p>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive">
-                          <Trash2 className="w-4 h-4 mr-1" /> Excluir
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir inscrição?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            A inscrição de <strong>{i.crianca_nome}</strong> será removida permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+      <ApresentacaoCertificadoDialog
+        open={!!certInscricao}
+        onOpenChange={(open) => !open && setCertInscricao(null)}
+        inscricao={certInscricao}
+      />
     </div>
   );
 };
