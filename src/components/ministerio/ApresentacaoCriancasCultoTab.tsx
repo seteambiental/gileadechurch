@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MaskedInput } from "@/components/ui/masked-input";
 import {
   Select,
   SelectContent,
@@ -40,11 +41,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Baby, Copy, Trash2, Calendar, MapPin, User, Check, Award, Clock, Pencil } from "lucide-react";
+import { Loader2, Baby, Copy, Trash2, Check, Award, Clock, Pencil, CalendarClock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
+import { dateInputToISO, isoToDateInput } from "@/lib/masks";
+import { dispararMensagemApresentacaoPais } from "@/lib/whatsapp-notifications";
 import ApresentacaoCertificadoDialog from "./ApresentacaoCertificadoDialog";
 
 interface Apresentacao {
@@ -59,6 +62,7 @@ interface Apresentacao {
   crianca_data_nascimento: string | null;
   crianca_genero: string | null;
   crianca_photo_url: string | null;
+  contato_whatsapp: string | null;
   neighborhood: string | null;
   city: string | null;
   observacoes: string | null;
@@ -68,11 +72,19 @@ interface Apresentacao {
   created_at: string;
 }
 
+const nomePai = (i: Apresentacao) => (i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—");
+const nomeMae = (i: Apresentacao) => (i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—");
+const fmtData = (d: string | null) => (d ? format(parseLocalDate(d), "dd/MM/yyyy", { locale: ptBR }) : "—");
+
+type ColKey = "crianca" | "genero" | "nascimento" | "pai" | "mae" | "familia" | "apresentacao";
+
 const ApresentacaoCriancasCultoTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [certInscricao, setCertInscricao] = useState<Apresentacao | null>(null);
   const [editInscricao, setEditInscricao] = useState<Apresentacao | null>(null);
+  const [aprovarInscricao, setAprovarInscricao] = useState<Apresentacao | null>(null);
+  const [dataAprovacao, setDataAprovacao] = useState("");
 
   const linkPublico = "https://gileadechurch.lovable.app/apresentacao";
 
@@ -88,23 +100,45 @@ const ApresentacaoCriancasCultoTab = () => {
     },
   });
 
-  const pendentes = inscricoes.filter((i) => i.status !== "aprovado");
-  const apresentadas = inscricoes.filter((i) => i.status === "aprovado");
+  const hoje = todayDateStr();
+
+  const pendentes = useMemo(
+    () => inscricoes.filter((i) => i.status !== "aprovado"),
+    [inscricoes]
+  );
+  const paraApresentar = useMemo(
+    () =>
+      inscricoes
+        .filter((i) => i.status === "aprovado" && i.data_apresentacao && i.data_apresentacao >= hoje)
+        .sort((a, b) => (a.data_apresentacao || "").localeCompare(b.data_apresentacao || "")),
+    [inscricoes, hoje]
+  );
+  const apresentadas = useMemo(
+    () =>
+      inscricoes
+        .filter((i) => i.status === "aprovado" && (!i.data_apresentacao || i.data_apresentacao < hoje))
+        .sort((a, b) => (b.data_apresentacao || b.created_at).localeCompare(a.data_apresentacao || a.created_at)),
+    [inscricoes, hoje]
+  );
 
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["apresentacao-criancas-culto"] });
 
   const aprovarMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, dataISO }: { id: string; dataISO: string }) => {
       const { error } = await (supabase as any)
         .from("apresentacao_criancas")
-        .update({ status: "aprovado", data_apresentacao: todayDateStr() })
+        .update({ status: "aprovado", data_apresentacao: dataISO })
         .eq("id", id);
       if (error) throw error;
+      // Mensagem de confirmação de data aos pais/contato (best-effort)
+      await dispararMensagemApresentacaoPais({ apresentacaoId: id, tipo: "confirmacao" });
     },
     onSuccess: () => {
       invalidate();
-      toast({ title: "Inscrição aprovada", description: "A criança foi movida para Apresentadas." });
+      setAprovarInscricao(null);
+      setDataAprovacao("");
+      toast({ title: "Inscrição aprovada", description: "Mensagem de confirmação enviada aos pais." });
     },
     onError: (err) =>
       toast({ variant: "destructive", title: "Erro ao aprovar", description: err instanceof Error ? err.message : String(err) }),
@@ -157,180 +191,52 @@ const ApresentacaoCriancasCultoTab = () => {
     toast({ title: "Link copiado!", description: linkPublico });
   };
 
-  const Cartao = ({ i, aprovada }: { i: Apresentacao; aprovada: boolean }) => (
-    <Card>
-      <CardContent className="pt-5 space-y-3">
-        <div className="flex items-start gap-3">
-          {i.crianca_photo_url ? (
-            <img src={i.crianca_photo_url} alt={i.crianca_nome} className="w-14 h-14 rounded-full object-cover border" />
-          ) : (
-            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-              <Baby className="w-6 h-6 text-muted-foreground" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold truncate">{i.crianca_nome}</p>
-            <div className="flex flex-wrap gap-1 mt-1">
-              <Badge variant={i.familia_membro ? "default" : "outline"} className="text-[10px]">
-                {i.familia_membro ? "Membro Gileade" : "Não membro"}
-              </Badge>
-              {i.crianca_genero && (
-                <Badge variant="secondary" className="text-[10px] capitalize">{i.crianca_genero}</Badge>
-              )}
-              {aprovada && i.certificado_emitido && (
-                <Badge className="text-[10px] bg-green-600 hover:bg-green-600">Certificado emitido</Badge>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="text-sm text-muted-foreground space-y-1">
-          {i.crianca_data_nascimento && (
-            <p className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5" />
-              {format(parseLocalDate(i.crianca_data_nascimento), "dd/MM/yyyy", { locale: ptBR })}
-            </p>
-          )}
-          <p className="flex items-center gap-2">
-            <User className="w-3.5 h-3.5" />
-            Pai: {i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—"}
-          </p>
-          <p className="flex items-center gap-2">
-            <User className="w-3.5 h-3.5" />
-            Mãe: {i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—"}
-          </p>
-          {(i.neighborhood || i.city) && (
-            <p className="flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5" />
-              {[i.neighborhood, i.city].filter(Boolean).join(", ")}
-            </p>
-          )}
-          {aprovada && i.data_apresentacao && (
-            <p className="flex items-center gap-2 text-green-700">
-              <Check className="w-3.5 h-3.5" />
-              Apresentada em {format(parseLocalDate(i.data_apresentacao), "dd/MM/yyyy", { locale: ptBR })}
-            </p>
-          )}
-          {i.observacoes && <p className="text-xs italic pt-1">"{i.observacoes}"</p>}
-        </div>
-
-        <div className="flex flex-wrap justify-end gap-2 pt-1">
-          {!aprovada && (
-            <Button size="sm" onClick={() => aprovarMutation.mutate(i.id)} disabled={aprovarMutation.isPending}>
-              <Check className="w-4 h-4 mr-1" /> Aprovar
-            </Button>
-          )}
-          {aprovada && (
-            <Button size="sm" variant="outline" onClick={() => setCertInscricao(i)}>
-              <Award className="w-4 h-4 mr-1" /> Certificado
-            </Button>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-destructive">
-                <Trash2 className="w-4 h-4 mr-1" /> Excluir
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Excluir inscrição?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  A inscrição de <strong>{i.crianca_nome}</strong> será removida permanentemente.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>Excluir</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const TabelaApresentadas = ({ itens }: { itens: Apresentacao[] }) => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center py-10">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-        </div>
-      );
+  const confirmarAprovacao = () => {
+    if (!aprovarInscricao) return;
+    const iso = dateInputToISO(dataAprovacao);
+    if (!iso) {
+      toast({ variant: "destructive", title: "Data inválida", description: "Informe a data no formato dd/mm/aaaa." });
+      return;
     }
-    if (itens.length === 0) {
-      return <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma criança apresentada ainda.</p>;
-    }
-    const nomePai = (i: Apresentacao) => (i.pai_nao_identificado ? "Não identificado" : i.pai_nome || "—");
-    const nomeMae = (i: Apresentacao) => (i.mae_nao_identificado ? "Não identificado" : i.mae_nome || "—");
-    return (
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Criança</TableHead>
-              <TableHead>Gênero</TableHead>
-              <TableHead>Nascimento</TableHead>
-              <TableHead>Pai</TableHead>
-              <TableHead>Mãe</TableHead>
-              <TableHead>Apresentação</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {itens.map((i) => (
-              <TableRow key={i.id}>
-                <TableCell className="font-medium">{i.crianca_nome}</TableCell>
-                <TableCell className="capitalize">{i.crianca_genero || "—"}</TableCell>
-                <TableCell>
-                  {i.crianca_data_nascimento
-                    ? format(parseLocalDate(i.crianca_data_nascimento), "dd/MM/yyyy", { locale: ptBR })
-                    : "—"}
-                </TableCell>
-                <TableCell>{nomePai(i)}</TableCell>
-                <TableCell>{nomeMae(i)}</TableCell>
-                <TableCell>
-                  {i.data_apresentacao
-                    ? format(parseLocalDate(i.data_apresentacao), "dd/MM/yyyy", { locale: ptBR })
-                    : "—"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex justify-end gap-1">
-                    <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" title="Certificado" onClick={() => setCertInscricao(i)}>
-                      <Award className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="icon" variant="ghost" className="text-destructive" title="Excluir">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            O registro de <strong>{i.crianca_nome}</strong> será removido permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
+    aprovarMutation.mutate({ id: aprovarInscricao.id, dataISO: iso });
   };
 
-  const Lista = ({ itens, aprovada, vazio }: { itens: Apresentacao[]; aprovada: boolean; vazio: string }) => {
+  // ---- Tabela com filtros por coluna ----
+  const cellValue = (i: Apresentacao, col: ColKey): string => {
+    switch (col) {
+      case "crianca": return i.crianca_nome || "";
+      case "genero": return i.crianca_genero || "";
+      case "nascimento": return fmtData(i.crianca_data_nascimento);
+      case "pai": return nomePai(i);
+      case "mae": return nomeMae(i);
+      case "familia": return i.familia_membro ? "Membro Gileade" : "Não membro";
+      case "apresentacao": return fmtData(i.data_apresentacao);
+    }
+  };
+
+  const FilterableTable = ({
+    itens,
+    columns,
+    acoes,
+    vazio,
+  }: {
+    itens: Apresentacao[];
+    columns: { key: ColKey; label: string }[];
+    acoes: (i: Apresentacao) => JSX.Element;
+    vazio: string;
+  }) => {
+    const [filtros, setFiltros] = useState<Record<string, string>>({});
+
+    const filtradas = useMemo(() => {
+      return itens.filter((i) =>
+        columns.every((c) => {
+          const f = (filtros[c.key] || "").trim().toLowerCase();
+          if (!f) return true;
+          return cellValue(i, c.key).toLowerCase().includes(f);
+        })
+      );
+    }, [itens, filtros, columns]);
+
     if (isLoading) {
       return (
         <div className="flex justify-center py-10">
@@ -341,14 +247,89 @@ const ApresentacaoCriancasCultoTab = () => {
     if (itens.length === 0) {
       return <p className="text-sm text-muted-foreground py-6 text-center">{vazio}</p>;
     }
+
     return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        {itens.map((i) => (
-          <Cartao key={i.id} i={i} aprovada={aprovada} />
-        ))}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              {columns.map((c) => (
+                <TableHead key={c.key} className="align-top">
+                  <div className="space-y-1">
+                    <span>{c.label}</span>
+                    <Input
+                      value={filtros[c.key] || ""}
+                      onChange={(e) => setFiltros((p) => ({ ...p, [c.key]: e.target.value }))}
+                      placeholder="Filtrar..."
+                      className="h-7 text-xs font-normal"
+                    />
+                  </div>
+                </TableHead>
+              ))}
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtradas.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1} className="text-center text-sm text-muted-foreground py-6">
+                  Nenhum resultado para os filtros aplicados.
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtradas.map((i) => (
+                <TableRow key={i.id}>
+                  {columns.map((c) => (
+                    <TableCell key={c.key} className={c.key === "crianca" ? "font-medium" : c.key === "genero" || c.key === "familia" ? "capitalize" : ""}>
+                      {c.key === "crianca" ? (
+                        <div className="flex items-center gap-2">
+                          {i.crianca_photo_url ? (
+                            <img src={i.crianca_photo_url} alt={i.crianca_nome} className="w-8 h-8 rounded-full object-cover border" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                              <Baby className="w-4 h-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span>{i.crianca_nome}</span>
+                        </div>
+                      ) : (
+                        cellValue(i, c.key)
+                      )}
+                    </TableCell>
+                  ))}
+                  <TableCell>
+                    <div className="flex justify-end gap-1">{acoes(i)}</div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     );
   };
+
+  const botaoExcluir = (i: Apresentacao) => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="icon" variant="ghost" className="text-destructive" title="Excluir">
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Excluir inscrição?</AlertDialogTitle>
+          <AlertDialogDescription>
+            A inscrição de <strong>{i.crianca_nome}</strong> será removida permanentemente.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction onClick={() => excluirMutation.mutate(i.id)}>Excluir</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   return (
     <div className="space-y-6">
@@ -372,11 +353,16 @@ const ApresentacaoCriancasCultoTab = () => {
       </Card>
 
       <Tabs defaultValue="pendentes">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="pendentes" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             Pendentes
             {pendentes.length > 0 && <Badge variant="destructive" className="ml-1">{pendentes.length}</Badge>}
+          </TabsTrigger>
+          <TabsTrigger value="para-apresentar" className="flex items-center gap-2">
+            <CalendarClock className="w-4 h-4" />
+            Para apresentar
+            {paraApresentar.length > 0 && <Badge variant="secondary" className="ml-1">{paraApresentar.length}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="apresentadas" className="flex items-center gap-2">
             <Award className="w-4 h-4" />
@@ -384,13 +370,113 @@ const ApresentacaoCriancasCultoTab = () => {
             {apresentadas.length > 0 && <Badge variant="secondary" className="ml-1">{apresentadas.length}</Badge>}
           </TabsTrigger>
         </TabsList>
+
         <TabsContent value="pendentes" className="mt-4">
-          <Lista itens={pendentes} aprovada={false} vazio="Nenhuma inscrição pendente." />
+          <FilterableTable
+            itens={pendentes}
+            vazio="Nenhuma inscrição pendente."
+            columns={[
+              { key: "crianca", label: "Criança" },
+              { key: "genero", label: "Gênero" },
+              { key: "nascimento", label: "Nascimento" },
+              { key: "pai", label: "Pai" },
+              { key: "mae", label: "Mãe" },
+              { key: "familia", label: "Família" },
+            ]}
+            acoes={(i) => (
+              <>
+                <Button size="icon" variant="ghost" title="Aprovar" onClick={() => { setAprovarInscricao(i); setDataAprovacao(isoToDateInput(i.data_apresentacao)); }}>
+                  <Check className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                {botaoExcluir(i)}
+              </>
+            )}
+          />
         </TabsContent>
+
+        <TabsContent value="para-apresentar" className="mt-4">
+          <FilterableTable
+            itens={paraApresentar}
+            vazio="Nenhuma criança agendada para apresentação."
+            columns={[
+              { key: "crianca", label: "Criança" },
+              { key: "genero", label: "Gênero" },
+              { key: "nascimento", label: "Nascimento" },
+              { key: "pai", label: "Pai" },
+              { key: "mae", label: "Mãe" },
+              { key: "apresentacao", label: "Apresentação" },
+            ]}
+            acoes={(i) => (
+              <>
+                <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" title="Certificado" onClick={() => setCertInscricao(i)}>
+                  <Award className="w-4 h-4" />
+                </Button>
+                {botaoExcluir(i)}
+              </>
+            )}
+          />
+        </TabsContent>
+
         <TabsContent value="apresentadas" className="mt-4">
-          <TabelaApresentadas itens={apresentadas} />
+          <FilterableTable
+            itens={apresentadas}
+            vazio="Nenhuma criança apresentada ainda."
+            columns={[
+              { key: "crianca", label: "Criança" },
+              { key: "genero", label: "Gênero" },
+              { key: "nascimento", label: "Nascimento" },
+              { key: "pai", label: "Pai" },
+              { key: "mae", label: "Mãe" },
+              { key: "apresentacao", label: "Apresentação" },
+            ]}
+            acoes={(i) => (
+              <>
+                <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button size="icon" variant="ghost" title="Certificado" onClick={() => setCertInscricao(i)}>
+                  <Award className="w-4 h-4" />
+                </Button>
+                {botaoExcluir(i)}
+              </>
+            )}
+          />
         </TabsContent>
       </Tabs>
+
+      {/* Dialog de aprovação com data */}
+      <Dialog open={!!aprovarInscricao} onOpenChange={(open) => { if (!open) { setAprovarInscricao(null); setDataAprovacao(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Aprovar apresentação</DialogTitle>
+          </DialogHeader>
+          {aprovarInscricao && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Informe a data em que <strong>{aprovarInscricao.crianca_nome}</strong> poderá ser apresentada.
+                Ao salvar, uma mensagem de confirmação será enviada no WhatsApp dos pais/contato.
+              </p>
+              <div className="space-y-1">
+                <Label>Data da apresentação</Label>
+                <MaskedInput mask="date" value={dataAprovacao} onChange={setDataAprovacao} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setAprovarInscricao(null); setDataAprovacao(""); }}>Cancelar</Button>
+            <Button onClick={confirmarAprovacao} disabled={aprovarMutation.isPending}>
+              {aprovarMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Aprovar e enviar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ApresentacaoCertificadoDialog
         open={!!certInscricao}
@@ -431,10 +517,10 @@ const ApresentacaoCriancasCultoTab = () => {
                 </div>
                 <div className="space-y-1">
                   <Label>Nascimento</Label>
-                  <Input
-                    type="date"
-                    value={editInscricao.crianca_data_nascimento || ""}
-                    onChange={(e) => setEditInscricao({ ...editInscricao, crianca_data_nascimento: e.target.value || null })}
+                  <MaskedInput
+                    mask="date"
+                    value={isoToDateInput(editInscricao.crianca_data_nascimento)}
+                    onChange={(v) => setEditInscricao({ ...editInscricao, crianca_data_nascimento: dateInputToISO(v) })}
                   />
                 </div>
               </div>
@@ -472,10 +558,10 @@ const ApresentacaoCriancasCultoTab = () => {
               </div>
               <div className="space-y-1">
                 <Label>Data da apresentação</Label>
-                <Input
-                  type="date"
-                  value={editInscricao.data_apresentacao || ""}
-                  onChange={(e) => setEditInscricao({ ...editInscricao, data_apresentacao: e.target.value || null })}
+                <MaskedInput
+                  mask="date"
+                  value={isoToDateInput(editInscricao.data_apresentacao)}
+                  onChange={(v) => setEditInscricao({ ...editInscricao, data_apresentacao: dateInputToISO(v) })}
                 />
               </div>
             </div>
