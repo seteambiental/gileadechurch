@@ -80,6 +80,7 @@ const InscricaoEvento = () => {
   const [formaPagamento, setFormaPagamento] = useState("");
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
+  const [idadeBloqueada, setIdadeBloqueada] = useState(false);
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
@@ -569,6 +570,18 @@ const InscricaoEvento = () => {
       return;
     }
 
+    // Regra Impacto Jovem — participante precisa completar 16 anos no ano do evento
+    const isImpactoJovem = /impacto/i.test(evento?.titulo || "") && /jovem|jovens/i.test(evento?.titulo || "");
+    if (isImpactoJovem && evento?.data_evento) {
+      const anoEvento = parseLocalDate(evento.data_evento).getFullYear();
+      const anoNascimento = parseLocalDate(dataNascimento).getFullYear();
+      if (anoEvento - anoNascimento < 16) {
+        setIdadeBloqueada(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
     // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
     if (tipoInscricao === "membro" && selectedPerson?.type !== "member") {
       toast({
@@ -614,6 +627,32 @@ const InscricaoEvento = () => {
         <Card className="max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">Evento não encontrado.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (idadeBloqueada) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto text-3xl">
+              💛
+            </div>
+            <h2 className="text-xl font-bold">Ainda não é a sua vez 💛</h2>
+            <p className="text-muted-foreground">
+              O <strong>{evento.titulo}</strong> é para jovens que completam{" "}
+              <strong>16 anos até 31/12/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
+            </p>
+            <p className="text-muted-foreground">
+              Pela sua data de nascimento, você ainda vai completar 16 anos depois dessa data.
+              Mas não fique triste: guardamos o seu lugar para o próximo ano! Continue crescendo com a gente. 🙏
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => setIdadeBloqueada(false)}>
+              Voltar
+            </Button>
           </CardContent>
         </Card>
       </div>
