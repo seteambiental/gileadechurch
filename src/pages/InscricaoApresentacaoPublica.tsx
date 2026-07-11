@@ -23,7 +23,7 @@ import { useCepLookup } from "@/hooks/useCepLookup";
 import { formatCep, unformatCep, dateInputToISO } from "@/lib/masks";
 import { toTitleCase, formatNameField } from "@/lib/text-utils";
 import { resizeKeepAspect } from "@/lib/image-resize";
-import { dispararAvisoApresentacaoRecebida, dispararMensagemApresentacaoPais } from "@/lib/whatsapp-notifications";
+import { dispararMensagemApresentacaoPais } from "@/lib/whatsapp-notifications";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
 interface MembroBusca {
