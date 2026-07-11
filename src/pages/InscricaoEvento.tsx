@@ -633,10 +633,6 @@ const InscricaoEvento = () => {
     );
   }
 
-  if (inscricaoRealizada) {
-    return null; // handled below alongside idadeBloqueada order preserved
-  }
-
   if (idadeBloqueada) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -663,7 +659,7 @@ const InscricaoEvento = () => {
     );
   }
 
-  if (false && inscricaoRealizada) {
+  if (inscricaoRealizada) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
