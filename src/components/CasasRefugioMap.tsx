@@ -71,6 +71,7 @@ const CasasRefugioMap = () => {
       const { data, error } = await supabase
         .from("casas_refugio")
         .select("*")
+        .or("ativo.is.null,ativo.eq.true")
         .order("name", { ascending: true });
       if (error) throw error;
       return data as CasaRefugio[];
