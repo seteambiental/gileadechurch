@@ -1,11 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
-  consultarMensagemWasender,
   enviarTextoWhatsApp,
   enviarMidiaWhatsApp,
   normalizarWasenderEnvio,
-  statusEntregaPorCodigo,
-  statusEntregaPorTexto,
   whatsappConfigurado,
   verificarConexaoWhatsApp,
 } from "../_shared/whatsapp-sender.ts";
