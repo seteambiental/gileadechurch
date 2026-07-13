@@ -921,7 +921,7 @@ export const EventoFormDialog = ({
             </DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 [&_.grid>*]:min-w-0">
             <div>
               <Label htmlFor="titulo">Título *</Label>
               <Input
