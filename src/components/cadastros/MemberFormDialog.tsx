@@ -443,6 +443,33 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
 
         // Delete existing functions
         await supabase.from("member_functions").delete().eq("member_id", member.id);
+
+        // Se o email mudou e o membro já tem usuário de login, sincroniza o email de login.
+        const emailNovo = (data.email || "").trim().toLowerCase();
+        const emailAntigo = (member.email || "").trim().toLowerCase();
+        if (member.user_id && emailNovo && emailNovo !== emailAntigo) {
+          try {
+            const { error: emailErr } = await supabase.functions.invoke("atualizar-email-login", {
+              body: { user_id: member.user_id, email: emailNovo },
+            });
+            if (emailErr) console.error("[memberForm] falha ao atualizar email de login:", emailErr);
+          } catch (e) {
+            console.error("[memberForm] erro ao atualizar email de login:", e);
+          }
+        }
+
+        // Se o telefone mudou, reenfileira mensagens paradas recentes para o novo número.
+        const telNovo = memberData.whatsapp || "";
+        const telAntigo = member.whatsapp ? unformatPhone(member.whatsapp) : "";
+        if (telNovo && telNovo !== telAntigo) {
+          try {
+            await supabase.functions.invoke("reenviar-mensagens-telefone", {
+              body: { member_id: member.id, telefone: telNovo },
+            });
+          } catch (e) {
+            console.error("[memberForm] erro ao reenfileirar mensagens:", e);
+          }
+        }
       } else {
         const { data: newMember, error } = await supabase
           .from("members")

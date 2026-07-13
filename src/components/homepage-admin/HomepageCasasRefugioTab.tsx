@@ -42,6 +42,7 @@ const HomepageCasasRefugioTab = () => {
           anfitriao:members!casas_refugio_anfitriao_id_fkey(full_name),
           anfitriao_esposa:members!casas_refugio_anfitriao_esposa_id_fkey(full_name)
         `)
+        .or("ativo.is.null,ativo.eq.true")
         .order("name", { ascending: true });
       if (error) throw error;
       return data as CasaRefugio[];

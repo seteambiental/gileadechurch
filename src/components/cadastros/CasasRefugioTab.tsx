@@ -388,104 +388,101 @@ const CasasRefugioTab = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-2">
           {filteredItems.map((item) => (
-            <Card
+            <div
               key={item.id}
-              className={`bg-card border-border hover:border-secondary/50 transition-colors ${
+              className={`bg-card border border-border rounded-lg p-3 hover:border-secondary/50 transition-colors ${
                 item.ativo === false ? "opacity-60" : ""
               }`}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
-                      {item.ativo === false && (
-                        <Badge variant="destructive" className="text-[10px] shrink-0">
-                          Inativa
-                        </Badge>
-                      )}
-                      {item.latitude && item.longitude ? (
-                        <span title="Coordenadas cadastradas">
-                          <Navigation className="w-3 h-3 text-green-500 shrink-0" />
-                        </span>
-                      ) : (
-                        <span title="Sem coordenadas">
-                          <Navigation className="w-3 h-3 text-muted-foreground/40 shrink-0" />
-                        </span>
-                      )}
-                    </div>
-                    {item.condominio && (
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {item.condominio}
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      title={item.ativo === false ? "Reativar casa" : "Inativar casa"}
-                      className={item.ativo === false ? "text-green-600 hover:text-green-600" : "text-muted-foreground"}
-                      onClick={() =>
-                        toggleAtivoMutation.mutate({ id: item.id, ativo: item.ativo === false })
-                      }
-                    >
-                      {item.ativo === false ? (
-                        <Power className="w-4 h-4" />
-                      ) : (
-                        <PowerOff className="w-4 h-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingItem(item);
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeletingId(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+                  <MapPin className="w-4 h-4 text-secondary" />
                 </div>
 
-                <div className="space-y-1.5 text-sm text-muted-foreground">
-                  {(item.lider || item.lider_esposa || item.lideres) && (
-                    <p className="flex items-center gap-1.5 truncate">
-                      <Users className="w-3 h-3 shrink-0" />
-                      <span className="truncate">
-                        {formatLeaderNames(item.lider?.full_name, item.lider_esposa?.full_name) || `Líderes: ${item.lideres}`}
+                {/* Nome + líderes */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground truncate">{item.name}</h3>
+                    {item.ativo === false && (
+                      <Badge variant="destructive" className="text-[10px] shrink-0">
+                        Inativa
+                      </Badge>
+                    )}
+                    {item.latitude && item.longitude ? (
+                      <span title="Coordenadas cadastradas">
+                        <Navigation className="w-3 h-3 text-green-500 shrink-0" />
                       </span>
-                    </p>
-                  )}
-                  {item.dias && item.frequencia && (
-                    <p className="flex items-center gap-1.5">
-                      <Calendar className="w-3 h-3 shrink-0" />
-                      <span>{item.dias} - {item.frequencia}</span>
-                    </p>
-                  )}
-                  {(item.neighborhood || item.city) && (
-                    <p className="flex items-center gap-1.5 truncate">
-                      <MapPin className="w-3 h-3 shrink-0" />
-                      <span className="truncate">
-                        {item.neighborhood && `${item.neighborhood}, `}
-                        {item.city} {item.state && `- ${item.state}`}
+                    ) : (
+                      <span title="Sem coordenadas">
+                        <Navigation className="w-3 h-3 text-muted-foreground/40 shrink-0" />
                       </span>
-                    </p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                    <Users className="w-3 h-3 shrink-0" />
+                    {formatLeaderNames(item.lider?.full_name, item.lider_esposa?.full_name) || item.lideres || "Sem líder definido"}
+                  </p>
+                </div>
+
+                {/* Condomínio */}
+                <div className="hidden md:block min-w-0">
+                  {item.condominio && (
+                    <Badge variant="outline" className="text-xs max-w-[160px] truncate">
+                      {item.condominio}
+                    </Badge>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Dias/frequência */}
+                <div className="hidden lg:flex items-center gap-1 text-xs text-muted-foreground min-w-0">
+                  {item.dias && (
+                    <>
+                      <Calendar className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{item.dias}{item.frequencia ? ` - ${item.frequencia}` : ""}</span>
+                    </>
+                  )}
+                </div>
+
+                {/* Ações */}
+                <div className="flex gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title={item.ativo === false ? "Reativar casa" : "Inativar casa"}
+                    className={item.ativo === false ? "text-green-600 hover:text-green-600" : "text-muted-foreground"}
+                    onClick={() =>
+                      toggleAtivoMutation.mutate({ id: item.id, ativo: item.ativo === false })
+                    }
+                  >
+                    {item.ativo === false ? (
+                      <Power className="w-4 h-4" />
+                    ) : (
+                      <PowerOff className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingItem(item);
+                      setIsFormOpen(true);
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeletingId(item.id)}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
