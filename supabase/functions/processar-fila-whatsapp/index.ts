@@ -1,11 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
-  consultarMensagemWasender,
   enviarTextoWhatsApp,
   enviarMidiaWhatsApp,
   normalizarWasenderEnvio,
-  statusEntregaPorCodigo,
-  statusEntregaPorTexto,
   whatsappConfigurado,
   verificarConexaoWhatsApp,
 } from "../_shared/whatsapp-sender.ts";
@@ -126,82 +123,12 @@ export function validarPlaceholdersResolvidos(texto: string) {
 }
 export { preencherTemplate, prepararConteudoFila };
 
-async function atualizarStatusMensagensRecentes(supabase: any) {
-  const desde = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: pendentes, error } = await supabase
-    .from("comunicacao_envios")
-    .select("id, fila_id, provider_message_id, provider_response")
-    .not("provider_message_id", "is", null)
-    .in("status", ["aceito_provedor", "enviado"])
-    .gte("created_at", desde)
-    .order("created_at", { ascending: false })
-    .limit(25);
-
-  if (error) {
-    console.warn("Falha ao buscar mensagens para atualizar status:", error.message);
-    return { consultadas: 0, atualizadas: 0 };
-  }
-
-  let atualizadas = 0;
-  for (const envio of pendentes || []) {
-    try {
-      const possiveisIds = Array.from(new Set([
-        envio.provider_message_id,
-        envio.provider_response?.data?.msgId,
-        envio.provider_response?.data?.messageId,
-        envio.provider_response?.data?.id,
-        envio.provider_response?.data?.key?.id,
-        envio.provider_response?.data?.result?.key?.id,
-        envio.provider_response?.result?.key?.id,
-      ]
-        .filter((id) => id !== null && id !== undefined && String(id).trim() !== "")
-        .map((id) => String(id))))
-        .sort((a, b) => Number(/^\d+$/.test(b)) - Number(/^\d+$/.test(a)));
-
-      let recibo = null;
-      const falhas: string[] = [];
-      for (const idConsulta of possiveisIds) {
-        try {
-          recibo = await consultarMensagemWasender(idConsulta);
-          break;
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          falhas.push(`${idConsulta}: ${msg}`);
-        }
-      }
-
-      if (!recibo) {
-        throw new Error(falhas.join(" | ") || "Nenhum ID de mensagem disponível para consulta");
-      }
-
-      const mapped = recibo.providerStatusCode !== null
-        ? statusEntregaPorCodigo(recibo.providerStatusCode)
-        : statusEntregaPorTexto(recibo.providerStatus);
-      const patch: Record<string, unknown> = {
-        status: mapped.status,
-        provider_status: mapped.providerStatus ?? recibo.providerStatus,
-        provider_status_code: recibo.providerStatusCode,
-        provider_response: recibo.raw,
-      };
-      if (mapped.status === "entregue") patch.entregue_em = new Date().toISOString();
-      if (mapped.status === "lido") {
-        patch.entregue_em = new Date().toISOString();
-        patch.lido_em = new Date().toISOString();
-      }
-      if (mapped.status === "erro") patch.erro_mensagem = "Provedor informou falha na entrega";
-
-      await supabase.from("comunicacao_envios").update(patch).eq("id", envio.id);
-      if (envio.fila_id && ["entregue", "lido", "erro"].includes(mapped.status)) {
-        await supabase.from("comunicacao_fila").update({ status: mapped.status }).eq("id", envio.fila_id);
-      }
-      atualizadas++;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`Falha ao consultar status Wasender msg ${envio.provider_message_id}: ${msg}`);
-    }
-  }
-
-  return { consultadas: pendentes?.length || 0, atualizadas };
+async function atualizarStatusMensagensRecentes(_supabase: any) {
+  // A atualização de status de entrega/leitura é feita exclusivamente pelo
+  // webhook (wasender-webhook). O WasenderAPI não expõe um endpoint de consulta
+  // de status por mensagem (o antigo /api/messages/{id}/info não existe e
+  // retornava 404), então não há polling aqui.
+  return { consultadas: 0, atualizadas: 0 };
 }
 
 Deno.serve(async (req) => {
