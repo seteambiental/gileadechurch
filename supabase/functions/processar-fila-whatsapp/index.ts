@@ -123,7 +123,6 @@ export function validarPlaceholdersResolvidos(texto: string) {
 }
 export { preencherTemplate, prepararConteudoFila };
 
-async function atualizarStatusMensagensRecentes(supabase: any) {
 async function atualizarStatusMensagensRecentes(_supabase: any) {
   // A atualização de status de entrega/leitura é feita exclusivamente pelo
   // webhook (wasender-webhook). O WasenderAPI não expõe um endpoint de consulta
