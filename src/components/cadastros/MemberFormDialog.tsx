@@ -457,6 +457,19 @@ const MemberFormDialog = ({ open, onOpenChange, member }: MemberFormDialogProps)
             console.error("[memberForm] erro ao atualizar email de login:", e);
           }
         }
+
+        // Se o telefone mudou, reenfileira mensagens paradas recentes para o novo número.
+        const telNovo = memberData.whatsapp || "";
+        const telAntigo = member.whatsapp ? unformatPhone(member.whatsapp) : "";
+        if (telNovo && telNovo !== telAntigo) {
+          try {
+            await supabase.functions.invoke("reenviar-mensagens-telefone", {
+              body: { member_id: member.id, telefone: telNovo },
+            });
+          } catch (e) {
+            console.error("[memberForm] erro ao reenfileirar mensagens:", e);
+          }
+        }
       } else {
         const { data: newMember, error } = await supabase
           .from("members")
