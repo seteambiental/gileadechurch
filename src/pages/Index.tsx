@@ -426,12 +426,14 @@ const Index = () => {
                   loading="lazy"
                   decoding="async"
                 />
-                {/* Imagem principal centralizada sem corte com faixas superior/inferior */}
+                {/* Imagem principal centralizada sem corte com faixas superior/inferior.
+                    Reduzida 10% em cada lado (ocupa no máximo 80% da largura/altura) para
+                    não cortar o topo. */}
                 <div className="absolute inset-0 z-[1] flex items-center justify-center">
                   <img
                     src={img.imagem_url}
                     alt={img.titulo}
-                    className="w-full max-h-[90%] object-contain"
+                    className="max-w-[80%] max-h-[80%] object-contain"
                     loading="lazy"
                     decoding="async"
                   />
