@@ -910,7 +910,7 @@ export const EventoFormDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden [&>*]:min-w-0">
           <DialogHeader>
             <DialogTitle>
               {approvalMode 
