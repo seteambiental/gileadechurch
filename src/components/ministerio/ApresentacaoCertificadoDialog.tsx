@@ -134,8 +134,8 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 820,
-                top: 640,
+                left: 830,
+                top: 636,
                 fontFamily: "'Coolvetica', sans-serif",
                 fontSize: 44,
                 color: "#1f2937",
@@ -150,8 +150,8 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 840,
-                top: 700,
+                left: 920,
+                top: 696,
                 fontFamily: "'Coolvetica', sans-serif",
                 fontSize: 44,
                 color: "#1f2937",
@@ -166,10 +166,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 840,
+                left: 830,
                 top: 1108,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 32,
+                fontSize: 36,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -182,10 +182,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 1000,
+                left: 990,
                 top: 1108,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 32,
+                fontSize: 36,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
