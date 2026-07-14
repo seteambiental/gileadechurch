@@ -134,10 +134,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 845,
-                top: 630,
+                left: 830,
+                top: 636,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 38,
+                fontSize: 44,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -150,10 +150,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 960,
-                top: 690,
+                left: 920,
+                top: 680,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 38,
+                fontSize: 44,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -166,10 +166,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 855,
-                top: 1090,
+                left: 830,
+                top: 1108,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 38,
+                fontSize: 36,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -182,10 +182,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 985,
-                top: 1090,
+                left: 990,
+                top: 1108,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 38,
+                fontSize: 36,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
