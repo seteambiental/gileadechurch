@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { parseLocalDate } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import certBg from "@/assets/certificado-apresentacao-kids-bg.png.asset.json";
+import certBg from "@/assets/certificado-apresentacao-kids-blank.png.asset.json";
 
 interface Props {
   open: boolean;
@@ -48,9 +48,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
   const dataObj = inscricao.data_apresentacao
     ? parseLocalDate(inscricao.data_apresentacao)
     : new Date();
-  const dataDia = format(dataObj, "dd", { locale: ptBR });
-  const dataMes = format(dataObj, "MMMM", { locale: ptBR });
-  const dataAno = format(dataObj, "yyyy", { locale: ptBR });
+  const dataCompleta = format(dataObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
   const handleDownload = async () => {
     if (!certRef.current) return;
@@ -136,94 +134,73 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 pointerEvents: "none",
               }}
             />
-            {/* Nome da criança - fonte BillionDreams, sobre a linha */}
+            {/* Área de texto — reescrita por cima do template em branco */}
             <div
               style={{
                 position: "absolute",
-                left: 640,
-                right: 100,
-                top: 420,
-                height: 150,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: "'BillionDreams', cursive",
-                fontSize: 96,
-                color: "#3730b8",
-                lineHeight: 1,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-              }}
-            >
-              {inscricao.crianca_nome}
-            </div>
-
-            {/* Nome dos pais - após "Filho(a) de " */}
-            <div
-              style={{
-                position: "absolute",
-                left: 836,
-                top: 628,
+                left: 660,
                 right: 90,
-                fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 38,
+                top: 470,
+                bottom: 90,
+                display: "flex",
+                flexDirection: "column",
                 color: "#1f2937",
-                whiteSpace: "normal",
-                lineHeight: 1.1,
               }}
             >
-              {pais}
-            </div>
+              {/* Nome da criança em fonte manuscrita */}
+              <div
+                style={{
+                  fontFamily: "'BillionDreams', cursive",
+                  fontWeight: 700,
+                  fontSize: 110,
+                  color: "#3730b8",
+                  lineHeight: 1,
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  paddingBottom: 12,
+                }}
+              >
+                {inscricao.crianca_nome}
+              </div>
 
-            {/* Data de nascimento - após "Nascido(a) em: " */}
-            <div
-              style={{
-                position: "absolute",
-                left: 926,
-                top: 740,
-                fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
-                color: "#1f2937",
-                whiteSpace: "nowrap",
-                lineHeight: 1,
-              }}
-            >
-              {nascimento}
-            </div>
+              {/* Linha separadora abaixo do nome */}
+              <div
+                style={{
+                  borderTop: "2px solid #4b5563",
+                  marginBottom: 40,
+                }}
+              />
 
-            {/* Dia da apresentação (preenche o 1º espaço em branco de "Curitiba, dia __ de __ de 2026") */}
-            <div
-              style={{
-                position: "absolute",
-                left: 300,
-                top: 1070,
-                fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
-                color: "#1f2937",
-                whiteSpace: "nowrap",
-                lineHeight: 1,
-              }}
-            >
-              {dataDia}
-            </div>
+              {/* Filiação */}
+              <div style={{ fontSize: 38, lineHeight: 1.35, marginBottom: 10 }}>
+                <span>Filho(a) de </span>
+                <span style={{ fontWeight: 700 }}>{pais}</span>
+              </div>
 
-            {/* Mês da apresentação (preenche o 2º espaço em branco) */}
-            <div
-              style={{
-                position: "absolute",
-                left: 430,
-                top: 1070,
-                fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
-                color: "#1f2937",
-                whiteSpace: "nowrap",
-                lineHeight: 1,
-              }}
-            >
-              {dataMes}
+              {/* Data de nascimento */}
+              <div style={{ fontSize: 38, lineHeight: 1.35, marginBottom: 40 }}>
+                <span>Nascido(a) em: </span>
+                <span style={{ fontWeight: 700 }}>{nascimento}</span>
+              </div>
+
+              {/* Texto de apresentação */}
+              <div style={{ fontSize: 34, lineHeight: 1.45 }}>
+                Foi apresentado(a) ao Senhor, em nome do Pai, do Filho e do
+                Espírito Santo, conforme o mandamento do Senhor Jesus Cristo,
+                à luz do relato do Evangelho de Lucas 2:22–40.
+              </div>
+
+              {/* Rodapé — data e pastor colados na base */}
+              <div style={{ marginTop: "auto" }}>
+                <div style={{ fontSize: 36, lineHeight: 1.4 }}>
+                  Curitiba, <span style={{ fontWeight: 700 }}>{dataCompleta}</span>
+                </div>
+                <div style={{ fontSize: 36, lineHeight: 1.4, marginTop: 6 }}>
+                  Pastor Adalberto Derzette
+                </div>
+              </div>
             </div>
-            {/* dataAno referenciado para futura evolução do template */}
-            <span style={{ display: "none" }}>{dataAno}</span>
           </div>
         </div>
       </DialogContent>
