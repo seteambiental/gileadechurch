@@ -142,13 +142,13 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 position: "absolute",
                 left: 640,
                 right: 100,
-                top: 470,
+                top: 420,
                 height: 150,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: "'BillionDreams', cursive",
-                fontSize: 110,
+                fontSize: 96,
                 color: "#3730b8",
                 lineHeight: 1,
                 whiteSpace: "nowrap",
@@ -163,12 +163,13 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               style={{
                 position: "absolute",
                 left: 836,
-                top: 630,
+                top: 628,
+                right: 90,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 44,
+                fontSize: 38,
                 color: "#1f2937",
-                whiteSpace: "nowrap",
-                lineHeight: 1,
+                whiteSpace: "normal",
+                lineHeight: 1.1,
               }}
             >
               {pais}
@@ -179,9 +180,9 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               style={{
                 position: "absolute",
                 left: 926,
-                top: 674,
+                top: 740,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 44,
+                fontSize: 40,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -194,10 +195,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 843,
-                top: 1095,
+                left: 300,
+                top: 1070,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 36,
+                fontSize: 40,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
@@ -210,10 +211,10 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             <div
               style={{
                 position: "absolute",
-                left: 971,
-                top: 1095,
+                left: 430,
+                top: 1070,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 36,
+                fontSize: 40,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
                 lineHeight: 1,
