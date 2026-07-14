@@ -59,7 +59,24 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
       if ((document as any).fonts?.ready) {
         await (document as any).fonts.ready;
       }
-      const canvas = await html2canvas(certRef.current, { scale: 2, useCORS: true });
+      // Garante que todas as imagens (inclusive o fundo) estejam decodificadas
+      const imgs = Array.from(certRef.current.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map((img) =>
+          img.complete && img.naturalWidth > 0
+            ? Promise.resolve()
+            : new Promise((res) => {
+                img.onload = () => res(null);
+                img.onerror = () => res(null);
+              }),
+        ),
+      );
+      const canvas = await html2canvas(certRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+      });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("landscape", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
