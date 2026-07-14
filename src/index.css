@@ -4,6 +4,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: 'BillionDreams';
+  src: url('/__l5e/assets-v1/aa65b51d-ea4a-4527-877a-7b969ad047d2/BillionDreams.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Coolvetica';
+  src: url('/__l5e/assets-v1/ccad1a2d-0900-4725-a1e2-d75863e8f700/coolvetica_rg.otf') format('opentype');
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* Primary - Black (Base) */
