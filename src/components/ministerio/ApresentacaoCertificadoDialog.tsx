@@ -98,16 +98,27 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             style={{
               width: 1920,
               height: 1390,
-              backgroundImage: `url(${certBg.url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
               position: "relative",
               fontFamily: "'Coolvetica', system-ui, sans-serif",
               transform: "scale(0.52)",
               transformOrigin: "top left",
               marginBottom: `${1390 * -0.48}px`,
+              backgroundColor: "#fff",
             }}
           >
+            <img
+              src={certBg.url}
+              alt=""
+              crossOrigin="anonymous"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                pointerEvents: "none",
+              }}
+            />
             {/* Nome da criança - fonte BillionDreams, sobre a linha */}
             <div
               style={{
