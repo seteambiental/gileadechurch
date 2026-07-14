@@ -59,7 +59,24 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
       if ((document as any).fonts?.ready) {
         await (document as any).fonts.ready;
       }
-      const canvas = await html2canvas(certRef.current, { scale: 2, useCORS: true });
+      // Garante que todas as imagens (inclusive o fundo) estejam decodificadas
+      const imgs = Array.from(certRef.current.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map((img) =>
+          img.complete && img.naturalWidth > 0
+            ? Promise.resolve()
+            : new Promise((res) => {
+                img.onload = () => res(null);
+                img.onerror = () => res(null);
+              }),
+        ),
+      );
+      const canvas = await html2canvas(certRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: "#ffffff",
+      });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("landscape", "mm", "a4");
       const w = pdf.internal.pageSize.getWidth();
@@ -98,16 +115,27 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
             style={{
               width: 1920,
               height: 1390,
-              backgroundImage: `url(${certBg.url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
               position: "relative",
               fontFamily: "'Coolvetica', system-ui, sans-serif",
               transform: "scale(0.52)",
               transformOrigin: "top left",
               marginBottom: `${1390 * -0.48}px`,
+              backgroundColor: "#fff",
             }}
           >
+            <img
+              src={certBg.url}
+              alt=""
+              crossOrigin="anonymous"
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                pointerEvents: "none",
+              }}
+            />
             {/* Nome da criança - fonte BillionDreams, sobre a linha */}
             <div
               style={{
