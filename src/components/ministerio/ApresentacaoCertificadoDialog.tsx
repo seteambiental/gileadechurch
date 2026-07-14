@@ -141,7 +141,6 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 left: 660,
                 right: 90,
                 top: 470,
-                bottom: 90,
                 display: "flex",
                 flexDirection: "column",
                 color: "#1f2937",
@@ -152,13 +151,13 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 style={{
                   fontFamily: "'BillionDreams', cursive",
                   fontWeight: 700,
-                  fontSize: 110,
+                  fontSize: 84,
                   color: "#3730b8",
                   lineHeight: 1,
                   textAlign: "center",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
-                  paddingBottom: 12,
+                  paddingBottom: 24,
                 }}
               >
                 {inscricao.crianca_nome}
@@ -192,7 +191,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               </div>
 
               {/* Rodapé — data e pastor colados na base */}
-              <div style={{ marginTop: "auto" }}>
+              <div style={{ marginTop: 60 }}>
                 <div style={{ fontSize: 36, lineHeight: 1.4 }}>
                   Curitiba, <span style={{ fontWeight: 700 }}>{dataCompleta}</span>
                 </div>
