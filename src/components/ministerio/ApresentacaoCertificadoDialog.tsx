@@ -15,7 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { parseLocalDate } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import certBg from "@/assets/certificado-apresentacao-kids-blank.png.asset.json";
+import certBg from "@/assets/certificado-apresentacao-kids-clean.png.asset.json";
 
 interface Props {
   open: boolean;
