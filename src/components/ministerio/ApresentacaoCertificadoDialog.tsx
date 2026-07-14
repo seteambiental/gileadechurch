@@ -15,9 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { parseLocalDate } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-import logoGileade from "@/assets/logo-gileade.jpeg";
-import certBg from "@/assets/certificado-apresentacao-bg.jpg";
-import assinaturaPastor from "@/assets/assinatura-pastor.png.asset.json";
+import certBg from "@/assets/certificado-apresentacao-kids-bg.png.asset.json";
 
 interface Props {
   open: boolean;
@@ -47,13 +45,20 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
   const nascimento = inscricao.crianca_data_nascimento
     ? format(parseLocalDate(inscricao.crianca_data_nascimento), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : "—";
-  const dataApres = inscricao.data_apresentacao
-    ? format(parseLocalDate(inscricao.data_apresentacao), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-    : format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  const dataObj = inscricao.data_apresentacao
+    ? parseLocalDate(inscricao.data_apresentacao)
+    : new Date();
+  const dataDia = format(dataObj, "dd", { locale: ptBR });
+  const dataMes = format(dataObj, "MMMM", { locale: ptBR });
+  const dataAno = format(dataObj, "yyyy", { locale: ptBR });
 
   const handleDownload = async () => {
     if (!certRef.current) return;
     try {
+      // Aguarda fontes customizadas carregarem antes de rasterizar
+      if ((document as any).fonts?.ready) {
+        await (document as any).fonts.ready;
+      }
       const canvas = await html2canvas(certRef.current, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("landscape", "mm", "a4");
@@ -87,85 +92,89 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
         </div>
 
         <div className="w-full overflow-x-auto">
+          {/* Template base: 1920x1390. Todos os elementos posicionados neste sistema de coordenadas. */}
           <div
             ref={certRef}
             style={{
-              width: 1000,
-              height: 707,
-              backgroundImage: `url(${certBg})`,
+              width: 1920,
+              height: 1390,
+              backgroundImage: `url(${certBg.url})`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               position: "relative",
-              fontFamily: "'Segoe UI', system-ui, sans-serif",
+              fontFamily: "'Coolvetica', system-ui, sans-serif",
+              transform: "scale(0.52)",
+              transformOrigin: "top left",
+              marginBottom: `${1390 * -0.48}px`,
             }}
           >
-            {/* Logo topo direito */}
-            <img
-              src={logoGileade}
-              alt="Gileade"
-              crossOrigin="anonymous"
-              style={{ position: "absolute", top: 48, right: 60, width: 90, height: 90, borderRadius: "50%", objectFit: "cover" }}
-            />
-
-            {/* Área de texto */}
-            <div style={{ position: "absolute", top: 70, left: 355, right: 60 }}>
-              <h1
-                style={{
-                  color: "#3b2ecc",
-                  fontWeight: 800,
-                  fontSize: 52,
-                  lineHeight: 1.05,
-                  margin: 0,
-                  letterSpacing: "-1px",
-                }}
-              >
-                Certificado de<br />Apresentação
-              </h1>
-
-              <div style={{ marginTop: 26, width: "90%" }}>
-                <p
-                  style={{
-                    fontFamily: "'Dancing Script', cursive",
-                    fontSize: 46,
-                    fontWeight: 700,
-                    color: "#1f2937",
-                    margin: 0,
-                    lineHeight: 1.4,
-                    paddingBottom: 8,
-                  }}
-                >
-                  {inscricao.crianca_nome}
-                </p>
-                <div style={{ height: 2, backgroundColor: "#9ca3af", width: "100%" }} />
-              </div>
-
-              <div style={{ marginTop: 22, color: "#374151", fontSize: 19 }}>
-                <p style={{ margin: "0 0 6px" }}>
-                  Filho(a) de <strong>{pais}</strong>
-                </p>
-                <p style={{ margin: 0 }}>
-                  Nascido(a) em: <strong>{nascimento}</strong>
-                </p>
-              </div>
-
-              <p style={{ marginTop: 22, color: "#4b5563", fontSize: 18, lineHeight: 1.5, maxWidth: 560 }}>
-                Foi apresentado(a) ao Senhor, em nome do Pai, do Filho e do
-                Espírito Santo, conforme o mandamento do Senhor Jesus Cristo,
-                à luz do relato do Evangelho de Lucas 2:22–40.
-              </p>
+            {/* Nome da criança - fonte BillionDreams, azul do template, sobre a linha */}
+            <div
+              style={{
+                position: "absolute",
+                left: 640,
+                right: 90,
+                top: 470,
+                height: 140,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontFamily: "'BillionDreams', cursive",
+                fontSize: 130,
+                color: "#3730b8",
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+              }}
+            >
+              {inscricao.crianca_nome}
             </div>
 
-            {/* Local, data e assinatura */}
-            <div style={{ position: "absolute", bottom: 60, left: 355, right: 60, color: "#374151", fontSize: 18 }}>
-              <img
-                src={assinaturaPastor.url}
-                alt="Assinatura"
-                crossOrigin="anonymous"
-                style={{ height: 70, marginBottom: -8, marginLeft: 4 }}
-              />
-              <p style={{ margin: 0, fontWeight: 600 }}>Pastor Adalberto Derzette</p>
-              <p style={{ margin: "2px 0 0", fontSize: 15, color: "#6b7280" }}>Pastor Sênior Gileade Church</p>
-              <p style={{ margin: "10px 0 0" }}>Curitiba, dia {dataApres}</p>
+            {/* Nome dos pais - após "Filho(a) de " */}
+            <div
+              style={{
+                position: "absolute",
+                left: 810,
+                top: 655,
+                fontFamily: "'Coolvetica', sans-serif",
+                fontSize: 40,
+                color: "#1f2937",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {pais}
+            </div>
+
+            {/* Data de nascimento - após "Nascido(a) em: " */}
+            <div
+              style={{
+                position: "absolute",
+                left: 940,
+                top: 720,
+                fontFamily: "'Coolvetica', sans-serif",
+                fontSize: 40,
+                color: "#1f2937",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {nascimento}
+            </div>
+
+            {/* Data da apresentação - substitui a linha "Curitiba, dia __ de __ de 2026" do template */}
+            <div
+              style={{
+                position: "absolute",
+                left: 630,
+                top: 1110,
+                right: 90,
+                fontFamily: "'Coolvetica', sans-serif",
+                fontSize: 40,
+                color: "#1f2937",
+                background: "linear-gradient(to right, rgba(255,251,235,0.95), rgba(255,251,235,0.95))",
+                padding: "4px 8px",
+              }}
+            >
+              Curitiba, dia {dataDia} de {dataMes} de {dataAno}
             </div>
           </div>
         </div>
