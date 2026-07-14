@@ -108,19 +108,19 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               marginBottom: `${1390 * -0.48}px`,
             }}
           >
-            {/* Nome da criança - fonte BillionDreams, azul do template, sobre a linha */}
+            {/* Nome da criança - fonte BillionDreams, sobre a linha */}
             <div
               style={{
                 position: "absolute",
                 left: 640,
-                right: 90,
-                top: 470,
-                height: 140,
+                right: 100,
+                top: 420,
+                height: 150,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontFamily: "'BillionDreams', cursive",
-                fontSize: 130,
+                fontSize: 110,
                 color: "#3730b8",
                 lineHeight: 1,
                 whiteSpace: "nowrap",
@@ -135,11 +135,12 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               style={{
                 position: "absolute",
                 left: 810,
-                top: 655,
+                top: 645,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
+                fontSize: 38,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
+                lineHeight: 1,
               }}
             >
               {pais}
@@ -150,32 +151,50 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               style={{
                 position: "absolute",
                 left: 940,
-                top: 720,
+                top: 708,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
+                fontSize: 38,
                 color: "#1f2937",
                 whiteSpace: "nowrap",
+                lineHeight: 1,
               }}
             >
               {nascimento}
             </div>
 
-            {/* Data da apresentação - substitui a linha "Curitiba, dia __ de __ de 2026" do template */}
+            {/* Dia da apresentação (preenche o 1º espaço em branco de "Curitiba, dia __ de __ de 2026") */}
             <div
               style={{
                 position: "absolute",
-                left: 630,
-                top: 1110,
-                right: 90,
+                left: 810,
+                top: 1102,
                 fontFamily: "'Coolvetica', sans-serif",
-                fontSize: 40,
+                fontSize: 38,
                 color: "#1f2937",
-                background: "linear-gradient(to right, rgba(255,251,235,0.95), rgba(255,251,235,0.95))",
-                padding: "4px 8px",
+                whiteSpace: "nowrap",
+                lineHeight: 1,
               }}
             >
-              Curitiba, dia {dataDia} de {dataMes} de {dataAno}
+              {dataDia}
             </div>
+
+            {/* Mês da apresentação (preenche o 2º espaço em branco) */}
+            <div
+              style={{
+                position: "absolute",
+                left: 950,
+                top: 1102,
+                fontFamily: "'Coolvetica', sans-serif",
+                fontSize: 38,
+                color: "#1f2937",
+                whiteSpace: "nowrap",
+                lineHeight: 1,
+              }}
+            >
+              {dataMes}
+            </div>
+            {/* dataAno referenciado para futura evolução do template */}
+            <span style={{ display: "none" }}>{dataAno}</span>
           </div>
         </div>
       </DialogContent>
