@@ -151,7 +151,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               style={{
                 position: "absolute",
                 left: 920,
-                top: 696,
+                top: 700,
                 fontFamily: "'Coolvetica', sans-serif",
                 fontSize: 44,
                 color: "#1f2937",
