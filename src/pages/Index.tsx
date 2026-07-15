@@ -27,6 +27,17 @@ const Index = () => {
   const navigate = useNavigate();
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  // Detecta viewport mobile para escolher a variante correta da imagem do carrossel
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, []);
   // Buscar imagens do carrossel
   const { data: carrosselImages } = useQuery({
     queryKey: ["homepage-carrossel-public"],
@@ -418,7 +429,11 @@ const Index = () => {
                 }`}
               >
                 <img
-                  src={img.imagem_url}
+                  src={
+                    isMobileViewport && (img as any).imagem_url_mobile
+                      ? (img as any).imagem_url_mobile
+                      : img.imagem_url
+                  }
                   alt={img.titulo}
                   className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
