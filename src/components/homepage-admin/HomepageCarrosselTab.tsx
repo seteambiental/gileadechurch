@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
-import { resizeForCarousel } from "@/lib/image-resize";
+import { resizeForCarousel, resizeForCarouselMobile } from "@/lib/image-resize";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ interface CarrosselItem {
   id: string;
   titulo: string;
   imagem_url: string;
+  imagem_url_mobile: string | null;
   link_url: string | null;
   ordem: number;
   ativo: boolean;
@@ -41,10 +42,12 @@ const HomepageCarrosselTab = () => {
   const [editingItem, setEditingItem] = useState<CarrosselItem | null>(null);
   const [deleteItem, setDeleteItem] = useState<CarrosselItem | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadingMobile, setUploadingMobile] = useState(false);
 
   // Form state
   const [titulo, setTitulo] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
+  const [imagemUrlMobile, setImagemUrlMobile] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [ativo, setAtivo] = useState(true);
 
@@ -133,12 +136,14 @@ const HomepageCarrosselTab = () => {
       setEditingItem(item);
       setTitulo(item.titulo);
       setImagemUrl(item.imagem_url);
+      setImagemUrlMobile(item.imagem_url_mobile || "");
       setLinkUrl(item.link_url || "");
       setAtivo(item.ativo);
     } else {
       setEditingItem(null);
       setTitulo("");
       setImagemUrl("");
+      setImagemUrlMobile("");
       setLinkUrl("");
       setAtivo(true);
     }
@@ -150,6 +155,7 @@ const HomepageCarrosselTab = () => {
     setEditingItem(null);
     setTitulo("");
     setImagemUrl("");
+    setImagemUrlMobile("");
     setLinkUrl("");
     setAtivo(true);
   };
@@ -162,43 +168,67 @@ const HomepageCarrosselTab = () => {
     saveMutation.mutate({
       titulo: titulo.trim(),
       imagem_url: imagemUrl.trim(),
+      imagem_url_mobile: imagemUrlMobile.trim() || null,
       link_url: linkUrl.trim() || null,
       ativo,
-    });
+    } as any);
+  };
+
+  const uploadVariant = async (
+    file: File,
+    variant: "desktop" | "mobile",
+  ): Promise<string> => {
+    const { file: resizedFile } =
+      variant === "desktop"
+        ? await resizeForCarousel(file)
+        : await resizeForCarouselMobile(file);
+
+    const fileName = `carrossel/${Date.now()}-${variant}.jpg`;
+    const { error: uploadError } = await supabase.storage
+      .from("encontros-fotos")
+      .upload(fileName, resizedFile, {
+        contentType: "image/jpeg",
+        cacheControl: "3600",
+      });
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from("encontros-fotos")
+      .getPublicUrl(fileName);
+    return urlData.publicUrl;
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     try {
-      // Redimensionar para 16:9 (1920x1080) otimizado para carrossel
-      toast.info("Processando imagem para 16:9...");
-      const { file: resizedFile } = await resizeForCarousel(file);
-
-      const fileName = `carrossel/${Date.now()}.jpg`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("encontros-fotos")
-        .upload(fileName, resizedFile, {
-          contentType: "image/jpeg",
-          cacheControl: "3600",
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("encontros-fotos")
-        .getPublicUrl(fileName);
-
-      setImagemUrl(urlData.publicUrl);
-      toast.success("Imagem processada e enviada (1920×1080)!");
+      toast.info("Processando imagem desktop (16:9)...");
+      const url = await uploadVariant(file, "desktop");
+      setImagemUrl(url);
+      toast.success("Imagem desktop enviada (1920×1080)!");
     } catch (error) {
       console.error("Erro no upload:", error);
-      toast.error("Erro ao enviar imagem");
+      toast.error("Erro ao enviar imagem desktop");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleImageUploadMobile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingMobile(true);
+    try {
+      toast.info("Processando imagem mobile (9:16)...");
+      const url = await uploadVariant(file, "mobile");
+      setImagemUrlMobile(url);
+      toast.success("Imagem mobile enviada!");
+    } catch (error) {
+      console.error("Erro no upload mobile:", error);
+      toast.error("Erro ao enviar imagem mobile");
+    } finally {
+      setUploadingMobile(false);
     }
   };
 
@@ -364,7 +394,7 @@ const HomepageCarrosselTab = () => {
             </div>
 
             <div>
-              <Label>Imagem *</Label>
+              <Label>Imagem Desktop * (16:9 — ideal 1920×1080)</Label>
               <div className="space-y-2">
                 <Input
                   type="file"
@@ -391,6 +421,39 @@ const HomepageCarrosselTab = () => {
                 <Input
                   value={imagemUrl}
                   onChange={(e) => setImagemUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Imagem Mobile (9:16 — ideal 1080×1920)</Label>
+              <div className="space-y-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUploadMobile}
+                  disabled={uploadingMobile}
+                />
+                {uploadingMobile && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Enviando...
+                  </div>
+                )}
+                {imagemUrlMobile && (
+                  <img
+                    src={imagemUrlMobile}
+                    alt="Preview Mobile"
+                    className="w-40 h-auto rounded-lg"
+                  />
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Opcional. Se não for enviada, a versão desktop será usada também no celular.
+                </p>
+                <Input
+                  value={imagemUrlMobile}
+                  onChange={(e) => setImagemUrlMobile(e.target.value)}
                   placeholder="https://..."
                 />
               </div>

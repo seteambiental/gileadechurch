@@ -1,0 +1,1 @@
+ALTER TABLE public.homepage_carrossel ADD COLUMN IF NOT EXISTS imagem_url_mobile text;

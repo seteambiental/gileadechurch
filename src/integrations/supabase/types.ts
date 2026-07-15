@@ -3120,6 +3120,7 @@ export type Database = {
           created_at: string
           id: string
           imagem_url: string
+          imagem_url_mobile: string | null
           link_url: string | null
           ordem: number
           titulo: string
@@ -3130,6 +3131,7 @@ export type Database = {
           created_at?: string
           id?: string
           imagem_url: string
+          imagem_url_mobile?: string | null
           link_url?: string | null
           ordem?: number
           titulo: string
@@ -3140,6 +3142,7 @@ export type Database = {
           created_at?: string
           id?: string
           imagem_url?: string
+          imagem_url_mobile?: string | null
           link_url?: string | null
           ordem?: number
           titulo?: string
