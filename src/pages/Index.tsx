@@ -391,7 +391,7 @@ const Index = () => {
       {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[44vh] min-h-[360px] sm:h-[65vh] md:h-[70vh] lg:h-[75vh] xl:h-[78vh] sm:min-h-[560px]"
+        className="relative w-full overflow-hidden h-screen min-h-screen"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -409,7 +409,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-primary/70" />
           </div>
 
-          {/* Slides do carrossel (índices 1+) - Fullscreen esticado */}
+          {/* Slides do carrossel (índices 1+) - Preenchimento total da tela */}
           {carrosselImages && carrosselImages.map((img, index) => (
               <div
                 key={img.id}
@@ -417,24 +417,13 @@ const Index = () => {
                   index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
                 }`}
               >
-                {/* Camada de fundo: mesma imagem esticada e desfocada */}
                 <img
                   src={img.imagem_url}
-                  alt=""
-                  aria-hidden="true"
-                  className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 brightness-75"
+                  alt={img.titulo}
+                  className="absolute inset-0 w-full h-full object-cover"
                   loading="lazy"
                   decoding="async"
                 />
-                <div className="absolute inset-0 z-[1] flex items-center justify-center">
-                  <img
-                    src={img.imagem_url}
-                    alt={img.titulo}
-                    className="max-w-[70%] max-h-[70%] object-contain"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
               </div>
           ))}
 
