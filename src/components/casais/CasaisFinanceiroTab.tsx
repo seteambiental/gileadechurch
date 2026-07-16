@@ -234,6 +234,29 @@ export function CasaisFinanceiroTab() {
     },
   });
 
+  // Encerrar / reativar turma
+  const selectedTurma = turmas.find((t: any) => t.id === turmaFilter);
+  const [confirmToggleTurma, setConfirmToggleTurma] = useState(false);
+  const toggleTurmaMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTurma) return;
+      const { error } = await supabase
+        .from("casais_turmas")
+        .update({ ativo: !selectedTurma.ativo })
+        .eq("id", selectedTurma.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      toast({ title: selectedTurma?.ativo ? "Turma encerrada" : "Turma reativada" });
+      setConfirmToggleTurma(false);
+    },
+    onError: (e: any) => {
+      toast({ title: "Erro ao atualizar turma", description: e.message, variant: "destructive" });
+    },
+  });
+
   // Export
   const exportData = filtered.map((c: any) => {
     const pgtos = pagamentosByCasal[c.id] || [];
@@ -395,10 +418,25 @@ export function CasaisFinanceiroTab() {
             <SelectContent>
               <SelectItem value="todas">Todas as turmas</SelectItem>
               {turmas.map((t: any) => (
-                <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                <SelectItem key={t.id} value={t.id}>
+                  {t.nome}{!t.ativo ? " (encerrada)" : ""}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {selectedTurma && (
+            <Button
+              variant={selectedTurma.ativo ? "outline" : "secondary"}
+              size="sm"
+              onClick={() => setConfirmToggleTurma(true)}
+            >
+              {selectedTurma.ativo ? (
+                <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
+              ) : (
+                <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
+              )}
+            </Button>
+          )}
         </div>
         <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
       </div>
@@ -603,9 +641,20 @@ export function CasaisFinanceiroTab() {
         </TabsContent>
 
         <TabsContent value="despesas">
-          <CasaisDespesasTab />
+          <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
         </TabsContent>
       </Tabs>
+      <ConfirmDialog
+        open={confirmToggleTurma}
+        onOpenChange={setConfirmToggleTurma}
+        title={selectedTurma?.ativo ? "Encerrar turma" : "Reativar turma"}
+        description={
+          selectedTurma?.ativo
+            ? `Deseja encerrar a turma "${selectedTurma?.nome}"? Ela deixará de receber novas inscrições, mas o histórico financeiro permanece acessível.`
+            : `Deseja reativar a turma "${selectedTurma?.nome}"?`
+        }
+        onConfirm={() => toggleTurmaMutation.mutate()}
+      />
     </div>
   );
 }
