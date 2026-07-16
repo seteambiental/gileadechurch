@@ -164,7 +164,6 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       let q = supabase.from("casais_despesas").select("valor,turma_id");
       if (turmaFilter !== "todas") q = q.eq("turma_id", turmaFilter);
-      if (error) throw error;
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
