@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, Award, Users, UserCheck } from "lucide-react";
+import { Plus, Trash2, Award, Users, UserCheck, Lock, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -118,6 +118,20 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
     setIsCertificadoOpen(true);
   };
 
+  const handleToggleAtivo = async () => {
+    const { error } = await supabase
+      .from("casais_turmas")
+      .update({ ativo: !turma.ativo })
+      .eq("id", turma.id);
+    if (error) {
+      toast({ title: "Erro ao atualizar turma", variant: "destructive" });
+    } else {
+      toast({ title: turma.ativo ? "Turma encerrada" : "Turma reativada" });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+    }
+  };
+
   if (!turma) return null;
 
   return (
@@ -125,11 +139,24 @@ export function TurmaDetalhesDialog({ open, onOpenChange, turma }: TurmaDetalhes
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {turma.nome}
-              <Badge variant={turma.ativo ? "default" : "secondary"}>
-                {turma.ativo ? "Ativa" : "Encerrada"}
-              </Badge>
+            <DialogTitle className="flex items-center justify-between gap-2 pr-8">
+              <span className="flex items-center gap-2">
+                {turma.nome}
+                <Badge variant={turma.ativo ? "default" : "secondary"}>
+                  {turma.ativo ? "Ativa" : "Encerrada"}
+                </Badge>
+              </span>
+              <Button
+                size="sm"
+                variant={turma.ativo ? "outline" : "secondary"}
+                onClick={handleToggleAtivo}
+              >
+                {turma.ativo ? (
+                  <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
+                ) : (
+                  <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
+                )}
+              </Button>
             </DialogTitle>
           </DialogHeader>
 
