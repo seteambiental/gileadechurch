@@ -388,3 +388,11 @@ html, body {
     min-width: 44px;
   }
 }
+
+/* iOS safe area: push sticky/fixed headers below the notch/status bar */
+@supports (padding: max(0px)) {
+  header.sticky,
+  header.fixed {
+    padding-top: env(safe-area-inset-top);
+  }
+}
