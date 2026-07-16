@@ -554,7 +554,7 @@ export default function InscricaoCasais() {
                   💰 Investimento
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  O valor do curso é de <span className="font-bold text-foreground">R$ 100,00</span> por casal, 
+                  O valor do curso é de <span className="font-bold text-foreground">R$ 140,00</span> por casal, 
                   a ser pago no ato da matrícula ou conforme orientação da coordenação.
                 </p>
               </div>
