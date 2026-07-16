@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { includesNormalized } from "@/lib/text-utils";
-import { Plus, MoreHorizontal, Pencil, Trash2, Users, Eye } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, Users, Eye, Lock, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -87,6 +87,20 @@ export function CasaisTurmasTab() {
       queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
     }
     setDeleteId(null);
+  };
+
+  const handleToggleAtivo = async (turma: any) => {
+    const { error } = await supabase
+      .from("casais_turmas")
+      .update({ ativo: !turma.ativo })
+      .eq("id", turma.id);
+    if (error) {
+      toast({ title: "Erro ao atualizar turma", variant: "destructive" });
+    } else {
+      toast({ title: turma.ativo ? "Turma encerrada" : "Turma reativada" });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+    }
   };
 
   const filteredTurmas = useMemo(() => {
@@ -198,6 +212,13 @@ export function CasaisTurmasTab() {
                           <DropdownMenuItem onClick={() => { setSelectedTurma(turma); setIsFormOpen(true); }}>
                             <Pencil className="w-4 h-4 mr-2" />
                             Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleToggleAtivo(turma)}>
+                            {turma.ativo ? (
+                              <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
+                            ) : (
+                              <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
+                            )}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setDeleteId(turma.id)} className="text-destructive">
                             <Trash2 className="w-4 h-4 mr-2" />
