@@ -24,13 +24,14 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
+import { Lock, RotateCcw } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
 
-const VALOR_CURSO = 100;
+const VALOR_CURSO = 140;
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -78,8 +79,7 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_turmas")
-        .select("id, nome")
-        .eq("ativo", true)
+        .select("id, nome, ativo")
         .order("nome");
       return (data || []) as any[];
     },
@@ -160,9 +160,11 @@ export function CasaisFinanceiroTab() {
 
   // Fetch despesas
   const { data: casaisDespesas = [] } = useQuery({
-    queryKey: ["casais-despesas-summary"],
+    queryKey: ["casais-despesas-summary", turmaFilter],
     queryFn: async () => {
-      const { data, error } = await supabase.from("casais_despesas").select("valor");
+      let q = supabase.from("casais_despesas").select("valor,turma_id");
+      if (turmaFilter !== "todas") q = q.eq("turma_id", turmaFilter);
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
@@ -229,6 +231,29 @@ export function CasaisFinanceiroTab() {
     },
     onError: (e: any) => {
       toast({ title: "Erro ao excluir", description: e.message, variant: "destructive" });
+    },
+  });
+
+  // Encerrar / reativar turma
+  const selectedTurma = turmas.find((t: any) => t.id === turmaFilter);
+  const [confirmToggleTurma, setConfirmToggleTurma] = useState(false);
+  const toggleTurmaMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedTurma) return;
+      const { error } = await supabase
+        .from("casais_turmas")
+        .update({ ativo: !selectedTurma.ativo })
+        .eq("id", selectedTurma.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      toast({ title: selectedTurma?.ativo ? "Turma encerrada" : "Turma reativada" });
+      setConfirmToggleTurma(false);
+    },
+    onError: (e: any) => {
+      toast({ title: "Erro ao atualizar turma", description: e.message, variant: "destructive" });
     },
   });
 
@@ -393,10 +418,25 @@ export function CasaisFinanceiroTab() {
             <SelectContent>
               <SelectItem value="todas">Todas as turmas</SelectItem>
               {turmas.map((t: any) => (
-                <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                <SelectItem key={t.id} value={t.id}>
+                  {t.nome}{!t.ativo ? " (encerrada)" : ""}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
+          {selectedTurma && (
+            <Button
+              variant={selectedTurma.ativo ? "outline" : "secondary"}
+              size="sm"
+              onClick={() => setConfirmToggleTurma(true)}
+            >
+              {selectedTurma.ativo ? (
+                <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
+              ) : (
+                <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
+              )}
+            </Button>
+          )}
         </div>
         <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
       </div>
@@ -601,9 +641,20 @@ export function CasaisFinanceiroTab() {
         </TabsContent>
 
         <TabsContent value="despesas">
-          <CasaisDespesasTab />
+          <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
         </TabsContent>
       </Tabs>
+      <ConfirmDialog
+        open={confirmToggleTurma}
+        onOpenChange={setConfirmToggleTurma}
+        title={selectedTurma?.ativo ? "Encerrar turma" : "Reativar turma"}
+        description={
+          selectedTurma?.ativo
+            ? `Deseja encerrar a turma "${selectedTurma?.nome}"? Ela deixará de receber novas inscrições, mas o histórico financeiro permanece acessível.`
+            : `Deseja reativar a turma "${selectedTurma?.nome}"?`
+        }
+        onConfirm={() => toggleTurmaMutation.mutate()}
+      />
     </div>
   );
 }

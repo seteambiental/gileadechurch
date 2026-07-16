@@ -55,7 +55,12 @@ const emptyForm: DespesaForm = {
   data_despesa: todayDateStr(),
 };
 
-const CasaisDespesasTab = () => {
+interface CasaisDespesasTabProps {
+  turmaId?: string | null;
+  turmas?: { id: string; nome: string; ativo?: boolean }[];
+}
+
+const CasaisDespesasTab = ({ turmaId = null, turmas = [] }: CasaisDespesasTabProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -63,12 +68,11 @@ const CasaisDespesasTab = () => {
   const [filterCategoria, setFilterCategoria] = useState<Set<string>>(new Set());
 
   const { data: despesas = [], isLoading } = useQuery({
-    queryKey: ["casais-despesas"],
+    queryKey: ["casais-despesas", turmaId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("casais_despesas")
-        .select("*")
-        .order("categoria");
+      let q = supabase.from("casais_despesas").select("*").order("categoria");
+      if (turmaId) q = q.eq("turma_id", turmaId);
+      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -81,6 +85,7 @@ const CasaisDespesasTab = () => {
         descricao: form.descricao || null,
         valor: parseFloat(form.valor) || 0,
         data_despesa: form.data_despesa,
+        turma_id: turmaId,
       };
       if (editingId) {
         const { error } = await supabase.from("casais_despesas").update(payload).eq("id", editingId);
@@ -92,6 +97,7 @@ const CasaisDespesasTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["casais-despesas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais-despesas-summary"] });
       toast.success(editingId ? "Despesa atualizada!" : "Despesa adicionada!");
       closeDialog();
     },
@@ -105,6 +111,7 @@ const CasaisDespesasTab = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["casais-despesas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais-despesas-summary"] });
       toast.success("Despesa removida!");
     },
     onError: () => toast.error("Erro ao remover despesa."),
@@ -215,7 +222,10 @@ const CasaisDespesasTab = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
-          Total de despesas: <span className="font-semibold text-foreground">{formatCurrency(totalDespesas)}</span>
+          {turmaId
+            ? <>Despesas da turma <span className="font-semibold text-foreground">{turmas.find(t => t.id === turmaId)?.nome || ""}</span> · Total: <span className="font-semibold text-foreground">{formatCurrency(totalDespesas)}</span></>
+            : <>Todas as turmas · Total: <span className="font-semibold text-foreground">{formatCurrency(totalDespesas)}</span></>
+          }
         </div>
         <div className="flex gap-2">
           {despesas.length > 0 && (

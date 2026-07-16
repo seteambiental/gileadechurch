@@ -938,6 +938,7 @@ export type Database = {
           data_despesa: string
           descricao: string | null
           id: string
+          turma_id: string | null
           updated_at: string
           valor: number
         }
@@ -947,6 +948,7 @@ export type Database = {
           data_despesa?: string
           descricao?: string | null
           id?: string
+          turma_id?: string | null
           updated_at?: string
           valor?: number
         }
@@ -956,10 +958,19 @@ export type Database = {
           data_despesa?: string
           descricao?: string | null
           id?: string
+          turma_id?: string | null
           updated_at?: string
           valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "casais_despesas_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "casais_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       casais_inscritos: {
         Row: {
