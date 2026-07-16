@@ -24,13 +24,14 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
+import { Lock, RotateCcw } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
 
-const VALOR_CURSO = 100;
+const VALOR_CURSO = 140;
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -78,8 +79,7 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_turmas")
-        .select("id, nome")
-        .eq("ativo", true)
+        .select("id, nome, ativo")
         .order("nome");
       return (data || []) as any[];
     },
@@ -160,9 +160,12 @@ export function CasaisFinanceiroTab() {
 
   // Fetch despesas
   const { data: casaisDespesas = [] } = useQuery({
-    queryKey: ["casais-despesas-summary"],
+    queryKey: ["casais-despesas-summary", turmaFilter],
     queryFn: async () => {
-      const { data, error } = await supabase.from("casais_despesas").select("valor");
+      let q = supabase.from("casais_despesas").select("valor,turma_id");
+      if (turmaFilter !== "todas") q = q.eq("turma_id", turmaFilter);
+      if (error) throw error;
+      const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
