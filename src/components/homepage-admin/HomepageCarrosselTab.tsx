@@ -16,6 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -543,6 +550,29 @@ const HomepageCarrosselTab = () => {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 URL para onde o usuário será direcionado ao clicar
+              </p>
+            </div>
+
+            <div>
+              <Label>Vincular a um evento com inscrição (opcional)</Label>
+              <Select
+                value={linkEventoId || "__none__"}
+                onValueChange={(v) => setLinkEventoId(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Nenhum evento vinculado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Nenhum (usar Link acima)</SelectItem>
+                  {eventos.map((ev: any) => (
+                    <SelectItem key={ev.id} value={ev.id}>
+                      {ev.titulo} — {new Date(ev.data_evento + "T12:00:00").toLocaleDateString("pt-BR")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Se selecionado, clicar na imagem leva direto ao formulário de inscrição do evento.
               </p>
             </div>
 
