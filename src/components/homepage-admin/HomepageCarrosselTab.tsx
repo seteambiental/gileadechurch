@@ -42,6 +42,7 @@ interface CarrosselItem {
   ordem: number;
   ativo: boolean;
   link_evento_id?: string | null;
+  reprocessado?: boolean;
 }
 
 const HomepageCarrosselTab = () => {
