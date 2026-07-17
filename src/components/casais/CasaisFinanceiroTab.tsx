@@ -24,7 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
-import { Lock, RotateCcw } from "lucide-react";
+import { Lock, RotateCcw, Archive, ArchiveRestore } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,11 +79,14 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_turmas")
-        .select("id, nome, ativo")
+        .select("id, nome, ativo, arquivada")
         .order("nome");
       return (data || []) as any[];
     },
   });
+
+  const turmasAtivasVisiveis = useMemo(() => turmas.filter((t: any) => !t.arquivada), [turmas]);
+  const turmasArquivadas = useMemo(() => turmas.filter((t: any) => t.arquivada), [turmas]);
 
   // Fetch all payments
   const { data: pagamentos = [] } = useQuery({
@@ -257,6 +260,27 @@ export function CasaisFinanceiroTab() {
     },
   });
 
+  const [archiveTarget, setArchiveTarget] = useState<{ turma: any; arquivar: boolean } | null>(null);
+  const archiveMutation = useMutation({
+    mutationFn: async ({ turma, arquivar }: { turma: any; arquivar: boolean }) => {
+      const { error } = await supabase
+        .from("casais_turmas")
+        .update({ arquivada: arquivar })
+        .eq("id", turma.id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      toast({ title: vars.arquivar ? "Turma arquivada" : "Turma desarquivada" });
+      if (vars.arquivar && turmaFilter === vars.turma.id) setTurmaFilter("todas");
+      setArchiveTarget(null);
+    },
+    onError: (e: any) => {
+      toast({ title: "Erro ao arquivar turma", description: e.message, variant: "destructive" });
+    },
+  });
+
   // Export
   const exportData = filtered.map((c: any) => {
     const pgtos = pagamentosByCasal[c.id] || [];
@@ -397,6 +421,13 @@ export function CasaisFinanceiroTab() {
             <ArrowDownCircle className="w-4 h-4" />
             Despesas
           </TabsTrigger>
+          <TabsTrigger value="arquivados" className="flex items-center gap-2">
+            <Archive className="w-4 h-4" />
+            Arquivados
+            {turmasArquivadas.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{turmasArquivadas.length}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="receitas" className="space-y-6">
@@ -417,7 +448,7 @@ export function CasaisFinanceiroTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as turmas</SelectItem>
-              {turmas.map((t: any) => (
+              {turmasAtivasVisiveis.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.nome}{!t.ativo ? " (encerrada)" : ""}
                 </SelectItem>
@@ -425,17 +456,26 @@ export function CasaisFinanceiroTab() {
             </SelectContent>
           </Select>
           {selectedTurma && (
-            <Button
-              variant={selectedTurma.ativo ? "outline" : "secondary"}
-              size="sm"
-              onClick={() => setConfirmToggleTurma(true)}
-            >
-              {selectedTurma.ativo ? (
-                <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
-              ) : (
-                <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={selectedTurma.ativo ? "outline" : "secondary"}
+                size="sm"
+                onClick={() => setConfirmToggleTurma(true)}
+              >
+                {selectedTurma.ativo ? (
+                  <><Lock className="w-4 h-4 mr-2" /> Encerrar</>
+                ) : (
+                  <><RotateCcw className="w-4 h-4 mr-2" /> Reativar</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setArchiveTarget({ turma: selectedTurma, arquivar: true })}
+              >
+                <Archive className="w-4 h-4 mr-2" /> Arquivar
+              </Button>
+            </div>
           )}
         </div>
         <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
@@ -643,6 +683,48 @@ export function CasaisFinanceiroTab() {
         <TabsContent value="despesas">
           <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
         </TabsContent>
+
+        <TabsContent value="arquivados" className="space-y-4">
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Turma</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {turmasArquivadas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      Nenhuma turma arquivada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  turmasArquivadas.map((t: any) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">{t.nome}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{t.ativo ? "Ativa" : "Encerrada"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setArchiveTarget({ turma: t, arquivar: false })}>
+                            <ArchiveRestore className="w-4 h-4 mr-1" /> Desarquivar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Turmas arquivadas ficam ocultas dos filtros principais. Desarquive para visualizar o histórico financeiro novamente.
+          </p>
+        </TabsContent>
       </Tabs>
       <ConfirmDialog
         open={confirmToggleTurma}
@@ -654,6 +736,17 @@ export function CasaisFinanceiroTab() {
             : `Deseja reativar a turma "${selectedTurma?.nome}"?`
         }
         onConfirm={() => toggleTurmaMutation.mutate()}
+      />
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+        title={archiveTarget?.arquivar ? "Arquivar turma" : "Desarquivar turma"}
+        description={
+          archiveTarget?.arquivar
+            ? `Arquivar "${archiveTarget?.turma?.nome}"? Ela sairá dos filtros principais e ficará acessível apenas na aba "Arquivados".`
+            : `Desarquivar "${archiveTarget?.turma?.nome}"? Ela voltará a aparecer nos filtros principais.`
+        }
+        onConfirm={() => archiveTarget && archiveMutation.mutate(archiveTarget)}
       />
     </div>
   );
