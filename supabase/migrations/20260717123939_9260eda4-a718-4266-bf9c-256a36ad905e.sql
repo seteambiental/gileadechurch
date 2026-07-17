@@ -1,0 +1,1 @@
+ALTER TABLE public.homepage_carrossel ADD COLUMN IF NOT EXISTS reprocessado boolean NOT NULL DEFAULT false;

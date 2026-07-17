@@ -3138,6 +3138,7 @@ export type Database = {
           link_evento_id: string | null
           link_url: string | null
           ordem: number
+          reprocessado: boolean
           titulo: string
           updated_at: string
         }
@@ -3150,6 +3151,7 @@ export type Database = {
           link_evento_id?: string | null
           link_url?: string | null
           ordem?: number
+          reprocessado?: boolean
           titulo: string
           updated_at?: string
         }
@@ -3162,6 +3164,7 @@ export type Database = {
           link_evento_id?: string | null
           link_url?: string | null
           ordem?: number
+          reprocessado?: boolean
           titulo?: string
           updated_at?: string
         }
