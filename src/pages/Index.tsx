@@ -399,10 +399,10 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section - Altura reduzida para menos faixa vazia */}
+      {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[90vh] min-h-[500px]"
+        className="relative w-full overflow-hidden h-screen min-h-screen"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -420,7 +420,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-primary/70" />
           </div>
 
-          {/* Slides do carrossel (índices 1+) - Ajusta a imagem inteira dentro do espaço */}
+          {/* Slides do carrossel (índices 1+) - Preenchimento total da tela */}
           {carrosselImages && carrosselImages.map((img, index) => (
               <div
                 key={img.id}
@@ -451,10 +451,10 @@ const Index = () => {
             <div className="absolute inset-0 bg-accent flex flex-col items-center justify-center">
               {/* Faixa preta */}
               <div className="w-full bg-black/90 py-6 sm:py-10 flex flex-col items-center gap-2 sm:gap-4 shadow-lg">
-                <span className="text-accent font-heading font-extrabold text-base sm:text-2xl md:text-3xl tracking-widest uppercase">
+                <span className="text-accent font-heading font-extrabold text-lg sm:text-2xl md:text-3xl tracking-widest uppercase">
                   Rumo aos 1.000 Cadastros
                 </span>
-                <div className="flex items-baseline gap-2 sm:gap-4">
+                <div className="flex items-baseline gap-3 sm:gap-6">
                   <span className="text-white font-heading font-black text-5xl sm:text-7xl md:text-8xl leading-none">
                     {totalMembros ?? 0}
                   </span>
@@ -475,7 +475,7 @@ const Index = () => {
                     )}
                   </div>
                 </div>
-                <span className="text-white/60 font-medium text-xs sm:text-sm mt-1">
+                <span className="text-white/60 font-medium text-sm sm:text-base mt-1">
                   {(((totalMembros ?? 0) / 1000) * 100).toFixed(1)}% da nossa meta
                 </span>
               </div>
