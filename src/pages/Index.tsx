@@ -74,6 +74,25 @@ const Index = () => {
   const totalSlides = 1 + (visibleCarrosselImages.length || 0) + 1;
   const contadorSlideIndex = totalSlides - 1;
 
+  // Altura dinâmica: no desktop, o carrossel se ajusta à proporção real da
+  // imagem ativa (evita cortar topo/base/laterais de flyers com formatos variados).
+  // Hero e slide do contador usam a altura padrão (não são fotos variáveis).
+  const activeImageDims = useMemo(() => {
+    if (isMobileViewport) return null;
+    if (currentCarouselIndex === 0 || currentCarouselIndex === contadorSlideIndex) return null;
+    const img = visibleCarrosselImages[currentCarouselIndex - 1] as any;
+    if (img?.imagem_largura && img?.imagem_altura) {
+      return { width: img.imagem_largura as number, height: img.imagem_altura as number };
+    }
+    return null;
+  }, [isMobileViewport, currentCarouselIndex, contadorSlideIndex, visibleCarrosselImages]);
+
+  const dynamicHeightStyle = useMemo(() => {
+    if (!activeImageDims) return undefined;
+    const ratioVw = (activeImageDims.height / activeImageDims.width) * 100;
+    return { height: `clamp(280px, ${ratioVw.toFixed(2)}vw, 720px)` };
+  }, [activeImageDims]);
+
   // Auto-rotação do carrossel a cada 10 segundos
   useEffect(() => {
     if (totalSlides <= 1) return;
@@ -410,7 +429,8 @@ const Index = () => {
       {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[42vh] sm:h-[50vh] md:h-[54vh] lg:h-[56.25vw] lg:max-h-[900px]"
+        className="relative w-full overflow-hidden h-[42vh] sm:h-[50vh] md:h-[54vh] lg:h-[56.25vw] lg:max-h-[900px] transition-[height] duration-500 ease-in-out"
+        style={dynamicHeightStyle}
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">

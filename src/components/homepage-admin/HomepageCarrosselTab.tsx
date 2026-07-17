@@ -44,6 +44,8 @@ interface CarrosselItem {
   link_evento_id?: string | null;
   reprocessado?: boolean;
   posicao_foco?: "top" | "center" | "bottom";
+  imagem_largura?: number | null;
+  imagem_altura?: number | null;
 }
 
 const HomepageCarrosselTab = () => {
@@ -63,6 +65,8 @@ const HomepageCarrosselTab = () => {
   const [linkEventoId, setLinkEventoId] = useState<string>("");
   const [ativo, setAtivo] = useState(true);
   const [posicaoFoco, setPosicaoFoco] = useState<"top" | "center" | "bottom">("center");
+  const [imagemLargura, setImagemLargura] = useState<number | null>(null);
+  const [imagemAltura, setImagemAltura] = useState<number | null>(null);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["homepage-carrossel"],
@@ -171,6 +175,8 @@ const HomepageCarrosselTab = () => {
       setLinkEventoId(item.link_evento_id || "");
       setAtivo(item.ativo);
       setPosicaoFoco(item.posicao_foco || "center");
+      setImagemLargura(item.imagem_largura || null);
+      setImagemAltura(item.imagem_altura || null);
     } else {
       setEditingItem(null);
       setTitulo("");
@@ -180,6 +186,8 @@ const HomepageCarrosselTab = () => {
       setLinkEventoId("");
       setAtivo(true);
       setPosicaoFoco("center");
+      setImagemLargura(null);
+      setImagemAltura(null);
     }
     setFormOpen(true);
   };
@@ -194,6 +202,8 @@ const HomepageCarrosselTab = () => {
     setLinkEventoId("");
     setAtivo(true);
     setPosicaoFoco("center");
+    setImagemLargura(null);
+    setImagemAltura(null);
   };
 
   const handleSubmit = () => {
@@ -213,14 +223,16 @@ const HomepageCarrosselTab = () => {
       link_evento_id: linkEventoId || null,
       ativo,
       posicao_foco: posicaoFoco,
+      imagem_largura: imagemLargura,
+      imagem_altura: imagemAltura,
     } as any);
   };
 
   const uploadVariant = async (
     file: File,
     variant: "desktop" | "mobile",
-  ): Promise<string> => {
-    const { file: resizedFile } =
+  ): Promise<{ url: string; width: number; height: number }> => {
+    const { file: resizedFile, width, height } =
       variant === "desktop"
         ? await resizeForCarousel(file)
         : await resizeForCarouselMobile(file);
@@ -237,7 +249,7 @@ const HomepageCarrosselTab = () => {
     const { data: urlData } = supabase.storage
       .from("encontros-fotos")
       .getPublicUrl(fileName);
-    return urlData.publicUrl;
+    return { url: urlData.publicUrl, width, height };
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -245,10 +257,12 @@ const HomepageCarrosselTab = () => {
     if (!file) return;
     setUploading(true);
     try {
-      toast.info("Processando imagem desktop (16:9)...");
-      const url = await uploadVariant(file, "desktop");
+      toast.info("Processando imagem desktop...");
+      const { url, width, height } = await uploadVariant(file, "desktop");
       setImagemUrl(url);
-      toast.success("Imagem desktop enviada (1920×1080)!");
+      setImagemLargura(width);
+      setImagemAltura(height);
+      toast.success("Imagem desktop enviada!");
     } catch (error) {
       console.error("Erro no upload:", error);
       toast.error("Erro ao enviar imagem desktop");
@@ -263,7 +277,7 @@ const HomepageCarrosselTab = () => {
     setUploadingMobile(true);
     try {
       toast.info("Processando imagem mobile (9:16)...");
-      const url = await uploadVariant(file, "mobile");
+      const { url } = await uploadVariant(file, "mobile");
       setImagemUrlMobile(url);
       toast.success("Imagem mobile enviada!");
     } catch (error) {
@@ -301,11 +315,15 @@ const HomepageCarrosselTab = () => {
 
       if (item.imagem_url) {
         const file = await fetchAsFile(item.imagem_url, "desktop.jpg");
-        updates.imagem_url = await uploadVariant(file, "desktop");
+        const { url, width, height } = await uploadVariant(file, "desktop");
+        updates.imagem_url = url;
+        updates.imagem_largura = width;
+        updates.imagem_altura = height;
       }
       if (item.imagem_url_mobile) {
         const file = await fetchAsFile(item.imagem_url_mobile, "mobile.jpg");
-        updates.imagem_url_mobile = await uploadVariant(file, "mobile");
+        const { url } = await uploadVariant(file, "mobile");
+        updates.imagem_url_mobile = url;
       }
 
       const { error } = await supabase
