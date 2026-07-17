@@ -146,7 +146,7 @@ export async function resizeForCarousel(file: File): Promise<ResizedImage> {
   const targetW = 1920;
   const targetH = 1080;
 
-  resizeWithContainBlurredBg(canvas, img, targetW, targetH);
+  resizeWithCover(canvas, img, targetW, targetH);
 
   const resized = await canvasToFile(
     canvas,
@@ -168,7 +168,7 @@ export async function resizeForCarouselMobile(file: File): Promise<ResizedImage>
   const targetW = 828;
   const targetH = 1472;
 
-  resizeWithContainBlurredBg(canvas, img, targetW, targetH);
+  resizeWithCover(canvas, img, targetW, targetH);
 
   const resized = await canvasToFile(
     canvas,
