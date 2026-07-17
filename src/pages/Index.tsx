@@ -402,7 +402,7 @@ const Index = () => {
       {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-screen min-h-screen"
+        className="relative w-full overflow-hidden h-[50vh] min-h-[50vh]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -435,7 +435,7 @@ const Index = () => {
                       : img.imagem_url
                   }
                   alt={img.titulo}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain bg-primary"
                   loading="lazy"
                   decoding="async"
                 />
