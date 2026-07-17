@@ -34,6 +34,7 @@ interface CarrosselItem {
   link_url: string | null;
   ordem: number;
   ativo: boolean;
+  link_evento_id?: string | null;
 }
 
 const HomepageCarrosselTab = () => {
@@ -50,6 +51,7 @@ const HomepageCarrosselTab = () => {
   const [imagemUrl, setImagemUrl] = useState("");
   const [imagemUrlMobile, setImagemUrlMobile] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
+  const [linkEventoId, setLinkEventoId] = useState<string>("");
   const [ativo, setAtivo] = useState(true);
 
   const { data: items = [], isLoading } = useQuery({
@@ -61,6 +63,23 @@ const HomepageCarrosselTab = () => {
         .order("ordem", { ascending: true });
       if (error) throw error;
       return data as CarrosselItem[];
+    },
+  });
+
+  // Eventos futuros com inscrição aberta, para vincular ao slide
+  const { data: eventos = [] } = useQuery({
+    queryKey: ["homepage-carrossel-eventos-inscricao"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("agenda_igreja")
+        .select("id, titulo, data_evento, necessita_inscricao, status, ativo")
+        .eq("necessita_inscricao", true)
+        .eq("ativo", true)
+        .gte("data_evento", today)
+        .order("data_evento", { ascending: true });
+      if (error) return [] as any[];
+      return data || [];
     },
   });
 
@@ -139,6 +158,7 @@ const HomepageCarrosselTab = () => {
       setImagemUrl(item.imagem_url);
       setImagemUrlMobile(item.imagem_url_mobile || "");
       setLinkUrl(item.link_url || "");
+      setLinkEventoId(item.link_evento_id || "");
       setAtivo(item.ativo);
     } else {
       setEditingItem(null);
@@ -146,6 +166,7 @@ const HomepageCarrosselTab = () => {
       setImagemUrl("");
       setImagemUrlMobile("");
       setLinkUrl("");
+      setLinkEventoId("");
       setAtivo(true);
     }
     setFormOpen(true);
@@ -158,6 +179,7 @@ const HomepageCarrosselTab = () => {
     setImagemUrl("");
     setImagemUrlMobile("");
     setLinkUrl("");
+    setLinkEventoId("");
     setAtivo(true);
   };
 
@@ -171,6 +193,7 @@ const HomepageCarrosselTab = () => {
       imagem_url: imagemUrl.trim(),
       imagem_url_mobile: imagemUrlMobile.trim() || null,
       link_url: linkUrl.trim() || null,
+      link_evento_id: linkEventoId || null,
       ativo,
     } as any);
   };
