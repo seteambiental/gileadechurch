@@ -402,7 +402,7 @@ const Index = () => {
       {/* Hero Section - Responsivo: altura limitada em mobile */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-[45vh] sm:h-[55vh] md:h-[60vh]"
+        className="relative w-full overflow-hidden h-[42vh] sm:h-[50vh] md:h-[54vh]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -415,12 +415,12 @@ const Index = () => {
             <img
               src={homepageConfig?.hero_image_url || heroImage}
               alt="Gileade Church - Um lugar de cura e restauração"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain object-center"
             />
             <div className="absolute inset-0 bg-primary/70" />
           </div>
 
-          {/* Slides do carrossel (índices 1+) - Preenchimento total da tela */}
+          {/* Slides do carrossel (índices 1+) - encaixados no espaço disponível */}
           {carrosselImages && carrosselImages.map((img, index) => (
               <div
                 key={img.id}
@@ -435,7 +435,7 @@ const Index = () => {
                       : img.imagem_url
                   }
                   alt={img.titulo}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain object-center"
                   loading="lazy"
                   decoding="async"
                 />
