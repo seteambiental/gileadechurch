@@ -287,7 +287,7 @@ const HomepageCarrosselTab = () => {
         return new File([blob], name, { type: blob.type || "image/jpeg" });
       };
 
-      const updates: Partial<CarrosselItem> = {};
+      const updates: Partial<CarrosselItem> = { reprocessado: true };
 
       if (item.imagem_url) {
         const file = await fetchAsFile(item.imagem_url, "desktop.jpg");
@@ -420,19 +420,21 @@ const HomepageCarrosselTab = () => {
                     <Download className="w-4 h-4" />
                   </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title="Reprocessar para encaixar no carrossel"
-                    disabled={reprocessingId === item.id}
-                    onClick={() => reprocessItem(item)}
-                  >
-                    {reprocessingId === item.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-4 h-4" />
-                    )}
-                  </Button>
+                  {!item.reprocessado && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Reprocessar para encaixar no carrossel"
+                      disabled={reprocessingId === item.id}
+                      onClick={() => reprocessItem(item)}
+                    >
+                      {reprocessingId === item.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Wand2 className="w-4 h-4" />
+                      )}
+                    </Button>
+                  )}
 
                   <Button
                     variant="ghost"
