@@ -3133,6 +3133,8 @@ export type Database = {
           ativo: boolean
           created_at: string
           id: string
+          imagem_altura: number | null
+          imagem_largura: number | null
           imagem_url: string
           imagem_url_mobile: string | null
           link_evento_id: string | null
@@ -3147,6 +3149,8 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          imagem_altura?: number | null
+          imagem_largura?: number | null
           imagem_url: string
           imagem_url_mobile?: string | null
           link_evento_id?: string | null
@@ -3161,6 +3165,8 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          imagem_altura?: number | null
+          imagem_largura?: number | null
           imagem_url?: string
           imagem_url_mobile?: string | null
           link_evento_id?: string | null
