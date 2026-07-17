@@ -399,10 +399,10 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section - Responsivo: altura limitada em mobile */}
+      {/* Hero Section - Mais estreito para evitar faixa vazia abaixo da imagem */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-screen min-h-screen"
+        className="relative w-full overflow-hidden h-[55vh] sm:h-[60vh] md:h-[65vh] lg:h-[70vh] min-h-[320px]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
@@ -449,21 +449,21 @@ const Index = () => {
             }`}
           >
             <div className="absolute inset-0 bg-accent flex flex-col items-center justify-center">
-              {/* Faixa preta */}
-              <div className="w-full bg-black/90 py-6 sm:py-10 flex flex-col items-center gap-2 sm:gap-4 shadow-lg">
-                <span className="text-accent font-heading font-extrabold text-lg sm:text-2xl md:text-3xl tracking-widest uppercase">
+              {/* Faixa preta - mais compacta */}
+              <div className="w-full bg-black/90 py-4 sm:py-6 flex flex-col items-center gap-1 sm:gap-3 shadow-lg">
+                <span className="text-accent font-heading font-extrabold text-sm sm:text-xl md:text-2xl tracking-widest uppercase">
                   Rumo aos 1.000 Cadastros
                 </span>
-                <div className="flex items-baseline gap-3 sm:gap-6">
-                  <span className="text-white font-heading font-black text-5xl sm:text-7xl md:text-8xl leading-none">
+                <div className="flex items-baseline gap-2 sm:gap-4">
+                  <span className="text-white font-heading font-black text-4xl sm:text-6xl md:text-7xl leading-none">
                     {totalMembros ?? 0}
                   </span>
-                  <span className="text-white/50 font-heading font-bold text-2xl sm:text-4xl md:text-5xl">
+                  <span className="text-white/50 font-heading font-bold text-xl sm:text-3xl md:text-4xl">
                     / 1.000
                   </span>
                 </div>
                 {/* Barra de progresso */}
-                <div className="w-4/5 max-w-lg bg-white/10 rounded-full h-5 sm:h-7 overflow-hidden mt-2">
+                <div className="w-4/5 max-w-lg bg-white/10 rounded-full h-4 sm:h-6 overflow-hidden mt-1">
                   <div
                     className="h-full bg-accent rounded-full transition-all duration-1000 flex items-center justify-end pr-2"
                     style={{ width: `${Math.min(((totalMembros ?? 0) / 1000) * 100, 100)}%` }}
@@ -475,7 +475,7 @@ const Index = () => {
                     )}
                   </div>
                 </div>
-                <span className="text-white/60 font-medium text-sm sm:text-base mt-1">
+                <span className="text-white/60 font-medium text-xs sm:text-sm mt-0.5">
                   {(((totalMembros ?? 0) / 1000) * 100).toFixed(1)}% da nossa meta
                 </span>
               </div>
