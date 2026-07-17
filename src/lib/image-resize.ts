@@ -1,14 +1,8 @@
 /**
  * Utilitário para redimensionar imagens no cliente usando Canvas.
- * Gera versões otimizadas para carrossel (16:9) e flyer (4:5 / original).
+ * Gera versões otimizadas para carrossel e flyer, SEMPRE preservando
+ * a proporção original da imagem (sem cortes / sem distorção).
  */
-
-interface ResizeOptions {
-  maxWidth: number;
-  maxHeight: number;
-  quality?: number;
-  mode?: "cover" | "contain" | "stretch";
-}
 
 interface ResizedImage {
   file: File;
@@ -36,93 +30,33 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 /**
- * Redimensiona uma imagem mantendo o aspect ratio desejado (mode=cover),
- * centralizando e cortando o excesso.
+ * Redimensiona a imagem para caber dentro de um limite de largura/altura,
+ * SEM cortar e SEM esticar. Mantém sempre a proporção original.
+ * Só reduz o tamanho (nunca amplia imagens menores que o limite).
  */
-function resizeWithCover(
+function resizeFitWithinBounds(
   canvas: HTMLCanvasElement,
   img: HTMLImageElement,
-  targetWidth: number,
-  targetHeight: number
+  maxWidth: number,
+  maxHeight: number,
 ) {
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
+  const widthRatio = maxWidth / img.naturalWidth;
+  const heightRatio = maxHeight / img.naturalHeight;
+  const scale = Math.min(widthRatio, heightRatio, 1); // nunca amplia
+
+  const w = Math.round(img.naturalWidth * scale);
+  const h = Math.round(img.naturalHeight * scale);
+
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d")!;
-
-  const targetRatio = targetWidth / targetHeight;
-  const imgRatio = img.naturalWidth / img.naturalHeight;
-
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-
-  if (imgRatio > targetRatio) {
-    // Imagem mais larga: cortar laterais
-    sw = img.naturalHeight * targetRatio;
-    sx = (img.naturalWidth - sw) / 2;
-  } else {
-    // Imagem mais alta: cortar topo/base
-    sh = img.naturalWidth / targetRatio;
-    sy = (img.naturalHeight - sh) / 2;
-  }
-
-  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetWidth, targetHeight);
-}
-
-/**
- * Renderiza a imagem inteira (contain) sobre um fundo preenchido com uma
- * versão desfocada e ampliada da própria imagem. Assim a arte fica completa
- * (sem cortes) e o canvas fica cheio (sem barras vazias), no aspect exato.
- */
-function resizeWithContainBlurredBg(
-  canvas: HTMLCanvasElement,
-  img: HTMLImageElement,
-  targetWidth: number,
-  targetHeight: number
-) {
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const ctx = canvas.getContext("2d")!;
-
-  // 1) Fundo: mesma imagem em "cover" + blur, levemente escurecida
-  ctx.save();
-  ctx.filter = "blur(40px) brightness(0.85)";
-  const targetRatio = targetWidth / targetHeight;
-  const imgRatio = img.naturalWidth / img.naturalHeight;
-  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
-  if (imgRatio > targetRatio) {
-    sw = img.naturalHeight * targetRatio;
-    sx = (img.naturalWidth - sw) / 2;
-  } else {
-    sh = img.naturalWidth / targetRatio;
-    sy = (img.naturalHeight - sh) / 2;
-  }
-  // Desenha um pouco maior para esconder bordas do blur
-  const overscan = 40;
-  ctx.drawImage(
-    img,
-    sx, sy, sw, sh,
-    -overscan, -overscan,
-    targetWidth + overscan * 2,
-    targetHeight + overscan * 2
-  );
-  ctx.restore();
-
-  // 2) Frente: imagem inteira em "contain", centralizada
-  let dw = targetWidth;
-  let dh = targetHeight;
-  if (imgRatio > targetRatio) {
-    dh = Math.round(targetWidth / imgRatio);
-  } else {
-    dw = Math.round(targetHeight * imgRatio);
-  }
-  const dx = Math.round((targetWidth - dw) / 2);
-  const dy = Math.round((targetHeight - dh) / 2);
-  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, dx, dy, dw, dh);
+  ctx.drawImage(img, 0, 0, w, h);
 }
 
 function canvasToFile(
   canvas: HTMLCanvasElement,
   fileName: string,
-  quality: number
+  quality: number,
 ): Promise<File> {
   return new Promise((resolve) => {
     canvas.toBlob(
@@ -130,62 +64,52 @@ function canvasToFile(
         resolve(new File([blob!], fileName, { type: "image/jpeg" }));
       },
       "image/jpeg",
-      quality
+      quality,
     );
   });
 }
 
 /**
- * Gera versão para carrossel (1920x1080, 16:9) com cover crop.
+ * Gera versão para carrossel desktop.
+ * Cabe dentro de 1920x1080 mantendo a proporção original — sem cortar
+ * nada da arte. A exibição na homepage já usa object-contain + fundo
+ * desfocado, então a imagem completa sempre aparece corretamente
+ * qualquer que seja sua proporção.
  */
 export async function resizeForCarousel(file: File): Promise<ResizedImage> {
   const dataUrl = await fileToDataUrl(file);
   const img = await loadImage(dataUrl);
   const canvas = document.createElement("canvas");
 
-  const targetW = 1920;
-  const targetH = 1080;
+  resizeFitWithinBounds(canvas, img, 1920, 1080);
 
-  resizeWithCover(canvas, img, targetW, targetH);
-
-  const resized = await canvasToFile(
-    canvas,
-    `carousel_${Date.now()}.jpg`,
-    0.85
-  );
-
-  return { file: resized, width: targetW, height: targetH };
+  const resized = await canvasToFile(canvas, `carousel_${Date.now()}.jpg`, 0.9);
+  return { file: resized, width: canvas.width, height: canvas.height };
 }
 
 /**
- * Gera versão para carrossel mobile (828x1472, 9:16) com cover crop.
+ * Gera versão para carrossel mobile.
+ * Cabe dentro de 828x1472 mantendo a proporção original — sem cortar.
  */
 export async function resizeForCarouselMobile(file: File): Promise<ResizedImage> {
   const dataUrl = await fileToDataUrl(file);
   const img = await loadImage(dataUrl);
   const canvas = document.createElement("canvas");
 
-  const targetW = 828;
-  const targetH = 1472;
+  resizeFitWithinBounds(canvas, img, 828, 1472);
 
-  resizeWithCover(canvas, img, targetW, targetH);
-
-  const resized = await canvasToFile(
-    canvas,
-    `carousel_mobile_${Date.now()}.jpg`,
-    0.85
-  );
-
-  return { file: resized, width: targetW, height: targetH };
+  const resized = await canvasToFile(canvas, `carousel_mobile_${Date.now()}.jpg`, 0.9);
+  return { file: resized, width: canvas.width, height: canvas.height };
 }
 
 /**
- * Gera versão otimizada mantendo o aspect ratio original, 
- * limitando a largura máxima.
+ * Gera versão otimizada mantendo o aspect ratio original,
+ * limitando a largura máxima. (Usada em outros pontos do app —
+ * mantida sem alterações de comportamento.)
  */
 export async function resizeKeepAspect(
   file: File,
-  maxWidth = 1200
+  maxWidth = 1200,
 ): Promise<ResizedImage> {
   const dataUrl = await fileToDataUrl(file);
   const img = await loadImage(dataUrl);
