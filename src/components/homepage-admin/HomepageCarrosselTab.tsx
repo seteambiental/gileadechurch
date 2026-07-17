@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download, ImageIcon } from "lucide-react";
+import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download, ImageIcon, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { resizeForCarousel, resizeForCarouselMobile } from "@/lib/image-resize";
 import {
@@ -43,6 +43,7 @@ const HomepageCarrosselTab = () => {
   const [deleteItem, setDeleteItem] = useState<CarrosselItem | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingMobile, setUploadingMobile] = useState(false);
+  const [reprocessingId, setReprocessingId] = useState<string | null>(null);
 
   // Form state
   const [titulo, setTitulo] = useState("");
@@ -245,6 +246,43 @@ const HomepageCarrosselTab = () => {
     reorderMutation.mutate({ id: targetItem.id, newOrdem: item.ordem });
   };
 
+  const reprocessItem = async (item: CarrosselItem) => {
+    setReprocessingId(item.id);
+    try {
+      toast.info("Reprocessando imagens...");
+      const fetchAsFile = async (url: string, name: string) => {
+        const res = await fetch(url, { cache: "no-store" });
+        const blob = await res.blob();
+        return new File([blob], name, { type: blob.type || "image/jpeg" });
+      };
+
+      const updates: Partial<CarrosselItem> = {};
+
+      if (item.imagem_url) {
+        const file = await fetchAsFile(item.imagem_url, "desktop.jpg");
+        updates.imagem_url = await uploadVariant(file, "desktop");
+      }
+      if (item.imagem_url_mobile) {
+        const file = await fetchAsFile(item.imagem_url_mobile, "mobile.jpg");
+        updates.imagem_url_mobile = await uploadVariant(file, "mobile");
+      }
+
+      const { error } = await supabase
+        .from("homepage_carrossel")
+        .update(updates)
+        .eq("id", item.id);
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ["homepage-carrossel"] });
+      toast.success("Imagem reprocessada!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Não foi possível reprocessar. Reenvie a imagem manualmente.");
+    } finally {
+      setReprocessingId(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-12">
@@ -349,6 +387,20 @@ const HomepageCarrosselTab = () => {
                     }}
                   >
                     <Download className="w-4 h-4" />
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Reprocessar para encaixar no carrossel"
+                    disabled={reprocessingId === item.id}
+                    onClick={() => reprocessItem(item)}
+                  >
+                    {reprocessingId === item.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
                   </Button>
 
                   <Button
