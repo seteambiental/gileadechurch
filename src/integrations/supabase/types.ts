@@ -1492,6 +1492,7 @@ export type Database = {
       }
       casais_turmas: {
         Row: {
+          arquivada: boolean
           ativo: boolean | null
           created_at: string
           data_fim: string | null
@@ -1508,6 +1509,7 @@ export type Database = {
           vagas: number | null
         }
         Insert: {
+          arquivada?: boolean
           ativo?: boolean | null
           created_at?: string
           data_fim?: string | null
@@ -1524,6 +1526,7 @@ export type Database = {
           vagas?: number | null
         }
         Update: {
+          arquivada?: boolean
           ativo?: boolean | null
           created_at?: string
           data_fim?: string | null
