@@ -450,25 +450,13 @@ const Index = () => {
                     ? `/inscricao/${eventoId}`
                     : img.link_url || null;
                   const content = (
-                    <>
-                      {/* Fundo desfocado (mesma imagem) para preencher o espaço sem cortar */}
-                      <img
-                        src={srcUrl}
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl brightness-75"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                      {/* Imagem completa, sem cortes */}
-                      <img
-                        src={srcUrl}
-                        alt={img.titulo}
-                        className="absolute inset-0 w-full h-full object-contain object-center"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    </>
+                    <img
+                      src={srcUrl}
+                      alt={img.titulo}
+                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   );
                   return href ? (
                     <a
