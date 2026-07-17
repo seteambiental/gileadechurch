@@ -3135,6 +3135,7 @@ export type Database = {
           id: string
           imagem_url: string
           imagem_url_mobile: string | null
+          link_evento_id: string | null
           link_url: string | null
           ordem: number
           titulo: string
@@ -3146,6 +3147,7 @@ export type Database = {
           id?: string
           imagem_url: string
           imagem_url_mobile?: string | null
+          link_evento_id?: string | null
           link_url?: string | null
           ordem?: number
           titulo: string
@@ -3157,12 +3159,21 @@ export type Database = {
           id?: string
           imagem_url?: string
           imagem_url_mobile?: string | null
+          link_evento_id?: string | null
           link_url?: string | null
           ordem?: number
           titulo?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homepage_carrossel_link_evento_id_fkey"
+            columns: ["link_evento_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_igreja"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       homepage_config: {
         Row: {

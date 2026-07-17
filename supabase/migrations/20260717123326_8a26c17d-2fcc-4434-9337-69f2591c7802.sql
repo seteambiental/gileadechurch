@@ -1,0 +1,1 @@
+ALTER TABLE public.homepage_carrossel ADD COLUMN IF NOT EXISTS link_evento_id uuid REFERENCES public.agenda_igreja(id) ON DELETE SET NULL;
