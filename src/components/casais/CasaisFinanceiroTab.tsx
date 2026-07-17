@@ -421,6 +421,13 @@ export function CasaisFinanceiroTab() {
             <ArrowDownCircle className="w-4 h-4" />
             Despesas
           </TabsTrigger>
+          <TabsTrigger value="arquivados" className="flex items-center gap-2">
+            <Archive className="w-4 h-4" />
+            Arquivados
+            {turmasArquivadas.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{turmasArquivadas.length}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="receitas" className="space-y-6">
@@ -441,7 +448,7 @@ export function CasaisFinanceiroTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas as turmas</SelectItem>
-              {turmas.map((t: any) => (
+              {turmasAtivasVisiveis.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.nome}{!t.ativo ? " (encerrada)" : ""}
                 </SelectItem>
@@ -449,17 +456,26 @@ export function CasaisFinanceiroTab() {
             </SelectContent>
           </Select>
           {selectedTurma && (
-            <Button
-              variant={selectedTurma.ativo ? "outline" : "secondary"}
-              size="sm"
-              onClick={() => setConfirmToggleTurma(true)}
-            >
-              {selectedTurma.ativo ? (
-                <><Lock className="w-4 h-4 mr-2" /> Encerrar turma</>
-              ) : (
-                <><RotateCcw className="w-4 h-4 mr-2" /> Reativar turma</>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant={selectedTurma.ativo ? "outline" : "secondary"}
+                size="sm"
+                onClick={() => setConfirmToggleTurma(true)}
+              >
+                {selectedTurma.ativo ? (
+                  <><Lock className="w-4 h-4 mr-2" /> Encerrar</>
+                ) : (
+                  <><RotateCcw className="w-4 h-4 mr-2" /> Reativar</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setArchiveTarget({ turma: selectedTurma, arquivar: true })}
+              >
+                <Archive className="w-4 h-4 mr-2" /> Arquivar
+              </Button>
+            </div>
           )}
         </div>
         <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
@@ -667,6 +683,48 @@ export function CasaisFinanceiroTab() {
         <TabsContent value="despesas">
           <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
         </TabsContent>
+
+        <TabsContent value="arquivados" className="space-y-4">
+          <div className="rounded-lg border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Turma</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {turmasArquivadas.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      Nenhuma turma arquivada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  turmasArquivadas.map((t: any) => (
+                    <TableRow key={t.id}>
+                      <TableCell className="font-medium">{t.nome}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{t.ativo ? "Ativa" : "Encerrada"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button size="sm" variant="outline" onClick={() => setArchiveTarget({ turma: t, arquivar: false })}>
+                            <ArchiveRestore className="w-4 h-4 mr-1" /> Desarquivar
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Turmas arquivadas ficam ocultas dos filtros principais. Desarquive para visualizar o histórico financeiro novamente.
+          </p>
+        </TabsContent>
       </Tabs>
       <ConfirmDialog
         open={confirmToggleTurma}
@@ -678,6 +736,17 @@ export function CasaisFinanceiroTab() {
             : `Deseja reativar a turma "${selectedTurma?.nome}"?`
         }
         onConfirm={() => toggleTurmaMutation.mutate()}
+      />
+      <ConfirmDialog
+        open={!!archiveTarget}
+        onOpenChange={(open) => !open && setArchiveTarget(null)}
+        title={archiveTarget?.arquivar ? "Arquivar turma" : "Desarquivar turma"}
+        description={
+          archiveTarget?.arquivar
+            ? `Arquivar "${archiveTarget?.turma?.nome}"? Ela sairá dos filtros principais e ficará acessível apenas na aba "Arquivados".`
+            : `Desarquivar "${archiveTarget?.turma?.nome}"? Ela voltará a aparecer nos filtros principais.`
+        }
+        onConfirm={() => archiveTarget && archiveMutation.mutate(archiveTarget)}
       />
     </div>
   );
