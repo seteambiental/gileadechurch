@@ -67,6 +67,58 @@ function resizeWithCover(
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetWidth, targetHeight);
 }
 
+/**
+ * Renderiza a imagem inteira (contain) sobre um fundo preenchido com uma
+ * versão desfocada e ampliada da própria imagem. Assim a arte fica completa
+ * (sem cortes) e o canvas fica cheio (sem barras vazias), no aspect exato.
+ */
+function resizeWithContainBlurredBg(
+  canvas: HTMLCanvasElement,
+  img: HTMLImageElement,
+  targetWidth: number,
+  targetHeight: number
+) {
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d")!;
+
+  // 1) Fundo: mesma imagem em "cover" + blur, levemente escurecida
+  ctx.save();
+  ctx.filter = "blur(40px) brightness(0.85)";
+  const targetRatio = targetWidth / targetHeight;
+  const imgRatio = img.naturalWidth / img.naturalHeight;
+  let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+  if (imgRatio > targetRatio) {
+    sw = img.naturalHeight * targetRatio;
+    sx = (img.naturalWidth - sw) / 2;
+  } else {
+    sh = img.naturalWidth / targetRatio;
+    sy = (img.naturalHeight - sh) / 2;
+  }
+  // Desenha um pouco maior para esconder bordas do blur
+  const overscan = 40;
+  ctx.drawImage(
+    img,
+    sx, sy, sw, sh,
+    -overscan, -overscan,
+    targetWidth + overscan * 2,
+    targetHeight + overscan * 2
+  );
+  ctx.restore();
+
+  // 2) Frente: imagem inteira em "contain", centralizada
+  let dw = targetWidth;
+  let dh = targetHeight;
+  if (imgRatio > targetRatio) {
+    dh = Math.round(targetWidth / imgRatio);
+  } else {
+    dw = Math.round(targetHeight * imgRatio);
+  }
+  const dx = Math.round((targetWidth - dw) / 2);
+  const dy = Math.round((targetHeight - dh) / 2);
+  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, dx, dy, dw, dh);
+}
+
 function canvasToFile(
   canvas: HTMLCanvasElement,
   fileName: string,
@@ -94,7 +146,7 @@ export async function resizeForCarousel(file: File): Promise<ResizedImage> {
   const targetW = 1920;
   const targetH = 1080;
 
-  resizeWithCover(canvas, img, targetW, targetH);
+  resizeWithContainBlurredBg(canvas, img, targetW, targetH);
 
   const resized = await canvasToFile(
     canvas,
@@ -116,7 +168,7 @@ export async function resizeForCarouselMobile(file: File): Promise<ResizedImage>
   const targetW = 828;
   const targetH = 1472;
 
-  resizeWithCover(canvas, img, targetW, targetH);
+  resizeWithContainBlurredBg(canvas, img, targetW, targetH);
 
   const resized = await canvasToFile(
     canvas,

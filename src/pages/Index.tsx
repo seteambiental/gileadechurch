@@ -435,7 +435,7 @@ const Index = () => {
                       : img.imagem_url
                   }
                   alt={img.titulo}
-                  className="absolute inset-0 w-full h-full object-contain object-center"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                   loading="lazy"
                   decoding="async"
                 />
