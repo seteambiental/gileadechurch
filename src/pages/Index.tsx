@@ -449,11 +449,14 @@ const Index = () => {
                   const href = eventoId
                     ? `/inscricao/${eventoId}`
                     : img.link_url || null;
+                  const foco = (img as any).posicao_foco || "center";
+                  const objectPositionClass =
+                    foco === "top" ? "object-top" : foco === "bottom" ? "object-bottom" : "object-center";
                   const content = (
                     <img
                       src={srcUrl}
                       alt={img.titulo}
-                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      className={`absolute inset-0 w-full h-full object-cover ${objectPositionClass}`}
                       loading="lazy"
                       decoding="async"
                     />

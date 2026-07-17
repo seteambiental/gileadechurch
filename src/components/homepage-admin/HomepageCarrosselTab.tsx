@@ -6,6 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, Plus, Trash2, GripVertical, ArrowUp, ArrowDown, ExternalLink, Download, ImageIcon, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { resizeForCarousel, resizeForCarouselMobile } from "@/lib/image-resize";
@@ -15,13 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +43,7 @@ interface CarrosselItem {
   ativo: boolean;
   link_evento_id?: string | null;
   reprocessado?: boolean;
+  posicao_foco?: "top" | "center" | "bottom";
 }
 
 const HomepageCarrosselTab = () => {
@@ -61,6 +62,7 @@ const HomepageCarrosselTab = () => {
   const [linkUrl, setLinkUrl] = useState("");
   const [linkEventoId, setLinkEventoId] = useState<string>("");
   const [ativo, setAtivo] = useState(true);
+  const [posicaoFoco, setPosicaoFoco] = useState<"top" | "center" | "bottom">("center");
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["homepage-carrossel"],
@@ -168,6 +170,7 @@ const HomepageCarrosselTab = () => {
       setLinkUrl(item.link_url || "");
       setLinkEventoId(item.link_evento_id || "");
       setAtivo(item.ativo);
+      setPosicaoFoco(item.posicao_foco || "center");
     } else {
       setEditingItem(null);
       setTitulo("");
@@ -176,6 +179,7 @@ const HomepageCarrosselTab = () => {
       setLinkUrl("");
       setLinkEventoId("");
       setAtivo(true);
+      setPosicaoFoco("center");
     }
     setFormOpen(true);
   };
@@ -189,6 +193,7 @@ const HomepageCarrosselTab = () => {
     setLinkUrl("");
     setLinkEventoId("");
     setAtivo(true);
+    setPosicaoFoco("center");
   };
 
   const handleSubmit = () => {
@@ -207,6 +212,7 @@ const HomepageCarrosselTab = () => {
       link_url: linkUrl.trim() || null,
       link_evento_id: linkEventoId || null,
       ativo,
+      posicao_foco: posicaoFoco,
     } as any);
   };
 
@@ -594,6 +600,24 @@ const HomepageCarrosselTab = () => {
             <div className="flex items-center gap-2">
               <Switch checked={ativo} onCheckedChange={setAtivo} />
               <Label>Ativo</Label>
+            </div>
+
+            <div>
+              <Label>Enquadramento da imagem</Label>
+              <Select value={posicaoFoco} onValueChange={(v) => setPosicaoFoco(v as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="top">Topo (prioriza o topo da imagem)</SelectItem>
+                  <SelectItem value="center">Centro (padrão)</SelectItem>
+                  <SelectItem value="bottom">Base (prioriza a base da imagem)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Se essa imagem específica tiver conteúdo importante cortado no carrossel, ajuste
+                o enquadramento aqui pra decidir de que lado o corte deve sobrar.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
