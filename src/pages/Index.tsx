@@ -428,17 +428,48 @@ const Index = () => {
                   index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
                 }`}
               >
-                <img
-                  src={
+                {(() => {
+                  const srcUrl =
                     isMobileViewport && (img as any).imagem_url_mobile
                       ? (img as any).imagem_url_mobile
-                      : img.imagem_url
-                  }
-                  alt={img.titulo}
-                  className="absolute inset-0 w-full h-full object-cover object-center"
-                  loading="lazy"
-                  decoding="async"
-                />
+                      : img.imagem_url;
+                  const eventoId = (img as any).link_evento_id as string | null | undefined;
+                  const href = eventoId
+                    ? `/inscricao/${eventoId}`
+                    : img.link_url || null;
+                  const content = (
+                    <>
+                      {/* Fundo desfocado (mesma imagem) para preencher o espaço sem cortar */}
+                      <img
+                        src={srcUrl}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 w-full h-full object-cover object-center scale-110 blur-2xl brightness-75"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                      {/* Imagem completa, sem cortes */}
+                      <img
+                        src={srcUrl}
+                        alt={img.titulo}
+                        className="absolute inset-0 w-full h-full object-contain object-center"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </>
+                  );
+                  return href ? (
+                    <a
+                      href={href}
+                      className="absolute inset-0 block"
+                      aria-label={img.titulo}
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    content
+                  );
+                })()}
               </div>
           ))}
 
