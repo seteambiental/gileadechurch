@@ -420,7 +420,7 @@ const Index = () => {
             <div className="absolute inset-0 bg-primary/70" />
           </div>
 
-          {/* Slides do carrossel (índices 1+) - Preenchimento total da tela */}
+          {/* Slides do carrossel (índices 1+) - Ajusta a imagem inteira dentro do espaço */}
           {carrosselImages && carrosselImages.map((img, index) => (
               <div
                 key={img.id}
@@ -435,7 +435,7 @@ const Index = () => {
                       : img.imagem_url
                   }
                   alt={img.titulo}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain bg-primary"
                   loading="lazy"
                   decoding="async"
                 />
