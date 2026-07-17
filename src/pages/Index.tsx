@@ -399,10 +399,10 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section - Ocupa toda a tela */}
+      {/* Hero Section - Altura reduzida para menos faixa vazia */}
       <section
         id="inicio"
-        className="relative w-full overflow-hidden h-screen min-h-screen"
+        className="relative w-full overflow-hidden h-[90vh] min-h-[500px]"
       >
         {/* Background - Slide 0 é sempre o Hero fixo, demais são do carrossel */}
         <div className="absolute inset-0 bg-primary">
