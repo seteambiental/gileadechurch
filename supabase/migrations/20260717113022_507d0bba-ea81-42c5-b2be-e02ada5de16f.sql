@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Anon can read inserted registration response" ON public.inscricoes_eventos;
