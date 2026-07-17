@@ -62,8 +62,16 @@ const Index = () => {
     },
   });
 
+  // Em telas mobile, itens sem imagem mobile dedicada são ocultados do carrossel
+  // (evita usar a versão desktop como fallback, que fica com faixas/desenquadrada).
+  const visibleCarrosselImages = useMemo(() => {
+    if (!carrosselImages) return [];
+    if (!isMobileViewport) return carrosselImages;
+    return carrosselImages.filter((img) => !!(img as any).imagem_url_mobile);
+  }, [carrosselImages, isMobileViewport]);
+
   // Total de slides: 1 (hero fixo) + imagens do carrossel + 1 (contador)
-  const totalSlides = 1 + (carrosselImages?.length || 0) + 1;
+  const totalSlides = 1 + (visibleCarrosselImages.length || 0) + 1;
   const contadorSlideIndex = totalSlides - 1;
 
   // Auto-rotação do carrossel a cada 10 segundos
@@ -423,7 +431,7 @@ const Index = () => {
           </div>
 
           {/* Slides do carrossel (índices 1+) - encaixados no espaço disponível */}
-          {carrosselImages && carrosselImages.map((img, index) => (
+          {visibleCarrosselImages.map((img, index) => (
               <div
                 key={img.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ${

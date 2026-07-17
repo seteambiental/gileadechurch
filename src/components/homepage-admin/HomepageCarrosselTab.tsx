@@ -196,6 +196,10 @@ const HomepageCarrosselTab = () => {
       toast.error("Título e imagem são obrigatórios");
       return;
     }
+    if (!imagemUrlMobile.trim()) {
+      toast.error("Imagem mobile é obrigatória. Envie uma versão vertical (9:16) antes de salvar.");
+      return;
+    }
     saveMutation.mutate({
       titulo: titulo.trim(),
       imagem_url: imagemUrl.trim(),
@@ -519,7 +523,7 @@ const HomepageCarrosselTab = () => {
             </div>
 
             <div>
-              <Label>Imagem Mobile (9:16 — ideal 1080×1920)</Label>
+              <Label>Imagem Mobile * (9:16 — ideal 1080×1920)</Label>
               <div className="space-y-2">
                 <Input
                   type="file"
@@ -541,7 +545,8 @@ const HomepageCarrosselTab = () => {
                   />
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Opcional. Se não for enviada, a versão desktop será usada também no celular.
+                  Obrigatória. Envie uma arte vertical para o celular — sem ela, o item não
+                  aparece no carrossel em telas mobile.
                 </p>
                 <Input
                   value={imagemUrlMobile}
