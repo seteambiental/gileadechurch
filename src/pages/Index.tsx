@@ -409,7 +409,9 @@ const Index = () => {
           {/* Slide 0: Hero fixo com texto */}
           <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
-              currentCarouselIndex === 0 ? "opacity-100" : "opacity-0"
+              currentCarouselIndex === 0
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none"
             }`}
           >
             <img
@@ -425,7 +427,9 @@ const Index = () => {
               <div
                 key={img.id}
                 className={`absolute inset-0 transition-opacity duration-1000 ${
-                  index + 1 === currentCarouselIndex ? "opacity-100" : "opacity-0"
+                  index + 1 === currentCarouselIndex
+                    ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none"
                 }`}
               >
                 {(() => {
@@ -461,7 +465,13 @@ const Index = () => {
                   return href ? (
                     <a
                       href={href}
-                      className="absolute inset-0 block"
+                      onClick={(e) => {
+                        if (eventoId) {
+                          e.preventDefault();
+                          navigate(`/inscricao/${eventoId}`);
+                        }
+                      }}
+                      className="absolute inset-0 block cursor-pointer"
                       aria-label={img.titulo}
                     >
                       {content}
@@ -476,7 +486,9 @@ const Index = () => {
           {/* Slide Contador de Cadastros */}
           <div
             className={`absolute inset-0 transition-opacity duration-1000 ${
-              currentCarouselIndex === contadorSlideIndex ? "opacity-100 z-[2]" : "opacity-0"
+              currentCarouselIndex === contadorSlideIndex
+                ? "opacity-100 z-[2] pointer-events-auto"
+                : "opacity-0 pointer-events-none"
             }`}
           >
             <div className="absolute inset-0 bg-accent flex flex-col items-center justify-center">
