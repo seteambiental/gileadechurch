@@ -420,20 +420,27 @@ const HomepageCarrosselTab = () => {
                     <Download className="w-4 h-4" />
                   </Button>
 
-                  {!item.reprocessado && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      title="Reprocessar para encaixar no carrossel"
-                      disabled={reprocessingId === item.id}
-                      onClick={() => reprocessItem(item)}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Reprocessar imagens (aplica o redimensionamento mais recente)"
+                    disabled={reprocessingId === item.id}
+                    onClick={() => reprocessItem(item)}
+                  >
+                    {reprocessingId === item.id ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  {!item.imagem_url_mobile && (
+                    <span
+                      className="text-xs text-amber-600 border border-amber-300 bg-amber-50 rounded px-2 py-1"
+                      title="Sem imagem mobile: no celular, a versão desktop será usada e pode aparecer com faixas."
                     >
-                      {reprocessingId === item.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Wand2 className="w-4 h-4" />
-                      )}
-                    </Button>
+                      Sem versão mobile
+                    </span>
                   )}
 
                   <Button
