@@ -24,7 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   DollarSign, Check, Clock, Plus, Users, ChevronDown, ChevronRight, Trash2, Loader2, Filter, TrendingUp, Scale, ArrowDownCircle, Pencil,
 } from "lucide-react";
-import { Lock, RotateCcw } from "lucide-react";
+import { Lock, RotateCcw, Archive, ArchiveRestore } from "lucide-react";
 import { SearchInput } from "@/components/ui/search-input";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -79,11 +79,14 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_turmas")
-        .select("id, nome, ativo")
+        .select("id, nome, ativo, arquivada")
         .order("nome");
       return (data || []) as any[];
     },
   });
+
+  const turmasAtivasVisiveis = useMemo(() => turmas.filter((t: any) => !t.arquivada), [turmas]);
+  const turmasArquivadas = useMemo(() => turmas.filter((t: any) => t.arquivada), [turmas]);
 
   // Fetch all payments
   const { data: pagamentos = [] } = useQuery({
@@ -254,6 +257,27 @@ export function CasaisFinanceiroTab() {
     },
     onError: (e: any) => {
       toast({ title: "Erro ao atualizar turma", description: e.message, variant: "destructive" });
+    },
+  });
+
+  const [archiveTarget, setArchiveTarget] = useState<{ turma: any; arquivar: boolean } | null>(null);
+  const archiveMutation = useMutation({
+    mutationFn: async ({ turma, arquivar }: { turma: any; arquivar: boolean }) => {
+      const { error } = await supabase
+        .from("casais_turmas")
+        .update({ arquivada: arquivar })
+        .eq("id", turma.id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      toast({ title: vars.arquivar ? "Turma arquivada" : "Turma desarquivada" });
+      if (vars.arquivar && turmaFilter === vars.turma.id) setTurmaFilter("todas");
+      setArchiveTarget(null);
+    },
+    onError: (e: any) => {
+      toast({ title: "Erro ao arquivar turma", description: e.message, variant: "destructive" });
     },
   });
 
