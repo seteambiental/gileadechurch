@@ -469,17 +469,18 @@ const Index = () => {
                   const href = eventoId
                     ? `/inscricao/${eventoId}`
                     : img.link_url || null;
-                  const foco = (img as any).posicao_foco || "center";
-                  const objectPositionClass =
-                    foco === "top" ? "object-top" : foco === "bottom" ? "object-bottom" : "object-center";
                   const content = (
-                    <img
-                      src={srcUrl}
-                      alt={img.titulo}
-                      className={`absolute inset-0 w-full h-full object-cover ${objectPositionClass}`}
-                      loading="lazy"
-                      decoding="async"
-                    />
+                    <>
+                      {/* Fundo sólido com as cores da marca (nunca corta a imagem) */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary/40" />
+                      <img
+                        src={srcUrl}
+                        alt={img.titulo}
+                        className="absolute inset-0 w-full h-full object-contain object-center"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    </>
                   );
                   return href ? (
                     <a
