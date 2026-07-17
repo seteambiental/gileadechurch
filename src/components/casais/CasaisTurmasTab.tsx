@@ -198,7 +198,20 @@ export function CasaisTurmasTab() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant={turma.ativo ? "outline" : "secondary"}
+                          size="sm"
+                          onClick={() => handleToggleAtivo(turma)}
+                          className="hidden sm:inline-flex"
+                        >
+                          {turma.ativo ? (
+                            <><Lock className="w-4 h-4 mr-2" /> Encerrar</>
+                          ) : (
+                            <><RotateCcw className="w-4 h-4 mr-2" /> Reativar</>
+                          )}
+                        </Button>
+                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
                             <MoreHorizontal className="w-4 h-4" />
@@ -225,7 +238,8 @@ export function CasaisTurmasTab() {
                             Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
-                      </DropdownMenu>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
