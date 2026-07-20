@@ -152,7 +152,7 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                   fontFamily: "'BillionDreams', cursive",
                   fontWeight: 700,
                   fontSize: 84,
-                  color: "#3730b8",
+                  color: "#000000",
                   lineHeight: 1,
                   textAlign: "center",
                   whiteSpace: "nowrap",
