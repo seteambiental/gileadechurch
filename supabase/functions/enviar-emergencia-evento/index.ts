@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  enviarTextoWhatsApp,
-  enviarMidiaWhatsApp,
-} from "../_shared/whatsapp-sender.ts";
+import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,19 +48,6 @@ function formatarDataPt(data?: string | null) {
   } catch {
     return data;
   }
-}
-
-async function enviarTexto(telefone: string, mensagem: string) {
-  return await enviarTextoWhatsApp(telefone, mensagem);
-}
-
-async function enviarMidia(
-  telefone: string,
-  midiaUrl: string,
-  caption: string,
-  fileName?: string,
-) {
-  return await enviarMidiaWhatsApp(telefone, midiaUrl, caption || "", undefined, fileName);
 }
 
 async function buscarEvento(supabase: any, eventoId: string, eventoTipo: string) {
@@ -130,12 +114,6 @@ async function buscarInscricoes(
   return rows;
 }
 
-function delayBulk() {
-  // 15-30 s aleatório (anti-SPAM)
-  const ms = Math.floor(Math.random() * 15_000) + 15_000;
-  return new Promise((r) => setTimeout(r, ms));
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -166,7 +144,7 @@ serve(async (req) => {
     const nomeGenerico = body.nomeGenerico === true;
     const mensagemOverride = (body.mensagemOverride as string) || null;
     const midiaUrl = (body.midiaUrl as string) || null;
-    const midiaFileName = (body.midiaFileName as string) || null;
+    const _midiaFileName = (body.midiaFileName as string) || null;
     const destinatarioTipo =
       (body.destinatarioTipo as "principal" | "emergencia") || "emergencia";
     const tipoInscricaoFiltro = Array.isArray(body.tipoInscricaoFiltro)
@@ -242,8 +220,12 @@ serve(async (req) => {
       statusEspiritualFiltro,
     );
     const dataEventoFmt = formatarDataPt(evento.data_inicio);
-    let enviados = 0;
-    let falhas = 0;
+    const tipoAudit =
+      tipoMensagemAudit ||
+      (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual");
+    let enfileirados = 0;
+    let duplicados = 0;
+    let semTelefone = 0;
     const erros: string[] = [];
 
     for (let i = 0; i < inscricoes.length; i++) {
@@ -254,7 +236,7 @@ serve(async (req) => {
           : insc.telefone_emergencia || insc.telefone_responsavel || "";
       const tel = telRaw.toString().replace(/\D/g, "");
       if (!tel || tel.length < 10) {
-        falhas++;
+        semTelefone++;
         await supabase.from("emergencia_envios_log").insert({
           inscricao_id: insc.id,
           evento_id: eventoId,
@@ -270,22 +252,6 @@ serve(async (req) => {
               ? "Telefone do participante ausente ou inválido"
               : "Telefone de emergência ausente ou inválido",
         });
-        await supabase.from("comunicacao_envios").insert({
-          tipo:
-            tipoMensagemAudit ||
-            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
-          segmento: destinatarioTipo,
-          destinatario_telefone: tel || "",
-          destinatario_nome:
-            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
-          conteudo: "",
-          status: "erro",
-          erro_mensagem:
-            destinatarioTipo === "principal"
-              ? "Telefone do participante ausente ou inválido"
-              : "Telefone de emergência ausente ou inválido",
-          evento_id: eventoId,
-        });
         continue;
       }
 
@@ -297,86 +263,44 @@ serve(async (req) => {
         nomeGenerico,
       });
 
-      console.log(
-        `[emergencia ${insc.id}] tipo=${tipo} para=${tel}\n  ORIGINAL: ${JSON.stringify(mensagemBase).slice(0, 300)}\n  FINAL:    ${JSON.stringify(mensagemFinal).slice(0, 300)}`,
-      );
+      const resultado = await enfileirarComDedupe(supabase, {
+        tipo: tipoAudit,
+        segmento: destinatarioTipo,
+        destinatario_telefone: tel,
+        destinatario_nome:
+          destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
+        conteudo: mensagemFinal,
+        midia_url: midiaUrl,
+        evento_id: eventoId,
+      });
 
-      try {
-        if (midiaUrl) {
-          try {
-            await enviarMidia(tel, midiaUrl, mensagemFinal, midiaFileName);
-          } catch (mediaErr) {
-            console.warn("Falha mídia, enviando texto:", mediaErr);
-            await enviarTexto(tel, mensagemFinal);
-          }
-        } else {
-          await enviarTexto(tel, mensagemFinal);
-        }
-        enviados++;
-        await supabase.from("emergencia_envios_log").insert({
-          inscricao_id: insc.id,
-          evento_id: eventoId,
-          evento_tipo: eventoTipo,
-          tipo_envio: `${tipo}:${destinatarioTipo}`,
-          telefone_destino: tel,
-          nome_contato_emergencia: insc.nome_responsavel,
-          nome_participante: insc.nome,
-          mensagem_enviada: mensagemFinal,
-          status: "enviado",
-        });
-        await supabase.from("comunicacao_envios").insert({
-          tipo:
-            tipoMensagemAudit ||
-            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
-          segmento: destinatarioTipo,
-          destinatario_telefone: tel,
-          destinatario_nome:
-            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
-          conteudo: mensagemFinal,
-          status: "enviado",
-          evento_id: eventoId,
-        });
-      } catch (err) {
-        falhas++;
-        const msg = err instanceof Error ? err.message : String(err);
-        erros.push(`${insc.nome}: ${msg}`);
-        await supabase.from("emergencia_envios_log").insert({
-          inscricao_id: insc.id,
-          evento_id: eventoId,
-          evento_tipo: eventoTipo,
-          tipo_envio: `${tipo}:${destinatarioTipo}`,
-          telefone_destino: tel,
-          nome_contato_emergencia: insc.nome_responsavel,
-          nome_participante: insc.nome,
-          mensagem_enviada: mensagemFinal,
-          status: "falhou",
-          erro: msg,
-        });
-        await supabase.from("comunicacao_envios").insert({
-          tipo:
-            tipoMensagemAudit ||
-            (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual"),
-          segmento: destinatarioTipo,
-          destinatario_telefone: tel,
-          destinatario_nome:
-            destinatarioTipo === "principal" ? insc.nome : insc.nome_responsavel,
-          conteudo: mensagemFinal,
-          status: "erro",
-          erro_mensagem: msg,
-          evento_id: eventoId,
-        });
+      if (resultado.enfileirado) {
+        enfileirados++;
+      } else if ((resultado.motivo || "").toLowerCase().includes("duplicata")) {
+        duplicados++;
+      } else {
+        erros.push(`${insc.nome}: ${resultado.motivo}`);
       }
-
-      // Anti-SPAM apenas quando há mais de uma mensagem
-      if (i < inscricoes.length - 1) await delayBulk();
     }
+
+    console.log(
+      `[emergencia] evento=${eventoId} tipo=${tipoAudit} enfileirados=${enfileirados} duplicados=${duplicados} sem_telefone=${semTelefone} erros=${erros.length} total=${inscricoes.length}`,
+    );
 
     return new Response(
       JSON.stringify({
         success: true,
-        enviados,
-        falhas,
+        // Compatibilidade com o frontend antigo (mostra "enviados" no toast).
+        enviados: enfileirados,
+        falhas: semTelefone + erros.length,
+        enfileirados,
+        duplicados,
+        sem_telefone: semTelefone,
         total: inscricoes.length,
+        mensagem:
+          `${enfileirados} mensagem(ns) enfileiradas — envio escalonado a cada 15–30s para evitar SPAM.` +
+          (duplicados ? ` ${duplicados} ignoradas (duplicadas nas últimas 24h).` : "") +
+          (semTelefone ? ` ${semTelefone} sem telefone válido.` : ""),
         erros: erros.slice(0, 10),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
