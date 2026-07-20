@@ -198,6 +198,9 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
                 <div style={{ fontSize: 36, lineHeight: 1.4, marginTop: 6 }}>
                   Pastor Adalberto Derzette
                 </div>
+                <div style={{ fontSize: 28, lineHeight: 1.4, marginTop: 4, color: "#4b5563" }}>
+                  Pastor Sênior Gileade Church
+                </div>
               </div>
             </div>
           </div>
