@@ -288,7 +288,8 @@ export default function EnvioEmergenciaDialog({
       );
       if (error) throw error;
       toast.success(
-        `Envio concluído: ${data?.enviados || 0} enviados, ${data?.falhas || 0} falhas`,
+        data?.mensagem ||
+          `${data?.enfileirados ?? data?.enviados ?? 0} mensagem(ns) enfileiradas — envio escalonado para evitar SPAM.`,
       );
       onOpenChange(false);
       setMensagem("");
