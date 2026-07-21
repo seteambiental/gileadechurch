@@ -16,6 +16,12 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'PinyonScript';
+  src: url('/__l5e/assets-v1/835b810b-c5c6-4e53-9ed2-1ed290478c14/PinyonScript-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
 @layer base {
   :root {
     /* Primary - Black (Base) */
