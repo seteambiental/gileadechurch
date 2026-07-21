@@ -126,9 +126,9 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
                 fontWeight: 400,
                 fontSize: 64,
                 color: "#000000",
-                lineHeight: 1,
+                lineHeight: 1.6,
+                paddingBottom: 24,
                 whiteSpace: "nowrap",
-                overflow: "hidden",
               }}
             >
               {inscricao.nome}
