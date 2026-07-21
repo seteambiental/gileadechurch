@@ -195,6 +195,31 @@ const AppDashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pendingImpacto = 0 } = useQuery({
+    queryKey: ["pending-impacto-dashboard"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("impacto_inscricoes")
+        .select("id", { count: "exact", head: true })
+        .eq("aprovado", false)
+        .neq("status_pagamento", "cancelado");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: pendingCasais = 0 } = useQuery({
+    queryKey: ["pending-casais-dashboard"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("casais_inscritos")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pendente");
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: pendingApresentacoes = 0 } = useQuery({
     queryKey: ["pending-apresentacoes-dashboard"],
     queryFn: async () => {
