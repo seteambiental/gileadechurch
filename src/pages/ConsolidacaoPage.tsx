@@ -14,9 +14,11 @@ import {
   UserCheck,
   Home,
   Heart,
+  Droplets,
 } from "lucide-react";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import { ConsolidacaoEventosTab } from "@/components/consolidacao/ConsolidacaoEventosTab";
+import { ConsolidacaoBatismoTab } from "@/components/consolidacao/ConsolidacaoBatismoTab";
 import { useToast } from "@/hooks/use-toast";
 
 const ConsolidacaoPage = () => {
@@ -90,7 +92,7 @@ const ConsolidacaoPage = () => {
 
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="convertidos" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Novos Convertidos</span>
@@ -99,6 +101,10 @@ const ConsolidacaoPage = () => {
             <TabsTrigger value="eventos" className="flex items-center gap-2">
               <Heart className="w-4 h-4" />
               <span>Reconciliações</span>
+            </TabsTrigger>
+            <TabsTrigger value="batismo" className="flex items-center gap-2">
+              <Droplets className="w-4 h-4" />
+              <span>Batismo</span>
             </TabsTrigger>
           </TabsList>
 
@@ -152,6 +158,10 @@ const ConsolidacaoPage = () => {
             </div>
 
             <ConsolidacaoEventosTab tipo="reconciliacao" includeManual />
+          </TabsContent>
+
+          <TabsContent value="batismo">
+            <ConsolidacaoBatismoTab />
           </TabsContent>
         </Tabs>
       </main>
