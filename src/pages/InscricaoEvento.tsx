@@ -570,12 +570,14 @@ const InscricaoEvento = () => {
       return;
     }
 
-    // Regra Impacto Jovem — participante precisa completar 16 anos no ano do evento
+    // Regra Impacto Jovem — participante precisa ter 15 anos completos até 16/Agosto do ano do evento
     const isImpactoJovem = /impacto/i.test(evento?.titulo || "") && /jovem|jovens/i.test(evento?.titulo || "");
     if (isImpactoJovem && evento?.data_evento) {
       const anoEvento = parseLocalDate(evento.data_evento).getFullYear();
-      const anoNascimento = parseLocalDate(dataNascimento).getFullYear();
-      if (anoEvento - anoNascimento < 16) {
+      const cutoff = new Date(anoEvento, 7, 16); // 16 de Agosto
+      const nasc = parseLocalDate(dataNascimento);
+      const completa15Em = new Date(nasc.getFullYear() + 15, nasc.getMonth(), nasc.getDate());
+      if (completa15Em > cutoff) {
         setIdadeBloqueada(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
@@ -643,11 +645,11 @@ const InscricaoEvento = () => {
             </div>
             <h2 className="text-xl font-bold">Ainda não é a sua vez 💛</h2>
             <p className="text-muted-foreground">
-              O <strong>{evento.titulo}</strong> é para jovens que completam{" "}
-              <strong>16 anos até 31/12/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
+              O <strong>{evento.titulo}</strong> é para jovens que já tenham{" "}
+              <strong>15 anos completos ou que completem 15 anos até 16/08/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
             </p>
             <p className="text-muted-foreground">
-              Pela sua data de nascimento, você ainda vai completar 16 anos depois dessa data.
+              Pela sua data de nascimento, você vai completar 15 anos depois dessa data.
               Mas não fique triste: guardamos o seu lugar para o próximo ano! Continue crescendo com a gente. 🙏
             </p>
             <Button variant="outline" className="w-full" onClick={() => setIdadeBloqueada(false)}>
