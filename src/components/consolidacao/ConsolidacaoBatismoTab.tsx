@@ -88,6 +88,7 @@ export const ConsolidacaoBatismoTab = () => {
         .from("agenda_igreja")
         .select("id, titulo, data_evento, hora_inicio")
         .eq("tipo_evento", "batismo")
+        .ilike("titulo", "%batis%")
         .eq("ativo", true)
         .gte("data_evento", hoje)
         .order("data_evento", { ascending: true })
@@ -97,6 +98,7 @@ export const ConsolidacaoBatismoTab = () => {
         .from("agenda_igreja")
         .select("id, titulo, data_evento, hora_inicio")
         .eq("tipo_evento", "batismo")
+        .ilike("titulo", "%batis%")
         .eq("ativo", true)
         .order("data_evento", { ascending: false })
         .limit(1);

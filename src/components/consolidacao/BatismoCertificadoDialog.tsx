@@ -36,7 +36,7 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
   const dataObj = inscricao.data_batismo
     ? parseLocalDate(inscricao.data_batismo)
     : new Date();
-  const dataCompleta = format(dataObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  const dataCompleta = `Curitiba, ${format(dataObj, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`;
 
   const handleDownload = async () => {
     if (!certRef.current) return;
@@ -122,9 +122,9 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
                 right: 270,
                 top: 585,
                 textAlign: "center",
-                fontFamily: "'BillionDreams', cursive",
-                fontWeight: 700,
-                fontSize: 78,
+                fontFamily: "'PinyonScript', cursive",
+                fontWeight: 400,
+                fontSize: 96,
                 color: "#000000",
                 lineHeight: 1,
                 whiteSpace: "nowrap",
@@ -142,9 +142,9 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
                 right: 200,
                 top: 970,
                 textAlign: "center",
-                fontFamily: "'BillionDreams', cursive",
-                fontWeight: 700,
-                fontSize: 44,
+                fontFamily: "'PinyonScript', cursive",
+                fontWeight: 400,
+                fontSize: 52,
                 color: "#000000",
                 lineHeight: 1,
                 whiteSpace: "nowrap",
