@@ -16,6 +16,7 @@ import { parseLocalDate } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import certBg from "@/assets/certificado-apresentacao-kids-clean.png.asset.json";
+import assinaturaPastor from "@/assets/assinatura-pastor.png.asset.json";
 
 interface Props {
   open: boolean;
@@ -191,10 +192,23 @@ const ApresentacaoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props)
               </div>
 
               {/* Rodapé — data e pastor colados na base */}
-              <div style={{ marginTop: 60 }}>
+              <div style={{ marginTop: 40 }}>
                 <div style={{ fontSize: 36, lineHeight: 1.4 }}>
                   Curitiba, <span style={{ fontWeight: 700 }}>{dataCompleta}</span>
                 </div>
+                <img
+                  src={assinaturaPastor.url}
+                  alt=""
+                  crossOrigin="anonymous"
+                  style={{
+                    height: 140,
+                    width: "auto",
+                    objectFit: "contain",
+                    marginTop: 20,
+                    marginBottom: -20,
+                    display: "block",
+                  }}
+                />
                 <div style={{ fontSize: 36, lineHeight: 1.4, marginTop: 6 }}>
                   Pastor Adalberto Derzette
                 </div>
