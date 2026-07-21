@@ -415,8 +415,8 @@ const AppDashboard = () => {
         {/* Outros Módulos */}
 
         {/* Alertas de pendências */}
-        {(pendingCadastros > 0 || pendingInscricoes > 0 || pendingApresentacoes > 0) && (
-          <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        {(pendingCadastros > 0 || pendingInscricoes > 0 || pendingImpacto > 0 || pendingCasais > 0 || pendingApresentacoes > 0) && (
+          <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-3">
             {pendingCadastros > 0 && (
               <button
                 onClick={() => navigate("/cadastros")}
@@ -440,6 +440,34 @@ const AppDashboard = () => {
                 <div className="text-left">
                   <span className="font-heading font-bold text-destructive text-sm">
                     Nova Inscrição ({pendingInscricoes})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+            {pendingImpacto > 0 && (
+              <button
+                onClick={() => navigate("/ministerio/impacto")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-destructive/30 bg-destructive/10 hover:bg-destructive/20 transition-colors animate-pulse"
+              >
+                <Zap className="w-5 h-5 text-destructive flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-destructive text-sm">
+                    Nova Inscrição Impacto ({pendingImpacto})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+            {pendingCasais > 0 && (
+              <button
+                onClick={() => navigate("/ministerio/casais")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-secondary/30 bg-secondary/10 hover:bg-secondary/20 transition-colors animate-pulse"
+              >
+                <HeartHandshake className="w-5 h-5 text-secondary flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-secondary text-sm">
+                    Nova Inscrição Casais ({pendingCasais})
                   </span>
                   <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
                 </div>
