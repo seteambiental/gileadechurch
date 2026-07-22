@@ -42,6 +42,7 @@ import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
+import { CasaisTurmasEncerradasTab } from "@/components/casais/CasaisTurmasEncerradasTab";
 import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import { CompartilharInscricaoCasaisDialog } from "@/components/casais/CompartilharInscricaoCasaisDialog";
@@ -463,7 +464,7 @@ const MinistryPage = () => {
       <main className="container mx-auto px-4 py-8">
         {(hasEscalas || isCasais || isEvangelizacao || isIntercessao || isImpacto || isMissoes || isMinisterioEspecifico || isServico || ministryFromDb?.id) ? (
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-7' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-6' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : isOrganizacaoCulto ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
+            <TabsList className={`grid w-full ${isMissoes ? 'grid-cols-7' : isImpacto ? 'grid-cols-6' : isIntercessao ? 'grid-cols-5' : isCasais ? 'grid-cols-7' : isEvangelizacao ? 'grid-cols-4' : isServico ? 'grid-cols-4' : isMinisterioEspecifico ? 'grid-cols-4' : isDanca ? 'grid-cols-6' : hasRepertorio ? 'grid-cols-7' : hasEscalasServico ? 'grid-cols-6' : isOrganizacaoCulto ? 'grid-cols-6' : hasEscalas ? 'grid-cols-5' : 'grid-cols-2'} mb-6`}>
               <TabsTrigger value="info" className="flex items-center gap-2">
                 <IconComponent className="w-4 h-4" />
                 <span className="hidden sm:inline">Sobre</span>
@@ -582,6 +583,10 @@ const MinistryPage = () => {
                     <DollarSign className="w-4 h-4" />
                     <span className="hidden sm:inline">Financeiro</span>
                   </TabsTrigger>
+                  <TabsTrigger value="encerradas" className="flex items-center gap-2">
+                    <Archive className="w-4 h-4" />
+                    <span className="hidden sm:inline">Encerradas</span>
+                  </TabsTrigger>
                 </>
               ) : isMinisterioEspecifico ? (
                 <>
@@ -634,7 +639,7 @@ const MinistryPage = () => {
                   )}
                 </>
               )}
-              {ministryFromDb?.id && (
+              {ministryFromDb?.id && !isCasais && (
                 <TabsTrigger value="candidaturas" className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4" />
                   <span className="hidden sm:inline">Candidaturas</span>
@@ -773,6 +778,9 @@ const MinistryPage = () => {
                 <TabsContent value="financeiro-casais">
                   <CasaisFinanceiroTab />
                 </TabsContent>
+                <TabsContent value="encerradas">
+                  <CasaisTurmasEncerradasTab />
+                </TabsContent>
               </>
             ) : isMinisterioEspecifico ? (
               <>
@@ -843,8 +851,8 @@ const MinistryPage = () => {
               </>
             )}
 
-            {/* Aba de Candidaturas - disponível para todos os ministérios */}
-            {ministryFromDb?.id && (
+            {/* Aba de Candidaturas - disponível para todos os ministérios, exceto Casais */}
+            {ministryFromDb?.id && !isCasais && (
               <TabsContent value="candidaturas">
                 <AprovacaoCandidaturasTab ministryId={ministryFromDb.id} />
               </TabsContent>
