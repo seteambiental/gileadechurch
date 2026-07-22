@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Check, X, Search, UserPlus, Loader2 } from "lucide-react";
+import { Check, X, Search, UserPlus, Loader2, Heart } from "lucide-react";
 import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
 
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
@@ -51,6 +51,7 @@ const NovasInscricoesTab = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectingSource, setRejectingSource] = useState<"evento" | "casais">("evento");
   const [approvingIds, setApprovingIds] = useState<Set<string>>(new Set());
 
   const { data: novasInscricoes = [], isLoading } = useQuery({
@@ -81,14 +82,73 @@ const NovasInscricoesTab = () => {
     },
   });
 
+  // Pending Casais inscriptions — merged into the same "Novas" panel
+  const { data: novasCasais = [], isLoading: isLoadingCasais } = useQuery({
+    queryKey: ["novas-casais-pendentes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casais_inscritos")
+        .select(`
+          id,
+          nome_masculino,
+          nome_feminino,
+          whatsapp_masculino,
+          whatsapp_feminino,
+          status,
+          created_at,
+          membro_masculino:members!casais_inscritos_membro_masculino_id_fkey(full_name, photo_url),
+          membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, photo_url)
+        `)
+        .or("status.eq.pendente,status.is.null")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+
+  // Unified list — evento inscriptions + casais inscriptions, tagged by source
+  const inscricoesUnificadas = useMemo(() => {
+    const eventos = (novasInscricoes || []).map((i: any) => ({ ...i, _source: "evento" as const }));
+    const casais = (novasCasais || []).map((c: any) => {
+      const esposo = c.membro_masculino?.full_name || c.nome_masculino || "";
+      const esposa = c.membro_feminino?.full_name || c.nome_feminino || "";
+      return {
+        id: c.id,
+        _source: "casais" as const,
+        nome_participante: [esposo, esposa].filter(Boolean).join(" & ") || "Casal",
+        telefone_contato: c.whatsapp_masculino || c.whatsapp_feminino || null,
+        tipo_inscricao: "casal",
+        created_at: c.created_at,
+        evento: { titulo: "Curso de Casais", data_evento: null, data_fim: null },
+        member: c.membro_masculino?.photo_url ? { photo_url: c.membro_masculino.photo_url } : null,
+      };
+    });
+    return [...eventos, ...casais].sort((a: any, b: any) =>
+      (b.created_at || "").localeCompare(a.created_at || "")
+    );
+  }, [novasInscricoes, novasCasais]);
+
   useEffect(() => {
-    if (!isLoading) {
-      queryClient.setQueryData(["inscricoes-eventos-pending-count"], novasInscricoes.length);
+    if (!isLoading && !isLoadingCasais) {
+      queryClient.setQueryData(
+        ["inscricoes-eventos-pending-count"],
+        novasInscricoes.length + novasCasais.length
+      );
     }
-  }, [isLoading, novasInscricoes.length, queryClient]);
+  }, [isLoading, isLoadingCasais, novasInscricoes.length, novasCasais.length, queryClient]);
 
   const approveMutation = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, source }: { id: string; source: "evento" | "casais" }) => {
+      // Casais approval: just mark as approved. Turma is assigned later in Casais/Inscrições.
+      if (source === "casais") {
+        const { error } = await supabase
+          .from("casais_inscritos")
+          .update({ status: "aprovado" })
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+
       // Find the inscription to migrate
       const inscricao = novasInscricoes.find((i) => i.id === id);
       if (!inscricao) throw new Error("Inscrição não encontrada");
@@ -207,10 +267,10 @@ const NovasInscricoesTab = () => {
         console.warn("[novasInscricoes] confirmação whatsapp falhou:", waErr);
       }
     },
-    onMutate: (id) => {
+    onMutate: ({ id }) => {
       setApprovingIds((prev) => new Set(prev).add(id));
     },
-    onSuccess: (_, id) => {
+    onSuccess: (_, { id }) => {
       setApprovingIds((prev) => {
         const s = new Set(prev);
         s.delete(id);
@@ -218,13 +278,16 @@ const NovasInscricoesTab = () => {
       });
       toast.success("Inscrição aprovada!");
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["novas-casais-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-casais-dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes-financeiro"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes"] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
     },
-    onError: (error, id) => {
+    onError: (error, { id }) => {
       console.error("[novasInscricoes] erro ao aprovar inscrição:", error);
       setApprovingIds((prev) => {
         const s = new Set(prev);
@@ -375,34 +438,36 @@ const NovasInscricoesTab = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("inscricoes_eventos")
-        .delete()
-        .eq("id", id);
+    mutationFn: async ({ id, source }: { id: string; source: "evento" | "casais" }) => {
+      const table = source === "casais" ? "casais_inscritos" : "inscricoes_eventos";
+      const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Inscrição rejeitada e removida.");
       setRejectingId(null);
       queryClient.invalidateQueries({ queryKey: ["novas-inscricoes-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["novas-casais-pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-casais-dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["inscricoes-eventos-pending-count"] });
     },
     onError: () => toast.error("Erro ao rejeitar inscrição."),
   });
 
   const filtradas = useMemo(() => {
-    if (!search.trim()) return novasInscricoes;
+    if (!search.trim()) return inscricoesUnificadas;
     const q = search.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    return novasInscricoes.filter((i) =>
+    return inscricoesUnificadas.filter((i: any) =>
       (i.nome_participante || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q) ||
       (i.evento?.titulo || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(q)
     );
-  }, [novasInscricoes, search]);
+  }, [inscricoesUnificadas, search]);
 
-  const pendentesIds = filtradas.map((i) => i.id);
+  // "Aprovar todas" só se aplica às inscrições de eventos (fluxo original)
+  const pendentesIdsEvento = filtradas.filter((i: any) => i._source === "evento").map((i: any) => i.id);
 
-  if (isLoading) {
+  if (isLoading || isLoadingCasais) {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
@@ -416,12 +481,12 @@ const NovasInscricoesTab = () => {
         <div>
           <h2 className="text-xl font-heading font-bold">Novas Inscrições</h2>
           <p className="text-sm text-muted-foreground">
-            Inscrições recebidas pelo link público aguardando aprovação
+            Inscrições de eventos e do Curso de Casais aguardando aprovação
           </p>
         </div>
-        {novasInscricoes.length > 0 && (
+        {pendentesIdsEvento.length > 0 && (
           <Button
-            onClick={() => approveAllMutation.mutate(pendentesIds)}
+            onClick={() => approveAllMutation.mutate(pendentesIdsEvento)}
             disabled={approveAllMutation.isPending}
             variant="default"
           >
@@ -430,12 +495,12 @@ const NovasInscricoesTab = () => {
             ) : (
               <Check className="w-4 h-4 mr-2" />
             )}
-            Aprovar Todas ({pendentesIds.length})
+            Aprovar Todas Eventos ({pendentesIdsEvento.length})
           </Button>
         )}
       </div>
 
-      {novasInscricoes.length > 0 && (
+      {inscricoesUnificadas.length > 0 && (
         <div className="relative max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -447,7 +512,7 @@ const NovasInscricoesTab = () => {
         </div>
       )}
 
-      {novasInscricoes.length === 0 ? (
+      {inscricoesUnificadas.length === 0 ? (
         <Card>
           <CardContent className="py-16 text-center">
             <UserPlus className="w-12 h-12 mx-auto mb-3 text-muted-foreground/40" />
