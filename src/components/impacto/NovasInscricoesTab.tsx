@@ -37,6 +37,7 @@ const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
   ministrador: "Ministrador",
+  casal: "Curso de Casais",
 };
 
 const getErrorMessage = (error: unknown) => {
