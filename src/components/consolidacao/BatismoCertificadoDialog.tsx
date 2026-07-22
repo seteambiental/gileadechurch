@@ -134,7 +134,7 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
               {inscricao.nome}
             </div>
 
-            {/* Título do pastor — substitui "Pastor Presidente" no rodapé */}
+            {/* Título do pastor — escrito sobre a área limpa do rodapé */}
             <div
               style={{
                 position: "absolute",
@@ -148,11 +148,9 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
                 color: "#000000",
                 lineHeight: 1,
                 whiteSpace: "nowrap",
-                backgroundColor: "#ffffff",
-                padding: "4px 16px",
               }}
             >
-              PASTOR SENIOR GILEADE CHURCH
+              Pastor Sênior Gileade Church
             </div>
 
             {/* Data — canto direito, sobre a linha "Data" */}
