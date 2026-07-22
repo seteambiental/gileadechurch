@@ -19,7 +19,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList, CheckCircle } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, ClipboardList, GraduationCap } from "lucide-react";
 import { includesNormalized } from "@/lib/text-utils";
 import { useToast } from "@/hooks/use-toast";
 import { InscricaoCompletaFormDialog } from "./InscricaoCompletaFormDialog";
@@ -66,7 +66,8 @@ export function CasaisInscricoesTab() {
           membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, whatsapp, email),
           casa_refugio:casas_refugio!casais_inscritos_casa_refugio_id_fkey(name)
         `)
-        .or("status.eq.pendente,status.is.null")
+        .eq("status", "aprovado")
+        .is("turma_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -97,7 +98,7 @@ export function CasaisInscricoesTab() {
     const esposas = [...new Set(inscricoes.map(getNomeEsposa))].sort((a, b) => a.localeCompare(b, "pt-BR"));
     const modalidades = [...new Set(inscricoes.map((i) => modalidadeLabel(i.modalidade_casamento)))].sort();
     const congrega = [...new Set(inscricoes.map(getCongregaLabel))].sort();
-    const status = ["Pendente"];
+    const status = ["Aprovado"];
     return { esposos, esposas, modalidades, congrega, status };
   }, [inscricoes]);
 
@@ -138,19 +139,19 @@ export function CasaisInscricoesTab() {
     setDeleteId(null);
   };
 
-  const handleApprove = async () => {
+  const handleAssignTurma = async () => {
     if (!approvingId || !approvalTurmaId) {
-      toast({ title: "Selecione a turma para aprovar", variant: "destructive" });
+      toast({ title: "Selecione a turma", variant: "destructive" });
       return;
     }
     const { error } = await supabase
       .from("casais_inscritos")
-      .update({ status: "aprovado", turma_id: approvalTurmaId })
+      .update({ turma_id: approvalTurmaId })
       .eq("id", approvingId);
     if (error) {
-      toast({ title: "Erro ao aprovar inscrição", variant: "destructive" });
+      toast({ title: "Erro ao atribuir turma", variant: "destructive" });
     } else {
-      toast({ title: "Inscrição aprovada! Casal movido para a aba Casais." });
+      toast({ title: "Turma atribuída! Casal movido para a aba Casais." });
       queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
@@ -167,7 +168,7 @@ export function CasaisInscricoesTab() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle className="text-xl font-heading flex items-center gap-2">
             <ClipboardList className="w-5 h-5 text-primary" />
-            Inscrições Pendentes
+            Inscrições Aprovadas (sem turma)
           </CardTitle>
           <Button onClick={() => { setEditingId(null); setIsFormOpen(true); }}>
             <Plus className="w-4 h-4 mr-2" />
@@ -184,8 +185,8 @@ export function CasaisInscricoesTab() {
               { header: "Modalidade", accessor: (r: any) => modalidadeLabel(r.modalidade_casamento) },
               { header: "Congrega", accessor: (r: any) => getCongregaLabel(r) },
             ]}
-            filename="inscricoes-pendentes-casais"
-            title="Inscrições Pendentes"
+            filename="inscricoes-sem-turma-casais"
+            title="Inscrições Aprovadas — Sem Turma"
             sheetName="Inscrições"
           />
         </div>
@@ -194,7 +195,7 @@ export function CasaisInscricoesTab() {
         {isLoading ? (
           <div className="text-center py-8 text-muted-foreground">Carregando...</div>
         ) : filteredInscricoes?.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">Nenhuma inscrição pendente</div>
+          <div className="text-center py-8 text-muted-foreground">Nenhuma inscrição aguardando turma</div>
         ) : (
           <div className="rounded-md border border-border overflow-hidden">
             <Table>
@@ -236,18 +237,18 @@ export function CasaisInscricoesTab() {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Badge variant="outline" className="text-amber-600 border-amber-600">Pendente</Badge>
+                      <Badge variant="outline" className="text-green-600 border-green-600">Aprovado</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="default"
                           size="sm"
-                          className="bg-green-600 hover:bg-green-700"
+                          className="bg-blue-600 hover:bg-blue-700"
                           onClick={() => { setApprovingId(insc.id); setApprovalTurmaId(""); }}
                         >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Aprovar
+                          <GraduationCap className="w-4 h-4 mr-1" />
+                          Turma
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -282,8 +283,8 @@ export function CasaisInscricoesTab() {
       <Dialog open={!!approvingId} onOpenChange={(open) => { if (!open) { setApprovingId(null); setApprovalTurmaId(""); } }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Aprovar Inscrição</DialogTitle>
-            <DialogDescription>Selecione a turma em que este casal irá participar.</DialogDescription>
+            <DialogTitle>Atribuir Turma</DialogTitle>
+            <DialogDescription>Selecione a turma em que este casal irá participar. Após isso ele será movido para a aba Casais.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -299,9 +300,9 @@ export function CasaisInscricoesTab() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => { setApprovingId(null); setApprovalTurmaId(""); }}>Cancelar</Button>
-              <Button onClick={handleApprove} disabled={!approvalTurmaId} className="bg-green-600 hover:bg-green-700">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Confirmar Aprovação
+              <Button onClick={handleAssignTurma} disabled={!approvalTurmaId} className="bg-blue-600 hover:bg-blue-700">
+                <GraduationCap className="w-4 h-4 mr-2" />
+                Confirmar Turma
               </Button>
             </div>
           </div>
