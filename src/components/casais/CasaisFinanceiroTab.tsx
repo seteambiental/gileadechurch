@@ -527,7 +527,8 @@ export function CasaisFinanceiroTab() {
               filtered.map((casal: any) => {
                 const pgtos = pagamentosByCasal[casal.id] || [];
                 const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
-                const saldo = VALOR_CURSO - pago;
+                const valorCurso = (casal.turma_id && valorByTurma[casal.turma_id]) || VALOR_CURSO_DEFAULT;
+                const saldo = valorCurso - pago;
                 const isExpanded = expandedId === casal.id;
 
                 return (
@@ -543,7 +544,7 @@ export function CasaisFinanceiroTab() {
                       <TableCell className="font-medium">{casal.nome_masculino}</TableCell>
                       <TableCell>{casal.nome_feminino}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{(casal.turma as any)?.nome || "—"}</TableCell>
-                      <TableCell>{formatCurrency(VALOR_CURSO)}</TableCell>
+                      <TableCell>{formatCurrency(valorCurso)}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
                       <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
                         {formatCurrency(saldo)}
@@ -573,7 +574,7 @@ export function CasaisFinanceiroTab() {
                                   setAddPagamentoCasalId(casal.id);
                                   setPgtoData(todayDateStr());
                                   setPgtoForma("");
-                                  const restante = VALOR_CURSO - pago;
+                                  const restante = valorCurso - pago;
                                   setPgtoValor(restante > 0 ? restante.toString() : "");
                                 }}
                               >
