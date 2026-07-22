@@ -134,13 +134,13 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
               {inscricao.nome}
             </div>
 
-            {/* Título do pastor — escrito sobre a área limpa do rodapé */}
+            {/* Título do pastor — alinhado à altura da palavra "Data" e centralizado com o nome do pastor */}
             <div
               style={{
                 position: "absolute",
                 left: 300,
                 right: 300,
-                top: 980,
+                top: 990,
                 textAlign: "center",
                 fontFamily: "'PinyonScript', cursive",
                 fontWeight: 400,
