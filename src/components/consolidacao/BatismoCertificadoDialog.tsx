@@ -138,8 +138,8 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
             <div
               style={{
                 position: "absolute",
-                left: 150,
-                right: 950,
+                left: 280,
+                right: 820,
                 top: 990,
                 textAlign: "center",
                 fontFamily: "'PinyonScript', cursive",
