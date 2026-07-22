@@ -568,7 +568,7 @@ const NovasInscricoesTab = () => {
                             size="icon"
                             variant="outline"
                             className="text-primary hover:text-primary hover:bg-primary/10"
-                            onClick={() => approveMutation.mutate(inscricao.id)}
+                            onClick={() => approveMutation.mutate({ id: inscricao.id, source: inscricao._source })}
                             disabled={approvingIds.has(inscricao.id)}
                             title="Aprovar inscrição"
                             aria-label="Aprovar inscrição"
@@ -583,7 +583,7 @@ const NovasInscricoesTab = () => {
                             size="icon"
                             variant="outline"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => setRejectingId(inscricao.id)}
+                            onClick={() => { setRejectingId(inscricao.id); setRejectingSource(inscricao._source); }}
                             title="Rejeitar inscrição"
                             aria-label="Rejeitar inscrição"
                           >
@@ -657,7 +657,7 @@ const NovasInscricoesTab = () => {
                         size="icon"
                         variant="ghost"
                         className="text-primary hover:text-primary hover:bg-primary/10"
-                        onClick={() => approveMutation.mutate(inscricao.id)}
+                        onClick={() => approveMutation.mutate({ id: inscricao.id, source: inscricao._source })}
                         disabled={approvingIds.has(inscricao.id)}
                         title="Aprovar inscrição"
                       >
@@ -671,7 +671,7 @@ const NovasInscricoesTab = () => {
                         size="icon"
                         variant="ghost"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setRejectingId(inscricao.id)}
+                        onClick={() => { setRejectingId(inscricao.id); setRejectingSource(inscricao._source); }}
                         title="Rejeitar inscrição"
                       >
                         <X className="w-4 h-4" />
@@ -698,7 +698,7 @@ const NovasInscricoesTab = () => {
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
-              onClick={() => rejectingId && rejectMutation.mutate(rejectingId)}
+              onClick={() => rejectingId && rejectMutation.mutate({ id: rejectingId, source: rejectingSource })}
             >
               Rejeitar
             </AlertDialogAction>
