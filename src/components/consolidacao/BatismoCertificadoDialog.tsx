@@ -134,6 +134,27 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
               {inscricao.nome}
             </div>
 
+            {/* Título do pastor — substitui "Pastor Presidente" no rodapé */}
+            <div
+              style={{
+                position: "absolute",
+                left: 300,
+                right: 300,
+                top: 980,
+                textAlign: "center",
+                fontFamily: "'PinyonScript', cursive",
+                fontWeight: 400,
+                fontSize: 40,
+                color: "#000000",
+                lineHeight: 1,
+                whiteSpace: "nowrap",
+                backgroundColor: "#ffffff",
+                padding: "4px 16px",
+              }}
+            >
+              PASTOR SENIOR GILEADE CHURCH
+            </div>
+
             {/* Data — canto direito, sobre a linha "Data" */}
             <div
               style={{
