@@ -57,6 +57,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
         horario_fim: turma.horario_fim || "",
         local: turma.local,
         vagas: turma.vagas,
+        valor_curso: turma.valor_curso ?? 140,
         ativo: turma.ativo,
       });
     } else {
@@ -70,6 +71,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
         horario_fim: "",
         local: "",
         vagas: 20,
+        valor_curso: 140,
         ativo: true,
       });
     }
@@ -93,6 +95,7 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
       horario: horarioDisplay || null,
       local: data.local || null,
       vagas: parseInt(data.vagas) || 20,
+      valor_curso: parseFloat(String(data.valor_curso).replace(",", ".")) || 140,
       ativo: data.ativo,
     };
 
@@ -192,6 +195,17 @@ export function TurmaFormDialog({ open, onOpenChange, turma }: TurmaFormDialogPr
               <Label htmlFor="vagas">Vagas</Label>
               <Input id="vagas" type="number" {...register("vagas")} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="valor_curso">Valor do Curso por Casal (R$)</Label>
+            <Input
+              id="valor_curso"
+              type="number"
+              step="0.01"
+              {...register("valor_curso")}
+              placeholder="140.00"
+            />
           </div>
 
           <div className="flex items-center justify-between">

@@ -1507,6 +1507,7 @@ export type Database = {
           nome: string
           updated_at: string
           vagas: number | null
+          valor_curso: number
         }
         Insert: {
           arquivada?: boolean
@@ -1524,6 +1525,7 @@ export type Database = {
           nome: string
           updated_at?: string
           vagas?: number | null
+          valor_curso?: number
         }
         Update: {
           arquivada?: boolean
@@ -1541,6 +1543,7 @@ export type Database = {
           nome?: string
           updated_at?: string
           vagas?: number | null
+          valor_curso?: number
         }
         Relationships: []
       }

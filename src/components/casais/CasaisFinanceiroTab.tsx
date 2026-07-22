@@ -31,7 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CasaisDespesasTab from "./CasaisDespesasTab";
 import { todayDateStr } from "@/lib/date-utils";
 
-const VALOR_CURSO = 140;
+const VALOR_CURSO_DEFAULT = 140;
 
 const FORMAS_PAGAMENTO = [
   { value: "pix", label: "PIX" },
@@ -79,7 +79,7 @@ export function CasaisFinanceiroTab() {
     queryFn: async () => {
       const { data } = await supabase
         .from("casais_turmas")
-        .select("id, nome, ativo, arquivada")
+        .select("id, nome, ativo, arquivada, valor_curso")
         .order("nome");
       return (data || []) as any[];
     },
@@ -110,10 +110,25 @@ export function CasaisFinanceiroTab() {
 
   const [filterStatusFin, setFilterStatusFin] = useState<Set<string>>(new Set());
 
+  const valorByTurma = useMemo(() => {
+    const map: Record<string, number> = {};
+    turmas.forEach((t: any) => {
+      map[t.id] = Number(t.valor_curso ?? VALOR_CURSO_DEFAULT);
+    });
+    return map;
+  }, [turmas]);
+
+  const getValorCurso = (casalId: string) => {
+    const casal = casais.find((c: any) => c.id === casalId);
+    const tid = casal?.turma_id;
+    return (tid && valorByTurma[tid]) || VALOR_CURSO_DEFAULT;
+  };
+
   const getFinStatus = (casalId: string) => {
     const pgtos = pagamentosByCasal[casalId] || [];
     const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
-    if (pago >= VALOR_CURSO) return "Quitado";
+    const valor = getValorCurso(casalId);
+    if (pago >= valor) return "Quitado";
     if (pago > 0) return "Parcial";
     return "Pendente";
   };
@@ -134,7 +149,7 @@ export function CasaisFinanceiroTab() {
   // Stats
   const stats = useMemo(() => {
     const totalCasais = filtered.length;
-    const totalDevido = totalCasais * VALOR_CURSO;
+    let totalDevido = 0;
     let totalPago = 0;
     let quitados = 0;
     let parciais = 0;
@@ -142,13 +157,15 @@ export function CasaisFinanceiroTab() {
     filtered.forEach((c: any) => {
       const pgtos = pagamentosByCasal[c.id] || [];
       const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
+      const valor = (c.turma_id && valorByTurma[c.turma_id]) || VALOR_CURSO_DEFAULT;
+      totalDevido += valor;
       totalPago += pago;
-      if (pago >= VALOR_CURSO) quitados++;
+      if (pago >= valor) quitados++;
       else if (pago > 0) parciais++;
       else pendentes++;
     });
     return { totalCasais, totalDevido, totalPago, totalSaldo: totalDevido - totalPago, quitados, parciais, pendentes };
-  }, [filtered, pagamentosByCasal]);
+  }, [filtered, pagamentosByCasal, valorByTurma]);
 
   // Payment method breakdown
   const totalByPaymentMethod = useMemo(() => {
@@ -285,12 +302,13 @@ export function CasaisFinanceiroTab() {
   const exportData = filtered.map((c: any) => {
     const pgtos = pagamentosByCasal[c.id] || [];
     const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
-    const saldo = VALOR_CURSO - pago;
+    const valor = (c.turma_id && valorByTurma[c.turma_id]) || VALOR_CURSO_DEFAULT;
+    const saldo = valor - pago;
     return {
       esposo: c.nome_masculino || "",
       esposa: c.nome_feminino || "",
       turma: (c.turma as any)?.nome || "—",
-      valorTotal: VALOR_CURSO,
+      valorTotal: valor,
       pago,
       saldo,
       status: saldo <= 0 ? "Quitado" : pago > 0 ? "Parcial" : "Pendente",
@@ -509,7 +527,8 @@ export function CasaisFinanceiroTab() {
               filtered.map((casal: any) => {
                 const pgtos = pagamentosByCasal[casal.id] || [];
                 const pago = pgtos.reduce((s: number, p: any) => s + Number(p.valor || 0), 0);
-                const saldo = VALOR_CURSO - pago;
+                const valorCurso = (casal.turma_id && valorByTurma[casal.turma_id]) || VALOR_CURSO_DEFAULT;
+                const saldo = valorCurso - pago;
                 const isExpanded = expandedId === casal.id;
 
                 return (
@@ -525,7 +544,7 @@ export function CasaisFinanceiroTab() {
                       <TableCell className="font-medium">{casal.nome_masculino}</TableCell>
                       <TableCell>{casal.nome_feminino}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{(casal.turma as any)?.nome || "—"}</TableCell>
-                      <TableCell>{formatCurrency(VALOR_CURSO)}</TableCell>
+                      <TableCell>{formatCurrency(valorCurso)}</TableCell>
                       <TableCell className="text-green-600">{formatCurrency(pago)}</TableCell>
                       <TableCell className={saldo > 0 ? "text-destructive" : "text-green-600"}>
                         {formatCurrency(saldo)}
@@ -555,7 +574,7 @@ export function CasaisFinanceiroTab() {
                                   setAddPagamentoCasalId(casal.id);
                                   setPgtoData(todayDateStr());
                                   setPgtoForma("");
-                                  const restante = VALOR_CURSO - pago;
+                                  const restante = valorCurso - pago;
                                   setPgtoValor(restante > 0 ? restante.toString() : "");
                                 }}
                               >
