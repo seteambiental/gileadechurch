@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, MoreHorizontal, Pencil, Trash2, Award, Heart, ArrowRightLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, Heart } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -37,7 +37,7 @@ import { includesNormalized } from "@/lib/text-utils";
 import { ptBR } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { CasalFormDialog } from "./CasalFormDialog";
-import { CertificadoDialog } from "./CertificadoDialog";
+import { InscricaoCompletaFormDialog } from "./InscricaoCompletaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
@@ -47,13 +47,8 @@ export function CasaisCasaisTab() {
   const [turmaFilter, setTurmaFilter] = useState("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTurmaId, setSelectedTurmaId] = useState<string>("");
-  const [isCertificadoOpen, setIsCertificadoOpen] = useState(false);
-  const [selectedCasal, setSelectedCasal] = useState<any>(null);
-  const [selectedTurma, setSelectedTurma] = useState<any>(null);
-  const [editingCasal, setEditingCasal] = useState<any>(null);
+  const [editingInscricaoId, setEditingInscricaoId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [changingTurmaCasal, setChangingTurmaCasal] = useState<any>(null);
-  const [newTurmaId, setNewTurmaId] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -107,37 +102,12 @@ export function CasaisCasaisTab() {
   };
 
   const handleAddCasal = (turmaId: string) => {
-    setEditingCasal(null);
     setSelectedTurmaId(turmaId);
     setIsFormOpen(true);
   };
 
   const handleEditCasal = (casal: any) => {
-    setEditingCasal(casal);
-    setSelectedTurmaId(casal.turma_id);
-    setIsFormOpen(true);
-  };
-
-  const handleEmitirCertificado = (casal: any) => {
-    setSelectedCasal(casal);
-    setSelectedTurma(casal.turma);
-    setIsCertificadoOpen(true);
-  };
-
-  const handleChangeTurma = async () => {
-    if (!changingTurmaCasal || !newTurmaId) return;
-    const { error } = await supabase
-      .from("casais_inscritos")
-      .update({ turma_id: newTurmaId })
-      .eq("id", changingTurmaCasal.id);
-    if (error) {
-      toast({ title: "Erro ao alterar turma", variant: "destructive" });
-    } else {
-      toast({ title: "Turma alterada com sucesso" });
-      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
-    }
-    setChangingTurmaCasal(null);
-    setNewTurmaId("");
+    setEditingInscricaoId(casal.id);
   };
 
   // Column filters
