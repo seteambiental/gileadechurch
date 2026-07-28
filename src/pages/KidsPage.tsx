@@ -35,6 +35,7 @@ import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { KidsCheckinTab } from "@/components/kids/KidsCheckinTab";
 import { KidsAlteracoesTab } from "@/components/kids/KidsAlteracoesTab";
+import { KidsInscricoesTab } from "@/components/kids/KidsInscricoesTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
