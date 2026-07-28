@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { formatCurrency, formatDateBR } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
+import { calculateAge } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     { key: "nome", label: "Nome" },
     { key: "tipo", label: "Tipo" },
     { key: "genero", label: "Gênero" },
+    { key: "data_nascimento", label: "Data Nasc." },
+    { key: "idade", label: "Idade" },
     { key: "referencia", label: "Referência" },
     { key: "casa_refugio", label: "Casa Refúgio" },
     { key: "condominio", label: "Condomínio" },
