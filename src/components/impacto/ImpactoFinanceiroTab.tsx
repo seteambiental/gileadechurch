@@ -218,7 +218,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado")
+        .select("id, member_id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado, data_nascimento")
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", true)
         .order("nome");
@@ -239,7 +239,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase
         .from("members")
-        .select("id, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
+        .select("id, data_nascimento, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
         .in("id", memberIds);
       if (error) throw error;
       return data || [];
@@ -316,6 +316,21 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     const m = memberMap.get(memberId);
     if (!m || !m.member_functions || m.member_functions.length === 0) return "—";
     return m.member_functions.map((fn: any) => getFuncaoLabel(fn)).join("; ");
+  };
+
+  const getDataNascimentoRow = (row: any): string | null => {
+    return row.data_nascimento || memberMap.get(row.member_id)?.data_nascimento || null;
+  };
+  const formatDataNascCell = (row: any): string => {
+    const d = getDataNascimentoRow(row);
+    if (!d) return "N/I";
+    try { return format(parseLocalDate(d), "dd/MM/yyyy"); } catch { return "N/I"; }
+  };
+  const formatIdadeCell = (row: any): string => {
+    const d = getDataNascimentoRow(row);
+    if (!d) return "N/I";
+    const { years } = calculateAge(d);
+    return `${years} ${years === 1 ? "ano" : "anos"}`;
   };
 
   const inscricoes = useMemo(() => {
