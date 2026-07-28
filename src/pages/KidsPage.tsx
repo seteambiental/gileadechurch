@@ -69,6 +69,27 @@ const KidsPage = () => {
   const [chamadaDialogOpen, setChamadaDialogOpen] = useState(false);
   const [chamadaTurma, setChamadaTurma] = useState("");
 
+  // Contagem de inscrições pendentes (crianças em member_requests)
+  const { data: pendingInscricoesCount = 0 } = useQuery({
+    queryKey: ["kids-inscricoes-pendentes-count"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("member_requests")
+        .select("birth_date")
+        .eq("status", "pendente")
+        .not("birth_date", "is", null);
+      if (!data) return 0;
+      // Considera criança quem tem <= 12 anos completos no ano
+      return data.filter((r: { birth_date: string | null }) => {
+        if (!r.birth_date) return false;
+        const [y] = r.birth_date.split("-").map(Number);
+        if (!y) return false;
+        return new Date().getFullYear() - y <= 12;
+      }).length;
+    },
+    refetchInterval: 30000,
+  });
+
   // Buscar configuração das turmas
   const { data: turmasConfig, isLoading: loadingTurmas } = useQuery({
     queryKey: ["kids-turmas-config"],
