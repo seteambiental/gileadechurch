@@ -41,7 +41,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Baby, Copy, Trash2, Check, Award, Clock, Pencil, CalendarClock } from "lucide-react";
+import { Loader2, Baby, Copy, Trash2, Check, Award, Clock, Pencil, CalendarClock, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -159,6 +159,30 @@ const ApresentacaoCriancasCultoTab = () => {
     onError: (err) =>
       toast({ variant: "destructive", title: "Erro ao excluir", description: err instanceof Error ? err.message : String(err) }),
   });
+
+  const enviarMsgMutation = useMutation({
+    mutationFn: async ({ id, tipo }: { id: string; tipo: "recebida" | "confirmacao" }) => {
+      const res = await dispararMensagemApresentacaoPais({ apresentacaoId: id, tipo });
+      if ((res as any)?.error) throw (res as any).error;
+      return res;
+    },
+    onSuccess: () => toast({ title: "Mensagem enviada aos pais" }),
+    onError: (err) =>
+      toast({ variant: "destructive", title: "Erro ao enviar mensagem", description: err instanceof Error ? err.message : String(err) }),
+  });
+
+  const botaoWhatsapp = (i: Apresentacao, tipo: "recebida" | "confirmacao") => (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="text-green-600 hover:text-green-700"
+      title="Enviar WhatsApp aos pais"
+      disabled={enviarMsgMutation.isPending}
+      onClick={() => enviarMsgMutation.mutate({ id: i.id, tipo })}
+    >
+      <MessageCircle className="w-4 h-4" />
+    </Button>
+  );
 
   const editarMutation = useMutation({
     mutationFn: async (i: Apresentacao) => {
@@ -388,6 +412,7 @@ const ApresentacaoCriancasCultoTab = () => {
                 <Button size="icon" variant="ghost" title="Aprovar" onClick={() => { setAprovarInscricao(i); setDataAprovacao(isoToDateInput(i.data_apresentacao)); }}>
                   <Check className="w-4 h-4" />
                 </Button>
+                {botaoWhatsapp(i, "recebida")}
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -411,6 +436,7 @@ const ApresentacaoCriancasCultoTab = () => {
             ]}
             acoes={(i) => (
               <>
+                {botaoWhatsapp(i, "confirmacao")}
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -437,6 +463,7 @@ const ApresentacaoCriancasCultoTab = () => {
             ]}
             acoes={(i) => (
               <>
+                {botaoWhatsapp(i, "confirmacao")}
                 <Button size="icon" variant="ghost" title="Editar" onClick={() => setEditInscricao(i)}>
                   <Pencil className="w-4 h-4" />
                 </Button>
