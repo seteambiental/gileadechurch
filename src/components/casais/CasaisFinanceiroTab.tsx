@@ -726,10 +726,12 @@ export function CasaisFinanceiroTab() {
         description="Tem certeza que deseja excluir este pagamento?"
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
+      </>
+      )}
         </TabsContent>
 
         <TabsContent value="despesas">
-          <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
+          <CasaisDespesasTab turmaId={turmaFilter || null} turmas={turmas} />
         </TabsContent>
 
         <TabsContent value="arquivados" className="space-y-4">
