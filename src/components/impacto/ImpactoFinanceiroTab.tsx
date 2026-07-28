@@ -239,7 +239,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase
         .from("members")
-        .select("id, data_nascimento, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
+        .select("id, birth_date, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
         .in("id", memberIds);
       if (error) throw error;
       return data || [];
@@ -319,7 +319,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
   };
 
   const getDataNascimentoRow = (row: any): string | null => {
-    return row.data_nascimento || memberMap.get(row.member_id)?.data_nascimento || null;
+    return row.data_nascimento || memberMap.get(row.member_id)?.birth_date || null;
   };
   const formatDataNascCell = (row: any): string => {
     const d = getDataNascimentoRow(row);
