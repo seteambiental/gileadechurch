@@ -515,6 +515,11 @@ const KidsPage = () => {
           />
         </TabsContent>
 
+        {/* Novas Inscrições */}
+        <TabsContent value="inscricoes">
+          <KidsInscricoesTab turmasConfig={turmasConfig || []} />
+        </TabsContent>
+
         {/* Tabs de cada turma (acessadas pelos cards) */}
         {turmasConfig?.map((turma) => (
           <TabsContent key={turma.turma} value={turma.turma}>
