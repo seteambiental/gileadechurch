@@ -757,6 +757,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         if (!g) return "—";
         return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
       }},
+      data_nascimento: { header: "Data Nasc.", accessor: (row: any) => formatDataNascimento(row) },
+      idade: { header: "Idade", accessor: (row: any) => formatIdade(row) },
       telefone: { header: "Contato", accessor: (row: any) => getPhone(row) },
       local: { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
       forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
