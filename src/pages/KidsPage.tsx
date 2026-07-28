@@ -26,7 +26,7 @@ import {
   Home,
   UserPlus,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
@@ -65,7 +65,16 @@ interface Responsavel {
 const KidsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "dashboard");
+  const handleTabChange = (v: string) => {
+    setActiveTab(v);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("tab", v);
+      return p;
+    }, { replace: true });
+  };
   const [chamadaDialogOpen, setChamadaDialogOpen] = useState(false);
   const [chamadaTurma, setChamadaTurma] = useState("");
 
@@ -451,7 +460,7 @@ const KidsPage = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex flex-wrap h-auto gap-1 bg-white/80 backdrop-blur-sm p-2 rounded-xl">
             <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4" />
