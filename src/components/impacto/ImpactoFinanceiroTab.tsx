@@ -624,6 +624,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         if (!g) return "—";
         return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
       }},
+      data_nascimento: { header: "Data Nasc.", accessor: (row: any) => formatDataNascCell(row) },
+      idade: { header: "Idade", accessor: (row: any) => formatIdadeCell(row) },
       referencia: { header: "Referência", accessor: (row: any) => row.referencia || "—" },
       casa_refugio: { header: "Casa Refúgio", accessor: (row: any) => getMemberCasaRefugio(row.member_id) },
       condominio: { header: "Condomínio", accessor: (row: any) => getMemberCondominio(row.member_id) },
