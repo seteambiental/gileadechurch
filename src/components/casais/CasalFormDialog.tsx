@@ -52,7 +52,6 @@ export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFor
   const [dataCasamento, setDataCasamento] = useState("");
   const [tempoCasamento, setTempoCasamento] = useState("");
   const [observacoes, setObservacoes] = useState("");
-  const [cursoConcluido, setCursoConcluido] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -70,7 +69,6 @@ export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFor
       setDataCasamento(casal.data_casamento || "");
       setTempoCasamento(casal.tempo_casamento || "");
       setObservacoes(casal.observacoes || "");
-      setCursoConcluido(!!casal.certificado_emitido);
     } else if (!casal && open) {
       resetForm();
     }
@@ -116,7 +114,6 @@ export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFor
       data_casamento: dataCasamento || null,
       tempo_casamento: tempoCasamento || null,
       observacoes: observacoes || null,
-      ...(isEditing ? { certificado_emitido: cursoConcluido } : {}),
     };
 
     let error;
@@ -148,7 +145,6 @@ export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFor
     setDataCasamento("");
     setTempoCasamento("");
     setObservacoes("");
-    setCursoConcluido(false);
   };
 
   return (
@@ -272,22 +268,6 @@ export function CasalFormDialog({ open, onOpenChange, turmaId, casal }: CasalFor
               onChange={(e) => setObservacoes(e.target.value)}
             />
           </div>
-
-          {isEditing && (
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-              <div>
-                <Label htmlFor="cursoConcluido">Curso concluído</Label>
-                <p className="text-xs text-muted-foreground">
-                  Marque quando o casal concluir o curso.
-                </p>
-              </div>
-              <Switch
-                id="cursoConcluido"
-                checked={cursoConcluido}
-                onCheckedChange={setCursoConcluido}
-              />
-            </div>
-          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
