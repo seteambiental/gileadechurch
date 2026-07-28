@@ -7,6 +7,7 @@ import { formatCurrency, formatPhone } from "@/lib/masks";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
+import { calculateAge } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +91,8 @@ const ALL_COLUMNS = [
   { key: "nome", label: "Nome" },
   { key: "tipo", label: "Tipo" },
   { key: "genero", label: "Gênero" },
+  { key: "data_nascimento", label: "Data Nasc." },
+  { key: "idade", label: "Idade" },
   { key: "telefone", label: "Contato" },
   { key: "local", label: "Casa Refúgio / Condomínio" },
   { key: "forma_pagamento", label: "Forma Pagamento" },
