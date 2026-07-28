@@ -473,10 +473,12 @@ export function CasaisFinanceiroTab() {
           <Select value={turmaFilter} onValueChange={setTurmaFilter}>
             <SelectTrigger className="w-full sm:w-64">
               <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por turma" />
+              <SelectValue placeholder="Selecione uma turma" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todas">Todas as turmas</SelectItem>
+              {turmasAtivasVisiveis.length === 0 && (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma turma disponível</div>
+              )}
               {turmasAtivasVisiveis.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.nome}{!t.ativo ? " (encerrada)" : ""}
@@ -507,8 +509,24 @@ export function CasaisFinanceiroTab() {
             </div>
           )}
         </div>
-        <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
+        <ExportButton
+          data={exportData}
+          columns={exportColumns}
+          filename={`casais-financeiro-${turmaNomeSlug}`}
+          title={`Financeiro - Curso de Casais${selectedTurma ? ` - ${selectedTurma.nome}` : ""}`}
+          sheetName={selectedTurma?.nome?.slice(0, 30) || "Casais"}
+        />
       </div>
+
+      {!turmaFilter && (
+        <div className="rounded-lg border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+          Selecione uma turma acima para visualizar o relatório financeiro.
+          Cada turma possui seu próprio financeiro, separado das demais.
+        </div>
+      )}
+
+      {turmaFilter && (
+      <>
 
       {/* Table */}
       <div className="rounded-lg border overflow-hidden">
