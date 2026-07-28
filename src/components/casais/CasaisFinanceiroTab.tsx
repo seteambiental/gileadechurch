@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,7 +49,7 @@ export function CasaisFinanceiroTab() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [turmaFilter, setTurmaFilter] = useState("todas");
+  const [turmaFilter, setTurmaFilter] = useState<string>("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addPagamentoCasalId, setAddPagamentoCasalId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "pagamento"; id: string } | null>(null);
@@ -87,6 +87,14 @@ export function CasaisFinanceiroTab() {
 
   const turmasAtivasVisiveis = useMemo(() => turmas.filter((t: any) => !t.arquivada), [turmas]);
   const turmasArquivadas = useMemo(() => turmas.filter((t: any) => t.arquivada), [turmas]);
+
+  // Auto-selecionar primeira turma disponível para que o relatório seja sempre
+  // apresentado por turma (nunca somando turmas diferentes)
+  useEffect(() => {
+    if (turmaFilter) return;
+    const preferida = turmasAtivasVisiveis.find((t: any) => t.ativo) || turmasAtivasVisiveis[0];
+    if (preferida) setTurmaFilter(preferida.id);
+  }, [turmasAtivasVisiveis, turmaFilter]);
 
   // Fetch all payments
   const { data: pagamentos = [] } = useQuery({
@@ -140,7 +148,7 @@ export function CasaisFinanceiroTab() {
     return casais.filter((c: any) => {
       const nome = `${c.nome_masculino || ""} ${c.nome_feminino || ""}`.toLowerCase();
       if (search && !nome.includes(search.toLowerCase())) return false;
-      if (turmaFilter !== "todas" && c.turma_id !== turmaFilter) return false;
+      if (!turmaFilter || c.turma_id !== turmaFilter) return false;
       if (filterStatusFin.size > 0 && filterStatusFin.size < finStatusOptions.length && !filterStatusFin.has(getFinStatus(c.id))) return false;
       return true;
     });
@@ -183,11 +191,13 @@ export function CasaisFinanceiroTab() {
     queryKey: ["casais-despesas-summary", turmaFilter],
     queryFn: async () => {
       let q = supabase.from("casais_despesas").select("valor,turma_id");
-      if (turmaFilter !== "todas") q = q.eq("turma_id", turmaFilter);
+      if (turmaFilter) q = q.eq("turma_id", turmaFilter);
+      else return [];
       const { data, error } = await q;
       if (error) throw error;
       return data || [];
     },
+    enabled: !!turmaFilter,
   });
   const totalDespesas = casaisDespesas.reduce((s: number, d: any) => s + Number(d.valor || 0), 0);
   const saldoGeral = stats.totalPago - totalDespesas;
@@ -290,7 +300,7 @@ export function CasaisFinanceiroTab() {
       queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
       queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
       toast({ title: vars.arquivar ? "Turma arquivada" : "Turma desarquivada" });
-      if (vars.arquivar && turmaFilter === vars.turma.id) setTurmaFilter("todas");
+      if (vars.arquivar && turmaFilter === vars.turma.id) setTurmaFilter("");
       setArchiveTarget(null);
     },
     onError: (e: any) => {
@@ -315,6 +325,7 @@ export function CasaisFinanceiroTab() {
     };
   });
 
+  const turmaNomeSlug = (selectedTurma?.nome || "sem-turma").toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const exportColumns = [
     { header: "Esposo", accessor: "esposo" },
     { header: "Esposa", accessor: "esposa" },
@@ -462,10 +473,12 @@ export function CasaisFinanceiroTab() {
           <Select value={turmaFilter} onValueChange={setTurmaFilter}>
             <SelectTrigger className="w-full sm:w-64">
               <Filter className="w-4 h-4 mr-2 text-muted-foreground" />
-              <SelectValue placeholder="Filtrar por turma" />
+              <SelectValue placeholder="Selecione uma turma" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todas">Todas as turmas</SelectItem>
+              {turmasAtivasVisiveis.length === 0 && (
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma turma disponível</div>
+              )}
               {turmasAtivasVisiveis.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.nome}{!t.ativo ? " (encerrada)" : ""}
@@ -496,8 +509,24 @@ export function CasaisFinanceiroTab() {
             </div>
           )}
         </div>
-        <ExportButton data={exportData} columns={exportColumns} filename="casais-financeiro" title="Financeiro - Curso de Casais" sheetName="Casais" />
+        <ExportButton
+          data={exportData}
+          columns={exportColumns}
+          filename={`casais-financeiro-${turmaNomeSlug}`}
+          title={`Financeiro - Curso de Casais${selectedTurma ? ` - ${selectedTurma.nome}` : ""}`}
+          sheetName={selectedTurma?.nome?.slice(0, 30) || "Casais"}
+        />
       </div>
+
+      {!turmaFilter && (
+        <div className="rounded-lg border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+          Selecione uma turma acima para visualizar o relatório financeiro.
+          Cada turma possui seu próprio financeiro, separado das demais.
+        </div>
+      )}
+
+      {turmaFilter && (
+      <>
 
       {/* Table */}
       <div className="rounded-lg border overflow-hidden">
@@ -697,10 +726,12 @@ export function CasaisFinanceiroTab() {
         description="Tem certeza que deseja excluir este pagamento?"
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
       />
+      </>
+      )}
         </TabsContent>
 
         <TabsContent value="despesas">
-          <CasaisDespesasTab turmaId={turmaFilter === "todas" ? null : turmaFilter} turmas={turmas} />
+          <CasaisDespesasTab turmaId={turmaFilter || null} turmas={turmas} />
         </TabsContent>
 
         <TabsContent value="arquivados" className="space-y-4">
