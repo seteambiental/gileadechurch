@@ -14,6 +14,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { useToast } from "@/hooks/use-toast";
 import certBg from "@/assets/certificado-batismo-clean.jpg.asset.json";
+import assinaturaPastor from "@/assets/assinatura-pastor.png.asset.json";
 
 interface Props {
   open: boolean;
@@ -135,6 +136,21 @@ const BatismoCertificadoDialog = ({ open, onOpenChange, inscricao }: Props) => {
             </div>
 
             {/* Título do pastor — alinhado à altura da palavra "Data" e centralizado com o nome do pastor */}
+            {/* Assinatura do Pastor Adalberto — sobre o nome do pastor */}
+            <img
+              src={assinaturaPastor.url}
+              alt=""
+              crossOrigin="anonymous"
+              style={{
+                position: "absolute",
+                left: 300,
+                top: 850,
+                width: 260,
+                height: "auto",
+                pointerEvents: "none",
+              }}
+            />
+
             <div
               style={{
                 position: "absolute",
