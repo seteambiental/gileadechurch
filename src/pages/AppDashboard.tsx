@@ -434,7 +434,7 @@ const AppDashboard = () => {
         {/* Outros Módulos */}
 
         {/* Alertas de pendências */}
-        {(pendingCadastros > 0 || pendingInscricoes > 0 || pendingImpacto > 0 || pendingCasais > 0 || pendingApresentacoes > 0) && (
+        {(pendingCadastros > 0 || pendingInscricoes > 0 || pendingImpacto > 0 || pendingCasais > 0 || pendingApresentacoes > 0 || pendingKids > 0) && (
           <div className="mb-6 flex flex-col sm:flex-row flex-wrap gap-3">
             {pendingCadastros > 0 && (
               <button
@@ -501,6 +501,20 @@ const AppDashboard = () => {
                 <div className="text-left">
                   <span className="font-heading font-bold text-secondary text-sm">
                     Nova Apresentação ({pendingApresentacoes})
+                  </span>
+                  <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
+                </div>
+              </button>
+            )}
+            {pendingKids > 0 && (
+              <button
+                onClick={() => navigate("/ministerio/kids?tab=inscricoes")}
+                className="flex-1 flex items-center gap-3 p-4 rounded-xl border border-pink-500/30 bg-pink-500/10 hover:bg-pink-500/20 transition-colors animate-pulse"
+              >
+                <Baby className="w-5 h-5 text-pink-500 flex-shrink-0" />
+                <div className="text-left">
+                  <span className="font-heading font-bold text-pink-600 text-sm">
+                    Nova Inscrição Kids ({pendingKids})
                   </span>
                   <p className="text-xs text-muted-foreground">Aguardando aprovação</p>
                 </div>
