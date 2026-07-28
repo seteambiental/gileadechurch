@@ -232,6 +232,25 @@ const AppDashboard = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pendingKids = 0 } = useQuery({
+    queryKey: ["pending-kids-dashboard"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("member_requests")
+        .select("birth_date")
+        .eq("status", "pendente")
+        .not("birth_date", "is", null);
+      if (!data) return 0;
+      return data.filter((r: { birth_date: string | null }) => {
+        if (!r.birth_date) return false;
+        const [y] = r.birth_date.split("-").map(Number);
+        if (!y) return false;
+        return new Date().getFullYear() - y <= 12;
+      }).length;
+    },
+    refetchInterval: 30000,
+  });
+
   // Buscar líderes dos ministérios
   const { data: ministriesData = [] } = useQuery({
     queryKey: ["ministries-leaders-dashboard"],
