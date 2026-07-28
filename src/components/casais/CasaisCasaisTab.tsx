@@ -267,7 +267,7 @@ export function CasaisCasaisTab() {
                       {casal.certificado_emitido ? (
                         <Badge variant="default" className="bg-green-600">Concluído</Badge>
                       ) : (
-                        <Badge variant="secondary">{casal.status || "Ativo"}</Badge>
+                        <Badge variant="secondary">Aprovado</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -275,27 +275,9 @@ export function CasaisCasaisTab() {
                         <Button variant="ghost" size="icon" onClick={() => handleEditCasal(casal)} title="Editar">
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => { setChangingTurmaCasal(casal); setNewTurmaId(casal.turma_id || ""); }}>
-                              <ArrowRightLeft className="w-4 h-4 mr-2" />
-                              Alterar Turma
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEmitirCertificado(casal)}>
-                              <Award className="w-4 h-4 mr-2" />
-                              Emitir Certificado
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeleteId(casal.id)} className="text-destructive">
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Remover
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button variant="ghost" size="icon" onClick={() => setDeleteId(casal.id)} title="Remover" className="text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
