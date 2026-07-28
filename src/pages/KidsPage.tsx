@@ -457,6 +457,15 @@ const KidsPage = () => {
               <BarChart3 className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="inscricoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white relative">
+              <UserPlus className="h-4 w-4" />
+              Inscrições
+              {pendingInscricoesCount > 0 && (
+                <Badge className="ml-1 bg-red-500 text-white hover:bg-red-500 text-[10px] px-1.5 py-0 h-5">
+                  {pendingInscricoesCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="lideres" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <UserCheck className="h-4 w-4" />
               Equipe
