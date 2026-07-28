@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { formatCurrency, formatDateBR } from "@/lib/masks";
 import { ptBR } from "date-fns/locale";
+import { calculateAge } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +93,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     { key: "nome", label: "Nome" },
     { key: "tipo", label: "Tipo" },
     { key: "genero", label: "Gênero" },
+    { key: "data_nascimento", label: "Data Nasc." },
+    { key: "idade", label: "Idade" },
     { key: "referencia", label: "Referência" },
     { key: "casa_refugio", label: "Casa Refúgio" },
     { key: "condominio", label: "Condomínio" },
@@ -215,7 +218,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado")
+        .select("id, member_id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, forma_pagamento, pagamentos, created_at, referencia, previsoes_pagamento, aprovado, data_nascimento")
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", true)
         .order("nome");
@@ -236,7 +239,7 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
       if (memberIds.length === 0) return [];
       const { data, error } = await supabase
         .from("members")
-        .select("id, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
+        .select("id, data_nascimento, casa_refugio_id, casas_refugio:casa_refugio_id(name, condominio), member_functions(function_type, ministries:ministry_id(name), casas_refugio:casa_refugio_id(name), condominios:condominio_id(name))")
         .in("id", memberIds);
       if (error) throw error;
       return data || [];
@@ -313,6 +316,21 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     const m = memberMap.get(memberId);
     if (!m || !m.member_functions || m.member_functions.length === 0) return "—";
     return m.member_functions.map((fn: any) => getFuncaoLabel(fn)).join("; ");
+  };
+
+  const getDataNascimentoRow = (row: any): string | null => {
+    return row.data_nascimento || memberMap.get(row.member_id)?.data_nascimento || null;
+  };
+  const formatDataNascCell = (row: any): string => {
+    const d = getDataNascimentoRow(row);
+    if (!d) return "N/I";
+    try { return format(parseLocalDate(d), "dd/MM/yyyy"); } catch { return "N/I"; }
+  };
+  const formatIdadeCell = (row: any): string => {
+    const d = getDataNascimentoRow(row);
+    if (!d) return "N/I";
+    const { years } = calculateAge(d);
+    return `${years} ${years === 1 ? "ano" : "anos"}`;
   };
 
   const inscricoes = useMemo(() => {
@@ -524,6 +542,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         if (g === "f" || g === "feminino") return "Feminino";
         return "—";
       }
+      case "data_nascimento": return formatDataNascCell(row);
+      case "idade": return formatIdadeCell(row);
       case "referencia": return row.referencia || "—";
       case "casa_refugio": return getMemberCasaRefugio(row.member_id);
       case "condominio": return getMemberCondominio(row.member_id);
@@ -604,6 +624,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
         if (!g) return "—";
         return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
       }},
+      data_nascimento: { header: "Data Nasc.", accessor: (row: any) => formatDataNascCell(row) },
+      idade: { header: "Idade", accessor: (row: any) => formatIdadeCell(row) },
       referencia: { header: "Referência", accessor: (row: any) => row.referencia || "—" },
       casa_refugio: { header: "Casa Refúgio", accessor: (row: any) => getMemberCasaRefugio(row.member_id) },
       condominio: { header: "Condomínio", accessor: (row: any) => getMemberCondominio(row.member_id) },
@@ -1066,6 +1088,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                          {isCol("nome") && <TableHead>Nome</TableHead>}
                          {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={columnUniqueValues["tipo"] || []} selected={columnFilters["tipo"] || new Set(columnUniqueValues["tipo"] || [])} onChange={(s) => setColumnFilter("tipo", s)} /></TableHead>}
                          {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={columnUniqueValues["genero"] || []} selected={columnFilters["genero"] || new Set(columnUniqueValues["genero"] || [])} onChange={(s) => setColumnFilter("genero", s)} /></TableHead>}
+                         {isCol("data_nascimento") && <TableHead>Data Nasc.</TableHead>}
+                         {isCol("idade") && <TableHead>Idade</TableHead>}
                          {isCol("referencia") && (
                            <TableHead>
                              <button
@@ -1124,6 +1148,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                             )}
                              {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
                              {isCol("genero") && <TableCell>{getColumnValue(inscricao, "genero")}</TableCell>}
+                             {isCol("data_nascimento") && <TableCell className="text-sm">{formatDataNascCell(inscricao)}</TableCell>}
+                             {isCol("idade") && <TableCell className="text-sm">{formatIdadeCell(inscricao)}</TableCell>}
                              {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
                             {isCol("casa_refugio") && <TableCell>{getMemberCasaRefugio(inscricao.member_id)}</TableCell>}
                             {isCol("condominio") && <TableCell>{getMemberCondominio(inscricao.member_id)}</TableCell>}

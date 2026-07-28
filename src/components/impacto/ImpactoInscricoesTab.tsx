@@ -7,6 +7,7 @@ import { formatCurrency, formatPhone } from "@/lib/masks";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
+import { calculateAge } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +91,8 @@ const ALL_COLUMNS = [
   { key: "nome", label: "Nome" },
   { key: "tipo", label: "Tipo" },
   { key: "genero", label: "Gênero" },
+  { key: "data_nascimento", label: "Data Nasc." },
+  { key: "idade", label: "Idade" },
   { key: "telefone", label: "Contato" },
   { key: "local", label: "Casa Refúgio / Condomínio" },
   { key: "forma_pagamento", label: "Forma Pagamento" },
@@ -225,7 +228,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select(`*, member:members!impacto_inscricoes_member_id_fkey(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`*, member:members!impacto_inscricoes_member_id_fkey(id, full_name, photo_url, whatsapp, casa_refugio_id, data_nascimento)`)
         .eq("evento_id", selectedEventoId) as any;
       if (error) throw error;
       return data;
@@ -241,7 +244,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, data_nascimento, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id, data_nascimento)`)
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", false);
       if (error) throw error;
@@ -392,6 +395,21 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
    const getPhone = (inscricao: any) => {
     const raw = inscricao.telefone || inscricao.member?.whatsapp || "";
     return raw ? formatPhone(raw) : "-";
+  };
+
+  const getDataNascimento = (inscricao: any): string | null => {
+    return inscricao.data_nascimento || inscricao.member?.data_nascimento || null;
+  };
+  const formatDataNascimento = (inscricao: any): string => {
+    const d = getDataNascimento(inscricao);
+    if (!d) return "N/I";
+    try { return format(parseLocalDate(d), "dd/MM/yyyy"); } catch { return "N/I"; }
+  };
+  const formatIdade = (inscricao: any): string => {
+    const d = getDataNascimento(inscricao);
+    if (!d) return "N/I";
+    const { years } = calculateAge(d);
+    return `${years} ${years === 1 ? "ano" : "anos"}`;
   };
 
   const getValorPago = (inscricao: any): number => {
@@ -739,6 +757,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
         if (!g) return "—";
         return { M: "Masculino", F: "Feminino", masculino: "Masculino", feminino: "Feminino" }[g] || g;
       }},
+      data_nascimento: { header: "Data Nasc.", accessor: (row: any) => formatDataNascimento(row) },
+      idade: { header: "Idade", accessor: (row: any) => formatIdade(row) },
       telefone: { header: "Contato", accessor: (row: any) => getPhone(row) },
       local: { header: "Casa Refúgio / Condomínio", accessor: (row: any) => getLocationLabel(row) },
       forma_pagamento: { header: "Forma Pagamento", accessor: (row: any) => row.forma_pagamento ? (FORMAS_PAGAMENTO_LABELS[row.forma_pagamento] || row.forma_pagamento) : "—" },
@@ -1023,6 +1043,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("nome") && <TableHead>Nome</TableHead>}
                   {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
                   {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
+                  {isCol("data_nascimento") && <TableHead>Data Nasc.</TableHead>}
+                  {isCol("idade") && <TableHead>Idade</TableHead>}
                   {isCol("telefone") && <TableHead>Contato</TableHead>}
                   {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
                   {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
@@ -1122,6 +1144,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                           <TableCell className="text-sm">
                             {resolveGeneroLabel(inscricao)}
                           </TableCell>
+                        )}
+                        {isCol("data_nascimento") && (
+                          <TableCell className="text-sm">{formatDataNascimento(inscricao)}</TableCell>
+                        )}
+                        {isCol("idade") && (
+                          <TableCell className="text-sm">{formatIdade(inscricao)}</TableCell>
                         )}
                         {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
                         {isCol("local") && <TableCell>{getLocationLabel(inscricao)}</TableCell>}
