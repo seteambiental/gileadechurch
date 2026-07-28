@@ -1043,6 +1043,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                   {isCol("nome") && <TableHead>Nome</TableHead>}
                   {isCol("tipo") && <TableHead><ColumnFilterPopover title="Tipo" options={TIPO_OPTIONS} selected={filtroTipo} onChange={setFiltroTipo} /></TableHead>}
                   {isCol("genero") && <TableHead><ColumnFilterPopover title="Gênero" options={GENERO_OPTIONS} selected={filtroGenero} onChange={setFiltroGenero} /></TableHead>}
+                  {isCol("data_nascimento") && <TableHead>Data Nasc.</TableHead>}
+                  {isCol("idade") && <TableHead>Idade</TableHead>}
                   {isCol("telefone") && <TableHead>Contato</TableHead>}
                   {isCol("local") && <TableHead>Casa Refúgio / Condomínio</TableHead>}
                   {isCol("forma_pagamento") && <TableHead>Forma Pagamento</TableHead>}
