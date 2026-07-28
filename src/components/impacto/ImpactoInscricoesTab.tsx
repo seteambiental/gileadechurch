@@ -397,6 +397,21 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     return raw ? formatPhone(raw) : "-";
   };
 
+  const getDataNascimento = (inscricao: any): string | null => {
+    return inscricao.data_nascimento || inscricao.member?.data_nascimento || null;
+  };
+  const formatDataNascimento = (inscricao: any): string => {
+    const d = getDataNascimento(inscricao);
+    if (!d) return "N/I";
+    try { return format(parseLocalDate(d), "dd/MM/yyyy"); } catch { return "N/I"; }
+  };
+  const formatIdade = (inscricao: any): string => {
+    const d = getDataNascimento(inscricao);
+    if (!d) return "N/I";
+    const { years } = calculateAge(d);
+    return `${years} ${years === 1 ? "ano" : "anos"}`;
+  };
+
   const getValorPago = (inscricao: any): number => {
     const pagamentos = inscricao.pagamentos as any[] | null;
     if (pagamentos && pagamentos.length > 0) {
