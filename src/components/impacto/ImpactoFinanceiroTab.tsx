@@ -1148,6 +1148,8 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                             )}
                              {isCol("tipo") && <TableCell>{TIPOS_INSCRICAO_LABELS[inscricao.tipo_inscricao || ""] || inscricao.tipo_inscricao || "—"}</TableCell>}
                              {isCol("genero") && <TableCell>{getColumnValue(inscricao, "genero")}</TableCell>}
+                             {isCol("data_nascimento") && <TableCell className="text-sm">{formatDataNascCell(inscricao)}</TableCell>}
+                             {isCol("idade") && <TableCell className="text-sm">{formatIdadeCell(inscricao)}</TableCell>}
                              {isCol("referencia") && <TableCell>{inscricao.referencia || "—"}</TableCell>}
                             {isCol("casa_refugio") && <TableCell>{getMemberCasaRefugio(inscricao.member_id)}</TableCell>}
                             {isCol("condominio") && <TableCell>{getMemberCondominio(inscricao.member_id)}</TableCell>}
