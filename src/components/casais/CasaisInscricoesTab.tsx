@@ -362,7 +362,7 @@ export function CasaisInscricoesTab() {
         onConfirm={handleApprove}
         title="Aprovar inscrição?"
         description="A inscrição ficará aprovada e disponível para ser atribuída a uma turma."
-        confirmText="Aprovar"
+        confirmLabel="Aprovar"
       />
     </Card>
   );
