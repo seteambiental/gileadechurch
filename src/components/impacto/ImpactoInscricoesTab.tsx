@@ -1145,6 +1145,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                             {resolveGeneroLabel(inscricao)}
                           </TableCell>
                         )}
+                        {isCol("data_nascimento") && (
+                          <TableCell className="text-sm">{formatDataNascimento(inscricao)}</TableCell>
+                        )}
+                        {isCol("idade") && (
+                          <TableCell className="text-sm">{formatIdade(inscricao)}</TableCell>
+                        )}
                         {isCol("telefone") && <TableCell>{getPhone(inscricao)}</TableCell>}
                         {isCol("local") && <TableCell>{getLocationLabel(inscricao)}</TableCell>}
                         {isCol("forma_pagamento") && (
