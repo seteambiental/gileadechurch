@@ -228,7 +228,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select(`*, member:members!impacto_inscricoes_member_id_fkey(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`*, member:members!impacto_inscricoes_member_id_fkey(id, full_name, photo_url, whatsapp, casa_refugio_id, data_nascimento)`)
         .eq("evento_id", selectedEventoId) as any;
       if (error) throw error;
       return data;
@@ -244,7 +244,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       if (!selectedEventoId) return [];
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id)`)
+        .select(`id, nome_participante, telefone_contato, tipo_inscricao, status_pagamento, member_id, evento_id, data_nascimento, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id, data_nascimento)`)
         .eq("evento_id", selectedEventoId)
         .eq("aprovado", false);
       if (error) throw error;
