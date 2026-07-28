@@ -24,8 +24,9 @@ import {
   QrCode,
   AlertTriangle,
   Home,
+  UserPlus,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { KidsTurmaTab } from "@/components/kids/KidsTurmaTab";
 import { KidsLideresTab } from "@/components/kids/KidsLideresTab";
 import { KidsPresencaTab } from "@/components/kids/KidsPresencaTab";
@@ -35,6 +36,7 @@ import { KidsNotificacoesTab } from "@/components/kids/KidsNotificacoesTab";
 import { KidsConfigTab } from "@/components/kids/KidsConfigTab";
 import { KidsCheckinTab } from "@/components/kids/KidsCheckinTab";
 import { KidsAlteracoesTab } from "@/components/kids/KidsAlteracoesTab";
+import { KidsInscricoesTab } from "@/components/kids/KidsInscricoesTab";
 import { CriancaVisitanteFormDialog } from "@/components/kids/CriancaVisitanteFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -63,9 +65,39 @@ interface Responsavel {
 const KidsPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "dashboard");
+  const handleTabChange = (v: string) => {
+    setActiveTab(v);
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev);
+      p.set("tab", v);
+      return p;
+    }, { replace: true });
+  };
   const [chamadaDialogOpen, setChamadaDialogOpen] = useState(false);
   const [chamadaTurma, setChamadaTurma] = useState("");
+
+  // Contagem de inscrições pendentes (crianças em member_requests)
+  const { data: pendingInscricoesCount = 0 } = useQuery({
+    queryKey: ["kids-inscricoes-pendentes-count"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("member_requests")
+        .select("birth_date")
+        .eq("status", "pendente")
+        .not("birth_date", "is", null);
+      if (!data) return 0;
+      // Considera criança quem tem <= 12 anos completos no ano
+      return data.filter((r: { birth_date: string | null }) => {
+        if (!r.birth_date) return false;
+        const [y] = r.birth_date.split("-").map(Number);
+        if (!y) return false;
+        return new Date().getFullYear() - y <= 12;
+      }).length;
+    },
+    refetchInterval: 30000,
+  });
 
   // Buscar configuração das turmas
   const { data: turmasConfig, isLoading: loadingTurmas } = useQuery({
@@ -428,11 +460,20 @@ const KidsPage = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="flex flex-wrap h-auto gap-1 bg-white/80 backdrop-blur-sm p-2 rounded-xl">
             <TabsTrigger value="dashboard" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="inscricoes" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white relative">
+              <UserPlus className="h-4 w-4" />
+              Inscrições
+              {pendingInscricoesCount > 0 && (
+                <Badge className="ml-1 bg-red-500 text-white hover:bg-red-500 text-[10px] px-1.5 py-0 h-5">
+                  {pendingInscricoesCount}
+                </Badge>
+              )}
             </TabsTrigger>
             <TabsTrigger value="lideres" className="flex items-center gap-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-500 data-[state=active]:to-purple-500 data-[state=active]:text-white">
               <UserCheck className="h-4 w-4" />
@@ -481,6 +522,11 @@ const KidsPage = () => {
             turmasConfig={turmasConfig || []} 
             criancasPorTurma={criancasPorTurma} 
           />
+        </TabsContent>
+
+        {/* Novas Inscrições */}
+        <TabsContent value="inscricoes">
+          <KidsInscricoesTab turmasConfig={turmasConfig || []} />
         </TabsContent>
 
         {/* Tabs de cada turma (acessadas pelos cards) */}
