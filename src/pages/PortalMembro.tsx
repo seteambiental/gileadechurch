@@ -190,6 +190,22 @@ const PortalMembro = () => {
 
   const isMemberOfCasaRefugio = !!memberProfile?.casa_refugio_id || isAnfitriao;
 
+  const LEADER_PORTAL_ROLES = [
+    "lider_ministerio",
+    "integrante_ministerio",
+    "lider_casa_refugio",
+    "secretario_casa_refugio",
+    "supervisor_casa_refugio",
+    "sindico_condominio",
+    "supervisor_condominio",
+    "pastor_geral",
+    "pastor_auxiliar",
+  ];
+  const hasMinisterioPortal =
+    isAdmin ||
+    isKidsTeam ||
+    (!!portalAccess && LEADER_PORTAL_ROLES.includes(portalAccess.role));
+
   // Build menu items
   const menuItems: MenuItemConfig[] = [];
 
