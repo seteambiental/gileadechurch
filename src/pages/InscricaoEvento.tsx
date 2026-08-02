@@ -1286,7 +1286,12 @@ const InscricaoEvento = () => {
                     {/* Tipo de Inscrição */}
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Tipo de Inscrição</Label>
-                      <Select value={tipoInscricao} onValueChange={(v) => setTipoInscricao(v)}>
+                      {/* Não membros ficam travados no tipo "Não Membro" (valor próprio) */}
+                      <Select
+                        value={tipoInscricao}
+                        onValueChange={(v) => setTipoInscricao(v)}
+                        disabled={selectedPerson?.type !== "member"}
+                      >
                         <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
@@ -1296,7 +1301,9 @@ const InscricaoEvento = () => {
                             { value: "nao_membro", label: "Não Membro" },
                             { value: "familia", label: "Líderes e Anfitriões" },
                             { value: "equipe", label: "Equipe (Apoio/Serviço)" },
-                          ].map((opt) => {
+                          ]
+                            .filter((opt) => selectedPerson?.type === "member" || opt.value === "nao_membro")
+                            .map((opt) => {
                             const disponivel = getVagasDisponiveisTipo(opt.value);
                             const esgotadoTipo = tipoEsgotado(opt.value);
                             // "Membro" só disponível para quem consta no cadastro interno
@@ -1322,6 +1329,11 @@ const InscricaoEvento = () => {
                           })}
                         </SelectContent>
                       </Select>
+                      {selectedPerson?.type !== "member" && (
+                        <p className="text-xs md:text-sm text-muted-foreground">
+                          Participantes que não constam no cadastro interno são inscritos como <strong>Não Membro</strong>.
+                        </p>
+                      )}
                       {/* Show per-type info */}
                       {(() => {
                         const disponivel = getVagasDisponiveisTipo(tipoInscricao);
