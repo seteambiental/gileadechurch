@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QrScannerDialog } from "@/components/kids/QrScannerDialog";
+import { SearchInput } from "@/components/ui/search-input";
+import { includesNormalized } from "@/lib/text-utils";
 import { formatCPF } from "@/lib/masks";
-import { Loader2, QrCode, LogOut, CheckCircle2, RefreshCw } from "lucide-react";
+import { Loader2, QrCode, LogOut, CheckCircle2, RefreshCw, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 
@@ -30,6 +32,10 @@ const KidsScannerPage = () => {
   const [turma, setTurma] = useState<string>("");
   const [scannerOpen, setScannerOpen] = useState(false);
   const [checkins, setCheckins] = useState<any[]>([]);
+  const [roster, setRoster] = useState<any[]>([]);
+  const [buscaRoster, setBuscaRoster] = useState("");
+  const [loadingRoster, setLoadingRoster] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
 
   const call = async (payload: Record<string, unknown>, cpfOverride?: string) => {
     const { data, error } = await supabase.functions.invoke("kids-scanner", {
@@ -76,8 +82,38 @@ const KidsScannerPage = () => {
     }
   };
 
+  const carregarRoster = async (t = turma) => {
+    if (!t) return;
+    setLoadingRoster(true);
+    try {
+      const data = await call({ action: "roster", turma: t });
+      setRoster(data.criancas || []);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Erro", description: e.message });
+    } finally {
+      setLoadingRoster(false);
+    }
+  };
+
+  const marcarPresenca = async (c: any, presente: boolean) => {
+    setSavingId(c.id);
+    setRoster((prev) => prev.map((r) => (r.id === c.id ? { ...r, presente } : r)));
+    try {
+      await call({ action: "presenca", turma, id: c.id, tipo: c.tipo, presente });
+    } catch (e: any) {
+      setRoster((prev) => prev.map((r) => (r.id === c.id ? { ...r, presente: !presente } : r)));
+      toast({ variant: "destructive", title: "Erro", description: e.message });
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   useEffect(() => {
-    if (member && turma) carregarLista(turma);
+    if (member && turma) {
+      carregarLista(turma);
+      carregarRoster(turma);
+      setBuscaRoster("");
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [member, turma]);
 
@@ -90,6 +126,7 @@ const KidsScannerPage = () => {
         description: `${data.checkin.crianca_nome} — ${data.already ? "presença já confirmada" : "entrada confirmada"}.`,
       });
       carregarLista();
+      carregarRoster();
     } catch (e: any) {
       toast({ variant: "destructive", title: "Erro na leitura", description: e.message });
     }
@@ -100,9 +137,12 @@ const KidsScannerPage = () => {
     setMember(null);
     setCpf("");
     setCheckins([]);
+    setRoster([]);
   };
 
   const turmaAtual = turmas.find((t) => t.turma === turma);
+  const rosterFiltrado = roster.filter((c) => includesNormalized(c.nome, buscaRoster));
+  const presentesManual = roster.filter((c) => c.presente).length;
 
   if (!member) {
     return (
@@ -186,6 +226,52 @@ const KidsScannerPage = () => {
               <QrCode className="h-5 w-5 mr-2" />
               Ler QR Code
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Chamada manual ({presentesManual}/{roster.length})
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={() => carregarRoster()} disabled={loadingRoster}>
+              {loadingRoster ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <SearchInput value={buscaRoster} onChange={setBuscaRoster} placeholder="Buscar criança..." />
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {!loadingRoster && rosterFiltrado.length === 0 && (
+                <p className="text-sm text-muted-foreground">Nenhuma criança encontrada nesta turma.</p>
+              )}
+              {rosterFiltrado.map((c) => (
+                <button
+                  key={`${c.tipo}-${c.id}`}
+                  type="button"
+                  onClick={() => marcarPresenca(c, !c.presente)}
+                  disabled={savingId === c.id}
+                  className="w-full flex items-center justify-between border rounded-lg px-3 py-2 text-left hover:bg-muted/50 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{c.nome}</p>
+                    {c.tipo === "novo_convertido" && (
+                      <p className="text-xs text-muted-foreground">Visitante</p>
+                    )}
+                  </div>
+                  {savingId === c.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : c.presente ? (
+                    <Badge className="bg-green-600">
+                      <CheckCircle2 className="h-3 w-3 mr-1" />
+                      Presente
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">Marcar</Badge>
+                  )}
+                </button>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
