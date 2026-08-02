@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { QrScannerDialog } from "@/components/kids/QrScannerDialog";
-import { maskCPF } from "@/lib/masks";
+import { formatCPF } from "@/lib/masks";
 import { Loader2, QrCode, LogOut, CheckCircle2, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import logoGileade from "@/assets/logo-gileade.jpeg";
@@ -130,7 +130,7 @@ const KidsScannerPage = () => {
                   inputMode="numeric"
                   placeholder="000.000.000-00"
                   value={cpf}
-                  onChange={(e) => setCpf(maskCPF(e.target.value))}
+                  onChange={(e) => setCpf(formatCPF(e.target.value))}
                   autoFocus
                 />
               </div>
