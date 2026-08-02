@@ -112,6 +112,20 @@ const PortalMembro = () => {
     enabled: !!memberProfile?.id,
   });
 
+  // Check if member is part of the Kids ministry team (equipe PG Kids)
+  const { data: isKidsTeam = false } = useQuery({
+    queryKey: ["portal-is-kids-team", memberProfile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("kids_lideres")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberProfile!.id)
+        .eq("ativo", true);
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Show check-me prompt when near church and has kids
   useEffect(() => {
     if (!geoLoading && isNearChurch && hasKids && !checkMeDismissed) {
