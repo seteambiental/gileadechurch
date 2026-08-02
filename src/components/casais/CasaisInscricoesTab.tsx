@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { InscricaoCompletaFormDialog } from "./InscricaoCompletaFormDialog";
 import { ExportButton } from "@/components/ui/export-button";
 import { ColumnFilterPopover } from "@/components/ui/column-filter-popover";
+import { dispararMensagemCasaisAprovado } from "@/lib/whatsapp-notifications";
 
 export function CasaisInscricoesTab() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -161,6 +162,7 @@ export function CasaisInscricoesTab() {
     } else {
       // Garante que ao atribuir turma o status fique aprovado
       await supabase.from("casais_inscritos").update({ status: "aprovado" }).eq("id", approvingId);
+      await notificarCasalAprovado(approvingId, approvalTurmaId);
       toast({ title: "Turma atribuída! Casal movido para a aba Casais." });
       queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
@@ -179,12 +181,30 @@ export function CasaisInscricoesTab() {
     if (error) {
       toast({ title: "Erro ao aprovar inscrição", variant: "destructive" });
     } else {
+      await notificarCasalAprovado(confirmApproveId);
       toast({ title: "Inscrição aprovada" });
       queryClient.invalidateQueries({ queryKey: ["casais_inscricoes_pendentes"] });
       queryClient.invalidateQueries({ queryKey: ["casais_inscritos_count"] });
       queryClient.invalidateQueries({ queryKey: ["pending-casais-dashboard"] });
     }
     setConfirmApproveId(null);
+  };
+
+  // Envia (best-effort) a mensagem padrão de agradecimento/confirmação ao casal.
+  const notificarCasalAprovado = async (inscricaoId: string, turmaId?: string) => {
+    const insc: any = inscricoes?.find((i: any) => i.id === inscricaoId);
+    if (!insc) return;
+    const turmaNome =
+      turmas?.find((t: any) => t.id === (turmaId || insc.turma_id))?.nome || null;
+    await dispararMensagemCasaisAprovado({
+      nomeEsposo: insc.membro_masculino?.full_name || insc.nome_masculino,
+      nomeEsposa: insc.membro_feminino?.full_name || insc.nome_feminino,
+      telefones: [
+        insc.whatsapp_masculino || insc.membro_masculino?.whatsapp,
+        insc.whatsapp_feminino || insc.membro_feminino?.whatsapp,
+      ],
+      turmaNome,
+    });
   };
 
   const turmasAtivas = turmas?.filter((t) => !!t?.id && !!t?.ativo) || [];

@@ -112,7 +112,7 @@ serve(async (req) => {
       const { data: inscricoes } = await supabase
         .from("impacto_inscricoes")
         .select(
-          "id, nome, telefone_emergencia, telefone_responsavel, nome_responsavel",
+          "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel",
         )
         .eq("evento_id", cfg.evento_id)
         .neq("status_pagamento", "cancelado");
@@ -129,6 +129,9 @@ serve(async (req) => {
           .toString()
           .replace(/\D/g, "");
         if (!tel || tel.length < 10) continue;
+        // Nunca enviar a mensagem de emergência para o próprio participante
+        const telParticipante = (insc.telefone || "").toString().replace(/\D/g, "");
+        if (telParticipante && tel === telParticipante) continue;
         const final = preencherTemplate(mensagemBase, {
           nomeCompleto: insc.nome,
           nomeEmergencia: insc.nome_responsavel,

@@ -312,7 +312,7 @@ export function InscricaoCompletaFormDialog({
         .single();
       if (!data) return;
 
-      setTurmaId(data.turma_id);
+      setTurmaId(data.turma_id || "");
       setMembroMasculinoId(data.membro_masculino_id);
       setMembroFemininoId(data.membro_feminino_id);
       setNomeMasculino(data.nome_masculino || "");
@@ -374,7 +374,21 @@ export function InscricaoCompletaFormDialog({
           <DialogDescription>Preencha todos os dados do casal para inscrição completa.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Turma removida - será atribuída na aprovação */}
+          {/* Turma: só editável ao editar uma inscrição já existente */}
+          {editingId && turmas.length > 0 && (
+            <div className="space-y-2">
+              <Label>Turma</Label>
+              <Select value={turmaId || "__none__"} onValueChange={(v) => setTurmaId(v === "__none__" ? "" : v)}>
+                <SelectTrigger><SelectValue placeholder="Selecione a turma" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem turma</SelectItem>
+                  {turmas.filter((t) => !!t?.id).map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Esposo */}
           <div className="space-y-3">

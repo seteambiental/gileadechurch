@@ -182,3 +182,50 @@ export async function dispararMensagemApresentacaoPais(params: {
     console.warn("[whatsapp] falha ao enviar mensagem apresentacao pais:", err);
   }
 }
+
+/**
+ * Mensagem padrão de agradecimento/confirmação enviada ao casal quando a
+ * inscrição no Curso de Casais é aprovada. Best-effort (não quebra o fluxo).
+ */
+export async function dispararMensagemCasaisAprovado(params: {
+  nomeEsposo?: string | null;
+  nomeEsposa?: string | null;
+  telefones: (string | null | undefined)[];
+  turmaNome?: string | null;
+}) {
+  const nomes = [params.nomeEsposo, params.nomeEsposa].filter(Boolean).join(" e ");
+  const linhas = [
+    `❤️ *Curso de Casais — Gileade Church*`,
+    "",
+    `Olá ${nomes || "casal"}!`,
+    "",
+    "Agradecemos pela sua inscrição no *Curso de Casais*. É uma alegria ter vocês conosco!",
+    "Sua participação está *confirmada*.",
+    params.turmaNome ? `\n📚 Turma: *${params.turmaNome}*` : null,
+    "",
+    "Em breve enviaremos mais informações sobre datas, horários e local.",
+    "",
+    "Deus abençoe o casamento de vocês! 🙏",
+  ].filter(Boolean);
+
+  const mensagem = linhas.join("\n");
+  const enviados = new Set<string>();
+
+  for (const raw of params.telefones) {
+    const tel = (raw || "").replace(/\D/g, "");
+    if (!tel || tel.length < 10 || enviados.has(tel)) continue;
+    enviados.add(tel);
+    try {
+      await supabase.functions.invoke("enviar-whatsapp", {
+        body: {
+          action: "mensagem_direta",
+          telefone: tel,
+          nome: nomes || "Casal",
+          mensagem,
+        },
+      });
+    } catch (err) {
+      console.warn("[whatsapp] falha ao enviar casais_aprovado:", err);
+    }
+  }
+}

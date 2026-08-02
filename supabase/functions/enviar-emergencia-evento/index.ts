@@ -235,6 +235,7 @@ serve(async (req) => {
           ? insc.telefone || ""
           : insc.telefone_emergencia || insc.telefone_responsavel || "";
       const tel = telRaw.toString().replace(/\D/g, "");
+      const telParticipante = (insc.telefone || "").toString().replace(/\D/g, "");
       if (!tel || tel.length < 10) {
         semTelefone++;
         await supabase.from("emergencia_envios_log").insert({
@@ -251,6 +252,26 @@ serve(async (req) => {
             destinatarioTipo === "principal"
               ? "Telefone do participante ausente ou inválido"
               : "Telefone de emergência ausente ou inválido",
+        });
+        continue;
+      }
+
+      // Regra: mensagens para o CONTATO DE EMERGÊNCIA nunca podem ir para o
+      // próprio participante (cadastros com telefone de emergência igual ao dele).
+      if (destinatarioTipo === "emergencia" && telParticipante && tel === telParticipante) {
+        semTelefone++;
+        await supabase.from("emergencia_envios_log").insert({
+          inscricao_id: insc.id,
+          evento_id: eventoId,
+          evento_tipo: eventoTipo,
+          tipo_envio: `${tipo}:${destinatarioTipo}`,
+          telefone_destino: tel,
+          nome_contato_emergencia: insc.nome_responsavel,
+          nome_participante: insc.nome,
+          mensagem_enviada: "",
+          status: "falhou",
+          erro:
+            "Telefone de emergência igual ao do participante — envio bloqueado",
         });
         continue;
       }
