@@ -274,6 +274,36 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   const isLoading = loadingImpacto || loadingAgenda;
 
+  // Opções do filtro "Tipo" seguem os tipos configurados no evento selecionado
+  // (impacto: tipos_inscricao; agenda: valores_por_tipo preenchidos),
+  // acrescidas dos tipos realmente presentes nas inscrições.
+  const TIPO_OPTIONS = useMemo(() => {
+    const tipos = new Set<string>();
+    const det: any = selectedEventoDetalhes;
+    if (Array.isArray(det?.tipos_inscricao)) {
+      det.tipos_inscricao.forEach((t: string) => t && tipos.add(t));
+    }
+    const valores = det?.valores_por_tipo as Record<string, any> | null | undefined;
+    if (valores && typeof valores === "object") {
+      Object.entries(valores).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && String(v) !== "") tipos.add(k);
+      });
+    }
+    if (tipos.size === 0) {
+      ["membro", "nao_membro", "familia", "equipe"].forEach((t) => tipos.add(t));
+    }
+    const labels = new Set<string>();
+    tipos.forEach((t) => labels.add(TIPOS_INSCRICAO_LABELS[t] || t));
+    [...(rawImpactoInscricoes || []), ...(rawAgendaInscricoes || [])].forEach((i: any) => {
+      labels.add(TIPOS_INSCRICAO_LABELS[i.tipo_inscricao] || i.tipo_inscricao || "—");
+    });
+    return [...labels];
+  }, [selectedEventoDetalhes, rawImpactoInscricoes, rawAgendaInscricoes]);
+
+  useEffect(() => {
+    setFiltroTipo(new Set(TIPO_OPTIONS));
+  }, [TIPO_OPTIONS.join("|")]);
+
   const resolveGeneroLabel = (inscricao: any): string => {
     const g = inscricao.genero || inscricao.member?.genero;
     if (!g) return "—";
