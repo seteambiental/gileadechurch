@@ -112,7 +112,7 @@ serve(async (req) => {
       const { data: inscricoes } = await supabase
         .from("impacto_inscricoes")
         .select(
-          "id, nome, telefone_emergencia, telefone_responsavel, nome_responsavel",
+          "id, nome, telefone, telefone_emergencia, telefone_responsavel, nome_responsavel",
         )
         .eq("evento_id", cfg.evento_id)
         .neq("status_pagamento", "cancelado");
