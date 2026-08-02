@@ -312,7 +312,7 @@ export function InscricaoCompletaFormDialog({
         .single();
       if (!data) return;
 
-      setTurmaId(data.turma_id);
+      setTurmaId(data.turma_id || "");
       setMembroMasculinoId(data.membro_masculino_id);
       setMembroFemininoId(data.membro_feminino_id);
       setNomeMasculino(data.nome_masculino || "");
