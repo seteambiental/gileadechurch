@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.contagem-culto]
 verify_jwt = false
+
+[functions.kids-scanner]
+verify_jwt = false
