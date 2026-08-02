@@ -129,6 +129,9 @@ serve(async (req) => {
           .toString()
           .replace(/\D/g, "");
         if (!tel || tel.length < 10) continue;
+        // Nunca enviar a mensagem de emergência para o próprio participante
+        const telParticipante = (insc.telefone || "").toString().replace(/\D/g, "");
+        if (telParticipante && tel === telParticipante) continue;
         const final = preencherTemplate(mensagemBase, {
           nomeCompleto: insc.nome,
           nomeEmergencia: insc.nome_responsavel,
