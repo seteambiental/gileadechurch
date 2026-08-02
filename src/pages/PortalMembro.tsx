@@ -112,6 +112,20 @@ const PortalMembro = () => {
     enabled: !!memberProfile?.id,
   });
 
+  // Check if member is part of the Kids ministry team (equipe PG Kids)
+  const { data: isKidsTeam = false } = useQuery({
+    queryKey: ["portal-is-kids-team", memberProfile?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("kids_lideres")
+        .select("id", { count: "exact", head: true })
+        .eq("member_id", memberProfile!.id)
+        .eq("ativo", true);
+      return (count || 0) > 0;
+    },
+    enabled: !!memberProfile?.id,
+  });
+
   // Show check-me prompt when near church and has kids
   useEffect(() => {
     if (!geoLoading && isNearChurch && hasKids && !checkMeDismissed) {
@@ -176,6 +190,22 @@ const PortalMembro = () => {
 
   const isMemberOfCasaRefugio = !!memberProfile?.casa_refugio_id || isAnfitriao;
 
+  const LEADER_PORTAL_ROLES = [
+    "lider_ministerio",
+    "integrante_ministerio",
+    "lider_casa_refugio",
+    "secretario_casa_refugio",
+    "supervisor_casa_refugio",
+    "sindico_condominio",
+    "supervisor_condominio",
+    "pastor_geral",
+    "pastor_auxiliar",
+  ];
+  const hasMinisterioPortal =
+    isAdmin ||
+    isKidsTeam ||
+    (!!portalAccess && LEADER_PORTAL_ROLES.includes(portalAccess.role));
+
   // Build menu items
   const menuItems: MenuItemConfig[] = [];
 
@@ -227,6 +257,18 @@ const PortalMembro = () => {
       subtitle: "Presença Kids",
       icon: Baby,
       color: "hsl(200, 80%, 50%)",
+    });
+  }
+
+  // Ministério (equipe / liderança)
+  if (hasMinisterioPortal) {
+    menuItems.push({
+      id: "portal-ministerio",
+      label: "Ministério",
+      subtitle: isKidsTeam ? "Chamadas e Check-in" : "Portal do Ministério",
+      icon: Church,
+      color: "hsl(200, 80%, 50%)",
+      action: () => navigate("/lideres"),
     });
   }
 
@@ -398,7 +440,7 @@ const PortalMembro = () => {
               </Avatar>
               <span className="hidden sm:block text-sm font-medium">{memberProfile.full_name.split(" ")[0]}</span>
             </div>
-            {isAdmin && (
+            {hasMinisterioPortal && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -410,9 +452,11 @@ const PortalMembro = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/app")}>
-                    Portal ADM
-                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate("/app")}>
+                      Portal ADM
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/lideres")}>
                     Portal Ministério
                   </DropdownMenuItem>
@@ -499,12 +543,7 @@ const PortalMembro = () => {
             </div>
 
             {/* Quick links */}
-            {(portalAccess?.role === "lider_ministerio" ||
-              portalAccess?.role === "lider_casa_refugio" ||
-              portalAccess?.role === "sindico_condominio" ||
-              portalAccess?.role === "supervisor_condominio" ||
-              portalAccess?.role === "pastor_geral" ||
-              portalAccess?.role === "pastor_auxiliar") && (
+            {hasMinisterioPortal && (
               <Card className="border-secondary/20 bg-secondary/5">
                 <CardContent className="py-3 px-4 flex items-center justify-between">
                   <div>
