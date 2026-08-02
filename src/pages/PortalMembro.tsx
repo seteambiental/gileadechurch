@@ -440,7 +440,7 @@ const PortalMembro = () => {
               </Avatar>
               <span className="hidden sm:block text-sm font-medium">{memberProfile.full_name.split(" ")[0]}</span>
             </div>
-            {isAdmin && (
+            {hasMinisterioPortal && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -452,9 +452,11 @@ const PortalMembro = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/app")}>
-                    Portal ADM
-                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate("/app")}>
+                      Portal ADM
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/lideres")}>
                     Portal Ministério
                   </DropdownMenuItem>
@@ -541,12 +543,7 @@ const PortalMembro = () => {
             </div>
 
             {/* Quick links */}
-            {(portalAccess?.role === "lider_ministerio" ||
-              portalAccess?.role === "lider_casa_refugio" ||
-              portalAccess?.role === "sindico_condominio" ||
-              portalAccess?.role === "supervisor_condominio" ||
-              portalAccess?.role === "pastor_geral" ||
-              portalAccess?.role === "pastor_auxiliar") && (
+            {hasMinisterioPortal && (
               <Card className="border-secondary/20 bg-secondary/5">
                 <CardContent className="py-3 px-4 flex items-center justify-between">
                   <div>
