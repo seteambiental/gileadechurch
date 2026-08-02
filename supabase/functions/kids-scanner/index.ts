@@ -13,6 +13,13 @@ const json = (body: unknown, status = 200) =>
 
 const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
 
+const kidsAgeForTurma = (birthDate?: string | null) => {
+  if (!birthDate) return -1;
+  const year = Number(String(birthDate).split("-")[0]);
+  if (!year) return -1;
+  return new Date().getFullYear() - year;
+};
+
 const admin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -136,6 +143,99 @@ Deno.serve(async (req) => {
         .eq("data_culto", hoje)
         .order("created_at");
       return json({ checkins: data ?? [] });
+    }
+
+    if (action === "roster") {
+      const turma = body.turma as string;
+      if (!turma || !turmasPermitidas.some((t) => t.turma === turma)) {
+        return json({ error: "Turma inválida ou sem permissão." }, 403);
+      }
+      const config = turmasPermitidas.find((t) => t.turma === turma)!;
+      const hoje = new Date().toISOString().slice(0, 10);
+
+      const [{ data: membros }, { data: ncs }, { data: presencas }] = await Promise.all([
+        admin
+          .from("members")
+          .select("id, full_name, birth_date, genero, photo_url, kids_turma_override, excluido")
+          .not("birth_date", "is", null),
+        admin
+          .from("novos_convertidos")
+          .select("id, full_name, data_nascimento, genero, photo_url, kids_turma_override"),
+        admin
+          .from("kids_presencas")
+          .select("member_id, novo_convertido_id, presente")
+          .eq("turma", turma)
+          .eq("data_culto", hoje),
+      ]);
+
+      const pertence = (nasc: string | null, override: string | null) =>
+        override
+          ? override === turma
+          : (() => {
+              const idade = kidsAgeForTurma(nasc);
+              return idade >= config.idade_minima && idade <= config.idade_maxima;
+            })();
+
+      const criancas = [
+        ...(membros ?? [])
+          .filter((m) => !m.excluido && pertence(m.birth_date, m.kids_turma_override))
+          .map((m) => ({
+            id: m.id,
+            tipo: "membro" as const,
+            nome: m.full_name,
+            genero: m.genero,
+            foto: m.photo_url,
+            nascimento: m.birth_date,
+          })),
+        ...(ncs ?? [])
+          .filter((n) => pertence(n.data_nascimento, n.kids_turma_override))
+          .map((n) => ({
+            id: n.id,
+            tipo: "novo_convertido" as const,
+            nome: n.full_name,
+            genero: n.genero,
+            foto: n.photo_url,
+            nascimento: n.data_nascimento,
+          })),
+      ]
+        .map((c) => ({
+          ...c,
+          presente: (presencas ?? []).some(
+            (p) =>
+              p.presente &&
+              ((c.tipo === "membro" && p.member_id === c.id) ||
+                (c.tipo === "novo_convertido" && p.novo_convertido_id === c.id)),
+          ),
+        }))
+        .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+
+      return json({ criancas });
+    }
+
+    if (action === "presenca") {
+      const turma = body.turma as string;
+      if (!turma || !turmasPermitidas.some((t) => t.turma === turma)) {
+        return json({ error: "Turma inválida ou sem permissão." }, 403);
+      }
+      const id = String(body.id ?? "");
+      const tipo = String(body.tipo ?? "membro");
+      const presente = Boolean(body.presente);
+      if (!id) return json({ error: "Criança inválida." }, 400);
+
+      const hoje = new Date().toISOString().slice(0, 10);
+      const { error } = await admin.from("kids_presencas").upsert(
+        {
+          member_id: tipo === "membro" ? id : null,
+          novo_convertido_id: tipo === "membro" ? null : id,
+          turma,
+          data_culto: hoje,
+          tipo_culto: new Date().getDay() === 3 ? "quarta" : "domingo",
+          presente,
+        },
+        { onConflict: "member_id,novo_convertido_id,turma,data_culto" },
+      );
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
     }
 
     return json({ error: "Ação inválida." }, 400);
