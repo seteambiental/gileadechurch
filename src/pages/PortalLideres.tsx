@@ -534,19 +534,19 @@ const PortalLideres = () => {
                 </Badge>
               </div>
             </div>
-            {isAdmin && (
-              <DropdownMenu>
+            <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
                     <ArrowRightLeft className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/app")}>Portal ADM</DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem onClick={() => navigate("/app")}>Portal ADM</DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/portal")}>Portal do Membro</DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
