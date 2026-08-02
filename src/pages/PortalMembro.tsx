@@ -260,6 +260,18 @@ const PortalMembro = () => {
     });
   }
 
+  // Ministério (equipe / liderança)
+  if (hasMinisterioPortal) {
+    menuItems.push({
+      id: "portal-ministerio",
+      label: "Ministério",
+      subtitle: isKidsTeam ? "Chamadas e Check-in" : "Portal do Ministério",
+      icon: Church,
+      color: "hsl(200, 80%, 50%)",
+      action: () => navigate("/lideres"),
+    });
+  }
+
   // Inscrições
   menuItems.push({
     id: "inscricoes",
