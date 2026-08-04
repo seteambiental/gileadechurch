@@ -240,6 +240,9 @@ export const PortalLideresInscricoesEventos = ({
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge variant="outline" className="text-[10px]">
+                        {tipoInscricaoLabels[i.tipo_inscricao] || i.tipo_inscricao || "—"}
+                      </Badge>
                       <Badge variant={status.variant} className="text-[10px]">
                         {status.label}
                       </Badge>
@@ -248,11 +251,6 @@ export const PortalLideresInscricoesEventos = ({
                       )}
                     </div>
                   </div>
-                  {i.tipo_inscricao && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {tipoInscricaoLabels[i.tipo_inscricao] || i.tipo_inscricao}
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             );
