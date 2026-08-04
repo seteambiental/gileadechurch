@@ -75,6 +75,12 @@ function eventoEncerrado(evento: { data_inicio: string; data_fim?: string | null
   return fim.getTime() < Date.now();
 }
 
+/** Normaliza telefone para comparação: apenas dígitos, últimos 8 (ignora DDI/DDD/9º dígito). */
+function chaveTelefone(tel?: string | null) {
+  const d = (tel || "").toString().replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : "";
+}
+
 async function buscarInscricoes(
   supabase: any,
   eventoId: string,
