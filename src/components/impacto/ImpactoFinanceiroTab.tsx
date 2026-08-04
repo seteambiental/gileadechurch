@@ -929,19 +929,6 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
               </CardContent>
             </Card>
 
-            <Card className="hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">Previsão de Valores (dup)</CardTitle>
-                <TrendingUp className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(totalPrevisao)}</div>
-                <p className="text-xs text-muted-foreground">
-                  Soma dos valores de inscrição
-                </p>
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">Valor Já Pago</CardTitle>
