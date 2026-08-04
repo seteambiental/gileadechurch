@@ -44,6 +44,7 @@ export const PortalLideresInscricoesEventos = ({
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterTipo, setFilterTipo] = useState<string>("__all__");
 
   // Eventos aos quais o membro tem acesso
   const { data: eventos = [], isLoading: loadingEventos } = useQuery({
@@ -94,10 +95,17 @@ export const PortalLideresInscricoesEventos = ({
       .filter((i: any) => {
         const matchSearch = includesNormalized(i.nome_participante, searchTerm);
         const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-        return matchSearch && matchStatus;
+        const matchTipo = filterTipo === "__all__" || i.tipo_inscricao === filterTipo;
+        return matchSearch && matchStatus && matchTipo;
       })
       .sort((a: any, b: any) => a.nome_participante.localeCompare(b.nome_participante, "pt-BR"));
-  }, [inscricoes, searchTerm, filterStatus]);
+  }, [inscricoes, searchTerm, filterStatus, filterTipo]);
+
+  const tiposDisponiveis = useMemo(() => {
+    return Array.from(
+      new Set(inscricoes.map((i: any) => i.tipo_inscricao).filter(Boolean))
+    ) as string[];
+  }, [inscricoes]);
 
   const totais = useMemo(() => {
     const ativas = inscricoes.filter((i: any) => !i.lista_espera && i.status_pagamento !== "cancelado");
@@ -210,6 +218,21 @@ export const PortalLideresInscricoesEventos = ({
             <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
+        {tiposDisponiveis.length > 0 && (
+          <Select value={filterTipo} onValueChange={setFilterTipo}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Tipo de inscrição" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todos os tipos</SelectItem>
+              {tiposDisponiveis.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {tipoInscricaoLabels[t] || t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {loadingInscricoes ? (
