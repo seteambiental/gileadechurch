@@ -153,6 +153,7 @@ export const PortalLideresInscricoesEventos = ({
                   setSelectedEventTitle(evento.titulo);
                   setSearchTerm("");
                   setFilterStatus("todos");
+                  setFilterTipo("__all__");
                 }}
               >
                 <CardContent className="p-3 flex items-center gap-3">
