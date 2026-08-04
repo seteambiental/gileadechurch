@@ -1333,6 +1333,7 @@ const InscricaoEvento = () => {
                           })}
                         </SelectContent>
                       </Select>
+                      )}
                       {selectedPerson?.type !== "member" && (
                         <p className="text-xs md:text-sm text-muted-foreground">
                           Participantes que não constam no cadastro interno são inscritos como <strong>Não Membro</strong>.
