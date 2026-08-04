@@ -44,6 +44,7 @@ export const PortalLideresInscricoesEventos = ({
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
+  const [filterTipo, setFilterTipo] = useState<string>("__all__");
 
   // Eventos aos quais o membro tem acesso
   const { data: eventos = [], isLoading: loadingEventos } = useQuery({
@@ -94,10 +95,17 @@ export const PortalLideresInscricoesEventos = ({
       .filter((i: any) => {
         const matchSearch = includesNormalized(i.nome_participante, searchTerm);
         const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-        return matchSearch && matchStatus;
+        const matchTipo = filterTipo === "__all__" || i.tipo_inscricao === filterTipo;
+        return matchSearch && matchStatus && matchTipo;
       })
       .sort((a: any, b: any) => a.nome_participante.localeCompare(b.nome_participante, "pt-BR"));
-  }, [inscricoes, searchTerm, filterStatus]);
+  }, [inscricoes, searchTerm, filterStatus, filterTipo]);
+
+  const tiposDisponiveis = useMemo(() => {
+    return Array.from(
+      new Set(inscricoes.map((i: any) => i.tipo_inscricao).filter(Boolean))
+    ) as string[];
+  }, [inscricoes]);
 
   const totais = useMemo(() => {
     const ativas = inscricoes.filter((i: any) => !i.lista_espera && i.status_pagamento !== "cancelado");
@@ -145,6 +153,7 @@ export const PortalLideresInscricoesEventos = ({
                   setSelectedEventTitle(evento.titulo);
                   setSearchTerm("");
                   setFilterStatus("todos");
+                  setFilterTipo("__all__");
                 }}
               >
                 <CardContent className="p-3 flex items-center gap-3">
@@ -210,6 +219,21 @@ export const PortalLideresInscricoesEventos = ({
             <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
+        {tiposDisponiveis.length > 0 && (
+          <Select value={filterTipo} onValueChange={setFilterTipo}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Tipo de inscrição" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todos os tipos</SelectItem>
+              {tiposDisponiveis.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {tipoInscricaoLabels[t] || t}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {loadingInscricoes ? (
@@ -240,6 +264,9 @@ export const PortalLideresInscricoesEventos = ({
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
+                      <Badge variant="outline" className="text-[10px]">
+                        {tipoInscricaoLabels[i.tipo_inscricao] || i.tipo_inscricao || "—"}
+                      </Badge>
                       <Badge variant={status.variant} className="text-[10px]">
                         {status.label}
                       </Badge>
@@ -248,11 +275,6 @@ export const PortalLideresInscricoesEventos = ({
                       )}
                     </div>
                   </div>
-                  {i.tipo_inscricao && (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {tipoInscricaoLabels[i.tipo_inscricao] || i.tipo_inscricao}
-                    </p>
-                  )}
                 </CardContent>
               </Card>
             );
