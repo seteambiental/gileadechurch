@@ -1287,10 +1287,14 @@ const InscricaoEvento = () => {
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Tipo de Inscrição</Label>
                       {/* Não membros ficam travados no tipo "Não Membro" (valor próprio) */}
+                      {selectedPerson?.type !== "member" ? (
+                        <div className="h-10 md:h-14 flex items-center px-3 rounded-md border bg-muted/40 text-base md:text-lg text-muted-foreground">
+                          Não Membro
+                        </div>
+                      ) : (
                       <Select
                         value={tipoInscricao}
                         onValueChange={(v) => setTipoInscricao(v)}
-                        disabled={selectedPerson?.type !== "member"}
                       >
                         <SelectTrigger className="h-10 md:h-14 text-base md:text-lg">
                           <SelectValue placeholder="Selecione" />
@@ -1329,6 +1333,7 @@ const InscricaoEvento = () => {
                           })}
                         </SelectContent>
                       </Select>
+                      )}
                       {selectedPerson?.type !== "member" && (
                         <p className="text-xs md:text-sm text-muted-foreground">
                           Participantes que não constam no cadastro interno são inscritos como <strong>Não Membro</strong>.

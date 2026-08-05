@@ -75,6 +75,12 @@ function eventoEncerrado(evento: { data_inicio: string; data_fim?: string | null
   return fim.getTime() < Date.now();
 }
 
+/** Normaliza telefone para comparação: apenas dígitos, últimos 8 (ignora DDI/DDD/9º dígito). */
+function chaveTelefone(tel?: string | null) {
+  const d = (tel || "").toString().replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : "";
+}
+
 async function buscarInscricoes(
   supabase: any,
   eventoId: string,
@@ -220,6 +226,20 @@ serve(async (req) => {
       statusEspiritualFiltro,
     );
     const dataEventoFmt = formatarDataPt(evento.data_inicio);
+
+    // Conjunto com os telefones DOS PRÓPRIOS PARTICIPANTES do evento.
+    // Mensagens de emergência nunca podem cair em um desses números.
+    const telefonesParticipantes = new Set<string>();
+    if (destinatarioTipo === "emergencia") {
+      const { data: todos } = await supabase
+        .from("impacto_inscricoes")
+        .select("telefone")
+        .eq("evento_id", inscritosEventoId);
+      (todos || []).forEach((r: any) => {
+        const k = chaveTelefone(r.telefone);
+        if (k) telefonesParticipantes.add(k);
+      });
+    }
     const tipoAudit =
       tipoMensagemAudit ||
       (tipo === "inicial" ? "emergencia_inicial" : "emergencia_manual");
@@ -235,7 +255,6 @@ serve(async (req) => {
           ? insc.telefone || ""
           : insc.telefone_emergencia || insc.telefone_responsavel || "";
       const tel = telRaw.toString().replace(/\D/g, "");
-      const telParticipante = (insc.telefone || "").toString().replace(/\D/g, "");
       if (!tel || tel.length < 10) {
         semTelefone++;
         await supabase.from("emergencia_envios_log").insert({
@@ -258,7 +277,11 @@ serve(async (req) => {
 
       // Regra: mensagens para o CONTATO DE EMERGÊNCIA nunca podem ir para o
       // próprio participante (cadastros com telefone de emergência igual ao dele).
-      if (destinatarioTipo === "emergencia" && telParticipante && tel === telParticipante) {
+      if (
+        destinatarioTipo === "emergencia" &&
+        chaveTelefone(tel) &&
+        telefonesParticipantes.has(chaveTelefone(tel))
+      ) {
         semTelefone++;
         await supabase.from("emergencia_envios_log").insert({
           inscricao_id: insc.id,
@@ -271,7 +294,7 @@ serve(async (req) => {
           mensagem_enviada: "",
           status: "falhou",
           erro:
-            "Telefone de emergência igual ao do participante — envio bloqueado",
+            "Telefone de emergência pertence a um participante do evento — envio bloqueado",
         });
         continue;
       }

@@ -47,6 +47,12 @@ function delayBulk() {
   return new Promise((res) => setTimeout(res, ms));
 }
 
+/** Normaliza telefone para comparação: apenas dígitos, últimos 8. */
+function chaveTelefone(tel?: string | null) {
+  const d = (tel || "").toString().replace(/\D/g, "");
+  return d.length >= 8 ? d.slice(-8) : "";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -121,6 +127,13 @@ serve(async (req) => {
       const mensagemBase = (cfg.mensagem_recorrente || "").trim();
       if (!mensagemBase) continue;
 
+      // Telefones dos próprios participantes — nunca podem receber a mensagem de emergência
+      const telefonesParticipantes = new Set<string>();
+      (inscricoes || []).forEach((r: any) => {
+        const k = chaveTelefone(r.telefone);
+        if (k) telefonesParticipantes.add(k);
+      });
+
       let enviadosEvento = 0;
       const list = inscricoes || [];
       for (let i = 0; i < list.length; i++) {
@@ -129,9 +142,8 @@ serve(async (req) => {
           .toString()
           .replace(/\D/g, "");
         if (!tel || tel.length < 10) continue;
-        // Nunca enviar a mensagem de emergência para o próprio participante
-        const telParticipante = (insc.telefone || "").toString().replace(/\D/g, "");
-        if (telParticipante && tel === telParticipante) continue;
+        // Nunca enviar a mensagem de emergência para um número de participante
+        if (telefonesParticipantes.has(chaveTelefone(tel))) continue;
         const final = preencherTemplate(mensagemBase, {
           nomeCompleto: insc.nome,
           nomeEmergencia: insc.nome_responsavel,

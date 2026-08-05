@@ -467,6 +467,26 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
     return acc;
   }, {} as Record<string, number>) || {};
 
+  // Contagem de homens/mulheres separada por Participantes x Equipe
+  const contagemGenero = useMemo(() => {
+    const base = {
+      participantesM: 0,
+      participantesF: 0,
+      participantesNI: 0,
+      equipeM: 0,
+      equipeF: 0,
+      equipeNI: 0,
+    };
+    (inscricoes || []).forEach((i: any) => {
+      const equipe = ["equipe", "ministrador"].includes(i.tipo_inscricao || "");
+      const g = resolveGenero(i.genero);
+      const suf = g === "M" ? "M" : g === "F" ? "F" : "NI";
+      const key = `${equipe ? "equipe" : "participantes"}${suf}` as keyof typeof base;
+      base[key] += 1;
+    });
+    return base;
+  }, [inscricoes]);
+
   // Quebra por categoria (Equipe x Participantes) e status de pagamento
   const resumoCategorias = useMemo(() => {
     const isEquipe = (i: any) => ["equipe", "ministrador"].includes(i.tipo_inscricao || "");
@@ -879,6 +899,33 @@ const ImpactoFinanceiroTab = ({ eventoSelecionado, onEventoChange }: { eventoSel
                 <p className="text-xs text-muted-foreground">
                   Soma dos valores de inscrição
                 </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Homens e Mulheres</CardTitle>
+                <Users className="w-4 h-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-xs space-y-1">
+                  <div>
+                    <p className="font-semibold text-foreground">Participantes</p>
+                    <div className="text-muted-foreground flex gap-3">
+                      <span>Homens: <span className="font-medium text-foreground">{contagemGenero.participantesM}</span></span>
+                      <span>Mulheres: <span className="font-medium text-foreground">{contagemGenero.participantesF}</span></span>
+                      {contagemGenero.participantesNI > 0 && <span>N/I: {contagemGenero.participantesNI}</span>}
+                    </div>
+                  </div>
+                  <div className="border-t pt-1">
+                    <p className="font-semibold text-foreground">Equipe</p>
+                    <div className="text-muted-foreground flex gap-3">
+                      <span>Homens: <span className="font-medium text-foreground">{contagemGenero.equipeM}</span></span>
+                      <span>Mulheres: <span className="font-medium text-foreground">{contagemGenero.equipeF}</span></span>
+                      {contagemGenero.equipeNI > 0 && <span>N/I: {contagemGenero.equipeNI}</span>}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
