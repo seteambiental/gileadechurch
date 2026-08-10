@@ -207,6 +207,16 @@ export const PortalLideresInscricoesEventos = ({
         </div>
       </div>
 
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        onClick={() => setEnvioOpen(true)}
+      >
+        <MessageCircle className="w-4 h-4 mr-2" />
+        Enviar mensagem WhatsApp
+      </Button>
+
       <div className="flex flex-col gap-2">
         <SearchInput
           value={searchTerm}
@@ -225,19 +235,47 @@ export const PortalLideresInscricoesEventos = ({
           </SelectContent>
         </Select>
         {tiposDisponiveis.length > 0 && (
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Tipo de inscrição" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos os tipos</SelectItem>
-              {tiposDisponiveis.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {tipoInscricaoLabels[t] || t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start font-normal">
+                <Filter className="w-4 h-4 mr-2" />
+                {filterTipos.length === 0
+                  ? "Todos os tipos de participante"
+                  : filterTipos
+                      .map((t) => tipoInscricaoLabels[t] || t)
+                      .join(", ")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <div className="space-y-1">
+                {tiposDisponiveis.map((t) => (
+                  <label
+                    key={t}
+                    className="flex items-center gap-2 px-1 py-1.5 cursor-pointer rounded hover:bg-muted"
+                  >
+                    <Checkbox
+                      checked={filterTipos.includes(t)}
+                      onCheckedChange={() =>
+                        setFilterTipos((prev) =>
+                          prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+                        )
+                      }
+                    />
+                    <span className="text-sm">{tipoInscricaoLabels[t] || t}</span>
+                  </label>
+                ))}
+                {filterTipos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterTipos([])}
+                    className="text-xs text-muted-foreground underline px-1 pt-1"
+                  >
+                    limpar seleção
+                  </button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
@@ -267,6 +305,13 @@ export const PortalLideresInscricoesEventos = ({
                           {i.telefone_contato}
                         </p>
                       )}
+                      {(i.telefone_emergencia || i.telefone_responsavel) && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <ShieldAlert className="w-3 h-3" />
+                          {i.telefone_emergencia || i.telefone_responsavel}
+                          {i.nome_responsavel ? ` (${i.nome_responsavel})` : ""}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <Badge variant="outline" className="text-[10px]">
@@ -285,6 +330,18 @@ export const PortalLideresInscricoesEventos = ({
             );
           })}
         </div>
+      )}
+
+      {selectedEventId && (
+        <EnvioEmergenciaDialog
+          open={envioOpen}
+          onOpenChange={setEnvioOpen}
+          eventoId={selectedEventId}
+          eventoTipo="agenda"
+          eventoTitulo={selectedEventTitle}
+          intervaloMinutos={5}
+          lockOrigem
+        />
       )}
     </div>
   );
