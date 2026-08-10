@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 import {
   Select,
   SelectContent,
@@ -13,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { includesNormalized } from "@/lib/text-utils";
-import { Loader2, CalendarDays, MapPin, Phone, ChevronRight, Users } from "lucide-react";
+import { Loader2, CalendarDays, MapPin, Phone, ChevronRight, Users, MessageCircle, Filter, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -34,6 +37,7 @@ const tipoInscricaoLabels: Record<string, string> = {
   nao_membro: "Não Membro",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
+  ministrador: "Ministrador",
 };
 
 export const PortalLideresInscricoesEventos = ({
@@ -44,7 +48,8 @@ export const PortalLideresInscricoesEventos = ({
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
-  const [filterTipo, setFilterTipo] = useState<string>("__all__");
+  const [filterTipos, setFilterTipos] = useState<string[]>([]);
+  const [envioOpen, setEnvioOpen] = useState(false);
 
   // Eventos aos quais o membro tem acesso
   const { data: eventos = [], isLoading: loadingEventos } = useQuery({
@@ -71,7 +76,7 @@ export const PortalLideresInscricoesEventos = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("id, nome_participante, telefone_contato, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
+        .select("id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
         .eq("evento_id", selectedEventId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -95,11 +100,11 @@ export const PortalLideresInscricoesEventos = ({
       .filter((i: any) => {
         const matchSearch = includesNormalized(i.nome_participante, searchTerm);
         const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-        const matchTipo = filterTipo === "__all__" || i.tipo_inscricao === filterTipo;
+        const matchTipo = filterTipos.length === 0 || filterTipos.includes(i.tipo_inscricao);
         return matchSearch && matchStatus && matchTipo;
       })
       .sort((a: any, b: any) => a.nome_participante.localeCompare(b.nome_participante, "pt-BR"));
-  }, [inscricoes, searchTerm, filterStatus, filterTipo]);
+  }, [inscricoes, searchTerm, filterStatus, filterTipos]);
 
   const tiposDisponiveis = useMemo(() => {
     return Array.from(
@@ -153,7 +158,7 @@ export const PortalLideresInscricoesEventos = ({
                   setSelectedEventTitle(evento.titulo);
                   setSearchTerm("");
                   setFilterStatus("todos");
-                  setFilterTipo("__all__");
+                  setFilterTipos([]);
                 }}
               >
                 <CardContent className="p-3 flex items-center gap-3">
