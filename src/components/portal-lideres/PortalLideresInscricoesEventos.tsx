@@ -5,6 +5,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
 import {
   Select,
   SelectContent,
@@ -13,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { includesNormalized } from "@/lib/text-utils";
-import { Loader2, CalendarDays, MapPin, Phone, ChevronRight, Users } from "lucide-react";
+import { Loader2, CalendarDays, MapPin, Phone, ChevronRight, Users, MessageCircle, Filter, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
@@ -34,6 +37,7 @@ const tipoInscricaoLabels: Record<string, string> = {
   nao_membro: "Não Membro",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
+  ministrador: "Ministrador",
 };
 
 export const PortalLideresInscricoesEventos = ({
@@ -44,7 +48,8 @@ export const PortalLideresInscricoesEventos = ({
   const [selectedEventTitle, setSelectedEventTitle] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("todos");
-  const [filterTipo, setFilterTipo] = useState<string>("__all__");
+  const [filterTipos, setFilterTipos] = useState<string[]>([]);
+  const [envioOpen, setEnvioOpen] = useState(false);
 
   // Eventos aos quais o membro tem acesso
   const { data: eventos = [], isLoading: loadingEventos } = useQuery({
@@ -71,7 +76,7 @@ export const PortalLideresInscricoesEventos = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("id, nome_participante, telefone_contato, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
+        .select("id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
         .eq("evento_id", selectedEventId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -95,11 +100,11 @@ export const PortalLideresInscricoesEventos = ({
       .filter((i: any) => {
         const matchSearch = includesNormalized(i.nome_participante, searchTerm);
         const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
-        const matchTipo = filterTipo === "__all__" || i.tipo_inscricao === filterTipo;
+        const matchTipo = filterTipos.length === 0 || filterTipos.includes(i.tipo_inscricao);
         return matchSearch && matchStatus && matchTipo;
       })
       .sort((a: any, b: any) => a.nome_participante.localeCompare(b.nome_participante, "pt-BR"));
-  }, [inscricoes, searchTerm, filterStatus, filterTipo]);
+  }, [inscricoes, searchTerm, filterStatus, filterTipos]);
 
   const tiposDisponiveis = useMemo(() => {
     return Array.from(
@@ -153,7 +158,7 @@ export const PortalLideresInscricoesEventos = ({
                   setSelectedEventTitle(evento.titulo);
                   setSearchTerm("");
                   setFilterStatus("todos");
-                  setFilterTipo("__all__");
+                  setFilterTipos([]);
                 }}
               >
                 <CardContent className="p-3 flex items-center gap-3">
@@ -202,6 +207,16 @@ export const PortalLideresInscricoesEventos = ({
         </div>
       </div>
 
+      <Button
+        variant="outline"
+        size="sm"
+        className="w-full"
+        onClick={() => setEnvioOpen(true)}
+      >
+        <MessageCircle className="w-4 h-4 mr-2" />
+        Enviar mensagem WhatsApp
+      </Button>
+
       <div className="flex flex-col gap-2">
         <SearchInput
           value={searchTerm}
@@ -220,19 +235,47 @@ export const PortalLideresInscricoesEventos = ({
           </SelectContent>
         </Select>
         {tiposDisponiveis.length > 0 && (
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Tipo de inscrição" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all__">Todos os tipos</SelectItem>
-              {tiposDisponiveis.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {tipoInscricaoLabels[t] || t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-start font-normal">
+                <Filter className="w-4 h-4 mr-2" />
+                {filterTipos.length === 0
+                  ? "Todos os tipos de participante"
+                  : filterTipos
+                      .map((t) => tipoInscricaoLabels[t] || t)
+                      .join(", ")}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-2" align="start">
+              <div className="space-y-1">
+                {tiposDisponiveis.map((t) => (
+                  <label
+                    key={t}
+                    className="flex items-center gap-2 px-1 py-1.5 cursor-pointer rounded hover:bg-muted"
+                  >
+                    <Checkbox
+                      checked={filterTipos.includes(t)}
+                      onCheckedChange={() =>
+                        setFilterTipos((prev) =>
+                          prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
+                        )
+                      }
+                    />
+                    <span className="text-sm">{tipoInscricaoLabels[t] || t}</span>
+                  </label>
+                ))}
+                {filterTipos.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilterTipos([])}
+                    className="text-xs text-muted-foreground underline px-1 pt-1"
+                  >
+                    limpar seleção
+                  </button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         )}
       </div>
 
@@ -262,6 +305,13 @@ export const PortalLideresInscricoesEventos = ({
                           {i.telefone_contato}
                         </p>
                       )}
+                      {(i.telefone_emergencia || i.telefone_responsavel) && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <ShieldAlert className="w-3 h-3" />
+                          {i.telefone_emergencia || i.telefone_responsavel}
+                          {i.nome_responsavel ? ` (${i.nome_responsavel})` : ""}
+                        </p>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
                       <Badge variant="outline" className="text-[10px]">
@@ -280,6 +330,18 @@ export const PortalLideresInscricoesEventos = ({
             );
           })}
         </div>
+      )}
+
+      {selectedEventId && (
+        <EnvioEmergenciaDialog
+          open={envioOpen}
+          onOpenChange={setEnvioOpen}
+          eventoId={selectedEventId}
+          eventoTipo="agenda"
+          eventoTitulo={selectedEventTitle}
+          intervaloMinutos={5}
+          lockOrigem
+        />
       )}
     </div>
   );

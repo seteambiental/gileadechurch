@@ -159,6 +159,12 @@ serve(async (req) => {
     const statusEspiritualFiltro = Array.isArray(body.statusEspiritualFiltro)
       ? (body.statusEspiritualFiltro as string[])
       : null;
+    // Intervalo (em minutos) entre cada mensagem quando o envio é em lote.
+    // Usado pelo Portal do Líder (5 min). Se ausente, mantém o escalonamento
+    // padrão da fila (15–30s).
+    const intervaloMinutos = Number(body.intervaloMinutos) > 0
+      ? Number(body.intervaloMinutos)
+      : 0;
     // Tipo da mensagem para auditoria (vindo do template selecionado).
     // Se não vier, mantém comportamento antigo (emergencia_inicial/manual).
     const tipoMensagemAudit = (body.tipoMensagem as string) || null;
@@ -316,6 +322,11 @@ serve(async (req) => {
         conteudo: mensagemFinal,
         midia_url: midiaUrl,
         evento_id: eventoId,
+        agendar_para: intervaloMinutos
+          ? new Date(
+            Date.now() + enfileirados * intervaloMinutos * 60_000,
+          ).toISOString()
+          : null,
       });
 
       if (resultado.enfileirado) {
@@ -342,7 +353,9 @@ serve(async (req) => {
         sem_telefone: semTelefone,
         total: inscricoes.length,
         mensagem:
-          `${enfileirados} mensagem(ns) enfileiradas — envio escalonado a cada 15–30s para evitar SPAM.` +
+          `${enfileirados} mensagem(ns) enfileiradas — envio escalonado a cada ${
+            intervaloMinutos ? `${intervaloMinutos} min` : "15–30s"
+          } para evitar SPAM.` +
           (duplicados ? ` ${duplicados} ignoradas (duplicadas nas últimas 24h).` : "") +
           (semTelefone ? ` ${semTelefone} sem telefone válido.` : ""),
         erros: erros.slice(0, 10),
