@@ -49,6 +49,10 @@ interface Props {
   eventoTitulo: string;
   mensagemInicial?: string;
   idsIniciais?: string[];
+  /** Intervalo entre mensagens em lote (minutos). Ex.: Portal do Líder = 5. */
+  intervaloMinutos?: number;
+  /** Esconde o seletor de evento de origem (portal do líder). */
+  lockOrigem?: boolean;
 }
 
 export default function EnvioEmergenciaDialog({
@@ -59,6 +63,8 @@ export default function EnvioEmergenciaDialog({
   eventoTitulo,
   mensagemInicial,
   idsIniciais,
+  intervaloMinutos,
+  lockOrigem,
 }: Props) {
   const [destino, setDestino] = useState<"todos" | "um" | "selecionados">("todos");
   const [contatoTipo, setContatoTipo] = useState<"principal" | "emergencia">("principal");
@@ -281,6 +287,7 @@ export default function EnvioEmergenciaDialog({
                 : "aviso_importante"),
             tipoInscricaoFiltro:
               destino === "todos" && tiposFiltro.length > 0 ? tiposFiltro : null,
+            intervaloMinutos: intervaloMinutos || null,
             statusEspiritualFiltro:
               destino === "todos" && statusEspiritualFiltro.length > 0 ? statusEspiritualFiltro : null,
           },
@@ -318,6 +325,7 @@ export default function EnvioEmergenciaDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {!lockOrigem && (
           <div>
             <Label>Origem dos inscritos</Label>
             <Select
@@ -345,6 +353,13 @@ export default function EnvioEmergenciaDialog({
               Para PRE-eventos, selecione o evento principal (ex.: PRE IMPACTO FEMININO → Impacto Feminino).
             </p>
           </div>
+          )}
+
+          {intervaloMinutos ? (
+            <p className="text-xs text-muted-foreground">
+              Envios em lote são escalonados: 1 mensagem a cada {intervaloMinutos} minutos.
+            </p>
+          ) : null}
 
           <div>
             <Label>Enviar para</Label>
