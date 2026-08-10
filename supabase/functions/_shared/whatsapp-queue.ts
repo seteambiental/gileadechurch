@@ -12,6 +12,8 @@ export type FilaItem = {
   evento_id?: string | null;
   iniciado_por?: string | null;
   max_tentativas?: number;
+  /** ISO timestamp: quando a mensagem deve ser processada (envio escalonado). */
+  agendar_para?: string | null;
 };
 
 // Hash determinístico simples (FNV-1a) para deduplicação.
@@ -82,6 +84,7 @@ export async function enfileirarComDedupe(
       dedupe_hash: hash,
       max_tentativas: item.max_tentativas ?? 3,
       status: "pendente",
+      ...(item.agendar_para ? { proxima_tentativa_em: item.agendar_para } : {}),
     })
     .select("id")
     .single();
