@@ -100,6 +100,9 @@ export function CasaisTurmasTab() {
     } else {
       toast({ title: turma.ativo ? "Turma encerrada" : "Turma reativada" });
       queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas_encerradas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_concluidos"] });
       queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
     }
   };
