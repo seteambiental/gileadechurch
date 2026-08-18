@@ -1329,6 +1329,34 @@ const InscricaoEvento = () => {
                     </>
                     )}
 
+                    {/* Foto obrigatória quando a inscrição gera cadastro de membro */}
+                    {(evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member" && (
+                      <div className="space-y-2 md:space-y-3 p-4 border rounded-lg bg-muted/20">
+                        <Label className="text-base md:text-lg">Foto *</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Esta inscrição gera seu cadastro de membro, por isso a foto é obrigatória.
+                        </p>
+                        <div className="flex items-center gap-4">
+                          {photoPreview && (
+                            <img src={photoPreview} alt="Foto do participante" className="w-24 h-24 rounded-full object-cover" />
+                          )}
+                          <CameraPhotoInput
+                            photoPreview={photoPreview}
+                            onPhotoCapture={(file) => {
+                              setPhotoFile(file);
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setPhotoPreview(reader.result as string);
+                                reader.readAsDataURL(file);
+                              } else {
+                                setPhotoPreview(null);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Tipo de Inscrição */}
                     <div className="space-y-2 md:space-y-3">
                       <Label className="text-base md:text-lg">Tipo de Inscrição</Label>
