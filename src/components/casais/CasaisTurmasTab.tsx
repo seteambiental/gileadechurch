@@ -40,7 +40,7 @@ export function CasaisTurmasTab() {
   const queryClient = useQueryClient();
 
   const { data: turmas, isLoading } = useQuery({
-    queryKey: ["casais_turmas"],
+    queryKey: ["casais_turmas", "ativas"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casais_turmas")
