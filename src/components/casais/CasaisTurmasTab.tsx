@@ -40,11 +40,12 @@ export function CasaisTurmasTab() {
   const queryClient = useQueryClient();
 
   const { data: turmas, isLoading } = useQuery({
-    queryKey: ["casais_turmas"],
+    queryKey: ["casais_turmas", "ativas"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casais_turmas")
         .select("*")
+        .eq("ativo", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
@@ -99,6 +100,9 @@ export function CasaisTurmasTab() {
     } else {
       toast({ title: turma.ativo ? "Turma encerrada" : "Turma reativada" });
       queryClient.invalidateQueries({ queryKey: ["casais_turmas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_turmas_encerradas"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_all"] });
+      queryClient.invalidateQueries({ queryKey: ["casais_inscritos_concluidos"] });
       queryClient.invalidateQueries({ queryKey: ["casais_financeiro_turmas"] });
     }
   };

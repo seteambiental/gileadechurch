@@ -19,8 +19,20 @@ const nomeEsposa = (c: any) => c.membro_feminino?.full_name || c.nome_feminino |
 export function CasaisConcluidosTab() {
   const [searchTerm, setSearchTerm] = useState("");
 
+  const { data: turmasEncerradas } = useQuery({
+    queryKey: ["casais_turmas_encerradas_ids"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("casais_turmas")
+        .select("id")
+        .eq("ativo", false);
+      if (error) throw error;
+      return (data || []).map((t) => t.id);
+    },
+  });
+
   const { data: casais, isLoading } = useQuery({
-    queryKey: ["casais_inscritos_concluidos"],
+    queryKey: ["casais_inscritos_concluidos", turmasEncerradas],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("casais_inscritos")
@@ -30,11 +42,15 @@ export function CasaisConcluidosTab() {
           membro_masculino:members!casais_inscritos_membro_masculino_id_fkey(full_name, whatsapp),
           membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, whatsapp)
         `)
-        .eq("certificado_emitido", true)
+        .eq("status", "aprovado")
         .order("data_certificado", { ascending: false });
       if (error) throw error;
-      return data;
+      // Arquivo: casais com certificado emitido OU de turmas encerradas
+      return (data || []).filter(
+        (c: any) => c.certificado_emitido || (c.turma_id && (turmasEncerradas || []).includes(c.turma_id))
+      );
     },
+    enabled: !!turmasEncerradas,
   });
 
   const filtered = useMemo(() => {

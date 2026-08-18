@@ -64,8 +64,13 @@ export function CasaisCasaisTab() {
     },
   });
 
+  const turmasAtivasIds = useMemo(
+    () => (turmas || []).filter((t: any) => t.ativo).map((t: any) => t.id),
+    [turmas]
+  );
+
   const { data: casais, isLoading } = useQuery({
-    queryKey: ["casais_inscritos_all", turmaFilter],
+    queryKey: ["casais_inscritos_all", turmaFilter, turmasAtivasIds],
     queryFn: async () => {
       let query = supabase
         .from("casais_inscritos")
@@ -76,7 +81,6 @@ export function CasaisCasaisTab() {
           membro_feminino:members!casais_inscritos_membro_feminino_id_fkey(full_name, whatsapp)
         `)
         .eq("status", "aprovado")
-        .or("certificado_emitido.is.null,certificado_emitido.eq.false")
         .order("created_at", { ascending: false });
 
       if (turmaFilter !== "all") {
@@ -85,8 +89,12 @@ export function CasaisCasaisTab() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      // Casais de turmas encerradas ficam no Arquivo
+      return (data || []).filter(
+        (c: any) => !c.turma_id || turmasAtivasIds.includes(c.turma_id)
+      );
     },
+    enabled: !!turmas,
   });
 
   const handleDelete = async () => {
