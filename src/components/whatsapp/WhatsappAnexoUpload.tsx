@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Paperclip, X, Loader2, FileText, Image as ImageIcon, FileVideo } from "lucide-react";
 import { toast } from "sonner";
+import { resizeKeepAspect } from "@/lib/image-resize";
 
 const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.gif,.xls,.xlsx,.doc,.docx,.mp4,.mov,.webm";
 const MAX_BYTES = 16 * 1024 * 1024; // 16 MB (limite seguro do WhatsApp para documentos)
@@ -34,27 +35,57 @@ export default function WhatsappAnexoUpload({ value, onChange, disabled }: Props
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > MAX_BYTES) {
-      toast.error(`Arquivo grande demais (máx ${Math.round(MAX_BYTES / 1024 / 1024)} MB)`);
-      return;
-    }
     setUploading(true);
     try {
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      let upload: File = file;
+
+      // Imagens são otimizadas no navegador (reduz muito a chance de falha de rede)
+      if (detectType(file.name) === "image" && !/\.gif$/i.test(file.name)) {
+        try {
+          const { file: resized } = await resizeKeepAspect(file, 1600);
+          if (resized.size < file.size) upload = resized;
+        } catch {
+          // segue com o arquivo original
+        }
+      }
+
+      if (upload.size > MAX_BYTES) {
+        toast.error(`Arquivo grande demais (máx ${Math.round(MAX_BYTES / 1024 / 1024)} MB)`);
+        return;
+      }
+
+      const safe = upload.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const path = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
-      const { error } = await supabase.storage.from("whatsapp-anexos").upload(path, file, {
-        contentType: file.type || undefined,
-        upsert: false,
-      });
-      if (error) throw error;
+
+      // Uma retentativa automática: "Failed to fetch" costuma ser oscilação de rede
+      let lastError: any = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { error } = await supabase.storage.from("whatsapp-anexos").upload(path, upload, {
+          contentType: upload.type || undefined,
+          upsert: true,
+        });
+        if (!error) {
+          lastError = null;
+          break;
+        }
+        lastError = error;
+        await new Promise((r) => setTimeout(r, 1200));
+      }
+      if (lastError) throw lastError;
+
       const { data } = supabase.storage.from("whatsapp-anexos").getPublicUrl(path);
       onChange({
         url: data.publicUrl,
-        fileName: file.name,
-        type: detectType(file.name),
+        fileName: upload.name,
+        type: detectType(upload.name),
       });
     } catch (err: any) {
-      toast.error(err?.message || "Falha ao enviar arquivo");
+      const msg = String(err?.message || "");
+      toast.error(
+        /failed to fetch|network/i.test(msg)
+          ? "Falha de conexão ao enviar o anexo. Verifique a internet e tente novamente (arquivos menores enviam melhor em rede móvel)."
+          : msg || "Falha ao enviar arquivo"
+      );
     } finally {
       setUploading(false);
     }

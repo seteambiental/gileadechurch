@@ -42,7 +42,7 @@ import { CasaisCasaisTab } from "@/components/casais/CasaisCasaisTab";
 import { CasaisMateriaisTab } from "@/components/casais/CasaisMateriaisTab";
 import { CasaisProfessoresTab } from "@/components/casais/CasaisProfessoresTab";
 import { CasaisInscricoesTab } from "@/components/casais/CasaisInscricoesTab";
-import { CasaisTurmasEncerradasTab } from "@/components/casais/CasaisTurmasEncerradasTab";
+import { CasaisArquivoTab } from "@/components/casais/CasaisArquivoTab";
 import { CasaisFinanceiroTab } from "@/components/casais/CasaisFinanceiroTab";
 import { EvangelizacaoFrentesTab } from "@/components/evangelizacao/EvangelizacaoFrentesTab";
 import { CompartilharInscricaoCasaisDialog } from "@/components/casais/CompartilharInscricaoCasaisDialog";
@@ -585,7 +585,7 @@ const MinistryPage = () => {
                   </TabsTrigger>
                   <TabsTrigger value="encerradas" className="flex items-center gap-2">
                     <Archive className="w-4 h-4" />
-                    <span className="hidden sm:inline">Encerradas</span>
+                    <span className="hidden sm:inline">Arquivo</span>
                   </TabsTrigger>
                 </>
               ) : isMinisterioEspecifico ? (
@@ -779,7 +779,7 @@ const MinistryPage = () => {
                   <CasaisFinanceiroTab />
                 </TabsContent>
                 <TabsContent value="encerradas">
-                  <CasaisTurmasEncerradasTab />
+                  <CasaisArquivoTab />
                 </TabsContent>
               </>
             ) : isMinisterioEspecifico ? (

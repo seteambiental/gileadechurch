@@ -21,6 +21,7 @@ import { formatPhone, formatCPF, formatCep } from "@/lib/masks";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { includesNormalized } from "@/lib/text-utils";
 import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 interface Evento {
   id: string;
@@ -81,6 +82,9 @@ const InscricaoEvento = () => {
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
   const [idadeBloqueada, setIdadeBloqueada] = useState(false);
+  const [idadeBloqueioTexto, setIdadeBloqueioTexto] = useState<string>("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
@@ -495,6 +499,18 @@ const InscricaoEvento = () => {
       // Não gera para quem já é membro do cadastro interno.
       if ((evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member") {
         try {
+          let photoUrl: string | null = null;
+          if (photoFile) {
+            const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+            const fileName = `inscricao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from("member-photos")
+              .upload(fileName, photoFile);
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from("member-photos").getPublicUrl(fileName);
+              photoUrl = urlData.publicUrl;
+            }
+          }
           await supabase.rpc("criar_solicitacao_membro_de_inscricao" as any, {
             payload: {
               full_name: nomeParticipante,
@@ -511,6 +527,7 @@ const InscricaoEvento = () => {
               neighborhood: bairro || null,
               city: cidade || null,
               state: estadoUf || null,
+              photo_url: photoUrl,
             } as any,
           });
         } catch (e) {
@@ -578,10 +595,39 @@ const InscricaoEvento = () => {
       const nasc = parseLocalDate(dataNascimento);
       const completa15Em = new Date(nasc.getFullYear() + 15, nasc.getMonth(), nasc.getDate());
       if (completa15Em > cutoff) {
+        setIdadeBloqueioTexto(
+          `O ${evento.titulo} é para jovens que já tenham 15 anos completos ou que completem 15 anos até 16/08/${anoEvento}.`
+        );
         setIdadeBloqueada(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
+    }
+
+    // Regra Retiro Kids — criança precisa ter 7 anos completos até a data do evento
+    const isRetiroKids = /retiro/i.test(evento?.titulo || "") && /kids/i.test(evento?.titulo || "");
+    if (isRetiroKids && evento?.data_evento) {
+      const dataEvento = parseLocalDate(evento.data_evento);
+      const nasc = parseLocalDate(dataNascimento);
+      const completa7Em = new Date(nasc.getFullYear() + 7, nasc.getMonth(), nasc.getDate());
+      if (completa7Em > dataEvento) {
+        setIdadeBloqueioTexto(
+          `O ${evento.titulo} é para crianças que já tenham 7 anos completos ou que completem 7 anos até ${format(dataEvento, "dd/MM/yyyy")}.`
+        );
+        setIdadeBloqueada(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    // Foto obrigatória quando a inscrição gera cadastro de membro
+    if ((evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member" && !photoFile) {
+      toast({
+        title: "Foto obrigatória",
+        description: "Tire uma foto ou selecione uma imagem para concluir a inscrição.",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
@@ -645,12 +691,12 @@ const InscricaoEvento = () => {
             </div>
             <h2 className="text-xl font-bold">Ainda não é a sua vez 💛</h2>
             <p className="text-muted-foreground">
-              O <strong>{evento.titulo}</strong> é para jovens que já tenham{" "}
-              <strong>15 anos completos ou que completem 15 anos até 16/08/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
+              {idadeBloqueioTexto ||
+                `O ${evento.titulo} tem uma idade mínima para participação.`}
             </p>
             <p className="text-muted-foreground">
-              Pela sua data de nascimento, você vai completar 15 anos depois dessa data.
-              Mas não fique triste: guardamos o seu lugar para o próximo ano! Continue crescendo com a gente. 🙏
+              Pela data de nascimento informada, a idade mínima ainda não será atingida até essa data.
+              Mas não fique triste: guardamos o lugar para a próxima edição! Continue crescendo com a gente. 🙏
             </p>
             <Button variant="outline" className="w-full" onClick={() => setIdadeBloqueada(false)}>
               Voltar
@@ -1281,6 +1327,34 @@ const InscricaoEvento = () => {
                       </div>
                     )}
                     </>
+                    )}
+
+                    {/* Foto obrigatória quando a inscrição gera cadastro de membro */}
+                    {(evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member" && (
+                      <div className="space-y-2 md:space-y-3 p-4 border rounded-lg bg-muted/20">
+                        <Label className="text-base md:text-lg">Foto *</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Esta inscrição gera seu cadastro de membro, por isso a foto é obrigatória.
+                        </p>
+                        <div className="flex items-center gap-4">
+                          {photoPreview && (
+                            <img src={photoPreview} alt="Foto do participante" className="w-24 h-24 rounded-full object-cover" />
+                          )}
+                          <CameraPhotoInput
+                            photoPreview={photoPreview}
+                            onPhotoCapture={(file) => {
+                              setPhotoFile(file);
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setPhotoPreview(reader.result as string);
+                                reader.readAsDataURL(file);
+                              } else {
+                                setPhotoPreview(null);
+                              }
+                            }}
+                          />
+                        </div>
+                      </div>
                     )}
 
                     {/* Tipo de Inscrição */}
