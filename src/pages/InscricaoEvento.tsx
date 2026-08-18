@@ -499,6 +499,18 @@ const InscricaoEvento = () => {
       // Não gera para quem já é membro do cadastro interno.
       if ((evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member") {
         try {
+          let photoUrl: string | null = null;
+          if (photoFile) {
+            const ext = (photoFile.name.split(".").pop() || "jpg").toLowerCase();
+            const fileName = `inscricao_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from("member-photos")
+              .upload(fileName, photoFile);
+            if (!upErr) {
+              const { data: urlData } = supabase.storage.from("member-photos").getPublicUrl(fileName);
+              photoUrl = urlData.publicUrl;
+            }
+          }
           await supabase.rpc("criar_solicitacao_membro_de_inscricao" as any, {
             payload: {
               full_name: nomeParticipante,
@@ -515,6 +527,7 @@ const InscricaoEvento = () => {
               neighborhood: bairro || null,
               city: cidade || null,
               state: estadoUf || null,
+              photo_url: photoUrl,
             } as any,
           });
         } catch (e) {
