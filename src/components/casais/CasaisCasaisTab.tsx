@@ -289,17 +289,11 @@ export function CasaisCasaisTab() {
         )}
 
         {casais && casais.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6">
             <Card className="bg-muted/30">
               <CardContent className="pt-4 text-center">
                 <p className="text-2xl font-bold">{casais.length}</p>
-                <p className="text-xs text-muted-foreground">Total de Casais</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-muted/30">
-              <CardContent className="pt-4 text-center">
-                <p className="text-2xl font-bold">{casais.filter(c => c.certificado_emitido).length}</p>
-                <p className="text-xs text-muted-foreground">Certificados Emitidos</p>
+                <p className="text-xs text-muted-foreground">Casais em Curso</p>
               </CardContent>
             </Card>
             <Card className="bg-muted/30">
