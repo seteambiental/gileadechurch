@@ -21,6 +21,7 @@ import { formatPhone, formatCPF, formatCep } from "@/lib/masks";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import { includesNormalized } from "@/lib/text-utils";
 import { dispararMensagemInscricaoRecebida } from "@/lib/whatsapp-notifications";
+import { CameraPhotoInput } from "@/components/ui/camera-photo-input";
 
 interface Evento {
   id: string;
@@ -81,6 +82,9 @@ const InscricaoEvento = () => {
   const [showSearch, setShowSearch] = useState(true);
   const [inscricaoRealizada, setInscricaoRealizada] = useState(false);
   const [idadeBloqueada, setIdadeBloqueada] = useState(false);
+  const [idadeBloqueioTexto, setIdadeBloqueioTexto] = useState<string>("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [membroMinisterio, setMembroMinisterio] = useState<"gileade" | "outro" | "nenhum" | "">("");
   const [outroMinisterio, setOutroMinisterio] = useState("");
   const [cpf, setCpf] = useState("");
