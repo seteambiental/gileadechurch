@@ -595,10 +595,39 @@ const InscricaoEvento = () => {
       const nasc = parseLocalDate(dataNascimento);
       const completa15Em = new Date(nasc.getFullYear() + 15, nasc.getMonth(), nasc.getDate());
       if (completa15Em > cutoff) {
+        setIdadeBloqueioTexto(
+          `O ${evento.titulo} é para jovens que já tenham 15 anos completos ou que completem 15 anos até 16/08/${anoEvento}.`
+        );
         setIdadeBloqueada(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
+    }
+
+    // Regra Retiro Kids — criança precisa ter 7 anos completos até a data do evento
+    const isRetiroKids = /retiro/i.test(evento?.titulo || "") && /kids/i.test(evento?.titulo || "");
+    if (isRetiroKids && evento?.data_evento) {
+      const dataEvento = parseLocalDate(evento.data_evento);
+      const nasc = parseLocalDate(dataNascimento);
+      const completa7Em = new Date(nasc.getFullYear() + 7, nasc.getMonth(), nasc.getDate());
+      if (completa7Em > dataEvento) {
+        setIdadeBloqueioTexto(
+          `O ${evento.titulo} é para crianças que já tenham 7 anos completos ou que completem 7 anos até ${format(dataEvento, "dd/MM/yyyy")}.`
+        );
+        setIdadeBloqueada(true);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    // Foto obrigatória quando a inscrição gera cadastro de membro
+    if ((evento as any)?.gerar_cadastro_membro && selectedPerson?.type !== "member" && !photoFile) {
+      toast({
+        title: "Foto obrigatória",
+        description: "Tire uma foto ou selecione uma imagem para concluir a inscrição.",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Item 7 — inscrição como "membro" só é permitida para quem consta no cadastro interno
