@@ -691,12 +691,12 @@ const InscricaoEvento = () => {
             </div>
             <h2 className="text-xl font-bold">Ainda não é a sua vez 💛</h2>
             <p className="text-muted-foreground">
-              O <strong>{evento.titulo}</strong> é para jovens que já tenham{" "}
-              <strong>15 anos completos ou que completem 15 anos até 16/08/{parseLocalDate(evento.data_evento).getFullYear()}</strong>.
+              {idadeBloqueioTexto ||
+                `O ${evento.titulo} tem uma idade mínima para participação.`}
             </p>
             <p className="text-muted-foreground">
-              Pela sua data de nascimento, você vai completar 15 anos depois dessa data.
-              Mas não fique triste: guardamos o seu lugar para o próximo ano! Continue crescendo com a gente. 🙏
+              Pela data de nascimento informada, a idade mínima ainda não será atingida até essa data.
+              Mas não fique triste: guardamos o lugar para a próxima edição! Continue crescendo com a gente. 🙏
             </p>
             <Button variant="outline" className="w-full" onClick={() => setIdadeBloqueada(false)}>
               Voltar
