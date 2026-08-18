@@ -45,6 +45,7 @@ export function CasaisTurmasTab() {
       const { data, error } = await supabase
         .from("casais_turmas")
         .select("*")
+        .eq("ativo", true)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
