@@ -40,6 +40,7 @@ const Header = () => {
     { label: "Avisos", href: "#avisos" },
     { label: "Programação", href: "#programacao" },
     { label: "Casas Refúgio", href: "#casas-refugio" },
+    { label: "Vídeos", href: "#videos" },
     { label: "Contato", href: "#contato" },
   ];
 
