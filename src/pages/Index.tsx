@@ -789,20 +789,19 @@ const Index = () => {
       )}
 
       {/* Videos Section */}
-      {videosHomepage && videosHomepage.length > 0 && (
+      {videosArquivo.length > 0 && (
         <section id="videos" className="py-20 bg-muted/50">
           <div className="container mx-auto px-4">
             <SectionTitle
-              title="Vídeos"
-              subtitle="Assista aos nossos vídeos e mensagens"
+              title="Vídeos Anteriores"
+              subtitle="Histórico de vídeos e mensagens publicados"
               centered
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {videosHomepage.map((video, index) => {
+              {videosArquivo.map((video, index) => {
                 // Extract YouTube ID for embed
-                const ytMatch = video.video_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/);
-                const ytId = ytMatch ? ytMatch[1] : null;
+                const ytId = getYoutubeId(video.video_url);
 
                 return (
                   <div
