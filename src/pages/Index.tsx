@@ -594,20 +594,72 @@ const Index = () => {
       {/* Announcements Section */}
       <section id="avisos" className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
-          <SectionTitle
-            title="Avisos"
-            subtitle="Fique por dentro das novidades da nossa igreja"
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            <div>
+              <SectionTitle
+                title="Avisos"
+                subtitle="Fique por dentro das novidades da nossa igreja"
+              />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {announcements.map((announcement, index) => (
-              <div key={`${announcement.title}-${index}`} className="relative">
-                <AnnouncementCard
-                  {...announcement}
-                  delay={index * 100}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {announcements.map((announcement, index) => (
+                  <div key={`${announcement.title}-${index}`} className="relative">
+                    <AnnouncementCard
+                      {...announcement}
+                      delay={index * 100}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {videoDestaque && (
+              <div>
+                <SectionTitle
+                  title="Último Vídeo"
+                  subtitle="Assista agora à publicação mais recente"
+                />
+                <div className="bg-card rounded-xl overflow-hidden border border-border shadow-sm animate-fade-in">
+                  {getYoutubeId(videoDestaque.video_url) ? (
+                    <div className="aspect-video">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${getYoutubeId(videoDestaque.video_url)}`}
+                        title={videoDestaque.titulo}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                      />
+                    </div>
+                  ) : (
+                    <a
+                      href={videoDestaque.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="aspect-video bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                    >
+                      {videoDestaque.thumbnail_url ? (
+                        <img src={videoDestaque.thumbnail_url} alt={videoDestaque.titulo} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-muted-foreground">Assistir vídeo</span>
+                      )}
+                    </a>
+                  )}
+                  <div className="p-4 flex items-start justify-between gap-4">
+                    <div>
+                      <h4 className="font-heading font-semibold text-foreground">{videoDestaque.titulo}</h4>
+                      {videoDestaque.descricao && (
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{videoDestaque.descricao}</p>
+                      )}
+                    </div>
+                    {videosArquivo.length > 0 && (
+                      <a href="#videos" className="text-sm font-medium text-secondary hover:underline whitespace-nowrap">
+                        Ver anteriores
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
