@@ -293,7 +293,20 @@ export default function EnvioEmergenciaDialog({
           },
         },
       );
-      if (error) throw error;
+      if (error) {
+        // Extrai a mensagem real retornada pela função (o erro padrão é genérico)
+        let detalhe = "";
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === "function") {
+            const body = await ctx.json();
+            detalhe = body?.error || "";
+          }
+        } catch {
+          // ignora falha ao ler corpo
+        }
+        throw new Error(detalhe || error.message || "Erro ao enviar");
+      }
       toast.success(
         data?.mensagem ||
           `${data?.enfileirados ?? data?.enviados ?? 0} mensagem(ns) enfileiradas — envio escalonado para evitar SPAM.`,

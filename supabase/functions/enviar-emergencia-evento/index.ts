@@ -187,9 +187,12 @@ serve(async (req) => {
 
     const evento = await buscarEvento(supabase, eventoId, eventoTipo);
     if (!evento) throw new Error("Evento não encontrado");
-    if (eventoEncerrado(evento)) {
+    // Envios automáticos ficam bloqueados após o fim do evento.
+    // Envios manuais (feitos por uma pessoa na tela) continuam permitidos,
+    // pois é comum enviar avisos/agradecimentos depois do evento.
+    if (tipo !== "manual" && eventoEncerrado(evento)) {
       return new Response(
-        JSON.stringify({ error: "Evento já encerrado — envios bloqueados" }),
+        JSON.stringify({ error: "Evento já encerrado — envios automáticos bloqueados" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
