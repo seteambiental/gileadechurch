@@ -52,6 +52,13 @@ const Index = () => {
     },
   });
 
+  const getYoutubeId = (url: string) => {
+    const m = (url || "").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/);
+    return m ? m[1] : null;
+  };
+  const videoDestaque = videosHomepage && videosHomepage.length > 0 ? videosHomepage[0] : null;
+  const videosArquivo = videosHomepage ? videosHomepage.slice(1) : [];
+
   // Contador de membros cadastrados (via RPC para funcionar sem autenticação)
   const { data: totalMembros } = useQuery({
     queryKey: ["total-membros-counter-homepage"],
