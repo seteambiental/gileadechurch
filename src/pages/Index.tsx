@@ -223,7 +223,7 @@ const Index = () => {
         .from("homepage_videos")
         .select("*")
         .eq("ativo", true)
-        .order("ordem", { ascending: true });
+        .order("created_at", { ascending: false });
       if (error) return [];
       return data;
     },
