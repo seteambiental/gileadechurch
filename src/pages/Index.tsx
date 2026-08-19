@@ -233,8 +233,20 @@ const Index = () => {
     const m = (url || "").match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/);
     return m ? m[1] : null;
   };
-  const videoDestaque = videosHomepage && videosHomepage.length > 0 ? videosHomepage[0] : null;
-  const videosArquivo = videosHomepage ? videosHomepage.slice(1) : [];
+  // Rotação automática: o vídeo em destaque muda a cada 5 dias, seguindo a
+  // sequência de publicação (mais antigo -> mais recente). Os demais ficam no histórico.
+  const videosOrdenados = videosHomepage
+    ? [...videosHomepage].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      )
+    : [];
+  const DIAS_ROTACAO = 5;
+  const indiceDestaque =
+    videosOrdenados.length > 0
+      ? Math.floor(Date.now() / (DIAS_ROTACAO * 24 * 60 * 60 * 1000)) % videosOrdenados.length
+      : 0;
+  const videoDestaque = videosOrdenados.length > 0 ? videosOrdenados[indiceDestaque] : null;
+  const videosArquivo = videosOrdenados.filter((_, i) => i !== indiceDestaque).reverse();
 
   const { data: testemunhosDb } = useQuery({
     queryKey: ["testemunhos-public"],
