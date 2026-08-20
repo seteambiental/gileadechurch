@@ -824,7 +824,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       a_pagar: { header: "A Pagar", type: 'currency' as const, accessor: (row: any) => {
         return getValorAPagar(row);
       }},
-      status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+      status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial", cancelado: "Cancelado" }[row.status_pagamento] || "Pendente") },
       contato_emergencia: { header: "Contato Emergência", accessor: (row: any) => row.nome_responsavel || "—" },
       telefone_emergencia: { header: "Tel. Emergência", accessor: (row: any) => {
         const t = row.telefone_emergencia || row.telefone_responsavel;
@@ -840,20 +840,29 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   const pendingRowStyle = (row: any) => {
     const status = String(row.status_pagamento || "").toLowerCase().trim();
+    if (status === "cancelado") {
+      return { fillColor: "#F8D7DA", fontColor: "#842029" };
+    }
     if (!status || status === "pendente") {
       return { fillColor: "#FFF3CD", fontColor: "#856404" };
     }
     return null;
   };
 
+  // Linhas exportadas = ativas + (opcional) canceladas ao final
+  const exportRows = () =>
+    incluirCanceladas
+      ? [...inscricoes, ...canceladas.map((c: any) => ({ ...c, referencia: null }))]
+      : inscricoes;
+
   const handleExportExcel = async () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    await exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições", pendingRowStyle);
+    await exportGenericToExcel(exportRows(), buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições", pendingRowStyle);
   };
 
   const handleExportPDF = () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`, pendingRowStyle);
+    exportGenericToPDF(exportRows(), buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`, pendingRowStyle);
   };
 
   const toggleColumn = (key: string) => {
