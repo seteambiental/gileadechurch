@@ -939,6 +939,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                       </label>
                     ))}
                   </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={incluirCanceladas}
+                        onCheckedChange={() => setIncluirCanceladas((v) => !v)}
+                      />
+                      <span className="text-sm leading-tight">
+                        Incluir canceladas no final
+                        <span className="block text-xs text-muted-foreground">
+                          {canceladas.length} cancelada(s)
+                        </span>
+                      </span>
+                    </label>
+                  </div>
                 </PopoverContent>
               </Popover>
               <DropdownMenu>
