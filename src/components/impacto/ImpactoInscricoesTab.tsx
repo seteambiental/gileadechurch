@@ -352,6 +352,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     });
 
     let all = [...impacto, ...uniqueAgenda];
+    // Canceladas nunca entram na lista ativa (só no final da exportação, se marcado)
+    all = all.filter((i: any) => String(i.status_pagamento || "").toLowerCase().trim() !== "cancelado");
     if (sortRefDir) {
       const parseRef = (r: any) => {
         const n = parseInt(String(r ?? "").replace(/\D/g, ""), 10);
