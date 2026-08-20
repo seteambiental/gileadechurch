@@ -125,6 +125,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchNome, setSearchNome] = useState("");
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(DEFAULT_VISIBLE_COLUMNS));
+  const [incluirCanceladas, setIncluirCanceladas] = useState(false);
   const GENERO_OPTIONS = ["Masculino", "Feminino", "—"];
   const [filtroGenero, setFiltroGenero] = useState<Set<string>>(new Set(GENERO_OPTIONS));
   const [filtroTipo, setFiltroTipo] = useState<Set<string>>(new Set());
@@ -260,6 +261,28 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     enabled: !!selectedEventoId,
   });
 
+  // Inscrições canceladas (para anexar ao final do relatório, se marcado)
+  const { data: canceladas = [] } = useQuery({
+    queryKey: ["agenda-inscricoes-canceladas", selectedEventoId],
+    queryFn: async () => {
+      if (!selectedEventoId) return [];
+      const { data, error } = await supabase
+        .from("inscricoes_eventos")
+        .select(`id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, tipo_inscricao, status_pagamento, member_id, data_nascimento, created_at, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id, birth_date)`)
+        .eq("evento_id", selectedEventoId)
+        .eq("status_pagamento", "cancelado");
+      if (error) throw error;
+      return (data || []).map((i: any) => ({
+        ...i,
+        nome: i.nome_participante,
+        telefone: i.telefone_contato,
+        referencia: null,
+        source: "agenda_inscricao",
+      }));
+    },
+    enabled: !!selectedEventoId,
+  });
+
 
   // Fetch selected event details for valores_por_tipo
   const selectedEventoDetalhes = useMemo(() => {
@@ -329,6 +352,8 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     });
 
     let all = [...impacto, ...uniqueAgenda];
+    // Canceladas nunca entram na lista ativa (só no final da exportação, se marcado)
+    all = all.filter((i: any) => String(i.status_pagamento || "").toLowerCase().trim() !== "cancelado");
     if (sortRefDir) {
       const parseRef = (r: any) => {
         const n = parseInt(String(r ?? "").replace(/\D/g, ""), 10);
@@ -799,7 +824,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       a_pagar: { header: "A Pagar", type: 'currency' as const, accessor: (row: any) => {
         return getValorAPagar(row);
       }},
-      status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial" }[row.status_pagamento] || "Pendente") },
+      status: { header: "Status", accessor: (row: any) => ({ pago: "Pago", parcial: "Parcial", cancelado: "Cancelado" }[row.status_pagamento] || "Pendente") },
       contato_emergencia: { header: "Contato Emergência", accessor: (row: any) => row.nome_responsavel || "—" },
       telefone_emergencia: { header: "Tel. Emergência", accessor: (row: any) => {
         const t = row.telefone_emergencia || row.telefone_responsavel;
@@ -815,20 +840,29 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
 
   const pendingRowStyle = (row: any) => {
     const status = String(row.status_pagamento || "").toLowerCase().trim();
+    if (status === "cancelado") {
+      return { fillColor: "#F8D7DA", fontColor: "#842029" };
+    }
     if (!status || status === "pendente") {
       return { fillColor: "#FFF3CD", fontColor: "#856404" };
     }
     return null;
   };
 
+  // Linhas exportadas = ativas + (opcional) canceladas ao final
+  const exportRows = () =>
+    incluirCanceladas
+      ? [...inscricoes, ...canceladas.map((c: any) => ({ ...c, referencia: null }))]
+      : inscricoes;
+
   const handleExportExcel = async () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    await exportGenericToExcel(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições", pendingRowStyle);
+    await exportGenericToExcel(exportRows(), buildExportColumns(), `Inscricoes_${eventoNome}`, "Inscrições", pendingRowStyle);
   };
 
   const handleExportPDF = () => {
     if (!inscricoes.length) { toast.error("Nenhuma inscrição para exportar."); return; }
-    exportGenericToPDF(inscricoes, buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`, pendingRowStyle);
+    exportGenericToPDF(exportRows(), buildExportColumns(), `Inscricoes_${eventoNome}`, `Inscrições — ${eventoNome}`, pendingRowStyle);
   };
 
   const toggleColumn = (key: string) => {
@@ -904,6 +938,20 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
                         <span className="text-sm">{col.label}</span>
                       </label>
                     ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={incluirCanceladas}
+                        onCheckedChange={() => setIncluirCanceladas((v) => !v)}
+                      />
+                      <span className="text-sm leading-tight">
+                        Incluir canceladas no final
+                        <span className="block text-xs text-muted-foreground">
+                          {canceladas.length} cancelada(s)
+                        </span>
+                      </span>
+                    </label>
                   </div>
                 </PopoverContent>
               </Popover>
