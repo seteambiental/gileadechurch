@@ -114,7 +114,8 @@ export const InscricoesDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, evento_id, forma_pagamento, status_pagamento, nome, telefone, valor_inscricao, valor_pago, aprovado");
+        .select("id, evento_id, forma_pagamento, status_pagamento, nome, telefone, valor_inscricao, valor_pago, aprovado")
+        .neq("status_pagamento", "cancelado");
       if (error) throw error;
       return data || [];
     },
