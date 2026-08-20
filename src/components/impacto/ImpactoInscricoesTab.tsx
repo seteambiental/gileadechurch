@@ -266,19 +266,32 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     queryKey: ["agenda-inscricoes-canceladas", selectedEventoId],
     queryFn: async () => {
       if (!selectedEventoId) return [];
-      const { data, error } = await supabase
+      const [agendaRes, impactoRes] = await Promise.all([
+        supabase
         .from("inscricoes_eventos")
         .select(`id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, tipo_inscricao, status_pagamento, member_id, data_nascimento, created_at, member:members(id, full_name, photo_url, whatsapp, casa_refugio_id, birth_date)`)
         .eq("evento_id", selectedEventoId)
-        .eq("status_pagamento", "cancelado");
-      if (error) throw error;
-      return (data || []).map((i: any) => ({
+          .eq("status_pagamento", "cancelado"),
+        supabase
+          .from("impacto_inscricoes")
+          .select(`id, nome, telefone, telefone_emergencia, email, genero, tipo_inscricao, status_pagamento, member_id, data_nascimento, referencia, created_at, valor_inscricao, valor_pago`)
+          .eq("evento_id", selectedEventoId)
+          .eq("status_pagamento", "cancelado"),
+      ]);
+      if (agendaRes.error) throw agendaRes.error;
+      if (impactoRes.error) throw impactoRes.error;
+      const agendaCanceladas = (agendaRes.data || []).map((i: any) => ({
         ...i,
         nome: i.nome_participante,
         telefone: i.telefone_contato,
         referencia: null,
         source: "agenda_inscricao",
       }));
+      const impactoCanceladas = (impactoRes.data || []).map((i: any) => ({
+        ...i,
+        source: "impacto",
+      }));
+      return [...impactoCanceladas, ...agendaCanceladas];
     },
     enabled: !!selectedEventoId,
   });
@@ -852,7 +865,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   // Linhas exportadas = ativas + (opcional) canceladas ao final
   const exportRows = () =>
     incluirCanceladas
-      ? [...inscricoes, ...canceladas.map((c: any) => ({ ...c, referencia: null }))]
+      ? [...inscricoes, ...canceladas]
       : inscricoes;
 
   const handleExportExcel = async () => {
