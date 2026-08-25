@@ -155,7 +155,7 @@ export function CasaisFinanceiroTab() {
       if (filterStatusFin.size > 0 && filterStatusFin.size < finStatusOptions.length && !filterStatusFin.has(getFinStatus(c.id))) return false;
       return true;
     });
-  }, [casais, search, turmaFilter, filterStatusFin, pagamentosByCasal, finStatusOptions]);
+  }, [casais, search, turmaFilter, filterStatusFin, pagamentosByCasal, finStatusOptions, turmasAtivasVisiveis]);
 
   // Stats
   const stats = useMemo(() => {
