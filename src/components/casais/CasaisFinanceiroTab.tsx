@@ -332,7 +332,9 @@ export function CasaisFinanceiroTab() {
     };
   });
 
-  const turmaNomeSlug = (selectedTurma?.nome || "sem-turma").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const turmaNomeSlug = (selectedTurma?.nome || (turmaFilter === "__all__" ? "todas-as-turmas" : "sem-turma"))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
   const exportColumns = [
     { header: "Esposo", accessor: "esposo" },
     { header: "Esposa", accessor: "esposa" },
