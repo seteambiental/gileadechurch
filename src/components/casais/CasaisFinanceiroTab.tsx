@@ -148,11 +148,14 @@ export function CasaisFinanceiroTab() {
     return casais.filter((c: any) => {
       const nome = `${c.nome_masculino || ""} ${c.nome_feminino || ""}`.toLowerCase();
       if (search && !nome.includes(search.toLowerCase())) return false;
-      if (!turmaFilter || c.turma_id !== turmaFilter) return false;
+      if (!turmaFilter) return false;
+      if (turmaFilter === "__all__") {
+        if (!c.turma_id || !turmasAtivasVisiveis.some((t: any) => t.id === c.turma_id)) return false;
+      } else if (c.turma_id !== turmaFilter) return false;
       if (filterStatusFin.size > 0 && filterStatusFin.size < finStatusOptions.length && !filterStatusFin.has(getFinStatus(c.id))) return false;
       return true;
     });
-  }, [casais, search, turmaFilter, filterStatusFin, pagamentosByCasal, finStatusOptions]);
+  }, [casais, search, turmaFilter, filterStatusFin, pagamentosByCasal, finStatusOptions, turmasAtivasVisiveis]);
 
   // Stats
   const stats = useMemo(() => {
@@ -190,11 +193,15 @@ export function CasaisFinanceiroTab() {
   const { data: casaisDespesas = [] } = useQuery({
     queryKey: ["casais-despesas-summary", turmaFilter],
     queryFn: async () => {
+      if (!turmaFilter) return [];
       let q = supabase.from("casais_despesas").select("valor,turma_id");
-      if (turmaFilter) q = q.eq("turma_id", turmaFilter);
-      else return [];
+      if (turmaFilter !== "__all__") q = q.eq("turma_id", turmaFilter);
       const { data, error } = await q;
       if (error) throw error;
+      if (turmaFilter === "__all__") {
+        const visiveis = new Set(turmasAtivasVisiveis.map((t: any) => t.id));
+        return (data || []).filter((d: any) => !d.turma_id || visiveis.has(d.turma_id));
+      }
       return data || [];
     },
     enabled: !!turmaFilter,
@@ -325,7 +332,9 @@ export function CasaisFinanceiroTab() {
     };
   });
 
-  const turmaNomeSlug = (selectedTurma?.nome || "sem-turma").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const turmaNomeSlug = (selectedTurma?.nome || (turmaFilter === "__all__" ? "todas-as-turmas" : "sem-turma"))
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-");
   const exportColumns = [
     { header: "Esposo", accessor: "esposo" },
     { header: "Esposa", accessor: "esposa" },
@@ -476,6 +485,7 @@ export function CasaisFinanceiroTab() {
               <SelectValue placeholder="Selecione uma turma" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__">Todas as turmas</SelectItem>
               {turmasAtivasVisiveis.length === 0 && (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma turma disponível</div>
               )}
