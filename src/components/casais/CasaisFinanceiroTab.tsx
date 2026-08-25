@@ -193,11 +193,15 @@ export function CasaisFinanceiroTab() {
   const { data: casaisDespesas = [] } = useQuery({
     queryKey: ["casais-despesas-summary", turmaFilter],
     queryFn: async () => {
+      if (!turmaFilter) return [];
       let q = supabase.from("casais_despesas").select("valor,turma_id");
-      if (turmaFilter) q = q.eq("turma_id", turmaFilter);
-      else return [];
+      if (turmaFilter !== "__all__") q = q.eq("turma_id", turmaFilter);
       const { data, error } = await q;
       if (error) throw error;
+      if (turmaFilter === "__all__") {
+        const visiveis = new Set(turmasAtivasVisiveis.map((t: any) => t.id));
+        return (data || []).filter((d: any) => !d.turma_id || visiveis.has(d.turma_id));
+      }
       return data || [];
     },
     enabled: !!turmaFilter,
