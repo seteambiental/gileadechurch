@@ -483,6 +483,7 @@ export function CasaisFinanceiroTab() {
               <SelectValue placeholder="Selecione uma turma" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__">Todas as turmas</SelectItem>
               {turmasAtivasVisiveis.length === 0 && (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">Nenhuma turma disponível</div>
               )}
