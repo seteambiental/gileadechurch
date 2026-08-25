@@ -148,7 +148,10 @@ export function CasaisFinanceiroTab() {
     return casais.filter((c: any) => {
       const nome = `${c.nome_masculino || ""} ${c.nome_feminino || ""}`.toLowerCase();
       if (search && !nome.includes(search.toLowerCase())) return false;
-      if (!turmaFilter || c.turma_id !== turmaFilter) return false;
+      if (!turmaFilter) return false;
+      if (turmaFilter === "__all__") {
+        if (!c.turma_id || !turmasAtivasVisiveis.some((t: any) => t.id === c.turma_id)) return false;
+      } else if (c.turma_id !== turmaFilter) return false;
       if (filterStatusFin.size > 0 && filterStatusFin.size < finStatusOptions.length && !filterStatusFin.has(getFinStatus(c.id))) return false;
       return true;
     });
