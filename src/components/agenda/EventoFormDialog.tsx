@@ -404,6 +404,7 @@ export const EventoFormDialog = ({
           vagas_membro: vagasPorTipo?.membro?.toString() || "",
           vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
+          permite_lista_espera: (evento as any).permite_lista_espera || false,
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
           link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
           link_grupo_whatsapp_participantes: (evento as any).link_grupo_whatsapp_participantes || "",
