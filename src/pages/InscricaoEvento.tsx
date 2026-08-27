@@ -463,6 +463,9 @@ const InscricaoEvento = () => {
       }
 
       // Verificar novamente se há vagas (global e por tipo)
+      if (inscricoesEncerradas) {
+        throw new Error("As inscrições para este evento estão encerradas.");
+      }
       const isListaEspera = esgotado || tipoEsgotado(tipoInscricao);
       
       // Montar observação com info do ministério
