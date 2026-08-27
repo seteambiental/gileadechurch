@@ -239,6 +239,16 @@ const InscricaoEvento = () => {
   // Sem vagas (global ou em todas as modalidades) e sem lista de espera => encerrado
   const inscricoesEncerradas = (esgotado || todosTiposEsgotados) && !permiteListaEspera;
 
+  // Se o tipo selecionado não é oferecido (0 vagas), seleciona o primeiro disponível
+  useEffect(() => {
+    if (!evento) return;
+    if (tipoOferecido(tipoInscricao) && !tipoEsgotado(tipoInscricao)) return;
+    const proximo =
+      tiposOferecidos.find((o) => !tipoEsgotado(o.value)) || tiposOferecidos[0];
+    if (proximo && proximo.value !== tipoInscricao) setTipoInscricao(proximo.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evento?.id, JSON.stringify(vagasPorTipo), JSON.stringify(inscricoesPorTipo)]);
+
 
   // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
   const { data: pessoas = [] } = useQuery({
