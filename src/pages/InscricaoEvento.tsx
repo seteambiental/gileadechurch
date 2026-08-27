@@ -1503,6 +1503,8 @@ const InscricaoEvento = () => {
             </form>
           </CardContent>
         </Card>
+        )}
+
       </main>
 
       {/* Footer */}
