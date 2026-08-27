@@ -40,6 +40,7 @@ interface Evento {
   limite_vagas: number | null;
   valores_por_tipo: Record<string, string> | null;
   vagas_por_tipo: Record<string, number> | null;
+  permite_lista_espera?: boolean | null;
   campos_formulario: string[] | null;
 }
 
@@ -213,8 +214,8 @@ const InscricaoEvento = () => {
   // Per-type availability
   const vagasPorTipo = evento?.vagas_por_tipo as Record<string, number> | null;
   const getVagasDisponiveisTipo = (tipo: string): number | null => {
-    if (!vagasPorTipo || !vagasPorTipo[tipo]) return null;
-    const limite = vagasPorTipo[tipo];
+    const limite = vagasPorTipo?.[tipo];
+    if (typeof limite !== "number") return null;
     const usado = inscricoesPorTipo[tipo] || 0;
     return Math.max(0, limite - usado);
   };
@@ -222,6 +223,32 @@ const InscricaoEvento = () => {
     const disponivel = getVagasDisponiveisTipo(tipo);
     return disponivel !== null && disponivel <= 0;
   };
+  // Tipos configurados com 0 vagas não são oferecidos no formulário
+  const tipoOferecido = (tipo: string): boolean => vagasPorTipo?.[tipo] !== 0;
+
+  const TIPOS_INSCRICAO_OPTIONS = [
+    { value: "membro", label: "Membro" },
+    { value: "nao_membro", label: "Não Membro" },
+    { value: "familia", label: "Líderes e Anfitriões" },
+    { value: "equipe", label: "Equipe (Apoio/Serviço)" },
+  ];
+  const tiposOferecidos = TIPOS_INSCRICAO_OPTIONS.filter((o) => tipoOferecido(o.value));
+  const todosTiposEsgotados =
+    tiposOferecidos.length === 0 || tiposOferecidos.every((o) => tipoEsgotado(o.value));
+  const permiteListaEspera = !!(evento as any)?.permite_lista_espera;
+  // Sem vagas (global ou em todas as modalidades) e sem lista de espera => encerrado
+  const inscricoesEncerradas = (esgotado || todosTiposEsgotados) && !permiteListaEspera;
+
+  // Se o tipo selecionado não é oferecido (0 vagas), seleciona o primeiro disponível
+  useEffect(() => {
+    if (!evento) return;
+    if (tipoOferecido(tipoInscricao) && !tipoEsgotado(tipoInscricao)) return;
+    const proximo =
+      tiposOferecidos.find((o) => !tipoEsgotado(o.value)) || tiposOferecidos[0];
+    if (proximo && proximo.value !== tipoInscricao) setTipoInscricao(proximo.value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evento?.id, JSON.stringify(vagasPorTipo), JSON.stringify(inscricoesPorTipo)]);
+
 
   // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
   const { data: pessoas = [] } = useQuery({
@@ -436,6 +463,9 @@ const InscricaoEvento = () => {
       }
 
       // Verificar novamente se há vagas (global e por tipo)
+      if (inscricoesEncerradas) {
+        throw new Error("As inscrições para este evento estão encerradas.");
+      }
       const isListaEspera = esgotado || tipoEsgotado(tipoInscricao);
       
       // Montar observação com info do ministério
@@ -830,7 +860,25 @@ const InscricaoEvento = () => {
           </CardHeader>
         </Card>
 
-        {esgotado ? (
+        {inscricoesEncerradas ? (
+          <Card className="mb-4 md:mb-6">
+            <CardHeader className="md:p-8">
+              <CardTitle className="text-lg md:text-xl">Inscrições encerradas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 md:p-8 md:pt-0">
+              <div className="p-4 md:p-6 bg-destructive/10 rounded-lg">
+                <p className="text-destructive font-medium text-base md:text-lg">
+                  🚫 As inscrições para este evento estão encerradas.
+                </p>
+                <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+                  Todas as vagas foram preenchidas e este evento não possui lista de espera.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {!inscricoesEncerradas && (esgotado || todosTiposEsgotados) && permiteListaEspera ? (
           <Card className="mb-4 md:mb-6">
             <CardHeader className="md:p-8">
               <CardTitle className="text-lg md:text-xl">Vagas esgotadas - Lista de Espera</CardTitle>
@@ -848,12 +896,14 @@ const InscricaoEvento = () => {
           </Card>
         ) : null}
 
+        {!inscricoesEncerradas && (
         <Card>
           <CardHeader className="md:p-8">
             <CardTitle className="text-lg md:text-2xl">
-              {esgotado ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
+              {(esgotado || todosTiposEsgotados) ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="md:p-8 md:pt-0">
             <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
               {/* Search for existing person */}
@@ -1374,13 +1424,9 @@ const InscricaoEvento = () => {
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          {[
-                            { value: "membro", label: "Membro" },
-                            { value: "nao_membro", label: "Não Membro" },
-                            { value: "familia", label: "Líderes e Anfitriões" },
-                            { value: "equipe", label: "Equipe (Apoio/Serviço)" },
-                          ]
+                          {tiposOferecidos
                             .filter((opt) => selectedPerson?.type === "member" || opt.value === "nao_membro")
+
                             .map((opt) => {
                             const disponivel = getVagasDisponiveisTipo(opt.value);
                             const esgotadoTipo = tipoEsgotado(opt.value);
@@ -1468,7 +1514,7 @@ const InscricaoEvento = () => {
                         Enviando...
                       </>
                     ) : (
-                      esgotado ? "Entrar na Lista de Espera" : "Confirmar Inscrição"
+                      (esgotado || todosTiposEsgotados) ? "Entrar na Lista de Espera" : "Confirmar Inscrição"
                     )}
                   </Button>
                 </>
@@ -1476,6 +1522,8 @@ const InscricaoEvento = () => {
             </form>
           </CardContent>
         </Card>
+        )}
+
       </main>
 
       {/* Footer */}

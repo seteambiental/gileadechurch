@@ -218,6 +218,7 @@ export const EventoFormDialog = ({
     vagas_nao_membro: "",
     vagas_familia: "",
     vagas_equipe: "",
+    permite_lista_espera: false,
     link_grupo_whatsapp: "",
     link_grupo_whatsapp_participantes: "",
     link_grupo_whatsapp_equipe: "",
@@ -403,6 +404,7 @@ export const EventoFormDialog = ({
           vagas_membro: vagasPorTipo?.membro?.toString() || "",
           vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
+          permite_lista_espera: (evento as any).permite_lista_espera || false,
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
           link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
           link_grupo_whatsapp_participantes: (evento as any).link_grupo_whatsapp_participantes || "",
@@ -458,6 +460,7 @@ export const EventoFormDialog = ({
           vagas_nao_membro: "",
           vagas_familia: "",
           vagas_equipe: "",
+          permite_lista_espera: false,
           link_grupo_whatsapp: "",
           link_grupo_whatsapp_participantes: "",
           link_grupo_whatsapp_equipe: "",
@@ -774,6 +777,7 @@ export const EventoFormDialog = ({
           if (formData.vagas_equipe) vpt.equipe = parseInt(formData.vagas_equipe);
           return Object.keys(vpt).length > 0 ? vpt : null;
         })() : null,
+        permite_lista_espera: formData.necessita_inscricao ? formData.permite_lista_espera : false,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
@@ -1946,7 +1950,7 @@ export const EventoFormDialog = ({
                 </div>
 
                 <Label className="font-medium mt-4">Vagas por Tipo de Inscrição</Label>
-                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo</p>
+                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo. Use <strong>0</strong> para não oferecer o tipo (não aparece no formulário).</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Membro</Label>
@@ -1965,8 +1969,24 @@ export const EventoFormDialog = ({
                     <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_equipe} onChange={(e) => setFormData({ ...formData, vagas_equipe: e.target.value })} />
                   </div>
                 </div>
+
+                <div className="flex items-start gap-3 pt-2 border-t">
+                  <Checkbox
+                    id="permite_lista_espera"
+                    checked={formData.permite_lista_espera}
+                    onCheckedChange={(checked) => setFormData({ ...formData, permite_lista_espera: !!checked })}
+                  />
+                  <div>
+                    <Label htmlFor="permite_lista_espera" className="cursor-pointer font-medium">Permitir lista de espera</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quando as vagas regulares acabarem, o formulário continua aberto para inscrição na lista de espera.
+                      Se desmarcado, o evento exibirá "Inscrições encerradas".
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
+
 
             {/* Visibilidade - exibir sempre */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">

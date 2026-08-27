@@ -1,0 +1,1 @@
+ALTER TABLE public.agenda_igreja ADD COLUMN IF NOT EXISTS permite_lista_espera boolean NOT NULL DEFAULT false;
