@@ -777,6 +777,7 @@ export const EventoFormDialog = ({
           if (formData.vagas_equipe) vpt.equipe = parseInt(formData.vagas_equipe);
           return Object.keys(vpt).length > 0 ? vpt : null;
         })() : null,
+        permite_lista_espera: formData.necessita_inscricao ? formData.permite_lista_espera : false,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
