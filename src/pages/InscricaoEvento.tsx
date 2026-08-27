@@ -857,7 +857,25 @@ const InscricaoEvento = () => {
           </CardHeader>
         </Card>
 
-        {esgotado ? (
+        {inscricoesEncerradas ? (
+          <Card className="mb-4 md:mb-6">
+            <CardHeader className="md:p-8">
+              <CardTitle className="text-lg md:text-xl">Inscrições encerradas</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 md:p-8 md:pt-0">
+              <div className="p-4 md:p-6 bg-destructive/10 rounded-lg">
+                <p className="text-destructive font-medium text-base md:text-lg">
+                  🚫 As inscrições para este evento estão encerradas.
+                </p>
+                <p className="text-sm md:text-base text-muted-foreground mt-1 md:mt-2">
+                  Todas as vagas foram preenchidas e este evento não possui lista de espera.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {!inscricoesEncerradas && (esgotado || todosTiposEsgotados) && permiteListaEspera ? (
           <Card className="mb-4 md:mb-6">
             <CardHeader className="md:p-8">
               <CardTitle className="text-lg md:text-xl">Vagas esgotadas - Lista de Espera</CardTitle>
@@ -875,12 +893,14 @@ const InscricaoEvento = () => {
           </Card>
         ) : null}
 
+        {!inscricoesEncerradas && (
         <Card>
           <CardHeader className="md:p-8">
             <CardTitle className="text-lg md:text-2xl">
-              {esgotado ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
+              {(esgotado || todosTiposEsgotados) ? "Inscrição na Lista de Espera" : "Formulário de Inscrição"}
             </CardTitle>
           </CardHeader>
+
           <CardContent className="md:p-8 md:pt-0">
             <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
               {/* Search for existing person */}
