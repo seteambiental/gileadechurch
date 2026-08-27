@@ -1511,7 +1511,7 @@ const InscricaoEvento = () => {
                         Enviando...
                       </>
                     ) : (
-                      esgotado ? "Entrar na Lista de Espera" : "Confirmar Inscrição"
+                      (esgotado || todosTiposEsgotados) ? "Entrar na Lista de Espera" : "Confirmar Inscrição"
                     )}
                   </Button>
                 </>
