@@ -214,8 +214,8 @@ const InscricaoEvento = () => {
   // Per-type availability
   const vagasPorTipo = evento?.vagas_por_tipo as Record<string, number> | null;
   const getVagasDisponiveisTipo = (tipo: string): number | null => {
-    if (!vagasPorTipo || !vagasPorTipo[tipo]) return null;
-    const limite = vagasPorTipo[tipo];
+    const limite = vagasPorTipo?.[tipo];
+    if (typeof limite !== "number") return null;
     const usado = inscricoesPorTipo[tipo] || 0;
     return Math.max(0, limite - usado);
   };
@@ -223,6 +223,22 @@ const InscricaoEvento = () => {
     const disponivel = getVagasDisponiveisTipo(tipo);
     return disponivel !== null && disponivel <= 0;
   };
+  // Tipos configurados com 0 vagas não são oferecidos no formulário
+  const tipoOferecido = (tipo: string): boolean => vagasPorTipo?.[tipo] !== 0;
+
+  const TIPOS_INSCRICAO_OPTIONS = [
+    { value: "membro", label: "Membro" },
+    { value: "nao_membro", label: "Não Membro" },
+    { value: "familia", label: "Líderes e Anfitriões" },
+    { value: "equipe", label: "Equipe (Apoio/Serviço)" },
+  ];
+  const tiposOferecidos = TIPOS_INSCRICAO_OPTIONS.filter((o) => tipoOferecido(o.value));
+  const todosTiposEsgotados =
+    tiposOferecidos.length === 0 || tiposOferecidos.every((o) => tipoEsgotado(o.value));
+  const permiteListaEspera = !!(evento as any)?.permite_lista_espera;
+  // Sem vagas (global ou em todas as modalidades) e sem lista de espera => encerrado
+  const inscricoesEncerradas = (esgotado || todosTiposEsgotados) && !permiteListaEspera;
+
 
   // Fetch pessoas para busca - usando view pública que une members e novos_convertidos
   const { data: pessoas = [] } = useQuery({
