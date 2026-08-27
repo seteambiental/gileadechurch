@@ -1421,13 +1421,9 @@ const InscricaoEvento = () => {
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          {[
-                            { value: "membro", label: "Membro" },
-                            { value: "nao_membro", label: "Não Membro" },
-                            { value: "familia", label: "Líderes e Anfitriões" },
-                            { value: "equipe", label: "Equipe (Apoio/Serviço)" },
-                          ]
+                          {tiposOferecidos
                             .filter((opt) => selectedPerson?.type === "member" || opt.value === "nao_membro")
+
                             .map((opt) => {
                             const disponivel = getVagasDisponiveisTipo(opt.value);
                             const esgotadoTipo = tipoEsgotado(opt.value);
