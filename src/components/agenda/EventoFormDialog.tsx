@@ -1946,7 +1946,7 @@ export const EventoFormDialog = ({
                 </div>
 
                 <Label className="font-medium mt-4">Vagas por Tipo de Inscrição</Label>
-                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo</p>
+                <p className="text-xs text-muted-foreground">Deixe vazio para não limitar por tipo. Use <strong>0</strong> para não oferecer o tipo (não aparece no formulário).</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Membro</Label>
@@ -1965,8 +1965,24 @@ export const EventoFormDialog = ({
                     <Input type="number" min="0" placeholder="Sem limite" value={formData.vagas_equipe} onChange={(e) => setFormData({ ...formData, vagas_equipe: e.target.value })} />
                   </div>
                 </div>
+
+                <div className="flex items-start gap-3 pt-2 border-t">
+                  <Checkbox
+                    id="permite_lista_espera"
+                    checked={formData.permite_lista_espera}
+                    onCheckedChange={(checked) => setFormData({ ...formData, permite_lista_espera: !!checked })}
+                  />
+                  <div>
+                    <Label htmlFor="permite_lista_espera" className="cursor-pointer font-medium">Permitir lista de espera</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Quando as vagas regulares acabarem, o formulário continua aberto para inscrição na lista de espera.
+                      Se desmarcado, o evento exibirá "Inscrições encerradas".
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
+
 
             {/* Visibilidade - exibir sempre */}
             <div className="p-3 bg-muted/50 rounded-lg space-y-3">
