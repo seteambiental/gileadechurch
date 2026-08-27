@@ -218,6 +218,7 @@ export const EventoFormDialog = ({
     vagas_nao_membro: "",
     vagas_familia: "",
     vagas_equipe: "",
+    permite_lista_espera: false,
     link_grupo_whatsapp: "",
     link_grupo_whatsapp_participantes: "",
     link_grupo_whatsapp_equipe: "",
