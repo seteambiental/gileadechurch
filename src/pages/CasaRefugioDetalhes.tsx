@@ -402,7 +402,7 @@ const CasaRefugioDetalhes = () => {
   // Quick action: mark as "não houve encontro" or "transferido"
   const quickCancelMutation = useMutation({
     mutationFn: async ({ dataEncontro, justificativa }: { dataEncontro: string; justificativa: string }) => {
-      const { error } = await supabase.from("encontros_casa_refugio").insert({
+      const { error } = await supabase.from("encontros_casa_refugio").upsert({
         casa_refugio_id: id!,
         data_encontro: dataEncontro,
         data_esperada: dataEncontro,
@@ -416,7 +416,7 @@ const CasaRefugioDetalhes = () => {
         ofertas: 0,
         ofertas_dinheiro: 0,
         ofertas_pix: 0,
-      });
+      }, { onConflict: "casa_refugio_id,data_encontro" });
       if (error) throw error;
     },
     onSuccess: () => {
