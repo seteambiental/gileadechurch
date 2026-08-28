@@ -420,7 +420,7 @@ export const PortalLideresCasaRefugio = ({
   // Quick cancel mutation
   const quickCancelMutation = useMutation({
     mutationFn: async ({ dataEncontro, justificativa }: { dataEncontro: string; justificativa: string }) => {
-      const { error } = await supabase.from("encontros_casa_refugio").insert({
+      const { error } = await supabase.from("encontros_casa_refugio").upsert({
         casa_refugio_id: selectedCasa!,
         data_encontro: dataEncontro,
         data_esperada: dataEncontro,
@@ -428,7 +428,7 @@ export const PortalLideresCasaRefugio = ({
         justificativa,
         qtd_lideres: 0, qtd_membros: 0, qtd_criancas: 0, qtd_visitantes: 0,
         kilos_arrecadados: 0, ofertas: 0, ofertas_dinheiro: 0, ofertas_pix: 0,
-      });
+      }, { onConflict: "casa_refugio_id,data_encontro" });
       if (error) throw error;
     },
     onSuccess: () => {
