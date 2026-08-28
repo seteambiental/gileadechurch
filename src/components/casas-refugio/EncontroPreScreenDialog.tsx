@@ -74,7 +74,7 @@ export const EncontroPreScreenDialog = ({
         ofertas: 0,
         ofertas_dinheiro: 0,
         ofertas_pix: 0,
-      });
+      }, { onConflict: "casa_refugio_id,data_encontro" });
       if (error) throw error;
     },
     onSuccess: () => {
