@@ -60,7 +60,7 @@ export const EncontroPreScreenDialog = ({
   // Mutation to save "reunião não aconteceu"
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("encontros_casa_refugio").insert({
+      const { error } = await supabase.from("encontros_casa_refugio").upsert({
         casa_refugio_id: casaRefugioId,
         data_encontro: dataEncontro,
         data_esperada: dataEncontro,
