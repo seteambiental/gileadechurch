@@ -56,15 +56,31 @@ serve(async (req) => {
     const nextMondayStr = nextMonday.toISOString().split("T")[0];
     const nextSundayStr = nextSunday.toISOString().split("T")[0];
 
+    // Tipos da aba "Eventos" da agenda
+    const TIPOS_EVENTO = [
+      "apresentacao_criancas",
+      "batismo",
+      "casa_refugio",
+      "conferencia",
+      "gileade_fest",
+      "impacto",
+      "evento",
+      "retiro",
+      "retiro_kids",
+      "acao_evangelistica",
+    ];
+    const fimAnoStr = `${today.getFullYear()}-12-31`;
+
     const { data: eventosRaw } = await supabaseAdmin
       .from("agenda_igreja")
       .select("titulo, data_evento, hora_inicio, local, tipo_evento")
       .gte("data_evento", todayStr)
+      .lte("data_evento", fimAnoStr)
       .eq("ativo", true)
       .eq("recorrente", false)
-      .in("tipo_evento", ["culto", "impacto", "manaim"])
+      .in("tipo_evento", TIPOS_EVENTO)
       .order("data_evento", { ascending: true })
-      .limit(10);
+      .limit(50);
 
     // Filter out any "reserva" events by title or local containing "salão de festas"
     const eventos = (eventosRaw || []).filter(e => {
@@ -73,7 +89,8 @@ serve(async (req) => {
       if (tituloLower.includes("reserva")) return false;
       if (localLower.includes("salão de festas") || localLower.includes("salao de festas")) return false;
       return true;
-    }).slice(0, 2);
+    });
+
 
     // Fetch next week's schedule - deduplicated by title
     const { data: programacaoRaw } = await supabaseAdmin
