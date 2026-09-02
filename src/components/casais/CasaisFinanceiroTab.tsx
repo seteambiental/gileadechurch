@@ -197,8 +197,9 @@ export function CasaisFinanceiroTab() {
       const { data, error } = await q;
       if (error) throw error;
       if (turmaFilter === "__all__") {
+        // Somente despesas vinculadas a turmas visíveis (não arquivadas)
         const visiveis = new Set(turmasAtivasVisiveis.map((t: any) => t.id));
-        return (data || []).filter((d: any) => !d.turma_id || visiveis.has(d.turma_id));
+        return (data || []).filter((d: any) => d.turma_id && visiveis.has(d.turma_id));
       }
       return data || [];
     },
