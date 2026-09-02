@@ -88,12 +88,10 @@ export function CasaisFinanceiroTab() {
   const turmasAtivasVisiveis = useMemo(() => turmas.filter((t: any) => !t.arquivada), [turmas]);
   const turmasArquivadas = useMemo(() => turmas.filter((t: any) => t.arquivada), [turmas]);
 
-  // Auto-selecionar primeira turma disponível para que o relatório seja sempre
-  // apresentado por turma (nunca somando turmas diferentes)
+  // Filtrar "Todas as turmas" por padrão ao entrar na aba
   useEffect(() => {
     if (turmaFilter) return;
-    const preferida = turmasAtivasVisiveis.find((t: any) => t.ativo) || turmasAtivasVisiveis[0];
-    if (preferida) setTurmaFilter(preferida.id);
+    if (turmasAtivasVisiveis.length > 0) setTurmaFilter("__all__");
   }, [turmasAtivasVisiveis, turmaFilter]);
 
   // Fetch all payments
