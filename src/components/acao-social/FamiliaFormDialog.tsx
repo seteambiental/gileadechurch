@@ -242,7 +242,12 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
         observacoes: familia.observacoes || "",
         ativo: familia.ativo ?? true,
       });
+      setResponsavelPicked(!!familia.responsavel_member_id);
+      setResponsavelSearch("");
     } else {
+      setResponsavelPicked(false);
+      setResponsavelSearch("");
+
       form.reset({
         nome_familia: "",
         responsavel_member_id: "",
