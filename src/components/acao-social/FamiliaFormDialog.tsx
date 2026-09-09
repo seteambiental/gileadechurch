@@ -364,14 +364,53 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
               rules={{ required: "Nome é obrigatório" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Família *</FormLabel>
+                  <FormLabel>Nome do Responsável *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Família Silva" />
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        className="pl-9"
+                        placeholder="Digite o nome para buscar no cadastro..."
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setResponsavelSearch(e.target.value);
+                          setResponsavelPicked(false);
+                          form.setValue("responsavel_member_id", "");
+                        }}
+                      />
+                    </div>
                   </FormControl>
+                  {!responsavelPicked && responsavelSearch.length >= 2 && (
+                    <div className="border rounded-md max-h-40 overflow-y-auto mt-1">
+                      {responsavelResults.length === 0 ? (
+                        <p className="text-xs text-muted-foreground p-2">
+                          Nenhum cadastro encontrado. Continue digitando o nome e preencha os dados abaixo manualmente.
+                        </p>
+                      ) : (
+                        responsavelResults.map((m: any) => (
+                          <div
+                            key={m.id}
+                            className="p-2 text-sm hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                            onClick={() => selecionarResponsavel(m)}
+                          >
+                            <span className="font-medium">{m.full_name}</span>
+                            {m.city && <span className="text-muted-foreground"> — {m.city}</span>}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {responsavelPicked && (
+                    <p className="text-xs text-muted-foreground">
+                      Dados preenchidos a partir do cadastro da igreja. Você pode editá-los.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
