@@ -337,7 +337,9 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
         estado: values.estado?.toUpperCase() || values.estado,
         casa_refugio_id: values.casa_refugio_id || null,
         lider_responsavel_id: values.lider_responsavel_id || null,
+        responsavel_member_id: values.responsavel_member_id || null,
       };
+
 
       let familiaId: string;
 
