@@ -1,0 +1,1 @@
+ALTER TABLE public.acao_social_familias ADD COLUMN IF NOT EXISTS responsavel_member_id uuid REFERENCES public.members(id) ON DELETE SET NULL;

@@ -88,6 +88,8 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
   const [origemTab, setOrigemTab] = useState<"igreja" | "externo">("igreja");
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedParentesco, setSelectedParentesco] = useState("");
+  const [responsavelSearch, setResponsavelSearch] = useState("");
+  const [responsavelPicked, setResponsavelPicked] = useState(false);
 
   // Free-text fields for external members
   const [externoNome, setExternoNome] = useState("");
@@ -98,6 +100,7 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
   const form = useForm({
     defaultValues: {
       nome_familia: "",
+      responsavel_member_id: "",
       endereco: "",
       numero: "",
       complemento: "",
@@ -116,6 +119,39 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
       ativo: true,
     },
   });
+
+  const { data: responsavelResults = [] } = useQuery({
+    queryKey: ["acao_social_responsavel_search", responsavelSearch],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp, email, cep, address, number, complement, neighborhood, city, state")
+        .or("excluido.is.null,excluido.eq.false")
+        .ilike("full_name", `%${responsavelSearch}%`)
+        .order("full_name")
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+    enabled: responsavelSearch.length >= 2 && !responsavelPicked,
+  });
+
+  const selecionarResponsavel = (m: any) => {
+    form.setValue("nome_familia", m.full_name);
+    form.setValue("responsavel_member_id", m.id);
+    if (m.whatsapp) form.setValue("whatsapp", m.whatsapp);
+    if (m.email) form.setValue("email", m.email);
+    if (m.cep) form.setValue("cep", m.cep);
+    if (m.address) form.setValue("endereco", m.address);
+    if (m.number) form.setValue("numero", m.number);
+    if (m.complement) form.setValue("complemento", m.complement);
+    if (m.neighborhood) form.setValue("bairro", m.neighborhood);
+    if (m.city) form.setValue("cidade", m.city);
+    if (m.state) form.setValue("estado", m.state);
+    setResponsavelPicked(true);
+    setResponsavelSearch("");
+  };
+
 
   const { data: casasRefugio } = useQuery({
     queryKey: ["casas_refugio_select"],
@@ -187,6 +223,8 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
     if (familia) {
       form.reset({
         nome_familia: familia.nome_familia || "",
+        responsavel_member_id: familia.responsavel_member_id || "",
+
         endereco: familia.endereco || "",
         numero: familia.numero || "",
         complemento: familia.complemento || "",
@@ -204,10 +242,17 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
         observacoes: familia.observacoes || "",
         ativo: familia.ativo ?? true,
       });
+      setResponsavelPicked(!!familia.responsavel_member_id);
+      setResponsavelSearch("");
     } else {
+      setResponsavelPicked(false);
+      setResponsavelSearch("");
+
       form.reset({
         nome_familia: "",
+        responsavel_member_id: "",
         endereco: "",
+
         numero: "",
         complemento: "",
         bairro: "",
@@ -292,7 +337,9 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
         estado: values.estado?.toUpperCase() || values.estado,
         casa_refugio_id: values.casa_refugio_id || null,
         lider_responsavel_id: values.lider_responsavel_id || null,
+        responsavel_member_id: values.responsavel_member_id || null,
       };
+
 
       let familiaId: string;
 
@@ -364,14 +411,53 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
               rules={{ required: "Nome é obrigatório" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Família *</FormLabel>
+                  <FormLabel>Nome do Responsável *</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Família Silva" />
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        {...field}
+                        className="pl-9"
+                        placeholder="Digite o nome para buscar no cadastro..."
+                        onChange={(e) => {
+                          field.onChange(e.target.value);
+                          setResponsavelSearch(e.target.value);
+                          setResponsavelPicked(false);
+                          form.setValue("responsavel_member_id", "");
+                        }}
+                      />
+                    </div>
                   </FormControl>
+                  {!responsavelPicked && responsavelSearch.length >= 2 && (
+                    <div className="border rounded-md max-h-40 overflow-y-auto mt-1">
+                      {responsavelResults.length === 0 ? (
+                        <p className="text-xs text-muted-foreground p-2">
+                          Nenhum cadastro encontrado. Continue digitando o nome e preencha os dados abaixo manualmente.
+                        </p>
+                      ) : (
+                        responsavelResults.map((m: any) => (
+                          <div
+                            key={m.id}
+                            className="p-2 text-sm hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                            onClick={() => selecionarResponsavel(m)}
+                          >
+                            <span className="font-medium">{m.full_name}</span>
+                            {m.city && <span className="text-muted-foreground"> — {m.city}</span>}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {responsavelPicked && (
+                    <p className="text-xs text-muted-foreground">
+                      Dados preenchidos a partir do cadastro da igreja. Você pode editá-los.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
             />
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField

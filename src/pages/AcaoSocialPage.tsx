@@ -10,6 +10,8 @@ import logoGileade from "@/assets/logo-gileade.jpeg";
 import { AcaoSocialFamiliasTab } from "@/components/acao-social/AcaoSocialFamiliasTab";
 import { AcaoSocialInstituicoesTab } from "@/components/acao-social/AcaoSocialInstituicoesTab";
 import { AcaoSocialAjudasTab } from "@/components/acao-social/AcaoSocialAjudasTab";
+import { AcaoSocialRelatoriosTab } from "@/components/acao-social/AcaoSocialRelatoriosTab";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -157,7 +159,7 @@ const AcaoSocialPage = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="familias" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Famílias</span>
@@ -169,6 +171,10 @@ const AcaoSocialPage = () => {
             <TabsTrigger value="ajudas" className="flex items-center gap-2">
               <HandHeart className="w-4 h-4" />
               <span className="hidden sm:inline">Ajudas</span>
+            </TabsTrigger>
+            <TabsTrigger value="relatorios" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Relatórios</span>
             </TabsTrigger>
           </TabsList>
 
@@ -183,7 +189,12 @@ const AcaoSocialPage = () => {
           <TabsContent value="ajudas">
             <AcaoSocialAjudasTab />
           </TabsContent>
+
+          <TabsContent value="relatorios">
+            <AcaoSocialRelatoriosTab />
+          </TabsContent>
         </Tabs>
+
       </main>
     </div>
   );
