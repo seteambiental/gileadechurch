@@ -223,6 +223,8 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
     if (familia) {
       form.reset({
         nome_familia: familia.nome_familia || "",
+        responsavel_member_id: familia.responsavel_member_id || "",
+
         endereco: familia.endereco || "",
         numero: familia.numero || "",
         complemento: familia.complemento || "",
