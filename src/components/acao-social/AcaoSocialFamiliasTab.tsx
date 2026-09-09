@@ -115,7 +115,7 @@ export function AcaoSocialFamiliasTab() {
           <ExportButton
             data={filteredFamilias || []}
             columns={[
-              { header: "Nome da Família", accessor: "nome_familia" },
+              { header: "Nome do Responsável", accessor: "nome_familia" },
               { header: "Qtd. Membros", accessor: (r) => membrosData?.[r.id]?.total || 0 },
               { header: "Renda Total", accessor: (r) => formatCurrency(r.renda_total) },
               { header: "Casa Refúgio", accessor: (r) => r.casa_refugio?.name || "-" },
@@ -152,7 +152,7 @@ export function AcaoSocialFamiliasTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome da Família</TableHead>
+                    <TableHead>Nome do Responsável</TableHead>
                     <TableHead className="hidden md:table-cell">Membros</TableHead>
                     <TableHead className="hidden md:table-cell">Renda Total</TableHead>
                     <TableHead className="hidden lg:table-cell">Casa Refúgio</TableHead>
