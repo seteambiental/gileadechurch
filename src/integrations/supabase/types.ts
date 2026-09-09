@@ -172,6 +172,7 @@ export type Database = {
           numero: string | null
           observacoes: string | null
           renda_total: number | null
+          responsavel_member_id: string | null
           telefone: string | null
           tipo_ajuda: string | null
           updated_at: string
@@ -195,6 +196,7 @@ export type Database = {
           numero?: string | null
           observacoes?: string | null
           renda_total?: number | null
+          responsavel_member_id?: string | null
           telefone?: string | null
           tipo_ajuda?: string | null
           updated_at?: string
@@ -218,6 +220,7 @@ export type Database = {
           numero?: string | null
           observacoes?: string | null
           renda_total?: number | null
+          responsavel_member_id?: string | null
           telefone?: string | null
           tipo_ajuda?: string | null
           updated_at?: string
@@ -241,6 +244,20 @@ export type Database = {
           {
             foreignKeyName: "acao_social_familias_lider_responsavel_id_fkey"
             columns: ["lider_responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "members_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_familias_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acao_social_familias_responsavel_member_id_fkey"
+            columns: ["responsavel_member_id"]
             isOneToOne: false
             referencedRelation: "members_safe"
             referencedColumns: ["id"]
