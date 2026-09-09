@@ -88,6 +88,8 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
   const [origemTab, setOrigemTab] = useState<"igreja" | "externo">("igreja");
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedParentesco, setSelectedParentesco] = useState("");
+  const [responsavelSearch, setResponsavelSearch] = useState("");
+  const [responsavelPicked, setResponsavelPicked] = useState(false);
 
   // Free-text fields for external members
   const [externoNome, setExternoNome] = useState("");
@@ -98,6 +100,7 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
   const form = useForm({
     defaultValues: {
       nome_familia: "",
+      responsavel_member_id: "",
       endereco: "",
       numero: "",
       complemento: "",
@@ -116,6 +119,39 @@ export function FamiliaFormDialog({ open, onOpenChange, familia }: FamiliaFormDi
       ativo: true,
     },
   });
+
+  const { data: responsavelResults = [] } = useQuery({
+    queryKey: ["acao_social_responsavel_search", responsavelSearch],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("id, full_name, whatsapp, email, cep, address, number, complement, neighborhood, city, state")
+        .or("excluido.is.null,excluido.eq.false")
+        .ilike("full_name", `%${responsavelSearch}%`)
+        .order("full_name")
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+    enabled: responsavelSearch.length >= 2 && !responsavelPicked,
+  });
+
+  const selecionarResponsavel = (m: any) => {
+    form.setValue("nome_familia", m.full_name);
+    form.setValue("responsavel_member_id", m.id);
+    if (m.whatsapp) form.setValue("whatsapp", m.whatsapp);
+    if (m.email) form.setValue("email", m.email);
+    if (m.cep) form.setValue("cep", m.cep);
+    if (m.address) form.setValue("endereco", m.address);
+    if (m.number) form.setValue("numero", m.number);
+    if (m.complement) form.setValue("complemento", m.complement);
+    if (m.neighborhood) form.setValue("bairro", m.neighborhood);
+    if (m.city) form.setValue("cidade", m.city);
+    if (m.state) form.setValue("estado", m.state);
+    setResponsavelPicked(true);
+    setResponsavelSearch("");
+  };
+
 
   const { data: casasRefugio } = useQuery({
     queryKey: ["casas_refugio_select"],
