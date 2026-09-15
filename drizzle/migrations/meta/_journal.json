@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789516509173,
+      "tag": "0000_reassign_impacto_referencia_on_group_change",
+      "breakpoints": true
+    }
+  ]
+}
