@@ -99,6 +99,32 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       // Filtrar por dia e mês
       const aniversariantes: Aniversariante[] = [];
 
+      // Chaves de deduplicação: nome, WhatsApp (só dígitos) e CPF (só dígitos)
+      const nomesJa = new Set<string>();
+      const whatsappsJa = new Set<string>();
+      const cpfsJa = new Set<string>();
+
+      const normalizarTel = (tel?: string | null) => (tel || "").replace(/\D/g, "");
+      const normalizarCpf = (cpf?: string | null) => (cpf || "").replace(/\D/g, "");
+
+      const jaExiste = (nome: string, tel?: string | null, cpf?: string | null) => {
+        const nomeKey = nome.trim().toLowerCase();
+        const telKey = normalizarTel(tel);
+        const cpfKey = normalizarCpf(cpf);
+        if (nomesJa.has(nomeKey)) return true;
+        if (telKey.length >= 10 && whatsappsJa.has(telKey)) return true;
+        if (cpfKey.length === 11 && cpfsJa.has(cpfKey)) return true;
+        return false;
+      };
+
+      const registrar = (nome: string, tel?: string | null, cpf?: string | null) => {
+        nomesJa.add(nome.trim().toLowerCase());
+        const telKey = normalizarTel(tel);
+        const cpfKey = normalizarCpf(cpf);
+        if (telKey.length >= 10) whatsappsJa.add(telKey);
+        if (cpfKey.length === 11) cpfsJa.add(cpfKey);
+      };
+
       membros?.forEach((m) => {
         if (m.birth_date) {
           const birthDate = parseLocalDate(m.birth_date);
@@ -110,6 +136,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
               birth_date: m.birth_date,
               photo_url: m.photo_url,
             });
+            registrar(m.full_name, m.whatsapp, (m as any).cpf);
           }
         }
       });
@@ -118,6 +145,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
         if (nc.data_nascimento) {
           const birthDate = parseLocalDate(nc.data_nascimento);
           if (birthDate.getDate() === day && birthDate.getMonth() + 1 === month) {
+            if (jaExiste(nc.full_name, nc.whatsapp, (nc as any).cpf)) return;
             aniversariantes.push({
               id: `nc-${nc.id}`,
               full_name: nc.full_name,
@@ -125,21 +153,17 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
               birth_date: nc.data_nascimento,
               photo_url: nc.photo_url,
             });
+            registrar(nc.full_name, nc.whatsapp, (nc as any).cpf);
           }
         }
       });
 
-      // Adicionar inscritos de eventos (não membros), evitando duplicatas por nome
-      const nomesJa = new Set(
-        aniversariantes.map((a) => a.full_name.trim().toLowerCase()),
-      );
+      // Adicionar inscritos de eventos (não membros), evitando duplicatas por nome, WhatsApp ou CPF
       inscricoesEventos?.forEach((ins) => {
         if (!ins.data_nascimento || !ins.nome) return;
         const birthDate = parseLocalDate(ins.data_nascimento);
         if (birthDate.getDate() !== day || birthDate.getMonth() + 1 !== month) return;
-        const nomeKey = ins.nome.trim().toLowerCase();
-        if (nomesJa.has(nomeKey)) return;
-        nomesJa.add(nomeKey);
+        if (jaExiste(ins.nome, ins.telefone, (ins as any).cpf)) return;
         aniversariantes.push({
           id: `ev-${ins.id}`,
           full_name: ins.nome,
@@ -148,6 +172,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
           photo_url: null,
           nao_membro: true,
         });
+        registrar(ins.nome, ins.telefone, (ins as any).cpf);
       });
 
       return aniversariantes;
