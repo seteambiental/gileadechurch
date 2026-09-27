@@ -74,7 +74,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       // Buscar membros
       const { data: membros, error: membrosError } = await supabase
         .from("members")
-        .select("id, full_name, whatsapp, birth_date, photo_url")
+        .select("id, full_name, whatsapp, birth_date, photo_url, cpf")
         .not("birth_date", "is", null);
 
       if (membrosError) throw membrosError;
@@ -82,7 +82,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       // Buscar novos convertidos
       const { data: novosConvertidos, error: ncError } = await supabase
         .from("novos_convertidos")
-        .select("id, full_name, whatsapp, data_nascimento, photo_url")
+        .select("id, full_name, whatsapp, data_nascimento, photo_url, cpf")
         .not("data_nascimento", "is", null);
 
       if (ncError) throw ncError;
@@ -90,7 +90,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       // Buscar participantes de eventos do Impacto que NÃO são membros
       const { data: inscricoesEventos, error: inscError } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone, data_nascimento, member_id")
+        .select("id, nome, telefone, data_nascimento, member_id, cpf")
         .is("member_id", null)
         .not("data_nascimento", "is", null);
 
