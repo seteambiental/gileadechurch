@@ -183,7 +183,7 @@ serve(async (req) => {
 
       const { data: membros, error: membrosError } = await supabase
         .from('members')
-        .select('id, full_name, whatsapp, birth_date')
+        .select('id, full_name, whatsapp, birth_date, cpf')
         .not('whatsapp', 'is', null)
         .not('birth_date', 'is', null);
 
@@ -201,7 +201,7 @@ serve(async (req) => {
 
       const { data: convertidos, error: convertidosError } = await supabase
         .from('novos_convertidos')
-        .select('id, full_name, whatsapp, data_nascimento')
+        .select('id, full_name, whatsapp, data_nascimento, cpf')
         .not('whatsapp', 'is', null)
         .not('data_nascimento', 'is', null);
 
@@ -227,19 +227,46 @@ serve(async (req) => {
         console.error('Erro ao buscar inscritos de eventos:', inscError);
       }
 
-      // Evitar duplicatas por nome com membros e convertidos
-      const nomesJa = new Set<string>([
-        ...aniversariantes.map(m => (m.full_name || '').trim().toLowerCase()),
-        ...aniversariantesConvertidos.map(c => (c.full_name || '').trim().toLowerCase()),
-      ]);
+      // Evitar duplicatas cruzando nome, WhatsApp (só dígitos) e CPF (só dígitos)
+      const soDigitos = (v?: string | null) => (v || '').replace(/\D/g, '');
+      const nomesJa = new Set<string>();
+      const whatsappsJa = new Set<string>();
+      const cpfsJa = new Set<string>();
+
+      const registrarChaves = (nome?: string | null, tel?: string | null, cpf?: string | null) => {
+        if (nome) nomesJa.add(nome.trim().toLowerCase());
+        const t = soDigitos(tel);
+        const c = soDigitos(cpf);
+        if (t.length >= 10) whatsappsJa.add(t);
+        if (c.length === 11) cpfsJa.add(c);
+      };
+
+      const jaExiste = (nome?: string | null, tel?: string | null, cpf?: string | null) => {
+        if (nome && nomesJa.has(nome.trim().toLowerCase())) return true;
+        const t = soDigitos(tel);
+        const c = soDigitos(cpf);
+        if (t.length >= 10 && whatsappsJa.has(t)) return true;
+        if (c.length === 11 && cpfsJa.has(c)) return true;
+        return false;
+      };
+
+      aniversariantes.forEach(m => registrarChaves(m.full_name, m.whatsapp, (m as any).cpf));
+
+      // Remover convertidos que já existem como membros (mesmo nome, WhatsApp ou CPF)
+      const convertidosUnicos = aniversariantesConvertidos.filter(c => {
+        if (jaExiste(c.full_name, c.whatsapp, (c as any).cpf)) return false;
+        registrarChaves(c.full_name, c.whatsapp, (c as any).cpf);
+        return true;
+      });
+      aniversariantesConvertidos.length = 0;
+      aniversariantesConvertidos.push(...convertidosUnicos);
 
       const aniversariantesEventos = (inscritosEventos || []).filter(i => {
         if (!i.data_nascimento || !i.nome) return false;
         const [, mes, dia] = i.data_nascimento.split('-');
         if (mes !== mesAtual || dia !== diaAtual) return false;
-        const nomeKey = i.nome.trim().toLowerCase();
-        if (nomesJa.has(nomeKey)) return false;
-        nomesJa.add(nomeKey);
+        if (jaExiste(i.nome, i.telefone, (i as any).cpf)) return false;
+        registrarChaves(i.nome, i.telefone, (i as any).cpf);
         return true;
       });
 
