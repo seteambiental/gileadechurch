@@ -90,7 +90,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       // Buscar participantes de eventos do Impacto que NÃO são membros
       const { data: inscricoesEventos, error: inscError } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, telefone, data_nascimento, member_id, cpf")
+        .select("id, nome, telefone, data_nascimento, member_id")
         .is("member_id", null)
         .not("data_nascimento", "is", null);
 

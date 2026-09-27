@@ -218,7 +218,7 @@ serve(async (req) => {
       // Inscritos em eventos do Impacto que NÃO são membros
       const { data: inscritosEventos, error: inscError } = await supabase
         .from('impacto_inscricoes')
-        .select('id, nome, telefone, data_nascimento, member_id, cpf')
+        .select('id, nome, telefone, data_nascimento, member_id')
         .is('member_id', null)
         .not('telefone', 'is', null)
         .not('data_nascimento', 'is', null);
