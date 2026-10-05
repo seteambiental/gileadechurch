@@ -554,10 +554,14 @@ const Auth = () => {
       
       if (error) {
         isLoginInProgressRef.current = false;
-        if (error.message.includes("Invalid login credentials")) {
+        const msg = (error as any)?.message || "";
+        const status = (error as any)?.status;
+        if (msg.includes("Invalid login credentials")) {
           toast({ variant: "destructive", title: "Erro ao entrar", description: "Email/CPF ou senha incorretos." });
+        } else if (!msg || msg === "{}" || status === 500 || status === 502 || status === 503 || status === 504 || /timeout|deadline|fetch|network/i.test(msg)) {
+          toast({ variant: "destructive", title: "Servidor ocupado", description: "O servidor está demorando para responder. Aguarde alguns segundos e tente novamente." });
         } else {
-          toast({ variant: "destructive", title: "Erro ao entrar", description: error.message });
+          toast({ variant: "destructive", title: "Erro ao entrar", description: msg });
         }
         return;
       }
