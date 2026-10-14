@@ -173,32 +173,12 @@ const InscricaoEvento = () => {
     queryKey: ["inscricoes-count-por-tipo", eventoId],
     queryFn: async () => {
       const counts: Record<string, number> = {};
-
-      // From impacto_inscricoes
-      const { data: impactoData, error: impactoError } = await supabase
-        .from("impacto_inscricoes")
-        .select("tipo_inscricao")
-        .eq("evento_id", eventoId);
-      if (impactoError) throw impactoError;
-      (impactoData || []).forEach((i: any) => {
-        const tipo = i.tipo_inscricao || "membro";
-        counts[tipo] = (counts[tipo] || 0) + 1;
+      // Contagem via função segura (visitantes não têm permissão de leitura direta)
+      const { data, error } = await supabase.rpc("contar_inscricoes_por_tipo" as any, { _evento_id: eventoId });
+      if (error) throw error;
+      ((data as any[]) || []).forEach((r: any) => {
+        counts[r.tipo] = Number(r.total) || 0;
       });
-
-      // From pending inscricoes_eventos
-      const { data: pendingData, error: pendingError } = await supabase
-        .from("inscricoes_eventos")
-        .select("tipo_inscricao")
-        .eq("evento_id", eventoId)
-        .eq("aprovado", false)
-        .eq("lista_espera", false)
-        .neq("status_pagamento", "cancelado");
-      if (pendingError) throw pendingError;
-      (pendingData || []).forEach((i: any) => {
-        const tipo = i.tipo_inscricao || "membro";
-        counts[tipo] = (counts[tipo] || 0) + 1;
-      });
-
       return counts;
     },
     enabled: !!eventoId,
@@ -467,6 +447,9 @@ const InscricaoEvento = () => {
         throw new Error("As inscrições para este evento estão encerradas.");
       }
       const isListaEspera = esgotado || tipoEsgotado(tipoInscricao);
+      if (isListaEspera && !permiteListaEspera) {
+        throw new Error("As vagas para este tipo de inscrição estão esgotadas.");
+      }
       
       // Montar observação com info do ministério
       let observacoesMinisterio = "";
