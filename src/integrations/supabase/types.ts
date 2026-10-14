@@ -7538,6 +7538,13 @@ export type Database = {
       can_manage_casa_refugio: { Args: { casa_id: string }; Returns: boolean }
       can_manage_member_requests: { Args: never; Returns: boolean }
       can_manage_ministry: { Args: { ministry_uuid: string }; Returns: boolean }
+      contar_inscricoes_por_tipo: {
+        Args: { _evento_id: string }
+        Returns: {
+          tipo: string
+          total: number
+        }[]
+      }
       criar_inscricao_evento_publica: {
         Args: { payload: Json }
         Returns: string
