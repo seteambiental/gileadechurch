@@ -219,6 +219,8 @@ export const EventoFormDialog = ({
     vagas_familia: "",
     vagas_equipe: "",
     permite_lista_espera: false,
+    aceita_criancas: false,
+    inteira_a_partir: "",
     link_grupo_whatsapp: "",
     link_grupo_whatsapp_participantes: "",
     link_grupo_whatsapp_equipe: "",
@@ -255,6 +257,7 @@ export const EventoFormDialog = ({
     "nome", "telefone", "email", "genero", "data_nascimento", "estado_civil",
     "cpf", "cep", "rua", "numero", "complemento", "bairro", "cidade",
   ];
+  const [faixasCriancas, setFaixasCriancas] = useState<{ ate: string; isento: boolean; valor: string }[]>([]);
   const [camposFormulario, setCamposFormulario] = useState<string[]>([...ALL_CAMPOS_KEYS]);
 
   const [ambientesExtras, setAmbientesExtras] = useState<AmbienteExtra[]>([]);
@@ -405,6 +408,8 @@ export const EventoFormDialog = ({
           vagas_nao_membro: vagasPorTipo?.nao_membro?.toString() || "",
           vagas_familia: vagasPorTipo?.familia?.toString() || "",
           permite_lista_espera: (evento as any).permite_lista_espera || false,
+          aceita_criancas: (evento as any).aceita_criancas || false,
+          inteira_a_partir: (evento as any).faixas_criancas?.inteira_a_partir?.toString() || "",
           vagas_equipe: vagasPorTipo?.equipe?.toString() || "",
           link_grupo_whatsapp: (evento as any).link_grupo_whatsapp || "",
           link_grupo_whatsapp_participantes: (evento as any).link_grupo_whatsapp_participantes || "",
@@ -461,6 +466,8 @@ export const EventoFormDialog = ({
           vagas_familia: "",
           vagas_equipe: "",
           permite_lista_espera: false,
+          aceita_criancas: false,
+          inteira_a_partir: "",
           link_grupo_whatsapp: "",
           link_grupo_whatsapp_participantes: "",
           link_grupo_whatsapp_equipe: "",
@@ -778,6 +785,14 @@ export const EventoFormDialog = ({
           return Object.keys(vpt).length > 0 ? vpt : null;
         })() : null,
         permite_lista_espera: formData.necessita_inscricao ? formData.permite_lista_espera : false,
+        aceita_criancas: formData.aceita_criancas,
+        faixas_criancas: formData.aceita_criancas ? {
+          faixas: faixasCriancas
+            .filter((f) => f.ate !== "")
+            .map((f) => ({ ate: parseInt(f.ate), isento: f.isento, valor: f.isento ? 0 : (f.valor ? parseFloat(f.valor) : 0) }))
+            .sort((a, b) => a.ate - b.ate),
+          inteira_a_partir: formData.inteira_a_partir ? parseInt(formData.inteira_a_partir) : null,
+        } : null,
         horarios_por_dia: horariosPorDia.length > 0 ? JSON.parse(JSON.stringify(horariosPorDia)) : null,
         limite_vagas: formData.limite_vagas ? parseInt(formData.limite_vagas) : null,
         visibilidade: formData.visibilidade || "publico",
@@ -1901,6 +1916,57 @@ export const EventoFormDialog = ({
                     onChange={(e) => setFormData({ ...formData, comentarios_custo: e.target.value })}
                     rows={2}
                   />
+                </div>
+              )}
+            </div>
+
+            {/* Crianças */}
+            <div className="p-3 bg-muted/50 rounded-lg space-y-3">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="aceita_criancas"
+                  checked={formData.aceita_criancas}
+                  onCheckedChange={(c) => {
+                    setFormData({ ...formData, aceita_criancas: !!c });
+                    if (c && faixasCriancas.length === 0) setFaixasCriancas([{ ate: "", isento: true, valor: "" }]);
+                  }}
+                />
+                <Label htmlFor="aceita_criancas" className="cursor-pointer font-medium">Aceita crianças</Label>
+              </div>
+              {formData.aceita_criancas && (
+                <div className="space-y-2">
+                  {faixasCriancas.map((f, i) => (
+                    <div key={i} className="flex flex-wrap items-center gap-2 p-2 rounded-md border bg-background">
+                      <span className="text-sm">Até</span>
+                      <Input type="number" min="0" className="w-20" placeholder="idade" value={f.ate}
+                        onChange={(e) => setFaixasCriancas(faixasCriancas.map((x, j) => j === i ? { ...x, ate: e.target.value } : x))} />
+                      <span className="text-sm">anos</span>
+                      <div className="flex items-center gap-1">
+                        <Checkbox id={`isento_${i}`} checked={f.isento}
+                          onCheckedChange={(c) => setFaixasCriancas(faixasCriancas.map((x, j) => j === i ? { ...x, isento: !!c } : x))} />
+                        <Label htmlFor={`isento_${i}`} className="text-sm cursor-pointer">Isento</Label>
+                      </div>
+                      {!f.isento && (
+                        <Input type="number" min="0" step="0.01" className="w-28" placeholder="Valor R$" value={f.valor}
+                          onChange={(e) => setFaixasCriancas(faixasCriancas.map((x, j) => j === i ? { ...x, valor: e.target.value } : x))} />
+                      )}
+                      <Button type="button" variant="ghost" size="icon" className="ml-auto"
+                        onClick={() => setFaixasCriancas(faixasCriancas.filter((_, j) => j !== i))}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm"
+                    onClick={() => setFaixasCriancas([...faixasCriancas, { ate: "", isento: false, valor: "" }])}>
+                    <Plus className="w-4 h-4 mr-1" /> Faixa etária
+                  </Button>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <span className="text-sm">Inscrição cheia a partir de</span>
+                    <Input type="number" min="0" className="w-20" value={formData.inteira_a_partir}
+                      onChange={(e) => setFormData({ ...formData, inteira_a_partir: e.target.value })} />
+                    <span className="text-sm">anos</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">A idade é calculada na data do evento. O valor é aplicado automaticamente na inscrição.</p>
                 </div>
               )}
             </div>
