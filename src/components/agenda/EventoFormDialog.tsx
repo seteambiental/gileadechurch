@@ -418,6 +418,7 @@ export const EventoFormDialog = ({
         });
         const existingCampos = (evento as any).campos_formulario;
         setCamposFormulario(Array.isArray(existingCampos) ? existingCampos : [...ALL_CAMPOS_KEYS]);
+        setFaixasCriancas(((evento as any).faixas_criancas?.faixas || []).map((f: any) => ({ ate: String(f.ate ?? ""), isento: !!f.isento, valor: f.valor ? String(f.valor) : "" })));
         setHorariosPorDia(evento.horarios_por_dia || []);
         setFlyerUrl(evento.flyer_url || null);
         setFlyerPendente(null);
@@ -474,6 +475,7 @@ export const EventoFormDialog = ({
           link_grupo_whatsapp_ministradores: "",
         });
         setCamposFormulario([...ALL_CAMPOS_KEYS]);
+        setFaixasCriancas([]);
         setAmbientesExtras([]);
         setHorariosPorDia([]);
         setFlyerUrl(null);
