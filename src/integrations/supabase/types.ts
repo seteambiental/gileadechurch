@@ -386,6 +386,7 @@ export type Database = {
       }
       agenda_igreja: {
         Row: {
+          aceita_criancas: boolean
           ambiente_id: string | null
           ativo: boolean | null
           bloqueio_fim: string | null
@@ -400,6 +401,7 @@ export type Database = {
           descricao: string | null
           dia_semana: number | null
           dias_semana: Json | null
+          faixas_criancas: Json | null
           flyer_url: string | null
           genero_alvo: string | null
           gerar_cadastro_membro: boolean
@@ -436,6 +438,7 @@ export type Database = {
           visibilidade: string
         }
         Insert: {
+          aceita_criancas?: boolean
           ambiente_id?: string | null
           ativo?: boolean | null
           bloqueio_fim?: string | null
@@ -450,6 +453,7 @@ export type Database = {
           descricao?: string | null
           dia_semana?: number | null
           dias_semana?: Json | null
+          faixas_criancas?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
           gerar_cadastro_membro?: boolean
@@ -486,6 +490,7 @@ export type Database = {
           visibilidade?: string
         }
         Update: {
+          aceita_criancas?: boolean
           ambiente_id?: string | null
           ativo?: boolean | null
           bloqueio_fim?: string | null
@@ -500,6 +505,7 @@ export type Database = {
           descricao?: string | null
           dia_semana?: number | null
           dias_semana?: Json | null
+          faixas_criancas?: Json | null
           flyer_url?: string | null
           genero_alvo?: string | null
           gerar_cadastro_membro?: boolean

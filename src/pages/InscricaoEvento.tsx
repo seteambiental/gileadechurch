@@ -216,6 +216,21 @@ const InscricaoEvento = () => {
   const todosTiposEsgotados =
     tiposOferecidos.length === 0 || tiposOferecidos.every((o) => tipoEsgotado(o.value));
   const permiteListaEspera = !!(evento as any)?.permite_lista_espera;
+  // Faixas etárias de crianças: idade calculada na data do evento
+  const faixaCrianca = (() => {
+    const ev: any = evento;
+    if (!ev?.aceita_criancas || !ev?.faixas_criancas || !dataNascimento) return null;
+    const nasc = parseLocalDate(dataNascimento);
+    const ref = parseLocalDate(ev.data_evento);
+    if (!nasc || !ref || isNaN(nasc.getTime())) return null;
+    let idade = ref.getFullYear() - nasc.getFullYear();
+    if (ref.getMonth() < nasc.getMonth() || (ref.getMonth() === nasc.getMonth() && ref.getDate() < nasc.getDate())) idade--;
+    if (idade < 0) return null;
+    const faixas = [...(ev.faixas_criancas.faixas || [])].sort((x: any, y: any) => x.ate - y.ate);
+    const f = faixas.find((x: any) => idade <= x.ate);
+    if (!f) return null;
+    return { idade, isento: !!f.isento, valor: f.isento ? 0 : Number(f.valor || 0), ate: f.ate };
+  })();
   // Sem vagas (global ou em todas as modalidades) e sem lista de espera => encerrado
   const inscricoesEncerradas = (esgotado || todosTiposEsgotados) && !permiteListaEspera;
 
@@ -464,7 +479,9 @@ const InscricaoEvento = () => {
       // Calculate valor_inscricao based on tipo
       const valoresPorTipo = evento?.valores_por_tipo;
       const valorTipo = valoresPorTipo?.[tipoInscricao];
-      const valorInscricao = evento?.tem_custo
+      const valorInscricao = faixaCrianca
+        ? faixaCrianca.valor
+        : evento?.tem_custo
         ? (valorTipo ? parseFloat(valorTipo) : (evento?.valor_custo || null))
         : null;
 
@@ -1446,9 +1463,15 @@ const InscricaoEvento = () => {
                       {(() => {
                         const disponivel = getVagasDisponiveisTipo(tipoInscricao);
                         const valorTipo = evento.valores_por_tipo?.[tipoInscricao];
-                        const valorExibir = evento.tem_custo ? (valorTipo ? parseFloat(valorTipo) : evento.valor_custo) : null;
+                        const valorExibir = faixaCrianca ? null : evento.tem_custo ? (valorTipo ? parseFloat(valorTipo) : evento.valor_custo) : null;
                         return (
                           <div className="flex flex-wrap gap-3 text-sm md:text-base text-muted-foreground">
+                            {faixaCrianca && (
+                              <span>
+                                Criança ({faixaCrianca.idade} {faixaCrianca.idade === 1 ? "ano" : "anos"} na data do evento):{" "}
+                                <strong>{faixaCrianca.isento ? "Isenta" : `R$ ${faixaCrianca.valor.toFixed(2).replace(".", ",")}`}</strong>
+                              </span>
+                            )}
                             {valorExibir ? (
                               <span>Valor: <strong>R$ {valorExibir.toFixed(2).replace(".", ",")}</strong></span>
                             ) : null}
