@@ -80,6 +80,8 @@ const FORMAS_PAGAMENTO_LABELS: Record<string, string> = {
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não membro",
+  crianca: "Criança (pagante)",
+  crianca_isenta: "Criança isenta",
   familia: "Família",
   equipe: "Equipe (apoio/serviço)",
   ministrador: "Ministrador",

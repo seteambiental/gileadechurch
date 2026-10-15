@@ -507,7 +507,7 @@ const InscricaoEvento = () => {
         observacoes: observacoesMinisterio || null,
         cpf: cpf ? cpf.replace(/\D/g, "") : null,
         casa_refugio_id: casaRefugioId,
-        tipo_inscricao: tipoInscricao,
+        tipo_inscricao: faixaCrianca ? (faixaCrianca.isento ? "crianca_isenta" : "crianca") : tipoInscricao,
         valor_inscricao: valorInscricao,
       };
 
