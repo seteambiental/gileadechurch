@@ -15,6 +15,13 @@
       "when": 1791983675374,
       "tag": "0001_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792104596467,
+      "tag": "0002_agenda_faixas_criancas",
+      "breakpoints": true
     }
   ]
 }
