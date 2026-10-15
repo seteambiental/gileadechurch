@@ -56,6 +56,8 @@ import autoTable from "jspdf-autotable";
 const TIPOS_INSCRICAO_LABELS: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não membro",
+  crianca: "Criança (pagante)",
+  crianca_isenta: "Criança isenta",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
   ministrador: "Ministrador",

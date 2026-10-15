@@ -35,6 +35,8 @@ const statusLabels: Record<string, { label: string; variant: "default" | "second
 const tipoInscricaoLabels: Record<string, string> = {
   membro: "Membro",
   nao_membro: "Não Membro",
+  crianca: "Criança (pagante)",
+  crianca_isenta: "Criança isenta",
   familia: "Líderes e Anfitriões",
   equipe: "Equipe",
   ministrador: "Ministrador",
