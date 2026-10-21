@@ -534,8 +534,10 @@ export const InscricoesEventoDialog = ({
   const hasActiveFilters = searchTerm || filterStatus !== "todos" || filterCondominio !== "todos" || filterCasaRefugio !== "todos";
 
   const totalInscritos = inscricoes.length;
-  const confirmados = inscricoes.filter(i => i.status_pagamento === "confirmado").length;
-  const pendentes = inscricoes.filter(i => i.status_pagamento === "pendente").length;
+  const filtradasAtivas = inscricoesFiltradas.filter(i => !i.lista_espera && i.status_pagamento !== "cancelado");
+  const filtradasEspera = inscricoesFiltradas.filter(i => i.lista_espera);
+  const confirmados = inscricoesFiltradas.filter(i => i.status_pagamento === "confirmado").length;
+  const pendentes = inscricoesFiltradas.filter(i => i.status_pagamento === "pendente").length;
 
   return (
     <>
@@ -551,7 +553,7 @@ export const InscricoesEventoDialog = ({
           {/* Stats */}
           <div className="grid grid-cols-4 gap-3 py-2">
             <div className="p-3 bg-muted rounded-lg text-center">
-              <p className="text-2xl font-bold">{inscricoesConfirmadas.length}</p>
+              <p className="text-2xl font-bold">{filtradasAtivas.length}</p>
               <p className="text-xs text-muted-foreground">Inscritos</p>
             </div>
             <div className="p-3 bg-green-500/10 rounded-lg text-center">
@@ -563,7 +565,7 @@ export const InscricoesEventoDialog = ({
               <p className="text-xs text-muted-foreground">Pendentes</p>
             </div>
             <div className="p-3 bg-orange-500/10 rounded-lg text-center">
-              <p className="text-2xl font-bold text-orange-600">{inscricoesListaEspera.length}</p>
+              <p className="text-2xl font-bold text-orange-600">{filtradasEspera.length}</p>
               <p className="text-xs text-muted-foreground">Lista Espera</p>
             </div>
           </div>
