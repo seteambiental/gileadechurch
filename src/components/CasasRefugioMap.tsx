@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Users, Calendar, Filter, Home, Loader2, Navigation } from "lucide-react";
+import CasaMaisProximaBusca from "./CasaMaisProximaBusca";
 
 interface CasaRefugio {
   id: string;
@@ -167,6 +168,7 @@ const CasasRefugioMap = () => {
 
   return (
     <div className="space-y-6">
+      <CasaMaisProximaBusca casas={casas || []} onSelectCasa={setSelectedCasaId} />
       {/* Filtros */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
         <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
