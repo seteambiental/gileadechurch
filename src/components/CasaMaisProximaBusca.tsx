@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, LocateFixed, Loader2, Footprints, Car, Bus, MapPin, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { formatCep } from "@/lib/masks";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 interface Casa {
   id: string;
@@ -36,6 +38,11 @@ export default function CasaMaisProximaBusca({
   onSelectCasa?: (id: string) => void;
 }) {
   const [endereco, setEndereco] = useState("");
+  const [cep, setCep] = useState("");
+  const [numero, setNumero] = useState("");
+  const { isLoading: buscandoCep } = useCepLookup(cep, (d) =>
+    setEndereco([d.address, d.neighborhood, d.city, d.state].filter(Boolean).join(", "))
+  );
   const [loading, setLoading] = useState(false);
   const [origem, setOrigem] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -54,9 +61,12 @@ export default function CasaMaisProximaBusca({
     }
     setLoading(true);
     try {
-      const q = /curitiba|pinhais|colombo|são josé|sao jose|araucária|araucaria|almirante|campo largo|fazenda/i.test(endereco)
-        ? endereco
-        : `${endereco}, Curitiba, PR`;
+      const base = numero.trim() && endereco.includes(",")
+        ? endereco.replace(/^([^,]+)/, `$1, ${numero.trim()}`)
+        : endereco;
+      const q = /curitiba|pinhais|colombo|são josé|sao jose|araucária|araucaria|almirante|campo largo|fazenda/i.test(base)
+        ? base
+        : `${base}, Curitiba, PR`;
       const r = await fetch(
         `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=br`,
         { headers: { "Accept-Language": "pt-BR" } }
@@ -84,6 +94,8 @@ export default function CasaMaisProximaBusca({
       (p) => {
         setOrigem({ lat: p.coords.latitude, lng: p.coords.longitude });
         setEndereco("Minha localização atual");
+        setCep("");
+        setNumero("");
         setLoading(false);
       },
       () => {
@@ -107,15 +119,31 @@ export default function CasaMaisProximaBusca({
       <CardContent className="p-4 space-y-4">
         <div>
           <h3 className="font-heading font-bold text-lg">Encontre a Casa Refúgio mais perto de você</h3>
-          <p className="text-sm text-muted-foreground">Digite seu endereço ou use sua localização atual</p>
+          <p className="text-sm text-muted-foreground">Digite seu CEP e o número, ou use sua localização atual</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_6rem] gap-2">
+            <div className="relative">
+              <Input
+                placeholder="CEP"
+                inputMode="numeric"
+                value={cep}
+                onChange={(e) => setCep(formatCep(e.target.value))}
+              />
+              {buscandoCep && <Loader2 className="w-4 h-4 animate-spin absolute right-3 top-3 text-muted-foreground" />}
+            </div>
+            <Input
+              placeholder="Nº"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && buscarEndereco()}
+            />
+          </div>
           <Input
-            placeholder="Ex: Rua Araças, 103, Uberaba, Curitiba"
+            placeholder="Endereço (preenchido pelo CEP ou digite)"
             value={endereco}
             onChange={(e) => setEndereco(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && buscarEndereco()}
-            className="flex-1"
           />
           <div className="flex gap-2">
             <Button onClick={buscarEndereco} disabled={loading} className="flex-1">
