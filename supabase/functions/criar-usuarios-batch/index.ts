@@ -66,13 +66,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Proibido' }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    let onlyIds: string[] | null = null;
+    try { const b = await req.json(); if (Array.isArray(b?.member_ids)) onlyIds = b.member_ids; } catch { /* sem corpo */ }
+
     // Buscar membros sem user_id (com email OU com CPF)
-    const { data: members, error: fetchError } = await supabaseAdmin
+    let q = supabaseAdmin
       .from("members")
       .select("id, full_name, email, cpf, whatsapp")
       .is("user_id", null)
       .eq("excluido", false)
       .order("full_name");
+    if (onlyIds) q = q.in("id", onlyIds.length ? onlyIds : ["00000000-0000-0000-0000-000000000000"]);
+    const { data: members, error: fetchError } = await q;
 
     if (fetchError) {
       throw new Error(`Erro ao buscar membros: ${fetchError.message}`);
