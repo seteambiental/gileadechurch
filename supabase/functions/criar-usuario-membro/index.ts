@@ -268,6 +268,15 @@ Deno.serve(async (req) => {
           page++;
         }
         if (found) {
+          // Nunca compartilhar o mesmo login entre membros diferentes
+          const { data: jaVinculado } = await supabaseAdmin
+            .from("members").select("id").eq("user_id", found.id).neq("id", member_id).limit(1);
+          if (jaVinculado && jaVinculado.length > 0) {
+            return new Response(
+              JSON.stringify({ error: "Este e-mail já é o login de outro membro. Cadastre um CPF para criar login individual ou informe outro e-mail." }),
+              { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
           await supabaseAdmin.from("members").update({ user_id: found.id }).eq("id", member_id);
           return new Response(
             JSON.stringify({ success: true, message: "Usuário já existia e foi vinculado", user_id: found.id, was_existing: true }),
