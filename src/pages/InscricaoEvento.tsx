@@ -598,10 +598,19 @@ const InscricaoEvento = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!nomeParticipante || !telefoneContato) {
+    if (!nomeParticipante) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha nome e telefone.",
+        title: "Campo obrigatório",
+        description: "Informe o nome do participante.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Telefone é mandatório em qualquer inscrição — precisa de DDD + número (10 ou 11 dígitos)
+    if (!telefoneContato || telefoneContato.replace(/\D/g, "").length < 10) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Informe um telefone de contato válido com DDD. Este campo é obrigatório.",
         variant: "destructive",
       });
       return;

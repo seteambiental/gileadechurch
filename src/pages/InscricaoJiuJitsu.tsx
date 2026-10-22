@@ -94,6 +94,10 @@ export default function InscricaoJiuJitsu() {
       toast({ title: "Data de nascimento é obrigatória", variant: "destructive" });
       return;
     }
+    if (!telefone || telefone.replace(/\D/g, "").length < 10) {
+      toast({ title: "Telefone é obrigatório", description: "Informe um telefone válido com DDD.", variant: "destructive" });
+      return;
+    }
     if (!contatoEmergenciaNome.trim() || !contatoEmergenciaTelefone.trim()) {
       toast({ title: "Contato de emergência é obrigatório", variant: "destructive" });
       return;
