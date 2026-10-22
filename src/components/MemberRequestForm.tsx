@@ -106,6 +106,7 @@ interface FilhoData {
   cpf: string;
   data_nascimento: string;
   genero: string;
+  email?: string;
   dateInputValue: string; // for display only
   photoFile: File | null;
   photoPreview: string | null;
@@ -305,6 +306,7 @@ export const MemberRequestForm = ({ open, onOpenChange, onCreated }: MemberReque
           cpf: conjuge.cpf,
           data_nascimento: conjuge.data_nascimento || null,
           genero: conjuge.genero || null,
+          email: conjuge.email?.trim().toLowerCase() || null,
           tipo: "conjuge",
           photo_url: conjugePhotoUrl,
         } : null,
@@ -457,6 +459,17 @@ export const MemberRequestForm = ({ open, onOpenChange, onCreated }: MemberReque
       return;
     }
     // Validar fotos dos dependentes
+    if (conjuge && conjuge.nome_completo) {
+      const ce = (conjuge.email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ce)) {
+        toast({ title: "E-mail do esposo(a) obrigatório", description: "Informe um e-mail individual para o esposo(a).", variant: "destructive" });
+        return;
+      }
+      if (ce === (data.email || "").trim().toLowerCase()) {
+        toast({ title: "E-mail repetido", description: "O esposo(a) precisa ter um e-mail diferente do seu. Cada um terá seu próprio login.", variant: "destructive" });
+        return;
+      }
+    }
     if (conjuge && conjuge.nome_completo && !conjugePhotoFile) {
       toast({ title: "Foto obrigatória", description: "Tire uma foto do esposo(a).", variant: "destructive" });
       return;
@@ -1008,6 +1021,17 @@ export const MemberRequestForm = ({ open, onOpenChange, onCreated }: MemberReque
                           value={conjuge.nome_completo}
                           onChange={(e) => setConjuge({ ...conjuge, nome_completo: e.target.value })}
                         />
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">E-mail do esposo(a) *</Label>
+                        <Input
+                          type="email"
+                          placeholder="email.individual@exemplo.com"
+                          value={conjuge.email || ""}
+                          onChange={(e) => setConjuge({ ...conjuge, email: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Precisa ser diferente do seu — cada um terá seu próprio login. Os filhos usam o e-mail de um dos pais.</p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
