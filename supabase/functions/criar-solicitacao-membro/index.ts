@@ -141,6 +141,18 @@ serve(async (req) => {
       }
     }
 
+    // Cônjuge precisa de e-mail próprio (login individual)
+    if (conjuge && conjuge.nome_completo) {
+      const ce = (conjuge.email ?? "").trim().toLowerCase();
+      const pe = (body.email ?? "").trim().toLowerCase();
+      if (!ce || !ce.includes("@")) {
+        return new Response(JSON.stringify({ error: "Informe um e-mail individual para o esposo(a)." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (ce === pe) {
+        return new Response(JSON.stringify({ error: "O e-mail do esposo(a) precisa ser diferente do seu." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     // Create main member request
     const payload = {
       full_name: fullName,
@@ -185,6 +197,7 @@ serve(async (req) => {
         cpf: (conjuge.cpf ?? "").replace(/\D/g, "") || null,
         birth_date: conjuge.data_nascimento ?? null,
         genero: conjuge.genero ?? null,
+        email: (conjuge.email ?? "").trim().toLowerCase() || null,
         photo_url: conjuge.photo_url ?? null,
         // Inherit address from parent
         cep: body.cep ?? null,
@@ -219,6 +232,8 @@ serve(async (req) => {
         cpf: (f.cpf ?? "").replace(/\D/g, "") || null,
         birth_date: f.data_nascimento ?? null,
         genero: f.genero ?? null,
+        // Filho usa o e-mail de um dos pais como contato (o login será pelo CPF)
+        email: body.email ?? null,
         photo_url: f.photo_url ?? null,
         // Inherit address from parent
         cep: body.cep ?? null,

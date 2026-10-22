@@ -66,13 +66,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Proibido' }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    let onlyIds: string[] | null = null;
+    try { const b = await req.json(); if (Array.isArray(b?.member_ids)) onlyIds = b.member_ids; } catch { /* sem corpo */ }
+
     // Buscar membros sem user_id (com email OU com CPF)
-    const { data: members, error: fetchError } = await supabaseAdmin
+    let q = supabaseAdmin
       .from("members")
       .select("id, full_name, email, cpf, whatsapp")
       .is("user_id", null)
       .eq("excluido", false)
       .order("full_name");
+    if (onlyIds) q = q.in("id", onlyIds.length ? onlyIds : ["00000000-0000-0000-0000-000000000000"]);
+    const { data: members, error: fetchError } = await q;
 
     if (fetchError) {
       throw new Error(`Erro ao buscar membros: ${fetchError.message}`);
@@ -132,7 +137,27 @@ Deno.serve(async (req) => {
         }
 
         // Verificar se já existe usuário com este email
-        const existingUserId = usersByEmail.get(loginEmail);
+        let existingUserId = usersByEmail.get(loginEmail);
+
+        // Se o login já pertence a outro membro (ex.: filho com e-mail dos pais), usar CPF@gileade.app
+        if (existingUserId) {
+          const { data: outro } = await supabaseAdmin
+            .from("members").select("id").eq("user_id", existingUserId).neq("id", member.id).limit(1);
+          if (outro && outro.length > 0) {
+            if (cpfDigits.length >= 11) {
+              loginEmail = `${cpfDigits}@gileade.app`;
+              existingUserId = usersByEmail.get(loginEmail);
+              if (existingUserId) {
+                const { data: outro2 } = await supabaseAdmin
+                  .from("members").select("id").eq("user_id", existingUserId).neq("id", member.id).limit(1);
+                if (outro2 && outro2.length > 0) { results.skipped++; continue; }
+              }
+            } else {
+              results.errors.push({ name: member.full_name, error: "E-mail já usado por outro membro e sem CPF para login individual" });
+              continue;
+            }
+          }
+        }
 
         let userId: string;
 
@@ -168,6 +193,8 @@ Deno.serve(async (req) => {
             user_metadata: {
               member_id: member.id,
               perfil: "membro",
+              real_email: member.email ?? null,
+              is_cpf_login: loginEmail.endsWith("@gileade.app"),
             },
           });
 
@@ -178,6 +205,7 @@ Deno.serve(async (req) => {
           }
 
           userId = newUser.user.id;
+          usersByEmail.set(loginEmail, userId);
 
           // Vincular user_id ao membro
           const { error: updateError } = await supabaseAdmin
