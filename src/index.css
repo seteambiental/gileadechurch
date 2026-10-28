@@ -57,6 +57,8 @@
     
     /* Destructive */
     --destructive: 0 84% 60%;
+    --success: 142 71% 36%;
+    --success-foreground: 0 0% 100%;
     --destructive-foreground: 0 0% 100%;
     
     /* Border & Input */
@@ -127,6 +129,8 @@
     --accent-foreground: 30 85% 60%;
     
     --destructive: 0 62% 50%;
+    --success: 142 60% 40%;
+    --success-foreground: 0 0% 100%;
     --destructive-foreground: 0 0% 100%;
     
     --border: 0 0% 18%;
