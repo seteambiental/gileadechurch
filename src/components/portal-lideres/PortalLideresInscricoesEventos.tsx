@@ -242,7 +242,7 @@ export const PortalLideresInscricoesEventos = ({
       <div className="grid grid-cols-3 gap-2">
         {[
           { key: "todos", label: "Inscrições", valor: totais.ativas, cls: "text-foreground" },
-          { key: "pago", label: "Pagas", valor: totais.pagas, cls: "text-primary" },
+          { key: "pago", label: "Pagas", valor: totais.pagas, cls: "text-success" },
           { key: "nao_pagas", label: "Não pagas", valor: totais.aPagar, cls: "text-destructive" },
         ].map((c) => (
           <button
@@ -369,7 +369,10 @@ export const PortalLideresInscricoesEventos = ({
                       <Badge variant="outline" className="text-[10px]">
                         {tipoInscricaoLabels[i.tipo_inscricao] || i.tipo_inscricao || "—"}
                       </Badge>
-                      <Badge variant={status.variant} className="text-[10px]">
+                      <Badge
+                        variant={status.variant}
+                        className={`text-[10px] ${status.label === "Pago" ? "bg-success text-success-foreground border-transparent hover:bg-success/90" : ""}`}
+                      >
                         {status.label}
                       </Badge>
                       {i.lista_espera && (
