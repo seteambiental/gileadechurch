@@ -29,6 +29,8 @@ interface PortalLideresInscricoesEventosProps {
 const statusLabels: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pendente: { label: "A pagar", variant: "secondary" },
   confirmado: { label: "Pago", variant: "default" },
+  pago: { label: "Pago", variant: "default" },
+  parcial: { label: "Parcial", variant: "outline" },
   cancelado: { label: "Cancelado", variant: "destructive" },
 };
 
@@ -78,11 +80,34 @@ export const PortalLideresInscricoesEventos = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("inscricoes_eventos")
-        .select("id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
+        .select("id, member_id, nome_participante, telefone_contato, telefone_emergencia, telefone_responsavel, nome_responsavel, genero, status_pagamento, tipo_inscricao, lista_espera, created_at")
         .eq("evento_id", selectedEventId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      // Pagamentos são lançados pela administração em impacto_inscricoes — buscar o status real lá
+      const { data: pagos } = await supabase
+        .from("impacto_inscricoes")
+        .select("member_id, nome, telefone, status_pagamento")
+        .eq("evento_id", selectedEventId!);
+      const norm = (t: any) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+      const dig = (t: any) => String(t || "").replace(/\D/g, "");
+      const byMember = new Map<string, string>();
+      const byNome = new Map<string, string>();
+      const byTel = new Map<string, string>();
+      (pagos || []).forEach((p: any) => {
+        const st = String(p.status_pagamento || "pendente").toLowerCase();
+        if (p.member_id) byMember.set(p.member_id, st);
+        if (p.nome) byNome.set(norm(p.nome), st);
+        if (dig(p.telefone).length >= 10) byTel.set(dig(p.telefone), st);
+      });
+      return (data || []).map((i: any) => {
+        const original = String(i.status_pagamento || "pendente").toLowerCase();
+        let st: string | undefined = original === "cancelado" ? "cancelado" : undefined;
+        if (!st) st = (i.member_id && byMember.get(i.member_id)) || byNome.get(norm(i.nome_participante)) || byTel.get(dig(i.telefone_contato));
+        if (!st) st = original === "confirmado" ? "pago" : original;
+        if (st === "confirmado") st = "pago";
+        return { ...i, status_pagamento: st };
+      });
     },
     enabled: !!selectedEventId,
   });
@@ -101,7 +126,11 @@ export const PortalLideresInscricoesEventos = ({
     return inscricoes
       .filter((i: any) => {
         const matchSearch = includesNormalized(i.nome_participante, searchTerm);
-        const matchStatus = filterStatus === "todos" || i.status_pagamento === filterStatus;
+        const matchStatus =
+          filterStatus === "todos" ||
+          (filterStatus === "nao_pagas"
+            ? !i.lista_espera && i.status_pagamento !== "pago" && i.status_pagamento !== "cancelado"
+            : i.status_pagamento === filterStatus);
         const matchTipo = filterTipos.length === 0 || filterTipos.includes(i.tipo_inscricao);
         return matchSearch && matchStatus && matchTipo;
       })
@@ -117,7 +146,8 @@ export const PortalLideresInscricoesEventos = ({
   const totais = useMemo(() => {
     const ativas = inscricoes.filter((i: any) => !i.lista_espera && i.status_pagamento !== "cancelado");
     const espera = inscricoes.filter((i: any) => i.lista_espera);
-    return { ativas: ativas.length, espera: espera.length, total: inscricoes.length };
+    const pagas = ativas.filter((i: any) => i.status_pagamento === "pago").length;
+    return { ativas: ativas.length, espera: espera.length, total: inscricoes.length, pagas, aPagar: ativas.length - pagas };
   }, [inscricoes]);
 
   if (loadingEventos) {
@@ -209,6 +239,24 @@ export const PortalLideresInscricoesEventos = ({
         </div>
       </div>
 
+      <div className="grid grid-cols-3 gap-2">
+        {[
+          { key: "todos", label: "Inscrições", valor: totais.ativas, cls: "text-foreground" },
+          { key: "pago", label: "Pagas", valor: totais.pagas, cls: "text-primary" },
+          { key: "nao_pagas", label: "Não pagas", valor: totais.aPagar, cls: "text-destructive" },
+        ].map((c) => (
+          <button
+            key={c.key}
+            type="button"
+            onClick={() => setFilterStatus(filterStatus === c.key && c.key !== "todos" ? "todos" : c.key)}
+            className={`rounded-lg border bg-card p-2 text-center transition-shadow hover:shadow-md ${filterStatus === c.key ? "ring-2 ring-secondary" : ""}`}
+          >
+            <div className={`text-xl font-bold ${c.cls}`}>{c.valor}</div>
+            <div className="text-[11px] text-muted-foreground">{c.label}</div>
+          </button>
+        ))}
+      </div>
+
       <Button
         variant="outline"
         size="sm"
@@ -231,8 +279,10 @@ export const PortalLideresInscricoesEventos = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os status</SelectItem>
-            <SelectItem value="confirmado">Pago</SelectItem>
+            <SelectItem value="pago">Pago</SelectItem>
+            <SelectItem value="parcial">Parcial</SelectItem>
             <SelectItem value="pendente">A pagar</SelectItem>
+            <SelectItem value="nao_pagas">Não pagas (a pagar + parcial)</SelectItem>
             <SelectItem value="cancelado">Cancelado</SelectItem>
           </SelectContent>
         </Select>
