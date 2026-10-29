@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { includesNormalized } from "@/lib/text-utils";
 import { Loader2, CalendarDays, MapPin, Phone, ChevronRight, Users, MessageCircle, Filter, ShieldAlert } from "lucide-react";
-import { format } from "date-fns";
+import { format, subDays } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
 import { ptBR } from "date-fns/locale";
 
