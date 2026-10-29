@@ -55,18 +55,21 @@ export const PortalLideresInscricoesEventos = ({
   const [filterTipos, setFilterTipos] = useState<string[]>([]);
   const [envioOpen, setEnvioOpen] = useState(false);
 
-  // Eventos aos quais o membro tem acesso
+  // Eventos aos quais o membro tem acesso (somente atuais: futuros e até 7 dias após o término)
   const { data: eventos = [], isLoading: loadingEventos } = useQuery({
     queryKey: ["portal-lideres-acesso-eventos", memberId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("evento_inscricoes_acessos")
-        .select("evento_id, agenda_igreja(id, titulo, data_evento, local, tipo_evento, cor)")
+        .select("evento_id, agenda_igreja(id, titulo, data_evento, data_fim, local, tipo_evento, cor)")
         .eq("member_id", memberId);
       if (error) throw error;
+      const corte = format(subDays(new Date(), 7), "yyyy-MM-dd");
+      const fimEvento = (e: any) => e.data_fim || e.data_evento || "";
       return (data || [])
         .map((r: any) => r.agenda_igreja)
         .filter(Boolean)
+        .filter((e: any) => fimEvento(e) >= corte)
         .sort((a: any, b: any) =>
           (b.data_evento || "").localeCompare(a.data_evento || "")
         );
