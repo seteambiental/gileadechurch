@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { isoDateToManual, manualDateToISO, maskManualDate } from "./manual-date";
+import { isoDateToManual, manualDateToISO, maskManualDate } from "../src/lib/manual-date";
 
 describe("datas digitadas DD/MM/AAAA", () => {
   test("aplica máscara e preserva o ano digitado", () => {
