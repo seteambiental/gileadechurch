@@ -56,8 +56,10 @@ import {
   Edit2
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { ManualDateInput } from "@/components/ui/manual-date-input";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ptBR } from "date-fns/locale";
 import ExcelJS from "exceljs";
@@ -69,6 +71,7 @@ interface Inscricao {
   novo_convertido_id: string | null;
   nome_participante: string;
   genero: string | null;
+  data_nascimento: string | null;
   telefone_contato: string;
   telefone_emergencia: string | null;
   is_menor: boolean;
@@ -134,6 +137,23 @@ export const InscricoesEventoDialog = ({
   const queryClient = useQueryClient();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingBirthDate, setEditingBirthDate] = useState<{ id: string; nome: string; value: string } | null>(null);
+  const birthDateMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingBirthDate?.value) throw new Error("Informe uma data de nascimento válida.");
+      const { error } = await supabase.from("inscricoes_eventos")
+        .update({ data_nascimento: editingBirthDate.value }).eq("id", editingBirthDate.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-inscricoes", eventoId] });
+      setEditingBirthDate(null);
+      toast({ title: "Data de nascimento atualizada!" });
+    },
+    onError: (error: Error) => toast({ title: "Erro ao atualizar data", description: error.message, variant: "destructive" }),
+  });
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -688,6 +708,11 @@ export const InscricoesEventoDialog = ({
                       <TableCell>
                         <div>
                           <p className="font-medium">{inscricao.nome_participante}</p>
+                          <Button variant="ghost" size="sm" className="h-auto px-0 text-xs text-muted-foreground"
+                            onClick={() => setEditingBirthDate({ id: inscricao.id, nome: inscricao.nome_participante, value: inscricao.data_nascimento || "" })}>
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            {inscricao.data_nascimento ? format(parseLocalDate(inscricao.data_nascimento), "dd/MM/yyyy") : "Data de nascimento"}
+                          </Button>
                           {inscricao.lista_espera && (
                             <Badge variant="outline" className="text-xs text-orange-500 border-orange-300 mt-1">
                               <Clock className="w-3 h-3 mr-1" />
@@ -802,7 +827,8 @@ export const InscricoesEventoDialog = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => window.open(`${inscricaoPath}?edit=${inscricao.id}`, '_blank')}
+                            aria-label={`Editar data de nascimento de ${inscricao.nome_participante}`}
+                            onClick={() => setEditingBirthDate({ id: inscricao.id, nome: inscricao.nome_participante, value: inscricao.data_nascimento || "" })}
                           >
                             <Edit2 className="w-4 h-4" />
                           </Button>
@@ -822,6 +848,24 @@ export const InscricoesEventoDialog = ({
               </Table>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingBirthDate} onOpenChange={(next) => { if (!next) setEditingBirthDate(null); }}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-sm">
+          <DialogHeader><DialogTitle>Editar data de nascimento</DialogTitle></DialogHeader>
+          <p className="text-sm font-medium">{editingBirthDate?.nome}</p>
+          <form className="space-y-4" onSubmit={(event) => { event.preventDefault(); birthDateMutation.mutate(); }}>
+            <div className="space-y-2">
+              <Label htmlFor="agenda-nascimento">Data de nascimento</Label>
+              <ManualDateInput id="agenda-nascimento" value={editingBirthDate?.value || ""} max={todayDateStr()} required
+                onChange={(value) => setEditingBirthDate(current => current ? { ...current, value } : null)} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setEditingBirthDate(null)}>Cancelar</Button>
+              <Button type="submit" disabled={birthDateMutation.isPending}>Salvar</Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
 

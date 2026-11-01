@@ -17,6 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { ManualDateInput } from "@/components/ui/manual-date-input";
+import { todayDateStr } from "@/lib/date-utils";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -73,6 +75,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
   const [telefone, setTelefone] = useState("");
   const [email, setEmail] = useState("");
   const [genero, setGenero] = useState("");
+  const [dataNascimento, setDataNascimento] = useState("");
   const [telefoneEmergencia, setTelefoneEmergencia] = useState("");
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [telefoneResponsavel, setTelefoneResponsavel] = useState("");
@@ -107,7 +110,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
     queryFn: async () => {
       const { data, error } = await supabase
         .from("members")
-        .select("id, full_name, whatsapp, email, genero, casa_refugio_id")
+        .select("id, full_name, whatsapp, email, genero, casa_refugio_id, birth_date")
         .order("full_name");
       if (error) throw error;
       return data;
@@ -135,6 +138,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setNome(inscricao.nome || memberData?.full_name || "");
       setTelefone(inscricao.telefone || memberData?.whatsapp || "");
       setEmail(inscricao.email || memberData?.email || "");
+      setDataNascimento(inscricao.data_nascimento || memberData?.birth_date || "");
       {
         const rawGen = (inscricao.genero || memberData?.genero || "").toString().toLowerCase();
         const normGen = rawGen === "m" ? "masculino" : rawGen === "f" ? "feminino" : rawGen;
@@ -181,6 +185,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       setTelefone("");
       setEmail("");
       setGenero("");
+      setDataNascimento("");
       setTelefoneEmergencia("");
       setNomeResponsavel("");
       setTelefoneResponsavel("");
@@ -292,6 +297,7 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
         telefone: finalTelefone || null,
         email: finalEmail || null,
         genero: finalGenero || null,
+        data_nascimento: dataNascimento || null,
         observacoes: observacoes || null,
         telefone_emergencia: telefoneEmergencia || null,
         nome_responsavel: nomeResponsavel || null,
@@ -338,20 +344,31 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             tipo_inscricao: payload.tipo_inscricao,
             status_pagamento: payload.status_pagamento,
             nome_participante: payload.nome,
+            data_nascimento: payload.data_nascimento,
           };
           if (payload.telefone) agendaUpdate.telefone_contato = payload.telefone;
           if (payload.genero) agendaUpdate.genero = payload.genero;
           
-          await supabase
+          const { error: agendaError } = await supabase
             .from("inscricoes_eventos")
             .update(agendaUpdate)
             .eq("id", inscricao.id);
+          if (agendaError) throw agendaError;
         } else {
           const { error } = await supabase
             .from("impacto_inscricoes")
             .update(payload)
             .eq("id", inscricao.id);
           if (error) throw error;
+          // Keep the public registration's birth date aligned with the edited record.
+          let agendaQuery = supabase.from("inscricoes_eventos")
+            .update({ data_nascimento: payload.data_nascimento })
+            .eq("evento_id", eventoId);
+          agendaQuery = inscricao.member_id
+            ? agendaQuery.eq("member_id", inscricao.member_id)
+            : agendaQuery.eq("nome_participante", inscricao.nome);
+          const { error: syncError } = await agendaQuery;
+          if (syncError) throw syncError;
         }
       } else {
         // Check for duplicate before inserting
@@ -424,6 +441,8 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-financeiro", eventoId] });
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-count"] });
       queryClient.invalidateQueries({ queryKey: ["agenda-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-inscricoes", eventoId] });
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -566,7 +585,10 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
             <>
               <div>
                 <Label>Membro *</Label>
-                <Select value={memberId || "none"} onValueChange={(v) => setMemberId(v === "none" ? "" : v)}>
+                <Select value={memberId || "none"} onValueChange={(v) => {
+                  setMemberId(v === "none" ? "" : v);
+                  setDataNascimento(members?.find(m => m.id === v)?.birth_date || "");
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o membro" />
                   </SelectTrigger>
@@ -614,6 +636,11 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               </div>
             </>
           )}
+
+          <div className="space-y-2">
+            <Label htmlFor="editar-data-nascimento">Data de nascimento</Label>
+            <ManualDateInput id="editar-data-nascimento" value={dataNascimento} onChange={setDataNascimento} max={todayDateStr()} />
+          </div>
 
           {tiposPermitidos.length > 0 && (
             <div>
@@ -818,13 +845,12 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
               <div key={index} className="flex items-end gap-2">
                 <div className="flex-1">
                   <Label className="text-xs">Data</Label>
-                  <Input
-                    type="date"
+                  <ManualDateInput
                     value={prev.data}
-                    min={new Date().toISOString().split("T")[0]}
-                    onChange={(e) => {
+                    min={todayDateStr()}
+                    onChange={(value) => {
                       const updated = [...previsoes];
-                      updated[index] = { ...updated[index], data: e.target.value };
+                      updated[index] = { ...updated[index], data: value };
                       setPrevisoes(updated);
                     }}
                   />
