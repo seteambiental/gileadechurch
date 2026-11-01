@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ManualDateInput } from "@/components/ui/manual-date-input";
 import { SearchInput } from "@/components/ui/search-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1036,9 +1037,8 @@ const InscricaoEvento = () => {
                       <Label htmlFor="data_nascimento" className="text-base md:text-lg">Data de Nascimento *</Label>
                       {dataNascimentoLocked ? (
                         <div className="relative">
-                          <Input
+                          <ManualDateInput
                             id="data_nascimento"
-                            type="date"
                             value={dataNascimento}
                             readOnly
                             tabIndex={-1}
@@ -1047,11 +1047,10 @@ const InscricaoEvento = () => {
                           <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         </div>
                       ) : (
-                        <Input
+                        <ManualDateInput
                           id="data_nascimento"
-                          type="date"
                           value={dataNascimento}
-                          onChange={(e) => setDataNascimento(e.target.value)}
+                          onChange={setDataNascimento}
                           required
                           className="h-10 md:h-14 text-base md:text-lg"
                         />
