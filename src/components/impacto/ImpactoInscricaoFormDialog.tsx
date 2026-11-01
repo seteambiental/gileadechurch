@@ -370,6 +370,14 @@ const ImpactoInscricaoFormDialog = ({ open, onOpenChange, eventoId, inscricao }:
           const { error: syncError } = await agendaQuery;
           if (syncError) throw syncError;
         }
+        // Agenda's existing sync may prefer the member profile; the explicit correction takes precedence.
+        let correctedDate = supabase.from("impacto_inscricoes")
+          .update({ data_nascimento: payload.data_nascimento }).eq("evento_id", eventoId);
+        correctedDate = isAgendaSource
+          ? correctedDate.eq("nome", finalNome)
+          : correctedDate.eq("id", inscricao.id);
+        const { error: dateError } = await correctedDate;
+        if (dateError) throw dateError;
       } else {
         // Check for duplicate before inserting
         let duplicateQuery = supabase

@@ -144,6 +144,14 @@ export const InscricoesEventoDialog = ({
       const { error } = await supabase.from("inscricoes_eventos")
         .update({ data_nascimento: editingBirthDate.value }).eq("id", editingBirthDate.id);
       if (error) throw error;
+      const registration = inscricoes.find(i => i.id === editingBirthDate.id);
+      let counterpart = supabase.from("impacto_inscricoes")
+        .update({ data_nascimento: editingBirthDate.value }).eq("evento_id", eventoId);
+      counterpart = registration?.member_id
+        ? counterpart.eq("member_id", registration.member_id)
+        : counterpart.eq("nome", editingBirthDate.nome);
+      const { error: syncError } = await counterpart;
+      if (syncError) throw syncError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
