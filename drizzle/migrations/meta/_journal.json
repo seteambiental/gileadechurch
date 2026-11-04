@@ -29,6 +29,13 @@
       "when": 1793618175815,
       "tag": "0003_sync_keep_payment_status",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793784287886,
+      "tag": "0004_sync_only_changed_fields",
+      "breakpoints": true
     }
   ]
 }
