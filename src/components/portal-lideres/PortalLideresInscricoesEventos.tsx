@@ -150,7 +150,15 @@ export const PortalLideresInscricoesEventos = ({
     const ativas = inscricoes.filter((i: any) => !i.lista_espera && i.status_pagamento !== "cancelado");
     const espera = inscricoes.filter((i: any) => i.lista_espera);
     const pagas = ativas.filter((i: any) => i.status_pagamento === "pago").length;
-    return { ativas: ativas.length, espera: espera.length, total: inscricoes.length, pagas, aPagar: ativas.length - pagas };
+    const porTipoMap = new Map<string, number>();
+    ativas.forEach((i: any) => {
+      const t = i.tipo_inscricao || "nao_informado";
+      porTipoMap.set(t, (porTipoMap.get(t) || 0) + 1);
+    });
+    const porTipo = Array.from(porTipoMap.entries())
+      .map(([tipo, qtd]) => ({ tipo, qtd, label: tipoInscricaoLabels[tipo] || (tipo === "nao_informado" ? "Não informado" : tipo) }))
+      .sort((a, b) => b.qtd - a.qtd || a.label.localeCompare(b.label, "pt-BR"));
+    return { ativas: ativas.length, espera: espera.length, total: inscricoes.length, pagas, aPagar: ativas.length - pagas, porTipo };
   }, [inscricoes]);
 
   if (loadingEventos) {
@@ -252,10 +260,20 @@ export const PortalLideresInscricoesEventos = ({
             key={c.key}
             type="button"
             onClick={() => setFilterStatus(filterStatus === c.key && c.key !== "todos" ? "todos" : c.key)}
-            className={`rounded-lg border bg-card p-2 text-center transition-shadow hover:shadow-md ${filterStatus === c.key ? "ring-2 ring-secondary" : ""}`}
+            className={`rounded-lg border bg-card p-2 text-center self-start transition-shadow hover:shadow-md ${filterStatus === c.key ? "ring-2 ring-secondary" : ""}`}
           >
             <div className={`text-xl font-bold ${c.cls}`}>{c.valor}</div>
             <div className="text-[11px] text-muted-foreground">{c.label}</div>
+            {c.key === "todos" && totais.porTipo.length > 0 && (
+              <ul className="mt-1.5 pt-1.5 border-t space-y-0.5 text-left">
+                {totais.porTipo.map((t) => (
+                  <li key={t.tipo} className="flex items-center justify-between gap-1 text-[10px] leading-tight text-muted-foreground">
+                    <span className="truncate">{t.label}</span>
+                    <span className="font-semibold text-foreground">{t.qtd}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </button>
         ))}
       </div>
