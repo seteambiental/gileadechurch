@@ -192,11 +192,17 @@ serve(async (req) => {
         throw new Error(`Erro ao buscar membros: ${membrosError.message}`);
       }
 
-      const aniversariantes = membros?.filter(m => {
-        if (!m.birth_date) return false;
-        const [ano, mes, dia] = m.birth_date.split('-');
-        return mes === mesAtual && dia === diaAtual;
-      }) || [];
+      // Datas impossíveis (ex.: 11/11/11111, ano futuro ou deste ano) não contam
+      const anoAtualNum = Number(hoje.getFullYear());
+      const dataValidaHoje = (iso?: string | null) => {
+        const mt = /^(\d{4})-(\d{2})-(\d{2})$/.exec((iso || '').trim());
+        if (!mt) return false;
+        const ano = Number(mt[1]);
+        if (ano < 1900 || ano >= anoAtualNum) return false;
+        return mt[2] === mesAtual && mt[3] === diaAtual;
+      };
+
+      const aniversariantes = membros?.filter(m => dataValidaHoje(m.birth_date)) || [];
 
       console.log(`Encontrados ${aniversariantes.length} aniversariantes hoje`);
 
@@ -210,11 +216,29 @@ serve(async (req) => {
         console.error('Erro ao buscar novos convertidos:', convertidosError);
       }
 
-      const aniversariantesConvertidos = convertidos?.filter(c => {
-        if (!c.data_nascimento) return false;
-        const [ano, mes, dia] = c.data_nascimento.split('-');
-        return mes === mesAtual && dia === diaAtual;
-      }) || [];
+      const aniversariantesConvertidos = convertidos?.filter(c => dataValidaHoje(c.data_nascimento)) || [];
+
+      // Todos os membros ativos (com ou sem WhatsApp/data) para reconhecer quem já é membro
+      const { data: todosMembros } = await supabase
+        .from('members')
+        .select('full_name, whatsapp, cpf')
+        .or('excluido.is.null,excluido.eq.false');
+      const normNome = (v?: string | null) =>
+        (v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const membroNomes = new Set<string>();
+      const membroTels = new Set<string>();
+      const membroCpfs = new Set<string>();
+      (todosMembros || []).forEach((m: any) => {
+        const n = normNome(m.full_name); if (n) membroNomes.add(n);
+        const t = (m.whatsapp || '').replace(/\D/g, ''); if (t.length >= 10) membroTels.add(t);
+        const c = (m.cpf || '').replace(/\D/g, ''); if (c.length === 11) membroCpfs.add(c);
+      });
+      const ehMembro = (nome?: string | null, tel?: string | null, cpf?: string | null) => {
+        const n = normNome(nome);
+        const t = (tel || '').replace(/\D/g, '');
+        const c = (cpf || '').replace(/\D/g, '');
+        return (!!n && membroNomes.has(n)) || (t.length >= 10 && membroTels.has(t)) || (c.length === 11 && membroCpfs.has(c));
+      };
 
       // Inscritos em eventos do Impacto que NÃO são membros
       const { data: inscritosEventos, error: inscError } = await supabase
@@ -255,6 +279,7 @@ serve(async (req) => {
 
       // Remover convertidos que já existem como membros (mesmo nome, WhatsApp ou CPF)
       const convertidosUnicos = aniversariantesConvertidos.filter(c => {
+        if (ehMembro(c.full_name, c.whatsapp, (c as any).cpf)) return false;
         if (jaExiste(c.full_name, c.whatsapp, (c as any).cpf)) return false;
         registrarChaves(c.full_name, c.whatsapp, (c as any).cpf);
         return true;
@@ -263,9 +288,8 @@ serve(async (req) => {
       aniversariantesConvertidos.push(...convertidosUnicos);
 
       const aniversariantesEventos = (inscritosEventos || []).filter(i => {
-        if (!i.data_nascimento || !i.nome) return false;
-        const [, mes, dia] = i.data_nascimento.split('-');
-        if (mes !== mesAtual || dia !== diaAtual) return false;
+        if (!i.nome || !dataValidaHoje(i.data_nascimento)) return false;
+        if (ehMembro(i.nome, i.telefone, (i as any).cpf)) return false;
         if (jaExiste(i.nome, i.telefone, (i as any).cpf)) return false;
         registrarChaves(i.nome, i.telefone, (i as any).cpf);
         return true;
