@@ -184,6 +184,7 @@ serve(async (req) => {
       const { data: membros, error: membrosError } = await supabase
         .from('members')
         .select('id, full_name, whatsapp, birth_date, cpf')
+        .or('excluido.is.null,excluido.eq.false')
         .not('whatsapp', 'is', null)
         .not('birth_date', 'is', null);
 
@@ -503,6 +504,7 @@ serve(async (req) => {
       const { data: membros, error: membrosError } = await supabase
         .from('members')
         .select('id, full_name, whatsapp, birth_date')
+        .or('excluido.is.null,excluido.eq.false')
         .not('birth_date', 'is', null);
 
       if (membrosError) throw membrosError;
