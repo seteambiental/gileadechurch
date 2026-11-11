@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { fazAniversarioHoje, criarIndicePessoas } from "@/lib/aniversario";
 import { ptBR } from "date-fns/locale";
 import { Copy, Cake, Loader2, Check, Send, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -68,15 +68,12 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
     queryKey: ["aniversariantes-hoje"],
     queryFn: async () => {
       const today = new Date();
-      const day = today.getDate();
-      const month = today.getMonth() + 1;
 
-      // Buscar membros
+      // Buscar todos os membros ativos (com ou sem data) para saber quem já é membro
       const { data: membros, error: membrosError } = await supabase
         .from("members")
         .select("id, full_name, whatsapp, birth_date, photo_url, cpf")
-        .or("excluido.is.null,excluido.eq.false")
-        .not("birth_date", "is", null);
+        .or("excluido.is.null,excluido.eq.false");
 
       if (membrosError) throw membrosError;
 
@@ -88,7 +85,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
 
       if (ncError) throw ncError;
 
-      // Buscar participantes de eventos do Impacto que NÃO são membros
+      // Buscar participantes de eventos sem vínculo com cadastro de membro
       const { data: inscricoesEventos, error: inscError } = await supabase
         .from("impacto_inscricoes")
         .select("id, nome, telefone, data_nascimento, member_id")
@@ -97,83 +94,56 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
 
       if (inscError) throw inscError;
 
-      // Filtrar por dia e mês
       const aniversariantes: Aniversariante[] = [];
 
-      // Chaves de deduplicação: nome, WhatsApp (só dígitos) e CPF (só dígitos)
-      const nomesJa = new Set<string>();
-      const whatsappsJa = new Set<string>();
-      const cpfsJa = new Set<string>();
+      // Quem já é membro nunca aparece como "não é membro", mesmo que a data
+      // de nascimento da inscrição antiga esteja diferente da do cadastro.
+      const indiceMembros = criarIndicePessoas();
+      membros?.forEach((m) => indiceMembros.adicionar(m.full_name, m.whatsapp, (m as any).cpf));
 
-      const normalizarTel = (tel?: string | null) => (tel || "").replace(/\D/g, "");
-      const normalizarCpf = (cpf?: string | null) => (cpf || "").replace(/\D/g, "");
-
-      const jaExiste = (nome: string, tel?: string | null, cpf?: string | null) => {
-        const nomeKey = nome.trim().toLowerCase();
-        const telKey = normalizarTel(tel);
-        const cpfKey = normalizarCpf(cpf);
-        if (nomesJa.has(nomeKey)) return true;
-        if (telKey.length >= 10 && whatsappsJa.has(telKey)) return true;
-        if (cpfKey.length === 11 && cpfsJa.has(cpfKey)) return true;
-        return false;
-      };
-
-      const registrar = (nome: string, tel?: string | null, cpf?: string | null) => {
-        nomesJa.add(nome.trim().toLowerCase());
-        const telKey = normalizarTel(tel);
-        const cpfKey = normalizarCpf(cpf);
-        if (telKey.length >= 10) whatsappsJa.add(telKey);
-        if (cpfKey.length === 11) cpfsJa.add(cpfKey);
-      };
+      // Evita repetir a mesma pessoa vinda de fontes diferentes
+      const jaListados = criarIndicePessoas();
 
       membros?.forEach((m) => {
-        if (m.birth_date) {
-          const birthDate = parseLocalDate(m.birth_date);
-          if (birthDate.getDate() === day && birthDate.getMonth() + 1 === month) {
-            aniversariantes.push({
-              id: `m-${m.id}`,
-              full_name: m.full_name,
-              whatsapp: m.whatsapp,
-              birth_date: m.birth_date,
-              photo_url: m.photo_url,
-            });
-            registrar(m.full_name, m.whatsapp, (m as any).cpf);
-          }
-        }
+        if (!fazAniversarioHoje(m.birth_date, today)) return;
+        if (jaListados.contem(m.full_name, m.whatsapp, (m as any).cpf)) return;
+        aniversariantes.push({
+          id: `m-${m.id}`,
+          full_name: m.full_name,
+          whatsapp: m.whatsapp,
+          birth_date: m.birth_date as string,
+          photo_url: m.photo_url,
+        });
+        jaListados.adicionar(m.full_name, m.whatsapp, (m as any).cpf);
       });
 
       novosConvertidos?.forEach((nc) => {
-        if (nc.data_nascimento) {
-          const birthDate = parseLocalDate(nc.data_nascimento);
-          if (birthDate.getDate() === day && birthDate.getMonth() + 1 === month) {
-            if (jaExiste(nc.full_name, nc.whatsapp, (nc as any).cpf)) return;
-            aniversariantes.push({
-              id: `nc-${nc.id}`,
-              full_name: nc.full_name,
-              whatsapp: nc.whatsapp,
-              birth_date: nc.data_nascimento,
-              photo_url: nc.photo_url,
-            });
-            registrar(nc.full_name, nc.whatsapp, (nc as any).cpf);
-          }
-        }
+        if (!fazAniversarioHoje(nc.data_nascimento, today)) return;
+        if (indiceMembros.contem(nc.full_name, nc.whatsapp, (nc as any).cpf)) return;
+        if (jaListados.contem(nc.full_name, nc.whatsapp, (nc as any).cpf)) return;
+        aniversariantes.push({
+          id: `nc-${nc.id}`,
+          full_name: nc.full_name,
+          whatsapp: nc.whatsapp,
+          birth_date: nc.data_nascimento as string,
+          photo_url: nc.photo_url,
+        });
+        jaListados.adicionar(nc.full_name, nc.whatsapp, (nc as any).cpf);
       });
 
-      // Adicionar inscritos de eventos (não membros), evitando duplicatas por nome, WhatsApp ou CPF
       inscricoesEventos?.forEach((ins) => {
-        if (!ins.data_nascimento || !ins.nome) return;
-        const birthDate = parseLocalDate(ins.data_nascimento);
-        if (birthDate.getDate() !== day || birthDate.getMonth() + 1 !== month) return;
-        if (jaExiste(ins.nome, ins.telefone, (ins as any).cpf)) return;
+        if (!ins.nome || !fazAniversarioHoje(ins.data_nascimento, today)) return;
+        if (indiceMembros.contem(ins.nome, ins.telefone, (ins as any).cpf)) return;
+        if (jaListados.contem(ins.nome, ins.telefone, (ins as any).cpf)) return;
         aniversariantes.push({
           id: `ev-${ins.id}`,
           full_name: ins.nome,
           whatsapp: ins.telefone ?? null,
-          birth_date: ins.data_nascimento,
+          birth_date: ins.data_nascimento as string,
           photo_url: null,
           nao_membro: true,
         });
-        registrar(ins.nome, ins.telefone, (ins as any).cpf);
+        jaListados.adicionar(ins.nome, ins.telefone, (ins as any).cpf);
       });
 
       return aniversariantes;
