@@ -75,6 +75,7 @@ const AniversariantesDialog = ({ open, onOpenChange }: AniversariantesDialogProp
       const { data: membros, error: membrosError } = await supabase
         .from("members")
         .select("id, full_name, whatsapp, birth_date, photo_url, cpf")
+        .or("excluido.is.null,excluido.eq.false")
         .not("birth_date", "is", null);
 
       if (membrosError) throw membrosError;
