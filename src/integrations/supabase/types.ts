@@ -7544,6 +7544,10 @@ export type Database = {
       can_manage_casa_refugio: { Args: { casa_id: string }; Returns: boolean }
       can_manage_member_requests: { Args: never; Returns: boolean }
       can_manage_ministry: { Args: { ministry_uuid: string }; Returns: boolean }
+      casal_inscricao_pendente_recente: {
+        Args: { _id: string }
+        Returns: boolean
+      }
       contar_inscricoes_por_tipo: {
         Args: { _evento_id: string }
         Returns: {
@@ -7570,6 +7574,7 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_church_user: { Args: never; Returns: boolean }
       is_integrante_ministerio: { Args: never; Returns: boolean }
       is_kids_leader: { Args: never; Returns: boolean }
       is_lider_casa_refugio: { Args: never; Returns: boolean }
@@ -7579,8 +7584,20 @@ export type Database = {
       is_ministry_leader: { Args: { ministry_uuid: string }; Returns: boolean }
       is_ministry_member: { Args: { ministry_uuid: string }; Returns: boolean }
       is_supervisor_casa_refugio: { Args: never; Returns: boolean }
+      kids_checkin_por_token: { Args: { _token: string }; Returns: Json }
+      listar_ministerios_publico: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       pastor_auxiliar_has_permission: {
         Args: { modulo_check: string; pa_user_id: string }
+        Returns: boolean
+      }
+      solicitacao_membro_pendente_recente: {
+        Args: { _id: string }
         Returns: boolean
       }
       to_title_case_pt: { Args: { text_input: string }; Returns: string }

@@ -36,6 +36,13 @@
       "when": 1793784287886,
       "tag": "0004_sync_only_changed_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794872111091,
+      "tag": "0005_restringir_acesso_contas_da_igreja",
+      "breakpoints": true
     }
   ]
 }
