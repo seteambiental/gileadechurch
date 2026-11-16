@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatCurrency, formatPhone } from "@/lib/masks";
 import { format } from "date-fns";
-import { parseLocalDate } from "@/lib/date-utils";
+import { parseLocalDate, todayDateStr } from "@/lib/date-utils";
+import { eventoAindaVisivel } from "@/lib/eventos-visiveis";
 import { ptBR } from "date-fns/locale";
 import { calculateAge } from "@/lib/age-utils";
 import { Button } from "@/components/ui/button";
@@ -188,8 +189,12 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
   // Unify both sources into a single list for the dropdown
   const eventos = useMemo(() => {
     // Deduplicar impacto_eventos por título (mantém o primeiro de cada título)
+    // Somente eventos atuais: futuros e até 7 dias após o término
+    // (o evento já selecionado continua na lista para não sumir da tela).
+    const hoje = todayDateStr();
+    const atual = (e: any) => e.id === selectedEventoId || eventoAindaVisivel(e, hoje);
     const seenTitles = new Set<string>();
-    const impactoDeduped = (impactoEventos || []).filter((e) => {
+    const impactoDeduped = (impactoEventos || []).filter(atual).filter((e) => {
       const key = e.titulo?.trim().toLowerCase();
       if (seenTitles.has(key)) return false;
       seenTitles.add(key);
@@ -202,7 +207,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
       data_inicio: e.data_inicio,
       source: "impacto" as const,
     }));
-    const agenda = (agendaEventos || []).map((e) => ({
+    const agenda = (agendaEventos || []).filter(atual).map((e) => ({
       id: e.id,
       titulo: e.titulo,
       data_inicio: e.data_evento,
@@ -215,7 +220,7 @@ const ImpactoInscricoesTab = ({ eventoSelecionado, onEventoChange }: ImpactoInsc
     return [...impacto, ...uniqueAgenda].sort((a, b) =>
       new Date(a.data_inicio).getTime() - new Date(b.data_inicio).getTime()
     );
-  }, [impactoEventos, agendaEventos]);
+  }, [impactoEventos, agendaEventos, selectedEventoId]);
 
   // Determine if selected event is from agenda_igreja or impacto_eventos
   const selectedEventoSource = useMemo(
