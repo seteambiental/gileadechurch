@@ -248,7 +248,7 @@ const Auth = () => {
   const { data: ministries = [] } = useQuery({
     queryKey: ["ministries"],
     queryFn: async () => {
-      const { data } = await supabase.from("ministries").select("id, name").order("name");
+      const { data } = await supabase.rpc("listar_ministerios_publico");
       return data || [];
     },
     enabled: !isLogin,

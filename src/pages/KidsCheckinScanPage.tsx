@@ -23,13 +23,11 @@ const KidsCheckinScanPage = () => {
   const { data: checkin, isLoading, error } = useQuery({
     queryKey: ["kids-checkin-token", token],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("kids_checkins")
-        .select("*")
-        .eq("token", token!)
-        .single();
+      // Leitura pelo código do QR (funciona mesmo sem login, sem expor os demais check-ins)
+      const { data, error } = await supabase.rpc("kids_checkin_por_token", { _token: token! });
       if (error) throw error;
-      return data;
+      if (!data) throw new Error("Check-in não encontrado");
+      return data as any;
     },
     enabled: !!token,
   });
@@ -37,15 +35,10 @@ const KidsCheckinScanPage = () => {
   // Buscar turma config
   const { data: turmaConfig } = useQuery({
     queryKey: ["kids-turma-config-scan", checkin?.turma],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("kids_turmas_config")
-        .select("*")
-        .eq("turma", checkin!.turma)
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    queryFn: async () => ({
+      cor_hex: (checkin as any)?.turma_cor_hex ?? null,
+      nome_exibicao: (checkin as any)?.turma_nome_exibicao ?? checkin?.turma,
+    }),
     enabled: !!checkin?.turma,
   });
 
