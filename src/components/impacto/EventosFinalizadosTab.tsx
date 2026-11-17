@@ -54,6 +54,7 @@ import {
   Clock,
   Plus,
   Check,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DateInput } from "@/components/ui/date-input";
@@ -63,6 +64,7 @@ import autoTable from "jspdf-autotable";
 import { savePDF } from "@/lib/export";
 import { FileText, MessageCircle } from "lucide-react";
 import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
+import { ManualDateInput } from "@/components/ui/manual-date-input";
 
 const TIPOS_LABELS: Record<string, string> = {
   membro: "Membro",
@@ -131,6 +133,15 @@ const EventosFinalizadosTab = () => {
   const [whatsappOpen, setWhatsappOpen] = useState(false);
   const [whatsappEvento, setWhatsappEvento] = useState<{ id: string; titulo: string } | null>(null);
 
+  // Correção da data de nascimento mesmo após o evento ser finalizado
+  const [nascimentoEditando, setNascimentoEditando] = useState<{
+    id: string;
+    eventoId: string;
+    memberId: string | null;
+    nome: string;
+    value: string;
+  } | null>(null);
+
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["impacto-eventos-finalizados"],
     queryFn: async () => {
@@ -150,7 +161,7 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, nome, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
+        .select("id, member_id, nome, data_nascimento, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
         .eq("evento_id", expandedId)
         .order("nome");
       if (error) throw error;
@@ -351,6 +362,42 @@ const EventosFinalizadosTab = () => {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", expandedId] });
+    },
+  });
+
+  const nascimentoMutation = useMutation({
+    mutationFn: async () => {
+      if (!nascimentoEditando?.value) throw new Error("Informe uma data de nascimento válida.");
+      const edicao = nascimentoEditando;
+
+      const { error } = await supabase
+        .from("impacto_inscricoes")
+        .update({ data_nascimento: edicao.value })
+        .eq("id", edicao.id);
+      if (error) throw error;
+
+      // Mantém a inscrição original com a mesma data para não divergir nas outras telas.
+      let original = supabase
+        .from("inscricoes_eventos")
+        .update({ data_nascimento: edicao.value })
+        .eq("evento_id", edicao.eventoId);
+      original = edicao.memberId
+        ? original.eq("member_id", edicao.memberId)
+        : original.eq("nome_participante", edicao.nome);
+      const { error: originalError } = await original;
+      if (originalError) throw originalError;
+    },
+    onSuccess: () => {
+      const eventoId = nascimentoEditando?.eventoId;
+      toast.success("Data de nascimento atualizada!");
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-inscricoes", eventoId] });
+      setNascimentoEditando(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Erro ao atualizar a data de nascimento.");
     },
   });
 
@@ -762,7 +809,32 @@ const EventosFinalizadosTab = () => {
                                       <TableCell className="text-xs font-mono text-muted-foreground">
                                         {insc.referencia || "—"}
                                       </TableCell>
-                                      <TableCell className="font-medium">{insc.nome}</TableCell>
+                                      <TableCell className="font-medium">
+                                        <div className="flex items-center gap-1">
+                                          <span>{insc.nome}</span>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 shrink-0"
+                                            title="Editar data de nascimento"
+                                            aria-label={`Editar data de nascimento de ${insc.nome}`}
+                                            onClick={() => setNascimentoEditando({
+                                              id: insc.id,
+                                              eventoId: evento.id,
+                                              memberId: insc.member_id || null,
+                                              nome: insc.nome,
+                                              value: insc.data_nascimento || "",
+                                            })}
+                                          >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </div>
+                                        <p className="text-xs font-normal text-muted-foreground">
+                                          {insc.data_nascimento
+                                            ? format(parseLocalDate(insc.data_nascimento), "dd/MM/yyyy")
+                                            : "Data de nascimento não informada"}
+                                        </p>
+                                      </TableCell>
                                       <TableCell className="text-sm">
                                         {TIPOS_LABELS[insc.tipo_inscricao] || insc.tipo_inscricao || "—"}
                                       </TableCell>
@@ -836,6 +908,43 @@ const EventosFinalizadosTab = () => {
           })}
         </div>
       )}
+
+      {/* Birth date correction dialog */}
+      <Dialog open={!!nascimentoEditando} onOpenChange={(open) => { if (!open) setNascimentoEditando(null); }}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar data de nascimento</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm font-medium">{nascimentoEditando?.nome}</p>
+          <form
+            className="space-y-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              nascimentoMutation.mutate();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="finalizado-nascimento">Data de nascimento</Label>
+              <ManualDateInput
+                id="finalizado-nascimento"
+                value={nascimentoEditando?.value || ""}
+                max={todayDateStr()}
+                required
+                onChange={(value) => setNascimentoEditando((current) => current ? { ...current, value } : null)}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setNascimentoEditando(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={nascimentoMutation.isPending}>
+                {nascimentoMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Dialog */}
       <Dialog open={pagamentoOpen} onOpenChange={setPagamentoOpen}>
