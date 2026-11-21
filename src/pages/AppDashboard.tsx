@@ -55,6 +55,7 @@ import { toast } from "sonner";
 import logoGileade from "@/assets/logo-gileade.jpeg";
 import AniversariantesDialog from "@/components/AniversariantesDialog";
 import { useUserAccess } from "@/hooks/useUserAccess";
+import WhatsappDesconectadoAlerta from "@/components/admin/WhatsappDesconectadoAlerta";
 
 // Cores únicas por ministério (combinando com o tema/ícone de cada um)
 const MINISTRY_COLORS: Record<string, string> = {
@@ -401,6 +402,8 @@ const AppDashboard = () => {
           </div>
         </div>
       </header>
+
+      {user && isAdmin && <WhatsappDesconectadoAlerta />}
 
 
       {/* Main Content */}
