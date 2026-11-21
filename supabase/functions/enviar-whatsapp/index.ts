@@ -1440,8 +1440,11 @@ serve(async (req) => {
     throw new Error('Ação não reconhecida');
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    let errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
     console.error('Erro:', errorMessage);
+    if (/session is not connected|logged_out|not connected/i.test(errorMessage)) {
+      errorMessage = 'O WhatsApp da igreja está desconectado. Reconecte o aparelho (ler o QR Code no painel do WasenderAPI) e tente novamente.';
+    }
     return new Response(JSON.stringify({ success: false, error: errorMessage }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

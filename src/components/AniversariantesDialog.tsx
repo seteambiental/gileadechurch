@@ -231,7 +231,14 @@ _Igreja Gileade_ 💙🙏`;
           memberId: envioAlvo.id.startsWith("m-") ? envioAlvo.id.slice(2) : null,
         },
       });
-      if (error) throw error;
+      if (error) {
+        let detalhe: string | null = null;
+        try {
+          const corpo = await (error as any)?.context?.json?.();
+          detalhe = corpo?.error || null;
+        } catch { /* sem corpo legível */ }
+        throw new Error(detalhe || error.message);
+      }
       if (data && data.success === false) throw new Error(data.error || "Falha no envio");
       toast.success("Mensagem enviada! A entrega será confirmada pelo status do WhatsApp.");
       setEnvioAlvo(null);
