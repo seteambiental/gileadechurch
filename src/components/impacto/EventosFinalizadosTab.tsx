@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { parseLocalDate } from "@/lib/date-utils";
-import { formatCurrency } from "@/lib/masks";
+import { formatCurrency, formatPhone } from "@/lib/masks";
+import { atualizarTelefoneInscricao, type EdicaoTelefoneInscricao } from "@/lib/inscricao-telefone";
+import { MaskedInput } from "@/components/ui/masked-input";
 import { ptBR } from "date-fns/locale";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +57,7 @@ import {
   Plus,
   Check,
   Pencil,
+  Phone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DateInput } from "@/components/ui/date-input";
@@ -142,6 +145,8 @@ const EventosFinalizadosTab = () => {
     value: string;
   } | null>(null);
 
+  const [telefoneEditando, setTelefoneEditando] = useState<EdicaoTelefoneInscricao | null>(null);
+
   const { data: eventos = [], isLoading } = useQuery({
     queryKey: ["impacto-eventos-finalizados"],
     queryFn: async () => {
@@ -161,7 +166,7 @@ const EventosFinalizadosTab = () => {
       if (!expandedId) return [];
       const { data, error } = await supabase
         .from("impacto_inscricoes")
-        .select("id, member_id, nome, data_nascimento, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
+        .select("id, member_id, nome, telefone, data_nascimento, genero, tipo_inscricao, valor_inscricao, valor_pago, status_pagamento, referencia, forma_pagamento, pagamentos, converteu, reconciliou")
         .eq("evento_id", expandedId)
         .order("nome");
       if (error) throw error;
@@ -398,6 +403,22 @@ const EventosFinalizadosTab = () => {
     },
     onError: (err: any) => {
       toast.error(err.message || "Erro ao atualizar a data de nascimento.");
+    },
+  });
+
+  const telefoneMutation = useMutation({
+    mutationFn: atualizarTelefoneInscricao,
+    onSuccess: (_data, edicao) => {
+      toast.success("Telefone atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes-finalizados", edicao.eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["impacto-inscricoes", edicao.eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["inscricoes-evento", edicao.eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["portal-lideres-inscricoes", edicao.eventoId] });
+      queryClient.invalidateQueries({ queryKey: ["emerg-dialog-inscricoes", edicao.eventoId] });
+      setTelefoneEditando(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Erro ao atualizar o telefone.");
     },
   });
 
@@ -834,6 +855,25 @@ const EventosFinalizadosTab = () => {
                                             ? format(parseLocalDate(insc.data_nascimento), "dd/MM/yyyy")
                                             : "Data de nascimento não informada"}
                                         </p>
+                                        <div className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
+                                          <span className="whitespace-nowrap">{insc.telefone ? formatPhone(insc.telefone) : "Telefone não informado"}</span>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-7 w-7 shrink-0"
+                                            title="Editar telefone"
+                                            aria-label={`Editar telefone de ${insc.nome}`}
+                                            onClick={() => setTelefoneEditando({
+                                              id: insc.id,
+                                              eventoId: evento.id,
+                                              memberId: insc.member_id || null,
+                                              nome: insc.nome,
+                                              value: insc.telefone ? formatPhone(insc.telefone) : "",
+                                            })}
+                                          >
+                                            <Phone className="w-3.5 h-3.5" />
+                                          </Button>
+                                        </div>
                                       </TableCell>
                                       <TableCell className="text-sm">
                                         {TIPOS_LABELS[insc.tipo_inscricao] || insc.tipo_inscricao || "—"}
@@ -939,6 +979,43 @@ const EventosFinalizadosTab = () => {
               </Button>
               <Button type="submit" disabled={nascimentoMutation.isPending}>
                 {nascimentoMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!telefoneEditando} onOpenChange={(open) => {
+        if (!open && !telefoneMutation.isPending) setTelefoneEditando(null);
+      }}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar telefone</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm font-medium">{telefoneEditando?.nome}</p>
+          <form className="space-y-4" onSubmit={(event) => {
+            event.preventDefault();
+            if (telefoneEditando && !telefoneMutation.isPending) telefoneMutation.mutate(telefoneEditando);
+          }}>
+            <div className="space-y-2">
+              <Label htmlFor="finalizado-telefone">Telefone / WhatsApp</Label>
+              <MaskedInput
+                id="finalizado-telefone"
+                mask="phone"
+                autoComplete="tel-national"
+                value={telefoneEditando?.value || ""}
+                required
+                disabled={telefoneMutation.isPending}
+                onChange={(value) => setTelefoneEditando((current) => current ? { ...current, value } : null)}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" disabled={telefoneMutation.isPending} onClick={() => setTelefoneEditando(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={telefoneMutation.isPending}>
+                {telefoneMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Salvar
               </Button>
             </DialogFooter>
