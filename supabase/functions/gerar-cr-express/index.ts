@@ -206,7 +206,7 @@ serve(async (req) => {
       })) || [],
       lembretes_fixos: [
         "Oferta para missões (meta da CR – R$ 100,00)",
-        "pix@gileade.com.br",
+        "pixgileade@gmail.com",
         "Quilo do Amor (meta da CR – 36 kgs)",
         "Reforçar importância da participação nos cultos e programações da Igreja.",
       ],
@@ -237,7 +237,7 @@ O documento "Casa Refúgio Express" deve conter EXATAMENTE estas seções:
 ${eventosText}
    - Lembretes fixos:
      • Oferta para missões (meta da CR – R$ 100,00)
-     • pix@gileade.com.br
+     • pixgileade@gmail.com
      • Quilo do Amor (meta da CR – 36 kgs)
      • Reforçar importância da participação nos cultos e programações da Igreja.
 

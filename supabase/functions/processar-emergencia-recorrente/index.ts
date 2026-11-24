@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
+import { enviarMidiaWhatsApp, enviarTextoWhatsApp } from "../_shared/whatsapp-sender.ts";
+import { recorrenciaExpirou } from "../_shared/recorrencia-envio.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,7 +65,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const hojeStr = new Date().toISOString().slice(0, 10);
+    // Data de referência no horário da igreja (UTC-3), sem virar o dia às 21h.
+    const hojeStr = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
     const { data: configs } = await supabase
       .from("evento_emergencia_config")
@@ -77,6 +79,9 @@ serve(async (req) => {
     const detalhes: any[] = [];
 
     for (const cfg of configs || []) {
+      // A data final é inclusiva: no dia seguinte a recorrência é interrompida.
+      if (recorrenciaExpirou(hojeStr, cfg.data_fim_recorrencia)) continue;
+
       // Verifica evento ativo (não passou)
       const tabela =
         cfg.evento_tipo === "impacto" ? "impacto_eventos" : "agenda_igreja";
@@ -151,7 +156,17 @@ serve(async (req) => {
           data: dataFmt,
         });
         try {
-          await enviarTexto(tel, final);
+          if (cfg.midia_recorrente_url) {
+            await enviarMidiaWhatsApp(
+              tel,
+              cfg.midia_recorrente_url,
+              final,
+              undefined,
+              cfg.midia_recorrente_nome || undefined,
+            );
+          } else {
+            await enviarTexto(tel, final);
+          }
           enviadosEvento++;
           await supabase.from("emergencia_envios_log").insert({
             inscricao_id: insc.id,

@@ -43,6 +43,13 @@
       "when": 1794872111091,
       "tag": "0005_restringir_acesso_contas_da_igreja",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795552669074,
+      "tag": "0006_limite_e_anexo_mensagens_recorrentes",
+      "breakpoints": true
     }
   ]
 }

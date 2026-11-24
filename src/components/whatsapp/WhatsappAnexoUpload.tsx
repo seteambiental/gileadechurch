@@ -15,7 +15,7 @@ export interface WhatsappAnexo {
   type: "image" | "video" | "document";
 }
 
-function detectType(name: string): WhatsappAnexo["type"] {
+export function detectWhatsappAnexoType(name: string): WhatsappAnexo["type"] {
   const n = name.toLowerCase();
   if (/\.(jpe?g|png|webp|gif|bmp)$/.test(n)) return "image";
   if (/\.(mp4|mov|avi|mkv|webm|3gp)$/.test(n)) return "video";
@@ -40,7 +40,7 @@ export default function WhatsappAnexoUpload({ value, onChange, disabled }: Props
       let upload: File = file;
 
       // Imagens são otimizadas no navegador (reduz muito a chance de falha de rede)
-      if (detectType(file.name) === "image" && !/\.gif$/i.test(file.name)) {
+      if (detectWhatsappAnexoType(file.name) === "image" && !/\.gif$/i.test(file.name)) {
         try {
           const { file: resized } = await resizeKeepAspect(file, 1600);
           if (resized.size < file.size) upload = resized;
@@ -77,7 +77,7 @@ export default function WhatsappAnexoUpload({ value, onChange, disabled }: Props
       onChange({
         url: data.publicUrl,
         fileName: upload.name,
-        type: detectType(upload.name),
+        type: detectWhatsappAnexoType(upload.name),
       });
     } catch (err: any) {
       const msg = String(err?.message || "");

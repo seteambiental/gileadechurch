@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { enfileirarComDedupe } from "../_shared/whatsapp-queue.ts";
+import { campoDoFormularioHabilitado } from "../_shared/evento-formulario.ts";
 import {
   enviarTextoWhatsApp,
   enviarImagemWhatsApp,
@@ -623,6 +624,16 @@ serve(async (req) => {
         indiferente: 'Sem preferência de beliche'
       };
       const belicheLabel = belicheMap[inscricao.preferencia_beliche || 'indiferente'] || 'Sem preferência';
+      const { data: eventoConfig } = await supabase
+        .from('agenda_igreja')
+        .select('campos_formulario')
+        .eq('id', inscricao.evento_id)
+        .maybeSingle();
+      const eventoPedeBeliche = campoDoFormularioHabilitado(
+        eventoConfig?.campos_formulario ?? evento?.campos_formulario,
+        'preferencia_beliche',
+      );
+      const belicheLine = eventoPedeBeliche ? `\n🛏️ *Preferência:* ${belicheLabel}` : '';
 
       let observacoesEspeciais = '';
       if (inscricao.tem_alergia_alimentar && inscricao.descricao_alergia) {
@@ -650,10 +661,10 @@ serve(async (req) => {
             hora: horaFormatada.trim(),
             local: evento?.local,
             formaPagamento: formaPagamentoLabel,
-            preferencia: belicheLabel,
+            preferencia: eventoPedeBeliche ? belicheLabel : '',
             responsavel: inscricao.nome_responsavel,
           })}${grupoWhatsappBlock}`
-        : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}\n🛏️ *Preferência:* ${belicheLabel}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
+        : `✅ *INSCRIÇÃO CONFIRMADA!*\n\nOlá, ${primeiroNome}! 👋\n\nSua inscrição para *${evento?.titulo || 'o evento'}* foi recebida com sucesso!\n\n📅 *Data:* ${dataFormatada}${horaFormatada}\n📍 *Local:* ${evento?.local || 'A confirmar'}\n\n💳 *Forma de pagamento:* ${formaPagamentoLabel}${belicheLine}${observacoesEspeciais}\n\n${inscricao.is_menor ? `👨‍👩‍👧 *Responsável:* ${inscricao.nome_responsavel}\n` : ''}Em breve entraremos em contato com mais detalhes.${grupoWhatsappBlock}\n\nDeus abençoe! 🙏\n\n_Igreja Gileade_ 💙`;
       
       // Enfileira (rastreável + retentativa) ao invés de envio direto
       const rConf = await enfileirarComDedupe(supabase, {

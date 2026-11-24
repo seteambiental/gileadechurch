@@ -3011,6 +3011,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           data_envio_unico: string | null
+          data_fim_recorrencia: string | null
           data_inicio_recorrencia: string | null
           enviar_recorrente: boolean
           evento_id: string
@@ -3019,6 +3020,8 @@ export type Database = {
           id: string
           mensagem_inicial: string
           mensagem_recorrente: string
+          midia_recorrente_nome: string | null
+          midia_recorrente_url: string | null
           modo_envio: string
           recorrencia_dia_semana: number | null
           recorrencia_dias_semana: number[]
@@ -3033,6 +3036,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           data_envio_unico?: string | null
+          data_fim_recorrencia?: string | null
           data_inicio_recorrencia?: string | null
           enviar_recorrente?: boolean
           evento_id: string
@@ -3041,6 +3045,8 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          midia_recorrente_nome?: string | null
+          midia_recorrente_url?: string | null
           modo_envio?: string
           recorrencia_dia_semana?: number | null
           recorrencia_dias_semana?: number[]
@@ -3055,6 +3061,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           data_envio_unico?: string | null
+          data_fim_recorrencia?: string | null
           data_inicio_recorrencia?: string | null
           enviar_recorrente?: boolean
           evento_id?: string
@@ -3063,6 +3070,8 @@ export type Database = {
           id?: string
           mensagem_inicial?: string
           mensagem_recorrente?: string
+          midia_recorrente_nome?: string | null
+          midia_recorrente_url?: string | null
           modo_envio?: string
           recorrencia_dia_semana?: number | null
           recorrencia_dias_semana?: number[]

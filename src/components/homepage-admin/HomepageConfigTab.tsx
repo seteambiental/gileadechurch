@@ -16,10 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
-import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target, ChevronDown, ChevronUp } from "lucide-react";
+import { Settings, Building2, ExternalLink, Phone, Mail, MapPin, Globe, Clock, Cake, Save, Loader2, MessageSquare, RotateCcw, Search, Pencil, Trash2, ShieldAlert, ListChecks, Calendar, Target, ChevronDown, ChevronUp, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import EnvioEmergenciaDialog from "@/components/impacto/EnvioEmergenciaDialog";
+import WhatsappAnexoUpload, { detectWhatsappAnexoType, type WhatsappAnexo } from "@/components/whatsapp/WhatsappAnexoUpload";
+import { ManualDateInput } from "@/components/ui/manual-date-input";
+import { isoDateToManual } from "@/lib/manual-date";
 
 type TipoMensagem =
   | "confirmacao_inscricao"
@@ -191,6 +194,7 @@ const HomepageConfigTab = () => {
     recorrencia_semana_ordinal: "primeiro" | "segundo" | "terceiro" | "quarto" | "ultimo" | "";
     recorrencia_dia_semana: number | null;
     recorrencia_hora: string;
+    data_fim_recorrencia: string | null;
     enviar_recorrente: boolean;
   };
   const REC_DEFAULT: RecCfg = {
@@ -202,9 +206,11 @@ const HomepageConfigTab = () => {
     recorrencia_semana_ordinal: "",
     recorrencia_dia_semana: null,
     recorrencia_hora: "08:00",
+    data_fim_recorrencia: null,
     enviar_recorrente: true,
   };
   const [recCfg, setRecCfg] = useState<RecCfg>(REC_DEFAULT);
+  const [anexoRecorrente, setAnexoRecorrente] = useState<WhatsappAnexo | null>(null);
 
   // Indica se a mensagem do evento/tipo selecionado deve ser tratada como recorrente
   const [usaRecorrencia, setUsaRecorrencia] = useState<boolean>(false);
@@ -441,13 +447,11 @@ const HomepageConfigTab = () => {
     if (tiposDisponiveis.length === 0) return;
     if (!tiposDisponiveis.some((t) => t.value === tipoMensagemSelecionada)) {
       setTipoMensagemSelecionada(tiposDisponiveis[0].value);
+      setUsaRecorrencia(tiposDisponiveis[0].value === "contato_emergencia");
     }
   }, [eventoAtual, tiposDisponiveis, tipoMensagemSelecionada]);
 
-  // Default da recorrência ao trocar tipo: liga para Contato de Emergência, desliga para os demais
-  useEffect(() => {
-    setUsaRecorrencia(tipoMensagemSelecionada === "contato_emergencia");
-  }, [tipoMensagemSelecionada, eventoSelecionado]);
+  // A recorrência muda nas ações de seleção; ao editar, preserva o modo já configurado.
 
   const { data: templateAtual, isFetching: loadingTemplate } = useQuery({
     queryKey: ["mensagem-evento-template", eventoAtual?.id, eventoAtual?.tipo, tipoMensagemSelecionada],
@@ -505,8 +509,18 @@ const HomepageConfigTab = () => {
         recorrencia_dia_semana:
           emergCfg?.recorrencia_dia_semana ?? null,
         recorrencia_hora: (emergCfg?.recorrencia_hora || "08:00").slice(0, 5),
+        data_fim_recorrencia: emergCfg?.data_fim_recorrencia || null,
         enviar_recorrente: emergCfg?.enviar_recorrente ?? true,
       });
+      setAnexoRecorrente(
+        emergCfg?.midia_recorrente_url
+          ? {
+              url: emergCfg.midia_recorrente_url,
+              fileName: emergCfg.midia_recorrente_nome || "Anexo da mensagem",
+              type: detectWhatsappAnexoType(emergCfg.midia_recorrente_nome || emergCfg.midia_recorrente_url),
+            }
+          : null,
+      );
     } else {
       setMensagemEvento(templateAtual?.mensagem ?? TEMPLATES_PADRAO[tipoMensagemSelecionada]);
     }
@@ -535,6 +549,12 @@ const HomepageConfigTab = () => {
           recorrencia_semana_ordinal: recCfg.recorrencia_semana_ordinal || null,
           recorrencia_dia_semana: recCfg.recorrencia_dia_semana,
           recorrencia_hora: recCfg.recorrencia_hora,
+          data_fim_recorrencia:
+            recCfg.modo_envio === "recorrente" ? recCfg.data_fim_recorrencia : null,
+          midia_recorrente_url:
+            recCfg.modo_envio === "recorrente" ? anexoRecorrente?.url || null : null,
+          midia_recorrente_nome:
+            recCfg.modo_envio === "recorrente" ? anexoRecorrente?.fileName || null : null,
         };
         const { error } = await supabase
           .from("evento_emergencia_config")
@@ -698,24 +718,27 @@ const HomepageConfigTab = () => {
       return `Único — ${dd}/${mm}/${yy} às ${hh}:${mi}`;
     }
     const hora = (c.recorrencia_hora || "08:00").slice(0, 5);
+    const comLimite = (texto: string) => c.data_fim_recorrencia
+      ? `${texto} • até ${isoDateToManual(c.data_fim_recorrencia)}`
+      : texto;
     const dias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const meses = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
     if (c.recorrencia_tipo === "dia") {
       const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
-      return `Diário${d ? ` (${d})` : ""} • ${hora}`;
+      return comLimite(`Diário${d ? ` (${d})` : ""} • ${hora}`);
     }
     if (c.recorrencia_tipo === "semana") {
       const d = (c.recorrencia_dias_semana || []).map((i: number) => dias[i]).join(", ");
-      return `Semanal${d ? ` — ${d}` : ""} • ${hora}`;
+      return comLimite(`Semanal${d ? ` — ${d}` : ""} • ${hora}`);
     }
     if (c.recorrencia_tipo === "mes") {
       const m = (c.recorrencia_meses || []).map((i: number) => meses[i - 1]).join(", ");
       const ord = c.recorrencia_semana_ordinal
         ? `${c.recorrencia_semana_ordinal} ${dias[c.recorrencia_dia_semana ?? 0] || ""}`
         : "";
-      return `Mensal${m ? ` — ${m}` : ""}${ord ? ` (${ord})` : ""} • ${hora}`;
+      return comLimite(`Mensal${m ? ` — ${m}` : ""}${ord ? ` (${ord})` : ""} • ${hora}`);
     }
-    return `A cada ${c.frequencia_dias || 7} dias • ${hora}`;
+    return comLimite(`A cada ${c.frequencia_dias || 7} dias • ${hora}`);
   };
 
   const handleEditEmergCfg = (c: any) => {
@@ -965,7 +988,13 @@ const HomepageConfigTab = () => {
                   onChange={(e) => setBuscaEvento(e.target.value)}
                 />
               </div>
-              <Select value={eventoSelecionado} onValueChange={setEventoSelecionado}>
+              <Select
+                value={eventoSelecionado}
+                onValueChange={(value) => {
+                  setEventoSelecionado(value);
+                  setUsaRecorrencia(tipoMensagemSelecionada === "contato_emergencia");
+                }}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um evento..." />
                 </SelectTrigger>
@@ -1004,7 +1033,10 @@ const HomepageConfigTab = () => {
               <Label>Tipo de mensagem</Label>
               <Select
                 value={tipoMensagemSelecionada}
-                onValueChange={(v) => setTipoMensagemSelecionada(v as TipoMensagem)}
+                onValueChange={(v) => {
+                  setTipoMensagemSelecionada(v as TipoMensagem);
+                  setUsaRecorrencia(v === "contato_emergencia");
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1299,6 +1331,27 @@ const HomepageConfigTab = () => {
                       </div>
                     </>
                   )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="fim-recorrencia">Último dia de envio (opcional)</Label>
+                    <ManualDateInput
+                      id="fim-recorrencia"
+                      aria-label="Último dia de envio"
+                      value={recCfg.data_fim_recorrencia || ""}
+                      onChange={(value) =>
+                        setRecCfg({ ...recCfg, data_fim_recorrencia: value || null })
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      O envio ainda acontece nesse dia e para no dia seguinte. Sem data final, continua até o término do evento.
+                    </p>
+                  </div>
+
+                  <WhatsappAnexoUpload
+                    value={anexoRecorrente}
+                    onChange={setAnexoRecorrente}
+                    disabled={salvarMensagemEvento.isPending}
+                  />
                   </>
                   )}
                 </>
@@ -1466,6 +1519,12 @@ const HomepageConfigTab = () => {
                       {!c.enviar_recorrente && (
                         <Badge variant="secondary" className="ml-2 text-[10px]">
                           inativa
+                        </Badge>
+                      )}
+                      {c.midia_recorrente_url && (
+                        <Badge variant="outline" className="ml-2 text-[10px] gap-1">
+                          <Paperclip className="w-3 h-3" />
+                          anexo
                         </Badge>
                       )}
                     </p>
